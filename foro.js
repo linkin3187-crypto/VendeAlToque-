@@ -1,4 +1,4 @@
-// ===== MercaFree - Foro de Ventas =====
+// ===== MercaFree - Foro de Ventas (mejorado) =====
 
 let postsForo = [];
 let categoriaForoActiva = "todos";
@@ -19,7 +19,6 @@ function cargarForo() {
     if (guardados) {
       postsForo = JSON.parse(guardados);
     } else {
-      // Posts de ejemplo
       postsForo = [
         {
           id: 1,
@@ -46,7 +45,7 @@ function cargarForo() {
           titulo: "iPhone 13 en buen estado",
           contenido: "Vendo iPhone 13 de 128GB, batería al 89%. Precio negociable. Zona El Poblado.",
           categoria: "tecnologia",
-          autor: "Anonimo",
+          autor: "Anónimo",
           fecha: Date.now() - 3600000 * 8,
           respuestas: []
         }
@@ -63,6 +62,12 @@ function guardarForo() {
   localStorage.setItem("mercafree_foro", JSON.stringify(postsForo));
 }
 
+function escaparHTML(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto || "";
+  return div.innerHTML;
+}
+
 function renderizarForo() {
   const cont = document.getElementById("foro-posts");
   const contador = document.getElementById("foro-contador");
@@ -72,11 +77,11 @@ function renderizarForo() {
   if (categoriaForoActiva !== "todos") {
     lista = postsForo.filter(p => p.categoria === categoriaForoActiva);
   }
-
-  // Ordenar por más recientes
   lista = [...lista].sort((a, b) => b.fecha - a.fecha);
 
-  contador.textContent = lista.length + (lista.length === 1 ? " publicación" : " publicaciones");
+  if (contador) {
+    contador.textContent = lista.length + (lista.length === 1 ? " publicación" : " publicaciones");
+  }
 
   if (lista.length === 0) {
     cont.innerHTML = `
@@ -92,34 +97,46 @@ function renderizarForo() {
     const cat = CATEGORIAS_FORO.find(c => c.id === p.categoria) || { icono: "📦", nombre: p.categoria };
     const fecha = new Date(p.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
     const numResp = (p.respuestas || []).length;
+    const previewId = "preview-" + p.id;
 
     return `
-      <article class="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1 flex-wrap">
-              <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">${cat.icono} ${cat.nombre}</span>
-              <span class="text-xs text-slate-400">${fecha}</span>
-            </div>
-            <h3 class="font-bold text-slate-900 mb-1">${escaparHTML(p.titulo)}</h3>
-            <p class="text-sm text-slate-600 line-clamp-2 mb-2">${escaparHTML(p.contenido)}</p>
-            <div class="flex items-center gap-3 text-xs text-slate-500">
-              <span>👤 ${escaparHTML(p.autor || "Anónimo")}</span>
-              <span>💬 ${numResp} respuesta${numResp === 1 ? "" : "s"}</span>
-            </div>
+      <article class="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition">
+        <div class="p-4 cursor-pointer" onclick="togglePreviewForo(${p.id})">
+          <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">${cat.icono} ${cat.nombre}</span>
+            <span class="text-xs text-slate-400">${fecha}</span>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-1">${escaparHTML(p.titulo)}</h3>
+          <p class="text-sm text-slate-600 line-clamp-2">${escaparHTML(p.contenido)}</p>
+          <div class="flex items-center gap-3 text-xs text-slate-500 mt-2">
+            <span>👤 ${escaparHTML(p.autor || "Anónimo")}</span>
+            <span>💬 ${numResp} comentario${numResp === 1 ? "" : "s"}</span>
+            <span class="text-indigo-500 font-medium ml-auto">Desplegar ▾</span>
           </div>
         </div>
-        <div class="mt-3 flex gap-2">
-          <button onclick="verPostForo(${p.id})" class="text-sm text-indigo-600 font-medium hover:underline">Ver y responder</button>
+
+        <!-- Vista desplegable rápida -->
+        <div id="${previewId}" class="detalle-anuncio border-t border-slate-100 bg-slate-50 px-4 pb-4">
+          <p class="text-sm text-slate-700 whitespace-pre-wrap pt-3 mb-3">${escaparHTML(p.contenido)}</p>
+          <div class="flex flex-wrap gap-2">
+            <a href="post.html?id=${p.id}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
+              Ver tema y comentarios →
+            </a>
+            <button type="button" onclick="event.stopPropagation(); togglePreviewForo(${p.id})" class="text-sm text-slate-500 px-3 py-2 hover:text-slate-700">
+              Cerrar
+            </button>
+          </div>
         </div>
       </article>`;
   }).join("");
 }
 
-function escaparHTML(texto) {
-  const div = document.createElement("div");
-  div.textContent = texto || "";
-  return div.innerHTML;
+function togglePreviewForo(id) {
+  const el = document.getElementById("preview-" + id);
+  if (!el) return;
+  const abierto = el.classList.contains("abierto");
+  document.querySelectorAll("#foro-posts .detalle-anuncio").forEach(d => d.classList.remove("abierto"));
+  if (!abierto) el.classList.add("abierto");
 }
 
 function filtrarForo(cat) {
@@ -136,15 +153,45 @@ function filtrarForo(cat) {
 }
 
 function abrirModalNuevoPost() {
-  document.getElementById("modal-foro-post").classList.remove("hidden");
+  const modal = document.getElementById("modal-foro-post");
+  if (!modal) return;
+  modal.classList.remove("hidden");
   document.getElementById("foro-titulo").value = "";
   document.getElementById("foro-contenido").value = "";
-  document.getElementById("foro-autor").value = usuarioActual ? usuarioActual.nombre : "";
+  const checkAnon = document.getElementById("foro-anonimo");
+  const inputAutor = document.getElementById("foro-autor");
+  if (checkAnon) checkAnon.checked = false;
+  if (inputAutor) {
+    inputAutor.disabled = false;
+    inputAutor.placeholder = "Tu nombre";
+    inputAutor.value = (typeof usuarioActual !== "undefined" && usuarioActual && usuarioActual.nombre)
+      ? usuarioActual.nombre
+      : "";
+  }
 }
 
 function cerrarModalForo() {
-  document.getElementById("modal-foro-post").classList.add("hidden");
-  document.getElementById("modal-foro-ver").classList.add("hidden");
+  const m1 = document.getElementById("modal-foro-post");
+  const m2 = document.getElementById("modal-foro-ver");
+  if (m1) m1.classList.add("hidden");
+  if (m2) m2.classList.add("hidden");
+}
+
+function toggleAnonimoPost() {
+  const check = document.getElementById("foro-anonimo");
+  const input = document.getElementById("foro-autor");
+  if (!check || !input) return;
+  if (check.checked) {
+    input.value = "";
+    input.disabled = true;
+    input.placeholder = "Anónimo";
+  } else {
+    input.disabled = false;
+    input.placeholder = "Tu nombre";
+    if (typeof usuarioActual !== "undefined" && usuarioActual && usuarioActual.nombre) {
+      input.value = usuarioActual.nombre;
+    }
+  }
 }
 
 function publicarEnForo(e) {
@@ -152,7 +199,10 @@ function publicarEnForo(e) {
   const titulo = document.getElementById("foro-titulo").value.trim();
   const contenido = document.getElementById("foro-contenido").value.trim();
   const categoria = document.getElementById("foro-categoria").value;
-  const autor = document.getElementById("foro-autor").value.trim() || "Anónimo";
+  const anonimo = document.getElementById("foro-anonimo") && document.getElementById("foro-anonimo").checked;
+  let autor = document.getElementById("foro-autor").value.trim();
+
+  if (anonimo || !autor) autor = "Anónimo";
 
   if (!titulo || !contenido) {
     alert("Escribe un título y el contenido");
@@ -173,80 +223,20 @@ function publicarEnForo(e) {
   guardarForo();
   cerrarModalForo();
   renderizarForo();
-  mostrarToast("✅ Publicado en el foro");
+
+  if (typeof mostrarToast === "function") {
+    mostrarToast("✅ Publicado en el foro");
+  }
+
+  // Opcional: ir directo al tema
+  // location.href = "post.html?id=" + nuevo.id;
 }
 
-let postActualForo = null;
-
+// Compatibilidad: si algo aún llama verPostForo, redirigir a la página
 function verPostForo(id) {
-  const post = postsForo.find(p => p.id === id);
-  if (!post) return;
-  postActualForo = post;
-
-  const cat = CATEGORIAS_FORO.find(c => c.id === post.categoria) || { icono: "📦", nombre: post.categoria };
-  const fecha = new Date(post.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
-  document.getElementById("foro-ver-titulo").textContent = post.titulo;
-  document.getElementById("foro-ver-meta").innerHTML = `
-    <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">${cat.icono} ${cat.nombre}</span>
-    <span class="text-xs text-slate-500">por ${escaparHTML(post.autor)} · ${fecha}</span>
-  `;
-  document.getElementById("foro-ver-contenido").textContent = post.contenido;
-
-  const contResp = document.getElementById("foro-respuestas");
-  const respuestas = post.respuestas || [];
-  if (respuestas.length === 0) {
-    contResp.innerHTML = '<p class="text-sm text-slate-400 py-4 text-center">Sé el primero en responder</p>';
-  } else {
-    contResp.innerHTML = respuestas.map(r => {
-      const f = new Date(r.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
-      return `
-        <div class="bg-slate-50 rounded-lg p-3 mb-2">
-          <div class="flex justify-between text-xs text-slate-500 mb-1">
-            <span class="font-medium text-slate-700">${escaparHTML(r.autor)}</span>
-            <span>${f}</span>
-          </div>
-          <p class="text-sm text-slate-700">${escaparHTML(r.texto)}</p>
-        </div>`;
-    }).join("");
-  }
-
-  document.getElementById("foro-respuesta-texto").value = "";
-  document.getElementById("foro-respuesta-autor").value = usuarioActual ? usuarioActual.nombre : "";
-  document.getElementById("modal-foro-ver").classList.remove("hidden");
+  location.href = "post.html?id=" + id;
 }
 
-function enviarRespuesta(e) {
-  e.preventDefault();
-  if (!postActualForo) return;
-
-  const texto = document.getElementById("foro-respuesta-texto").value.trim();
-  const autor = document.getElementById("foro-respuesta-autor").value.trim() || "Anónimo";
-
-  if (!texto) {
-    alert("Escribe una respuesta");
-    return;
-  }
-
-  if (!postActualForo.respuestas) postActualForo.respuestas = [];
-  postActualForo.respuestas.push({
-    autor,
-    texto,
-    fecha: Date.now()
-  });
-
-  // Actualizar en el array
-  const idx = postsForo.findIndex(p => p.id === postActualForo.id);
-  if (idx !== -1) postsForo[idx] = postActualForo;
-
-  guardarForo();
-  verPostForo(postActualForo.id); // refrescar
-  renderizarForo();
-  mostrarToast("✅ Respuesta publicada");
-}
-
-// Inicializar cuando el DOM esté listo
 document.addEventListener("DOMContentLoaded", () => {
   cargarForo();
-  // Se llama renderizarForo desde el load principal también
 });

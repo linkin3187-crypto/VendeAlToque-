@@ -172,7 +172,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
           <h2 class="text-xl font-bold">💬 Foro de Ventas</h2>
-          <p class="text-sm text-slate-500">Pregunta, ofrece o recomienda · <span id="foro-contador">0 publicaciones</span></p>
+          <p class="text-sm text-slate-500">Haz clic en un tema para desplegarlo o entrar a ver comentarios · <span id="foro-contador">0 publicaciones</span></p>
         </div>
         <button onclick="abrirModalNuevoPost()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow">
           + Nueva publicación
@@ -358,8 +358,12 @@
           <textarea id="foro-contenido" required rows="4" maxlength="800" placeholder="Describe lo que buscas u ofreces..." class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Tu nombre (opcional)</label>
-          <input type="text" id="foro-autor" maxlength="40" placeholder="Anónimo" class="w-full border border-slate-300 p-3 rounded-xl">
+          <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+            <input type="checkbox" id="foro-anonimo" class="w-4 h-4 rounded" onchange="toggleAnonimoPost()">
+            <span class="font-medium text-slate-700">Publicar como anónimo</span>
+          </label>
+          <input type="text" id="foro-autor" maxlength="40" placeholder="Tu nombre" class="w-full border border-slate-300 p-3 rounded-xl">
+          <p class="text-xs text-slate-400 mt-1">Si iniciaste sesión se usará tu nombre. Puedes marcar anónimo si lo prefieres.</p>
         </div>
         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl">Publicar</button>
       </form>

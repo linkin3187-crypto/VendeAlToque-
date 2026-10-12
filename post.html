@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tema del foro | MercaFree</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+
+  <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center gap-3">
+      <a href="index.html#seccion-foro" class="text-white/90 hover:text-white text-sm font-medium">← Volver al foro</a>
+      <span class="text-white/40">|</span>
+      <a href="index.html" class="font-black tracking-tight">
+        <span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    <div id="post-loading" class="text-center py-16 text-slate-500">Cargando tema…</div>
+    
+    <div id="post-error" class="hidden text-center py-16">
+      <div class="text-5xl mb-4">😕</div>
+      <h2 class="text-xl font-bold text-slate-700 mb-2">Tema no encontrado</h2>
+      <p class="text-slate-500 text-sm mb-4">Puede que se haya eliminado o el enlace no sea válido.</p>
+      <a href="index.html#seccion-foro" class="text-indigo-600 font-medium hover:underline">Volver al foro</a>
+    </div>
+
+    <article id="post-contenido" class="hidden">
+      <div id="post-meta" class="flex flex-wrap items-center gap-2 mb-3"></div>
+      <h1 id="post-titulo" class="text-2xl font-bold text-slate-900 mb-3"></h1>
+      <div class="flex items-center gap-3 text-sm text-slate-500 mb-5">
+        <span id="post-autor"></span>
+        <span>·</span>
+        <span id="post-fecha"></span>
+      </div>
+      <div id="post-texto" class="text-slate-700 leading-relaxed whitespace-pre-wrap mb-8 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"></div>
+
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="font-bold text-lg mb-4">💬 Comentarios <span id="num-comentarios" class="text-slate-400 font-normal text-base"></span></h2>
+        
+        <div id="lista-comentarios" class="space-y-3 mb-6"></div>
+
+        <form id="form-comentario" class="border-t border-slate-100 pt-5 space-y-3">
+          <h3 class="font-semibold text-sm text-slate-700">Escribir un comentario</h3>
+          <textarea id="comentario-texto" required rows="3" maxlength="600" placeholder="Escribe tu comentario..." class="w-full border border-slate-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none"></textarea>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" id="comentario-anonimo" class="w-4 h-4 rounded" onchange="toggleAnonimoComentario()">
+              <span>Publicar anónimo</span>
+            </label>
+            <input type="text" id="comentario-autor" maxlength="40" placeholder="Tu nombre" class="flex-1 min-w-[140px] border border-slate-300 p-2.5 rounded-xl text-sm">
+          </div>
+          
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm">
+            Publicar comentario
+          </button>
+        </form>
+      </section>
+    </article>
+  </main>
+
+  <footer class="text-center py-8 text-sm text-slate-400">
+    <a href="index.html" class="hover:text-indigo-600">MercaFree</a> · Foro de ventas
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="foro.js"></script>
+  <script>
+    function toggleAnonimoComentario() {
+      const check = document.getElementById("comentario-anonimo");
+      const input = document.getElementById("comentario-autor");
+      if (check.checked) {
+        input.value = "";
+        input.disabled = true;
+        input.placeholder = "Anónimo";
+      } else {
+        input.disabled = false;
+        input.placeholder = "Tu nombre";
+        if (typeof usuarioActual !== "undefined" && usuarioActual) {
+          input.value = usuarioActual.nombre || "";
+        }
+      }
+    }
+
+    function mostrarToast(msg) {
+      const t = document.createElement("div");
+      t.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg z-[200] font-medium";
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
+    }
+
+    function escapar(t) {
+      const d = document.createElement("div");
+      d.textContent = t || "";
+      return d.innerHTML;
+    }
+
+    function cargarPaginaPost() {
+      const params = new URLSearchParams(location.search);
+      const id = parseInt(params.get("id"), 10);
+
+      document.getElementById("post-loading").classList.add("hidden");
+
+      if (!id || isNaN(id)) {
+        document.getElementById("post-error").classList.remove("hidden");
+        return;
+      }
+
+      // Cargar datos del foro
+      if (typeof cargarForo === "function") cargarForo();
+      // También cargar usuario si existe
+      try {
+        const u = localStorage.getItem("mercafree_usuario");
+        if (u) window.usuarioActual = JSON.parse(u);
+      } catch(e) {}
+
+      const post = (typeof postsForo !== "undefined" ? postsForo : []).find(p => p.id === id);
+      if (!post) {
+        document.getElementById("post-error").classList.remove("hidden");
+        return;
+      }
+
+      const cat = (typeof CATEGORIAS_FORO !== "undefined" ? CATEGORIAS_FORO : []).find(c => c.id === post.categoria) || { icono: "📦", nombre: post.categoria };
+      const fecha = new Date(post.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+      document.getElementById("post-meta").innerHTML = `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${cat.nombre}</span>`;
+      document.getElementById("post-titulo").textContent = post.titulo;
+      document.getElementById("post-autor").textContent = "👤 " + (post.autor || "Anónimo");
+      document.getElementById("post-fecha").textContent = fecha;
+      document.getElementById("post-texto").textContent = post.contenido;
+
+      renderComentarios(post);
+      document.getElementById("post-contenido").classList.remove("hidden");
+
+      // Prefill autor
+      if (window.usuarioActual && window.usuarioActual.nombre) {
+        document.getElementById("comentario-autor").value = window.usuarioActual.nombre;
+      }
+
+      document.getElementById("form-comentario").onsubmit = function(e) {
+        e.preventDefault();
+        const texto = document.getElementById("comentario-texto").value.trim();
+        const anonimo = document.getElementById("comentario-anonimo").checked;
+        let autor = document.getElementById("comentario-autor").value.trim();
+        if (anonimo || !autor) autor = "Anónimo";
+
+        if (!texto) return;
+
+        if (!post.respuestas) post.respuestas = [];
+        post.respuestas.push({ autor, texto, fecha: Date.now() });
+
+        // Guardar en el array global y localStorage
+        const idx = postsForo.findIndex(p => p.id === post.id);
+        if (idx !== -1) postsForo[idx] = post;
+        if (typeof guardarForo === "function") guardarForo();
+
+        document.getElementById("comentario-texto").value = "";
+        renderComentarios(post);
+        mostrarToast("✅ Comentario publicado");
+      };
+    }
+
+    function renderComentarios(post) {
+      const lista = post.respuestas || [];
+      document.getElementById("num-comentarios").textContent = "(" + lista.length + ")";
+      const cont = document.getElementById("lista-comentarios");
+
+      if (lista.length === 0) {
+        cont.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Sé el primero en comentar</p>';
+        return;
+      }
+
+      cont.innerHTML = lista.map(r => {
+        const f = new Date(r.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+          <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
+            <span class="font-semibold text-slate-700">👤 ${escapar(r.autor)}</span>
+            <span>${f}</span>
+          </div>
+          <p class="text-sm text-slate-700 whitespace-pre-wrap">${escapar(r.texto)}</p>
+        </div>`;
+      }).join("");
+    }
+
+    window.addEventListener("load", cargarPaginaPost);
+  </script>
+</body>
+</html>

@@ -141,12 +141,14 @@
     <!-- MAPA -->
     <section class="lg:col-span-5">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
           <h2 class="text-lg font-bold">📍 Mapa del Barrio</h2>
-          <span class="text-xs text-slate-400">Explora cerca de ti</span>
+          <button type="button" id="btn-mi-ubicacion" onclick="centrarEnMiUbicacion()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-full border border-indigo-200">
+            📍 Mi ubicación
+          </button>
         </div>
         <div id="map"></div>
-        <p class="text-xs text-slate-400 mt-3 text-center">Haz clic en los marcadores para ver el anuncio</p>
+        <p class="text-xs text-slate-400 mt-3 text-center">Iconos por categoría · Haz clic en un marcador · Usa “Cómo llegar” para Google Maps</p>
       </div>
     </section>
 
@@ -287,6 +289,16 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">Precio</label>
             <input type="text" id="form-precio" placeholder="$1.200.000" class="w-full border border-slate-300 p-3 rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1">📍 Ubicación en el mapa</label>
+          <p class="text-xs text-slate-400 mb-2">Toca el mapa o arrastra el pin para marcar dónde está el anuncio</p>
+          <div id="map-formulario" style="height:200px;border-radius:12px;border:1px solid #cbd5e1;z-index:1;"></div>
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            <button type="button" onclick="usarMiUbicacionFormulario()" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">Usar mi ubicación GPS</button>
+            <span id="form-coords-label" class="text-xs text-slate-400">6.17590, -75.59170</span>
           </div>
         </div>
 

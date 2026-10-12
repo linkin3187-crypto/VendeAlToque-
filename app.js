@@ -7,6 +7,9 @@ let imagenActualBase64 = null;
 let modoAuth = "login";
 let anuncioExpandido = null;
 const EDITOR = /[?&]editar=1/.test(location.search);
+let marcadorUsuario = null;
+let mapaFormulario = null;
+let marcadorFormulario = null;
 
 // ---------- Utilidades ----------
 function $(id) { return document.getElementById(id); }
@@ -30,6 +33,31 @@ function extraerPrecio(t) {
 }
 
 // ---------- Mapa ----------
+function iconoMarcador(categoria) {
+  const emoji = (typeof iconosCategoria !== "undefined" && iconosCategoria[categoria]) ? iconosCategoria[categoria] : "📍";
+  return L.divIcon({
+    className: "marcador-cat",
+    html: `<div class="pin-mapa"><span>${emoji}</span></div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -34]
+  });
+}
+
+function iconoUsuario() {
+  return L.divIcon({
+    className: "marcador-user",
+    html: `<div class="pin-usuario"><span>📍</span></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+}
+
+function urlGoogleMaps(lat, lng, nombre) {
+  const dest = lat + "," + lng;
+  return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dest) + (nombre ? "&destination_place_id=" : "");
+}
+
 function iniciarMapa() {
   const mapDiv = $("map");
   if (!mapDiv) return;
@@ -46,17 +74,50 @@ function iniciarMapa() {
   setTimeout(() => mapa.invalidateSize(true), 150);
   setTimeout(() => mapa.invalidateSize(true), 500);
 
+  // Ubicación del usuario que está viendo la página
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => {
-        $("form-lat").value = pos.coords.latitude;
-        $("form-lng").value = pos.coords.longitude;
-        mapa.setView([pos.coords.latitude, pos.coords.longitude], 14);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        $("form-lat").value = lat;
+        $("form-lng").value = lng;
+        if (marcadorUsuario) mapa.removeLayer(marcadorUsuario);
+        marcadorUsuario = L.marker([lat, lng], { icon: iconoUsuario(), zIndexOffset: 1000 })
+          .bindPopup("<b>📍 Estás aquí</b>")
+          .addTo(mapa);
+        mapa.setView([lat, lng], 14);
         mapa.invalidateSize(true);
+        const btn = $("btn-mi-ubicacion");
+        if (btn) btn.classList.add("ring-2", "ring-yellow-300");
       },
-      () => {}
+      () => {},
+      { enableHighAccuracy: true, timeout: 12000 }
     );
   }
+}
+
+function centrarEnMiUbicacion() {
+  if (!navigator.geolocation) {
+    alert("Tu navegador no permite geolocalización");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (marcadorUsuario) mapa.removeLayer(marcadorUsuario);
+      marcadorUsuario = L.marker([lat, lng], { icon: iconoUsuario(), zIndexOffset: 1000 })
+        .bindPopup("<b>📍 Estás aquí</b>")
+        .addTo(mapa);
+      mapa.setView([lat, lng], 15);
+      $("form-lat").value = lat;
+      $("form-lng").value = lng;
+      mostrarToast("Ubicación actualizada");
+    },
+    () => alert("No se pudo obtener tu ubicación. Revisa los permisos del navegador."),
+    { enableHighAccuracy: true, timeout: 12000 }
+  );
 }
 
 // ---------- Auth ----------
@@ -285,9 +346,13 @@ function renderizarAnuncios(lista) {
           <p><strong>📱 WhatsApp:</strong> ${a.whatsapp ? a.whatsapp.replace(/^57/, "") : "No disponible"}</p>
           <p><strong>📝 Descripción:</strong> ${a.desc || "Sin descripción"}</p>
           <p><strong>🏷️ Categoría:</strong> ${a.categoria || ""} · <strong>Estado:</strong> ${a.estado || "—"}</p>
+          ${a.lat && a.lng ? `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-600 hover:underline">🗺️ Cómo llegar (Google Maps)</a>` : ""}
         </div>
         
-        <a href="https://wa.me/${a.whatsapp}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
+        <div class="flex gap-2">
+          <a href="https://wa.me/${a.whatsapp}" target="_blank" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
+          ${a.lat && a.lng ? `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">🗺️ Cómo llegar</a>` : ""}
+        </div>
         ${EDITOR ? `<div class="flex gap-2 mt-2">
           <button onclick="editarAnuncio(${a.id})" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
           <button onclick="eliminarAnuncioAdmin(${a.id})" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
@@ -296,19 +361,21 @@ function renderizarAnuncios(lista) {
     </article>`;
   }).join("");
 
-  // Marcadores
+  // Marcadores con iconos por categoría
   if (grupoMarcadores) {
     lista.forEach(a => {
       if (!a.lat || !a.lng) return;
-      let popup = `<div style="min-width:180px;font-family:sans-serif">`;
+      let popup = `<div style="min-width:200px;font-family:sans-serif">`;
       if (a.imagen) popup += `<img src="${a.imagen}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px" onerror="this.style.display='none'">`;
       popup += `<strong>${a.nombre}</strong><br>`;
       popup += `<small style="color:#666">${a.ciudad || a.barrio || ""}</small><br>`;
       if (a.precio) popup += `<span style="color:#4f46e5;font-weight:600">${a.precio}</span><br>`;
       if (a.estado) popup += `<span style="font-size:12px">${a.estado === "nuevo" ? "🆕 Nuevo" : "Usado"}</span><br>`;
-      popup += `<a href="https://wa.me/${a.whatsapp}" target="_blank" style="display:inline-block;margin-top:8px;background:#22c55e;color:white;padding:5px 12px;border-radius:6px;font-size:12px;text-decoration:none">Contactar</a>`;
-      popup += `</div>`;
-      L.marker([a.lat, a.lng]).bindPopup(popup).addTo(grupoMarcadores);
+      popup += `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">`;
+      popup += `<a href="https://wa.me/${a.whatsapp}" target="_blank" style="background:#22c55e;color:white;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">WhatsApp</a>`;
+      popup += `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" style="background:#3b82f6;color:white;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">🗺️ Cómo llegar</a>`;
+      popup += `</div></div>`;
+      L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria) }).bindPopup(popup).addTo(grupoMarcadores);
     });
   }
 }
@@ -463,6 +530,75 @@ window.addEventListener("load", () => {
 
   setTimeout(() => aplicarFiltros(), 300);
 });
+
+
+// ---------- Mapa del formulario (elegir ubicación) ----------
+function iniciarMapaFormulario() {
+  const div = $("map-formulario");
+  if (!div) return;
+  const lat = parseFloat($("form-lat").value) || 6.1759;
+  const lng = parseFloat($("form-lng").value) || -75.5917;
+
+  if (mapaFormulario) {
+    mapaFormulario.remove();
+    mapaFormulario = null;
+    marcadorFormulario = null;
+  }
+
+  mapaFormulario = L.map("map-formulario").setView([lat, lng], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapaFormulario);
+
+  marcadorFormulario = L.marker([lat, lng], { draggable: true, icon: iconoMarcador($("form-categoria").value) }).addTo(mapaFormulario);
+  marcadorFormulario.on("dragend", function() {
+    const p = marcadorFormulario.getLatLng();
+    $("form-lat").value = p.lat.toFixed(6);
+    $("form-lng").value = p.lng.toFixed(6);
+    $("form-coords-label").textContent = p.lat.toFixed(5) + ", " + p.lng.toFixed(5);
+  });
+
+  mapaFormulario.on("click", function(e) {
+    marcadorFormulario.setLatLng(e.latlng);
+    $("form-lat").value = e.latlng.lat.toFixed(6);
+    $("form-lng").value = e.latlng.lng.toFixed(6);
+    $("form-coords-label").textContent = e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5);
+  });
+
+  setTimeout(function() { mapaFormulario.invalidateSize(true); }, 200);
+  setTimeout(function() { mapaFormulario.invalidateSize(true); }, 500);
+}
+
+function usarMiUbicacionFormulario() {
+  if (!navigator.geolocation) {
+    alert("Geolocalización no disponible");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    $("form-lat").value = lat.toFixed(6);
+    $("form-lng").value = lng.toFixed(6);
+    $("form-coords-label").textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
+    if (mapaFormulario && marcadorFormulario) {
+      marcadorFormulario.setLatLng([lat, lng]);
+      mapaFormulario.setView([lat, lng], 16);
+    }
+    mostrarToast("Ubicación tomada");
+  }, function() {
+    alert("No se pudo obtener tu ubicación");
+  }, { enableHighAccuracy: true, timeout: 12000 });
+}
+
+// Sobrescribir toggleModal para inicializar mapa del form al abrir publicar
+const _toggleModalOriginal = toggleModal;
+toggleModal = function(id) {
+  _toggleModalOriginal(id);
+  if (id === "modal-publicar") {
+    const modal = $(id);
+    if (modal && !modal.classList.contains("hidden")) {
+      setTimeout(iniciarMapaFormulario, 250);
+    }
+  }
+};
 
 function eliminarAnuncioAdmin(id) {
   if (!EDITOR) return;

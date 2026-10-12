@@ -6,6 +6,7 @@ let categoriaFiltroActiva = "todos";
 let imagenActualBase64 = null;
 let modoAuth = "login";
 let anuncioExpandido = null;
+const EDITOR = /[?&]editar=1/.test(location.search);
 
 // ---------- Utilidades ----------
 function $(id) { return document.getElementById(id); }
@@ -287,6 +288,10 @@ function renderizarAnuncios(lista) {
         </div>
         
         <a href="https://wa.me/${a.whatsapp}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
+        ${EDITOR ? `<div class="flex gap-2 mt-2">
+          <button onclick="editarAnuncio(${a.id})" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
+          <button onclick="eliminarAnuncioAdmin(${a.id})" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
+        </div>` : ""}
       </div>
     </article>`;
   }).join("");
@@ -457,6 +462,40 @@ window.addEventListener("load", () => {
   });
 
   setTimeout(() => aplicarFiltros(), 300);
+});
+
+function eliminarAnuncioAdmin(id) {
+  if (!EDITOR) return;
+  if (!confirm("¿Eliminar este anuncio de forma permanente?")) return;
+  baseDatosAnuncios = baseDatosAnuncios.filter(a => a.id !== id);
+  guardarAnuncios();
+  aplicarFiltros();
+  mostrarToast("Anuncio eliminado");
+}
+
+function activarModoEditor() {
+  if (!EDITOR) return;
+  const bar = $("ebar");
+  if (bar) {
+    bar.classList.remove("hidden");
+    const n = baseDatosAnuncios.length;
+    const c = $("ecount");
+    if (c) c.textContent = " · " + n + " anuncios en total";
+  }
+  // Mostrar enlace para salir
+  const link = $("elink");
+  if (link) {
+    link.href = location.pathname;
+    link.textContent = "Salir del modo editor";
+  }
+  const wrap = $("elinkw");
+  if (wrap) wrap.classList.remove("hidden");
+}
+
+// Hook al load existente
+const _loadOriginal = window.onload;
+window.addEventListener("load", () => {
+  setTimeout(activarModoEditor, 400);
 });
 
 document.addEventListener("keydown", e => {

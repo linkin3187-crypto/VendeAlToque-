@@ -9,9 +9,12 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
+  <div id="ebar-post" class="hidden bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2 text-sm text-center">
+    <b>✏️ Modo editor</b> — puedes borrar este tema o comentarios
+  </div>
   <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center gap-3">
-      <a href="index.html#seccion-foro" class="text-white/90 hover:text-white text-sm font-medium">← Volver al foro</a>
+      <a href="index.html#seccion-foro" id="back-foro" class="text-white/90 hover:text-white text-sm font-medium">← Volver al foro</a>
       <span class="text-white/40">|</span>
       <a href="index.html" class="font-black tracking-tight">
         <span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span>
@@ -37,7 +40,11 @@
         <span>·</span>
         <span id="post-fecha"></span>
       </div>
-      <div id="post-texto" class="text-slate-700 leading-relaxed whitespace-pre-wrap mb-8 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"></div>
+      <div id="post-texto" class="text-slate-700 leading-relaxed whitespace-pre-wrap mb-4 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"></div>
+      
+      <div id="admin-post-actions" class="hidden mb-6 flex gap-2">
+        <button type="button" id="btn-borrar-tema" class="bg-red-100 text-red-700 font-semibold text-sm px-4 py-2 rounded-xl">🗑️ Borrar este tema</button>
+      </div>
 
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <h2 class="font-bold text-lg mb-4">💬 Comentarios <span id="num-comentarios" class="text-slate-400 font-normal text-base"></span></h2>
@@ -101,9 +108,18 @@
       return d.innerHTML;
     }
 
+    const EDITOR = /[?&]editar=1/.test(location.search);
+
     function cargarPaginaPost() {
       const params = new URLSearchParams(location.search);
       const id = parseInt(params.get("id"), 10);
+      
+      if (EDITOR) {
+        const bar = document.getElementById("ebar-post");
+        if (bar) bar.classList.remove("hidden");
+        const back = document.getElementById("back-foro");
+        if (back) back.href = "index.html?editar=1#seccion-foro";
+      }
 
       document.getElementById("post-loading").classList.add("hidden");
 
@@ -137,6 +153,18 @@
 
       renderComentarios(post);
       document.getElementById("post-contenido").classList.remove("hidden");
+
+      if (EDITOR) {
+        const adm = document.getElementById("admin-post-actions");
+        if (adm) adm.classList.remove("hidden");
+        document.getElementById("btn-borrar-tema").onclick = function() {
+          if (!confirm("¿Borrar este tema y todos sus comentarios?")) return;
+          postsForo = postsForo.filter(p => p.id !== post.id);
+          if (typeof guardarForo === "function") guardarForo();
+          alert("Tema eliminado");
+          location.href = "index.html?editar=1#seccion-foro";
+        };
+      }
 
       // Prefill autor
       if (window.usuarioActual && window.usuarioActual.nombre) {
@@ -176,7 +204,7 @@
         return;
       }
 
-      cont.innerHTML = lista.map(r => {
+      cont.innerHTML = lista.map((r, i) => {
         const f = new Date(r.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
         return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
           <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
@@ -184,8 +212,22 @@
             <span>${f}</span>
           </div>
           <p class="text-sm text-slate-700 whitespace-pre-wrap">${escapar(r.texto)}</p>
+          ${EDITOR ? `<button type="button" onclick="borrarComentario(${post.id}, ${i})" class="mt-2 text-xs text-red-600 font-medium hover:underline">Eliminar comentario</button>` : ""}
         </div>`;
       }).join("");
+    }
+
+    function borrarComentario(postId, index) {
+      if (!EDITOR) return;
+      if (!confirm("¿Eliminar este comentario?")) return;
+      const post = postsForo.find(p => p.id === postId);
+      if (!post || !post.respuestas) return;
+      post.respuestas.splice(index, 1);
+      const idx = postsForo.findIndex(p => p.id === postId);
+      if (idx !== -1) postsForo[idx] = post;
+      if (typeof guardarForo === "function") guardarForo();
+      renderComentarios(post);
+      mostrarToast("Comentario eliminado");
     }
 
     window.addEventListener("load", cargarPaginaPost);

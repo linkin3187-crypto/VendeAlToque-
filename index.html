@@ -33,6 +33,17 @@
     </div>
   </header>
 
+  <!-- BARRA MODO EDITOR -->
+  <div id="ebar" class="hidden bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2.5 text-sm">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
+      <b>✏️ Modo editor activo</b>
+      <span id="ecount"></span>
+      <span class="text-amber-700">· Los cambios se guardan en este navegador (localStorage)</span>
+      <a id="elink" href="index.html" class="ml-auto text-amber-800 font-semibold underline">Salir del modo editor</a>
+    </div>
+  </div>
+  <span id="elinkw" class="hidden"></span>
+
   <!-- BUSCADOR + CATEGORÍAS -->
   <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-8 pt-6 px-4">
     <div class="max-w-4xl mx-auto">

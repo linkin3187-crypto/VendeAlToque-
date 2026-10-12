@@ -2,6 +2,7 @@
 
 let postsForo = [];
 let categoriaForoActiva = "todos";
+const EDITOR_FORO = /[?&]editar=1/.test(location.search);
 
 const CATEGORIAS_FORO = [
   { id: "todos", nombre: "Todos", icono: "💬" },
@@ -119,12 +120,13 @@ function renderizarForo() {
         <div id="${previewId}" class="detalle-anuncio border-t border-slate-100 bg-slate-50 px-4 pb-4">
           <p class="text-sm text-slate-700 whitespace-pre-wrap pt-3 mb-3">${escaparHTML(p.contenido)}</p>
           <div class="flex flex-wrap gap-2">
-            <a href="post.html?id=${p.id}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
+            <a href="post.html?id=${p.id}${EDITOR_FORO ? '&editar=1' : ''}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
               Ver tema y comentarios →
             </a>
             <button type="button" onclick="event.stopPropagation(); togglePreviewForo(${p.id})" class="text-sm text-slate-500 px-3 py-2 hover:text-slate-700">
               Cerrar
             </button>
+            ${EDITOR_FORO ? `<button type="button" onclick="event.stopPropagation(); eliminarPostForo(${p.id})" class="text-sm bg-red-100 text-red-600 font-semibold px-3 py-2 rounded-lg">🗑️ Borrar tema</button>` : ""}
           </div>
         </div>
       </article>`;
@@ -240,3 +242,13 @@ function verPostForo(id) {
 document.addEventListener("DOMContentLoaded", () => {
   cargarForo();
 });
+
+
+function eliminarPostForo(id) {
+  if (!EDITOR_FORO) return;
+  if (!confirm("¿Borrar este tema del foro y todos sus comentarios?")) return;
+  postsForo = postsForo.filter(p => p.id !== id);
+  guardarForo();
+  renderizarForo();
+  if (typeof mostrarToast === "function") mostrarToast("Tema eliminado del foro");
+}

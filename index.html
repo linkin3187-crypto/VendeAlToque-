@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MercaFree | Clasificados y Comercios de Barrio</title>
   <meta name="description" content="Clasificados gratis de tu barrio. Autos, inmuebles, tecnología, comida y más. Publica gratis.">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+  <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
+       descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -22,10 +28,10 @@
         <span class="hidden sm:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">Clasificados de barrio</span>
       </div>
       <div class="flex items-center gap-2">
-        <button id="btn-auth" onclick="toggleModal('modal-auth')" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-full text-sm transition">
+        <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-full text-sm transition">
           Iniciar sesión
         </button>
-        <button onclick="toggleModal('modal-publicar')" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1.5">
+        <button data-abrir="modal-publicar" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1.5">
           <span class="text-lg">+</span>
           <span>Publicar Gratis</span>
         </button>
@@ -38,11 +44,10 @@
     <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
       <b>✏️ Modo editor activo</b>
       <span id="ecount"></span>
-      <span class="text-amber-700">· Los cambios se guardan en este navegador (localStorage)</span>
+      <span class="text-amber-700">· Cambios solo en este navegador (en la Fase 2 será un rol real de administrador)</span>
       <a id="elink" href="index.html" class="ml-auto text-amber-800 font-semibold underline">Salir del modo editor</a>
     </div>
   </div>
-  <span id="elinkw" class="hidden"></span>
 
   <!-- BUSCADOR + CATEGORÍAS -->
   <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-8 pt-6 px-4">
@@ -53,24 +58,11 @@
       </div>
 
       <div class="relative mb-5">
-        <input type="text" id="buscador" onkeyup="aplicarFiltros()" placeholder="¿Qué buscas hoy? (ej. apartamento, iPhone, carpintero...)" class="w-full pl-5 pr-5 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
+        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar anuncios" placeholder="¿Qué buscas hoy? (ej. apartamento, iPhone, carpintero...)" class="w-full pl-5 pr-5 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
       </div>
 
-      <div class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-        <button onclick="filtrarCategoria('todos')" class="categoria-btn bg-white text-indigo-700 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">🏠 Todos</button>
-        <button onclick="filtrarCategoria('tienda')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🍎 Tiendas</button>
-        <button onclick="filtrarCategoria('comida')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🍔 Comida</button>
-        <button onclick="filtrarCategoria('autos')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🚗 Autos</button>
-        <button onclick="filtrarCategoria('inmuebles')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🏡 Inmuebles</button>
-        <button onclick="filtrarCategoria('tecnologia')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">📱 Tecnología</button>
-        <button onclick="filtrarCategoria('servicios')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🛠️ Oficios</button>
-        <button onclick="filtrarCategoria('ferreteria')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🔩 Ferretería</button>
-        <button onclick="filtrarCategoria('hogar')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🛋️ Hogar</button>
-        <button onclick="filtrarCategoria('mascotas')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">🐕 Mascotas</button>
-        <button onclick="filtrarCategoria('empleos')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">💼 Empleos</button>
-        <button onclick="filtrarCategoria('ropa')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">👕 Ropa</button>
-        <button onclick="filtrarCategoria('otros')" class="categoria-btn bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">📦 Otros</button>
-      </div>
+      <!-- Las categorías se dibujan desde CATEGORIAS (data.js) -->
+      <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
     </div>
   </section>
 
@@ -78,13 +70,14 @@
   <div class="max-w-7xl mx-auto px-4 pt-5">
     <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <button onclick="toggleFiltrosAvanzados()" class="flex items-center gap-2 text-sm font-semibold text-indigo-600">
+        <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" class="flex items-center gap-2 text-sm font-semibold text-indigo-600">
           ⚙️ Filtros avanzados
         </button>
         <div class="flex items-center gap-2">
-          <label class="text-sm text-slate-500">Ordenar por:</label>
-          <select id="ordenar-por" onchange="aplicarFiltros()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white">
+          <label for="ordenar-por" class="text-sm text-slate-500">Ordenar por:</label>
+          <select id="ordenar-por" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white">
             <option value="recientes">Más recientes</option>
+            <option value="cercanos">Más cercanos a mí</option>
             <option value="precio-asc">Precio: menor a mayor</option>
             <option value="precio-desc">Precio: mayor a menor</option>
             <option value="nombre">Nombre A-Z</option>
@@ -92,44 +85,57 @@
         </div>
       </div>
 
-      <div id="panel-filtros" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div id="panel-filtros" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Departamento</label>
-          <select id="filtro-departamento" onchange="actualizarCiudades()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <label for="filtro-departamento" class="block text-xs font-bold text-slate-500 mb-1">Departamento</label>
+          <select id="filtro-departamento" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="">Todos</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Ciudad</label>
-          <select id="filtro-ciudad" onchange="aplicarFiltros()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <label for="filtro-ciudad" class="block text-xs font-bold text-slate-500 mb-1">Ciudad</label>
+          <select id="filtro-ciudad" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="">Todas las ciudades</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
-          <select id="filtro-estado" onchange="aplicarFiltros()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <label for="filtro-estado" class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
+          <select id="filtro-estado" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="">Todos</option>
             <option value="nuevo">Nuevo</option>
             <option value="usado">Usado</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Precio mínimo</label>
-          <input type="number" id="filtro-precio-min" placeholder="50000" oninput="aplicarFiltros()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <label for="filtro-radio" class="block text-xs font-bold text-slate-500 mb-1">Distancia (desde mi ubicación)</label>
+          <select id="filtro-radio" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="0">Cualquiera</option>
+            <option value="1">Hasta 1 km</option>
+            <option value="3">Hasta 3 km</option>
+            <option value="5">Hasta 5 km</option>
+            <option value="10">Hasta 10 km</option>
+          </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Precio máximo</label>
-          <input type="number" id="filtro-precio-max" placeholder="5000000" oninput="aplicarFiltros()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <label for="filtro-precio-min" class="block text-xs font-bold text-slate-500 mb-1">Precio mínimo</label>
+          <input type="number" min="0" inputmode="numeric" id="filtro-precio-min" placeholder="50000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label for="filtro-precio-max" class="block text-xs font-bold text-slate-500 mb-1">Precio máximo</label>
+          <input type="number" min="0" inputmode="numeric" id="filtro-precio-max" placeholder="5000000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
         </div>
         <div class="flex flex-col justify-end gap-2">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="filtro-con-foto" onchange="aplicarFiltros()" class="w-4 h-4">
+            <input type="checkbox" id="filtro-con-foto" class="w-4 h-4">
             <span class="text-sm font-medium">Solo con foto</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="filtro-con-precio" onchange="aplicarFiltros()" class="w-4 h-4">
+            <input type="checkbox" id="filtro-con-precio" class="w-4 h-4">
             <span class="text-sm font-medium">Solo con precio</span>
           </label>
+        </div>
+        <div class="flex items-end">
+          <button type="button" id="btn-limpiar-filtros" class="text-sm text-slate-500 hover:text-slate-800 underline">Limpiar todos los filtros</button>
         </div>
       </div>
     </div>
@@ -138,17 +144,21 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- MAPA -->
-    <section class="lg:col-span-5">
+    <!-- MAPA (en escritorio se queda fijo al hacer scroll) -->
+    <section class="lg:col-span-5 lg:sticky lg:top-20 self-start">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-        <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h2 class="text-lg font-bold">📍 Mapa del Barrio</h2>
-          <button type="button" id="btn-mi-ubicacion" onclick="centrarEnMiUbicacion()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-full border border-indigo-200">
+          <button type="button" id="btn-mi-ubicacion" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-full border border-indigo-200">
             📍 Mi ubicación
           </button>
         </div>
         <div id="map"></div>
-        <p class="text-xs text-slate-400 mt-3 text-center">Iconos por categoría · Haz clic en un marcador · Usa “Cómo llegar” para Google Maps</p>
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+          <button type="button" id="btn-zona" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-full">🔎 Buscar en esta zona</button>
+          <button type="button" id="btn-quitar-zona" class="hidden text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-3 py-1.5 rounded-full">✖ Quitar filtro de zona</button>
+        </div>
+        <p class="text-xs text-slate-400 mt-2 text-center">Toca un pin para ver el anuncio · Los números agrupan pines cercanos</p>
       </div>
     </section>
 
@@ -156,25 +166,38 @@
     <section class="lg:col-span-7">
       <div class="flex items-center justify-between mb-5">
         <h2 class="text-lg font-bold">📢 Publicaciones</h2>
-        <span id="contador-resultados" class="text-sm text-slate-500"></span>
+        <span id="contador-resultados" class="text-sm text-slate-500" aria-live="polite"></span>
       </div>
 
       <div id="seccion-mis-anuncios" class="hidden mb-6">
         <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-bold text-indigo-900">👤 Mis anuncios</h3>
-            <button onclick="cerrarSesion()" class="text-xs text-red-500 font-medium">Cerrar sesión</button>
+            <button id="btn-cerrar-sesion" type="button" class="text-xs text-red-500 font-medium">Cerrar sesión</button>
           </div>
           <div id="lista-mis-anuncios" class="space-y-2"></div>
         </div>
       </div>
 
-      <div id="contenedor-anuncios" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+      <!-- Esqueletos: se ven mientras carga y los reemplaza la lista real.
+           Hoy se ven un instante; con la base de datos de la Fase 2 (que tarda
+           en responder) serán mucho más útiles. -->
+      <div id="contenedor-anuncios" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="skeleton h-72 rounded-2xl"></div>
+        <div class="skeleton h-72 rounded-2xl"></div>
+        <div class="skeleton h-72 rounded-2xl hidden sm:block"></div>
+        <div class="skeleton h-72 rounded-2xl hidden sm:block"></div>
+      </div>
+
+      <div id="contenedor-mas" class="hidden text-center mt-6">
+        <button type="button" id="btn-mas" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-6 py-2.5 rounded-xl text-sm shadow-sm"></button>
+      </div>
 
       <div id="estado-vacio" class="hidden text-center py-16">
         <div class="text-5xl mb-4">🔍</div>
         <h3 class="text-xl font-bold text-slate-700 mb-2">No encontramos resultados</h3>
-        <p class="text-slate-500 text-sm">Prueba con otra búsqueda o quita filtros</p>
+        <p class="text-slate-500 text-sm mb-3">Prueba con otra búsqueda o quita filtros</p>
+        <button type="button" data-accion-global="limpiar" class="text-indigo-600 font-semibold text-sm underline">Limpiar filtros</button>
       </div>
     </section>
   </main>
@@ -185,25 +208,14 @@
       <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
           <h2 class="text-xl font-bold">💬 Foro de Ventas</h2>
-          <p class="text-sm text-slate-500">Haz clic en un tema para desplegarlo o entrar a ver comentarios · <span id="foro-contador">0 publicaciones</span></p>
+          <p class="text-sm text-slate-500">Toca un tema para desplegarlo o entra para ver comentarios · <span id="foro-contador">0 publicaciones</span></p>
         </div>
-        <button onclick="abrirModalNuevoPost()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow">
+        <button data-abrir="modal-foro-post" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow">
           + Nueva publicación
         </button>
       </div>
 
-      <!-- Chips de categorías del foro -->
-      <div class="flex gap-2 overflow-x-auto pb-3 mb-4 custom-scrollbar">
-        <button onclick="filtrarForo('todos')" class="foro-cat-btn bg-indigo-600 text-white px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">💬 Todos</button>
-        <button onclick="filtrarForo('autos')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">🚗 Autos</button>
-        <button onclick="filtrarForo('inmuebles')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">🏡 Inmuebles</button>
-        <button onclick="filtrarForo('tecnologia')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">📱 Tecnología</button>
-        <button onclick="filtrarForo('servicios')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">🛠️ Oficios</button>
-        <button onclick="filtrarForo('hogar')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">🛋️ Hogar</button>
-        <button onclick="filtrarForo('otros')" class="foro-cat-btn bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap">📦 Otros</button>
-      </div>
-
-      <!-- Lista de posts -->
+      <div id="foro-chips" class="flex gap-2 overflow-x-auto pb-3 mb-4 custom-scrollbar"></div>
       <div id="foro-posts" class="space-y-3"></div>
     </div>
   </section>
@@ -214,175 +226,164 @@
     </div>
   </footer>
 
-  <!-- MODAL PUBLICAR -->
-  <div id="modal-publicar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 shadow-2xl relative modal-enter">
-      <button onclick="toggleModal('modal-publicar')" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
-
-      <h3 class="text-xl font-black text-indigo-900 mb-1">🚀 Publica tu anuncio</h3>
-      <p class="text-sm text-slate-500 mb-5">Puedes publicar gratis sin registrarte</p>
-
-      <form id="formulario-registro" onsubmit="registrarAnuncio(event)" class="space-y-4">
+  <!-- ============ MODAL PUBLICAR (por pasos; pantalla completa en celular) ============ -->
+  <div id="modal-publicar" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="publicar-titulo">
+    <div class="bg-white sm:rounded-2xl w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl modal-enter">
+      <div class="flex items-start justify-between p-4 pb-2">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Foto</label>
-          <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center relative">
-            <input type="file" id="form-foto" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previsualizarFoto(event)">
-            <div id="placeholder-foto">
+          <h3 id="publicar-titulo" class="text-xl font-black text-indigo-900">🚀 Publica tu anuncio</h3>
+          <p id="paso-label" class="text-sm text-slate-500"></p>
+        </div>
+        <button type="button" data-cerrar aria-label="Cerrar" class="text-3xl leading-none text-slate-400 hover:text-slate-700 px-2">&times;</button>
+      </div>
+      <div class="flex gap-1.5 px-4 pb-3">
+        <div class="barra-paso h-1.5 flex-1 rounded-full bg-slate-200"></div>
+        <div class="barra-paso h-1.5 flex-1 rounded-full bg-slate-200"></div>
+        <div class="barra-paso h-1.5 flex-1 rounded-full bg-slate-200"></div>
+      </div>
+
+      <form id="formulario-registro" novalidate class="flex-1 overflow-y-auto px-4 pb-4">
+
+        <!-- PASO 1: qué vendes -->
+        <fieldset data-paso="1" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Fotos (hasta 3)</label>
+            <div id="form-fotos-previews" class="grid grid-cols-3 gap-2 mb-2"></div>
+            <label id="zona-subir-foto" class="block border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-400">
+              <input type="file" id="form-foto" accept="image/*" multiple class="hidden">
               <div class="text-3xl mb-1">📷</div>
-              <p class="text-sm text-slate-600">Haz clic para subir foto</p>
+              <p class="text-sm text-slate-600">Toca para agregar fotos</p>
+            </label>
+          </div>
+          <div>
+            <label for="form-nombre" class="block text-xs font-bold text-slate-500 mb-1">Título *</label>
+            <input type="text" id="form-nombre" required maxlength="80" placeholder="Ej. iPhone 13 Pro" class="w-full border border-slate-300 p-3 rounded-xl">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="form-categoria" class="block text-xs font-bold text-slate-500 mb-1">Categoría</label>
+              <select id="form-categoria" class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
             </div>
-            <img id="preview-imagen" class="hidden w-full rounded-lg" alt="Preview">
+            <div>
+              <label for="form-estado" class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
+              <select id="form-estado" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
+                <option value="usado">Usado</option>
+                <option value="nuevo">Nuevo</option>
+              </select>
+            </div>
           </div>
-          <button type="button" id="btn-quitar-foto" onclick="quitarFoto()" class="hidden mt-2 text-xs text-red-500">Quitar foto</button>
-        </div>
+          <div>
+            <label for="form-precio" class="block text-xs font-bold text-slate-500 mb-1">Precio (COP, opcional)</label>
+            <input type="text" id="form-precio" inputmode="numeric" placeholder="1200000" class="w-full border border-slate-300 p-3 rounded-xl">
+          </div>
+        </fieldset>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Título *</label>
-          <input type="text" id="form-nombre" required placeholder="Ej. iPhone 13 Pro" class="w-full border border-slate-300 p-3 rounded-xl">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Categoría</label>
-            <select id="form-categoria" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
-              <option value="tienda">🍎 Tiendas</option>
-              <option value="comida">🍔 Comida</option>
-              <option value="autos">🚗 Autos</option>
-              <option value="inmuebles">🏡 Inmuebles</option>
-              <option value="tecnologia">📱 Tecnología</option>
-              <option value="servicios">🛠️ Oficios</option>
-              <option value="ferreteria">🔩 Ferretería</option>
-              <option value="hogar">🛋️ Hogar</option>
-              <option value="mascotas">🐕 Mascotas</option>
-              <option value="empleos">💼 Empleos</option>
-              <option value="ropa">👕 Ropa</option>
-              <option value="otros">📦 Otros</option>
-            </select>
+        <!-- PASO 2: dónde -->
+        <fieldset data-paso="2" class="space-y-4 hidden">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="form-departamento" class="block text-xs font-bold text-slate-500 mb-1">Departamento</label>
+              <select id="form-departamento" class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
+            </div>
+            <div>
+              <label for="form-ciudad" class="block text-xs font-bold text-slate-500 mb-1">Ciudad *</label>
+              <input type="text" id="form-ciudad" list="lista-ciudades" required placeholder="Envigado" class="w-full border border-slate-300 p-3 rounded-xl">
+              <datalist id="lista-ciudades"></datalist>
+            </div>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
-            <select id="form-estado" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
-              <option value="usado">Usado</option>
-              <option value="nuevo">Nuevo</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Departamento</label>
-            <select id="form-departamento" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
-              <option value="Antioquia">Antioquia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Ciudad *</label>
-            <input type="text" id="form-ciudad" required placeholder="Envigado" class="w-full border border-slate-300 p-3 rounded-xl">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Barrio *</label>
+            <label for="form-barrio" class="block text-xs font-bold text-slate-500 mb-1">Barrio *</label>
             <input type="text" id="form-barrio" required placeholder="Centro" class="w-full border border-slate-300 p-3 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Precio</label>
-            <input type="text" id="form-precio" placeholder="$1.200.000" class="w-full border border-slate-300 p-3 rounded-xl">
+            <label class="block text-xs font-bold text-slate-500 mb-1">📍 Ubicación en el mapa</label>
+            <p class="text-xs text-slate-400 mb-2">Toca el mapa o arrastra el pin para marcar dónde está</p>
+            <div id="map-formulario"></div>
+            <div class="flex flex-wrap items-center gap-2 mt-2">
+              <button type="button" id="btn-gps-form" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">Usar mi ubicación GPS</button>
+              <span id="form-coords-label" class="text-xs text-slate-400"></span>
+            </div>
           </div>
-        </div>
+        </fieldset>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">📍 Ubicación en el mapa</label>
-          <p class="text-xs text-slate-400 mb-2">Toca el mapa o arrastra el pin para marcar dónde está el anuncio</p>
-          <div id="map-formulario" style="height:200px;border-radius:12px;border:1px solid #cbd5e1;z-index:1;"></div>
-          <div class="flex flex-wrap items-center gap-2 mt-2">
-            <button type="button" onclick="usarMiUbicacionFormulario()" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">Usar mi ubicación GPS</button>
-            <span id="form-coords-label" class="text-xs text-slate-400">6.17590, -75.59170</span>
+        <!-- PASO 3: contacto -->
+        <fieldset data-paso="3" class="space-y-4 hidden">
+          <div>
+            <label for="form-whatsapp" class="block text-xs font-bold text-slate-500 mb-1">WhatsApp (celular de Colombia) *</label>
+            <div class="flex">
+              <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-sm text-slate-600">+57</span>
+              <input type="tel" id="form-whatsapp" required inputmode="numeric" pattern="3[0-9]{9}" title="10 dígitos, empieza por 3. Ej: 3001234567" placeholder="3001234567" class="w-full border border-slate-300 p-3 rounded-r-xl">
+            </div>
           </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">WhatsApp *</label>
-          <input type="tel" id="form-whatsapp" required placeholder="3001234567" class="w-full border border-slate-300 p-3 rounded-xl">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Descripción *</label>
-          <textarea id="form-descripcion" rows="3" required placeholder="Describe lo que ofreces..." class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
-        </div>
-
-        <input type="hidden" id="form-lat" value="6.1759">
-        <input type="hidden" id="form-lng" value="-75.5917">
-        <input type="hidden" id="form-imagen-base64">
-        <input type="hidden" id="form-edit-id">
-
-        <button type="submit" id="btn-submit-anuncio" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl">
-          ⚡ Publicar Enseguida
-        </button>
+          <div>
+            <label for="form-descripcion" class="block text-xs font-bold text-slate-500 mb-1">Descripción *</label>
+            <textarea id="form-descripcion" rows="5" required maxlength="800" placeholder="Describe lo que ofreces: estado, medidas, horarios, si negocias..." class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
+          </div>
+          <p class="text-xs text-slate-400">Tu número se usa solo para el botón de WhatsApp de tu anuncio.</p>
+        </fieldset>
       </form>
+
+      <div class="flex items-center justify-between gap-3 p-4 border-t border-slate-100">
+        <button type="button" id="btn-atras" class="px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">← Atrás</button>
+        <button type="button" id="btn-siguiente" class="flex-1 sm:flex-none sm:px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl">Siguiente →</button>
+        <button type="submit" form="formulario-registro" id="btn-submit-anuncio" class="hidden flex-1 sm:flex-none sm:px-8 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl">⚡ Publicar</button>
+      </div>
     </div>
   </div>
 
-  <!-- MODAL AUTH -->
-  <div id="modal-auth" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+  <!-- ============ MODAL AUTH ============ -->
+  <div id="modal-auth" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="auth-titulo">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative modal-enter">
-      <button onclick="toggleModal('modal-auth')" class="absolute top-4 right-4 text-2xl text-slate-400">&times;</button>
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
       <div class="text-center mb-5">
         <h3 class="text-xl font-black text-indigo-900" id="auth-titulo">Iniciar sesión</h3>
         <p class="text-sm text-slate-500" id="auth-subtitulo">Accede para gestionar tus anuncios</p>
       </div>
-      <form id="form-auth" onsubmit="manejarAuth(event)" class="space-y-4">
+      <form id="form-auth" class="space-y-4">
         <div id="campo-nombre" class="hidden">
-          <label class="block text-xs font-bold text-slate-500 mb-1">Nombre</label>
-          <input type="text" id="auth-nombre" placeholder="Tu nombre" class="w-full border border-slate-300 p-3 rounded-xl">
+          <label for="auth-nombre" class="block text-xs font-bold text-slate-500 mb-1">Nombre</label>
+          <input type="text" id="auth-nombre" maxlength="40" placeholder="Tu nombre" class="w-full border border-slate-300 p-3 rounded-xl">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Correo</label>
-          <input type="email" id="auth-email" required placeholder="tu@email.com" class="w-full border border-slate-300 p-3 rounded-xl">
+          <label for="auth-email" class="block text-xs font-bold text-slate-500 mb-1">Correo</label>
+          <input type="email" id="auth-email" required autocomplete="email" placeholder="tu@email.com" class="w-full border border-slate-300 p-3 rounded-xl">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required placeholder="••••••••" class="w-full border border-slate-300 p-3 rounded-xl">
+          <label for="auth-password" class="block text-xs font-bold text-slate-500 mb-1">Contraseña</label>
+          <input type="password" id="auth-password" required minlength="6" autocomplete="current-password" placeholder="••••••••" class="w-full border border-slate-300 p-3 rounded-xl">
         </div>
         <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Continuar</button>
       </form>
       <div class="mt-4 text-center text-sm">
         <span id="auth-switch-text">¿No tienes cuenta?</span>
-        <button onclick="cambiarModoAuth()" class="text-indigo-600 font-semibold ml-1" id="auth-switch-btn">Regístrate</button>
+        <button type="button" id="auth-switch-btn" class="text-indigo-600 font-semibold ml-1">Regístrate</button>
       </div>
+      <p class="mt-4 text-[11px] text-slate-400 text-center">Cuenta de prueba guardada solo en este navegador. El inicio de sesión real llega con la base de datos (Fase 2).</p>
     </div>
   </div>
 
-  <!-- MODAL NUEVO POST FORO -->
-  <div id="modal-foro-post" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative modal-enter">
-      <button onclick="cerrarModalForo()" class="absolute top-4 right-4 text-2xl text-slate-400">&times;</button>
-      <h3 class="text-xl font-black text-indigo-900 mb-1">Nueva publicación</h3>
+  <!-- ============ MODAL NUEVO POST FORO ============ -->
+  <div id="modal-foro-post" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="foro-modal-titulo">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 shadow-2xl relative modal-enter">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="foro-modal-titulo" class="text-xl font-black text-indigo-900 mb-1">Nueva publicación</h3>
       <p class="text-sm text-slate-500 mb-5">Comparte una pregunta, oferta o recomendación</p>
-      <form onsubmit="publicarEnForo(event)" class="space-y-4">
+      <form id="form-foro-post" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Título *</label>
+          <label for="foro-titulo" class="block text-xs font-bold text-slate-500 mb-1">Título *</label>
           <input type="text" id="foro-titulo" required maxlength="120" placeholder="Ej. Busco llantas 195/65 R15" class="w-full border border-slate-300 p-3 rounded-xl">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Categoría</label>
-          <select id="foro-categoria" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
-            <option value="autos">🚗 Autos</option>
-            <option value="inmuebles">🏡 Inmuebles</option>
-            <option value="tecnologia">📱 Tecnología</option>
-            <option value="servicios">🛠️ Oficios</option>
-            <option value="hogar">🛋️ Hogar</option>
-            <option value="otros">📦 Otros</option>
-          </select>
+          <label for="foro-categoria" class="block text-xs font-bold text-slate-500 mb-1">Categoría</label>
+          <select id="foro-categoria" class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">Contenido *</label>
+          <label for="foro-contenido" class="block text-xs font-bold text-slate-500 mb-1">Contenido *</label>
           <textarea id="foro-contenido" required rows="4" maxlength="800" placeholder="Describe lo que buscas u ofreces..." class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
         </div>
         <div>
           <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
-            <input type="checkbox" id="foro-anonimo" class="w-4 h-4 rounded" onchange="toggleAnonimoPost()">
+            <input type="checkbox" id="foro-anonimo" class="w-4 h-4 rounded">
             <span class="font-medium text-slate-700">Publicar como anónimo</span>
           </label>
           <input type="text" id="foro-autor" maxlength="40" placeholder="Tu nombre" class="w-full border border-slate-300 p-3 rounded-xl">
@@ -393,41 +394,12 @@
     </div>
   </div>
 
-  <!-- MODAL VER POST + RESPONDER -->
-  <div id="modal-foro-ver" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative modal-enter">
-      <button onclick="cerrarModalForo()" class="absolute top-4 right-4 text-2xl text-slate-400">&times;</button>
-      <div id="foro-ver-meta" class="flex flex-wrap items-center gap-2 mb-2"></div>
-      <h3 id="foro-ver-titulo" class="text-lg font-bold text-slate-900 mb-3 pr-8"></h3>
-      <p id="foro-ver-contenido" class="text-sm text-slate-700 mb-5 whitespace-pre-wrap"></p>
-      
-      <hr class="border-slate-100 mb-4">
-      <h4 class="font-semibold text-sm text-slate-700 mb-3">Respuestas</h4>
-      <div id="foro-respuestas" class="mb-4"></div>
-      
-      <form onsubmit="enviarRespuesta(event)" class="space-y-3 border-t border-slate-100 pt-4">
-        <textarea id="foro-respuesta-texto" required rows="2" maxlength="500" placeholder="Escribe tu respuesta..." class="w-full border border-slate-300 p-3 rounded-xl text-sm"></textarea>
-        <div class="flex gap-2">
-          <input type="text" id="foro-respuesta-autor" maxlength="40" placeholder="Tu nombre (opcional)" class="flex-1 border border-slate-300 p-2.5 rounded-xl text-sm">
-          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm">Responder</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Scripts -->
+  <!-- Scripts: el orden importa. utils → data → (librerías) → app/foro -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
-  <script src="foro.js"></script>
-  <script>
-    // Inicializar foro después de cargar todo
-    window.addEventListener("load", function() {
-      if (typeof cargarForo === "function") {
-        cargarForo();
-        renderizarForo();
-      }
-    });
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="data.js?v=2"></script>
+  <script src="foro.js?v=2"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

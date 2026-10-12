@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tema del foro | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
@@ -75,8 +76,9 @@
     <a href="index.html" class="hover:text-indigo-600">MercaFree</a> · Foro de ventas
   </footer>
 
-  <script src="data.js"></script>
-  <script src="foro.js"></script>
+  <script src="utils.js?v=2"></script>
+  <script src="data.js?v=2"></script>
+  <script src="foro.js?v=2"></script>
   <script>
     function toggleAnonimoComentario() {
       const check = document.getElementById("comentario-anonimo");
@@ -88,27 +90,11 @@
       } else {
         input.disabled = false;
         input.placeholder = "Tu nombre";
-        if (typeof usuarioActual !== "undefined" && usuarioActual) {
+        if (usuarioActual) {
           input.value = usuarioActual.nombre || "";
         }
       }
     }
-
-    function mostrarToast(msg) {
-      const t = document.createElement("div");
-      t.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg z-[200] font-medium";
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), 2500);
-    }
-
-    function escapar(t) {
-      const d = document.createElement("div");
-      d.textContent = t || "";
-      return d.innerHTML;
-    }
-
-    const EDITOR = /[?&]editar=1/.test(location.search);
 
     function cargarPaginaPost() {
       const params = new URLSearchParams(location.search);
@@ -128,24 +114,19 @@
         return;
       }
 
-      // Cargar datos del foro
-      if (typeof cargarForo === "function") cargarForo();
-      // También cargar usuario si existe
-      try {
-        const u = localStorage.getItem("mercafree_usuario");
-        if (u) window.usuarioActual = JSON.parse(u);
-      } catch(e) {}
+      // foro.js ya cargó los temas; data.js nos da cargarUsuario()
+      cargarUsuario();
 
-      const post = (typeof postsForo !== "undefined" ? postsForo : []).find(p => p.id === id);
+      const post = postsForo.find(p => p.id === id);
       if (!post) {
         document.getElementById("post-error").classList.remove("hidden");
         return;
       }
 
-      const cat = (typeof CATEGORIAS_FORO !== "undefined" ? CATEGORIAS_FORO : []).find(c => c.id === post.categoria) || { icono: "📦", nombre: post.categoria };
+      const cat = CATEGORIAS_FORO.find(c => c.id === post.categoria) || { icono: "📦", nombre: post.categoria };
       const fecha = new Date(post.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-      document.getElementById("post-meta").innerHTML = `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${cat.nombre}</span>`;
+      document.getElementById("post-meta").innerHTML = `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${esc(cat.nombre)}</span>`;
       document.getElementById("post-titulo").textContent = post.titulo;
       document.getElementById("post-autor").textContent = "👤 " + (post.autor || "Anónimo");
       document.getElementById("post-fecha").textContent = fecha;
@@ -160,15 +141,15 @@
         document.getElementById("btn-borrar-tema").onclick = function() {
           if (!confirm("¿Borrar este tema y todos sus comentarios?")) return;
           postsForo = postsForo.filter(p => p.id !== post.id);
-          if (typeof guardarForo === "function") guardarForo();
-          alert("Tema eliminado");
+          guardarForo();
+          mostrarToast("Tema eliminado");
           location.href = "index.html?editar=1#seccion-foro";
         };
       }
 
       // Prefill autor
-      if (window.usuarioActual && window.usuarioActual.nombre) {
-        document.getElementById("comentario-autor").value = window.usuarioActual.nombre;
+      if (usuarioActual && usuarioActual.nombre) {
+        document.getElementById("comentario-autor").value = usuarioActual.nombre;
       }
 
       document.getElementById("form-comentario").onsubmit = function(e) {
@@ -181,12 +162,13 @@
         if (!texto) return;
 
         if (!post.respuestas) post.respuestas = [];
+        const copiaResp = [...post.respuestas];
         post.respuestas.push({ autor, texto, fecha: Date.now() });
 
         // Guardar en el array global y localStorage
         const idx = postsForo.findIndex(p => p.id === post.id);
         if (idx !== -1) postsForo[idx] = post;
-        if (typeof guardarForo === "function") guardarForo();
+        if (!guardarForo()) { post.respuestas = copiaResp; return; }
 
         document.getElementById("comentario-texto").value = "";
         renderComentarios(post);
@@ -208,10 +190,10 @@
         const f = new Date(r.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
         return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
           <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
-            <span class="font-semibold text-slate-700">👤 ${escapar(r.autor)}</span>
+            <span class="font-semibold text-slate-700">👤 ${esc(r.autor)}</span>
             <span>${f}</span>
           </div>
-          <p class="text-sm text-slate-700 whitespace-pre-wrap">${escapar(r.texto)}</p>
+          <p class="text-sm text-slate-700 whitespace-pre-wrap">${esc(r.texto)}</p>
           ${EDITOR ? `<button type="button" onclick="borrarComentario(${post.id}, ${i})" class="mt-2 text-xs text-red-600 font-medium hover:underline">Eliminar comentario</button>` : ""}
         </div>`;
       }).join("");

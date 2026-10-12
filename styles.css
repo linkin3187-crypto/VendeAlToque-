@@ -1,19 +1,22 @@
-/* ===== MercaFree - Estilos adicionales ===== */
+/* ===== MercaFree - Estilos adicionales (lo que Tailwind no cubre) ===== */
+
+/* --- Mapas ---
+   ANTES: `.leaflet-container { height: 420px }` afectaba a TODOS los mapas de la
+   app. Ahora cada mapa define su propia altura por id. */
+#map { height: 420px; }
+#map-formulario { height: 220px; border-radius: 12px; border: 1px solid #cbd5e1; }
+#map-anuncio { height: 280px; }
+@media (max-width: 640px) { #map { height: 320px; } }
 
 .leaflet-container {
   width: 100%;
-  height: 420px;
   z-index: 1;
   background: #e2e8f0;
   border-radius: 14px;
 }
-.leaflet-container img {
-  max-width: none !important;
-}
-.leaflet-div-icon {
-  background: transparent;
-  border: none;
-}
+/* Tailwind pone max-width:100% a las <img>; eso rompe los tiles de Leaflet */
+.leaflet-container img { max-width: none !important; }
+.leaflet-div-icon { background: transparent; border: none; }
 
 .custom-scrollbar::-webkit-scrollbar { height: 5px; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -21,14 +24,14 @@
   border-radius: 10px;
 }
 
-.modal-enter {
-  animation: fadeIn 0.22s ease-out;
-}
+/* --- Modales --- */
+.modal-enter { animation: fadeIn 0.22s ease-out; }
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
 
+/* --- Texto recortado --- */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -42,35 +45,42 @@
   overflow: hidden;
 }
 
-#preview-imagen {
-  max-height: 160px;
-  object-fit: cover;
-}
+/* --- Insignias de estado --- */
+.badge-nuevo { background: #dcfce7; color: #166534; }
+.badge-usado { background: #fef3c7; color: #92400e; }
 
-.badge-nuevo {
-  background: #dcfce7;
-  color: #166534;
-}
-.badge-usado {
-  background: #fef3c7;
-  color: #92400e;
-}
-
+/* --- Panel desplegable (lo usa el foro) --- */
 .detalle-anuncio {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.35s ease;
 }
-.detalle-anuncio.abierto {
-  max-height: 600px;
+.detalle-anuncio.abierto { max-height: 600px; }
+
+/* --- Tarjeta resaltada al tocar su pin en el mapa --- */
+.tarjeta-anuncio { transition: box-shadow .2s, transform .2s; }
+.tarjeta-anuncio:hover { box-shadow: 0 6px 18px rgba(79,70,229,.12); }
+.tarjeta-activa {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+  box-shadow: 0 8px 24px rgba(79,70,229,.25);
 }
 
-.foro-post {
-  border-left: 4px solid #6366f1;
+/* --- Esqueleto de carga --- */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+  background-size: 400% 100%;
+  animation: brillo 1.4s ease infinite;
+}
+@keyframes brillo {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .modal-enter { animation: none; }
 }
 
-
-/* Marcadores personalizados del mapa */
+/* --- Marcadores del mapa --- */
 .marcador-cat, .marcador-user {
   background: transparent !important;
   border: none !important;
@@ -87,11 +97,7 @@
   align-items: center;
   justify-content: center;
 }
-.pin-mapa span {
-  transform: rotate(45deg);
-  font-size: 16px;
-  line-height: 1;
-}
+.pin-mapa span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
 .pin-usuario {
   width: 28px;
   height: 28px;
@@ -103,7 +109,12 @@
   align-items: center;
   justify-content: center;
 }
-.pin-usuario span {
-  font-size: 12px;
-  filter: grayscale(1) brightness(10);
-}
+.pin-usuario span { font-size: 12px; filter: grayscale(1) brightness(10); }
+
+/* --- Ventana emergente (popup) del mapa --- */
+.popup-anuncio { min-width: 190px; font-family: system-ui, sans-serif; }
+.popup-anuncio a { color: #fff !important; }
+
+/* --- Galería de la página de detalle --- */
+.miniatura { border: 2px solid transparent; }
+.miniatura[aria-current="true"] { border-color: #6366f1; }

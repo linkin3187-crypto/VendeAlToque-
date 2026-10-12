@@ -1,479 +1,532 @@
-// ===== MercaFree - Lógica principal =====
+// ===== MercaFree - Lógica principal (index.html) =====
+// Requiere (en este orden): leaflet, markercluster, utils.js, data.js
 
+const POR_PAGINA = 12;
+const CENTRO_DEFECTO = { lat: 6.1759, lng: -75.5917 };
+const MAX_FOTOS = 3;
+const NOMBRES_PASOS = ["Qué vendes", "Dónde está", "Contacto"];
+
+// Estado de la pantalla. Todo en un sitio = más fácil de entender y depurar.
 let mapa = null;
-let grupoMarcadores = null;
-let categoriaFiltroActiva = "todos";
-let imagenActualBase64 = null;
-let modoAuth = "login";
-let anuncioExpandido = null;
-const EDITOR = /[?&]editar=1/.test(location.search);
+let capaMarcadores = null;                // grupo con clusters
+const marcadoresPorId = new Map();        // id de anuncio → marcador (para sincronizar lista y mapa)
 let marcadorUsuario = null;
+let ubicacionUsuario = null;              // {lat,lng}; solo si el usuario la autorizó
+let limitesZona = null;                   // bounds del botón "Buscar en esta zona"
+
+let categoriaActiva = "todos";
+let listaFiltrada = [];
+let paginaActual = 1;
+
+let modoAuth = "login";
+let modoEdicionId = null;                 // id del anuncio que se está editando (o null)
+let pasoActual = 1;
+let fotosForm = [];                       // fotos del formulario (base64)
+let coordsForm = { ...CENTRO_DEFECTO };
 let mapaFormulario = null;
 let marcadorFormulario = null;
 
-// ---------- Utilidades ----------
-function $(id) { return document.getElementById(id); }
-
-function toggleModal(id) {
-  $(id).classList.toggle("hidden");
-}
-
-function mostrarToast(msg) {
-  const t = document.createElement("div");
-  t.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg z-[200] font-medium";
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
-
-function extraerPrecio(t) {
-  if (!t) return null;
-  const n = String(t).replace(/[^\d]/g, "");
-  return n ? parseInt(n, 10) : null;
-}
-
-// ---------- Mapa ----------
-function iconoMarcador(categoria) {
-  const emoji = (typeof iconosCategoria !== "undefined" && iconosCategoria[categoria]) ? iconosCategoria[categoria] : "📍";
-  return L.divIcon({
-    className: "marcador-cat",
-    html: `<div class="pin-mapa"><span>${emoji}</span></div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -34]
-  });
-}
-
-function iconoUsuario() {
-  return L.divIcon({
-    className: "marcador-user",
-    html: `<div class="pin-usuario"><span>📍</span></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
-  });
-}
-
-function urlGoogleMaps(lat, lng, nombre) {
-  const dest = lat + "," + lng;
-  return "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(dest) + (nombre ? "&destination_place_id=" : "");
-}
-
+// =====================================================================
+// MAPA
+// =====================================================================
 function iniciarMapa() {
-  const mapDiv = $("map");
-  if (!mapDiv) return;
+  if (!$("map")) return;
+  mapa = crearMapaBase("map", [CENTRO_DEFECTO.lat, CENTRO_DEFECTO.lng], 13);
 
-  mapa = L.map("map", { center: [6.1759, -75.5917], zoom: 13 });
+  // Agrupa pines cercanos. POR QUÉ: con 500 anuncios, 500 pines superpuestos
+  // son ilegibles y lentos. Los clusters muestran "12" y al tocar se abren.
+  capaMarcadores = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 45
+  });
+  mapa.addLayer(capaMarcadores);
+  // IMPORTANTE: ya NO pedimos el GPS al cargar. Los navegadores lo penalizan y
+  // asusta al usuario. Solo se pide cuando toca "Mi ubicación" (acción explícita).
+}
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "© OpenStreetMap"
-  }).addTo(mapa);
-
-  grupoMarcadores = L.layerGroup().addTo(mapa);
-
-  setTimeout(() => mapa.invalidateSize(true), 150);
-  setTimeout(() => mapa.invalidateSize(true), 500);
-
-  // Ubicación del usuario que está viendo la página
-  if (navigator.geolocation) {
+// Pide la ubicación y devuelve una Promesa. Reutilizable desde varios botones.
+function pedirUbicacion() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error("no-soportado")); return; }
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        $("form-lat").value = lat;
-        $("form-lng").value = lng;
-        if (marcadorUsuario) mapa.removeLayer(marcadorUsuario);
-        marcadorUsuario = L.marker([lat, lng], { icon: iconoUsuario(), zIndexOffset: 1000 })
-          .bindPopup("<b>📍 Estás aquí</b>")
-          .addTo(mapa);
-        mapa.setView([lat, lng], 14);
-        mapa.invalidateSize(true);
-        const btn = $("btn-mi-ubicacion");
-        if (btn) btn.classList.add("ring-2", "ring-yellow-300");
+        ubicacionUsuario = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        mostrarMarcadorUsuario();
+        resolve(ubicacionUsuario);
       },
-      () => {},
-      { enableHighAccuracy: true, timeout: 12000 }
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
+  });
+}
+
+function mensajeErrorUbicacion(err) {
+  if (err && err.code === 1) return "Permiso de ubicación denegado. Actívalo en los ajustes del navegador.";
+  if (err && err.message === "no-soportado") return "Tu navegador no permite geolocalización.";
+  return "No se pudo obtener tu ubicación.";
+}
+
+function mostrarMarcadorUsuario() {
+  if (!mapa || !ubicacionUsuario) return;
+  if (marcadorUsuario) mapa.removeLayer(marcadorUsuario);
+  marcadorUsuario = L.marker([ubicacionUsuario.lat, ubicacionUsuario.lng], {
+    icon: iconoUsuario(), zIndexOffset: 1000
+  }).bindPopup("<b>📍 Estás aquí</b>").addTo(mapa);
+}
+
+async function centrarEnMiUbicacion() {
+  try {
+    await pedirUbicacion();
+    mapa.setView([ubicacionUsuario.lat, ubicacionUsuario.lng], 15);
+    $("btn-mi-ubicacion").classList.add("ring-2", "ring-yellow-300");
+    mostrarToast("Ubicación actualizada");
+    // si estaba ordenando por cercanía o con radio, recalcula
+    if ($("ordenar-por").value === "cercanos" || parseFloat($("filtro-radio").value) > 0) {
+      aplicarFiltros({ ajustarMapa: false });
+    }
+  } catch (err) {
+    mostrarToast(mensajeErrorUbicacion(err), "error");
   }
 }
 
-function centrarEnMiUbicacion() {
-  if (!navigator.geolocation) {
-    alert("Tu navegador no permite geolocalización");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      if (marcadorUsuario) mapa.removeLayer(marcadorUsuario);
-      marcadorUsuario = L.marker([lat, lng], { icon: iconoUsuario(), zIndexOffset: 1000 })
-        .bindPopup("<b>📍 Estás aquí</b>")
-        .addTo(mapa);
-      mapa.setView([lat, lng], 15);
-      $("form-lat").value = lat;
-      $("form-lng").value = lng;
-      mostrarToast("Ubicación actualizada");
-    },
-    () => alert("No se pudo obtener tu ubicación. Revisa los permisos del navegador."),
-    { enableHighAccuracy: true, timeout: 12000 }
-  );
+function popupHTML(a) {
+  const foto = urlSegura(a.imagen);
+  return `<div class="popup-anuncio">
+    ${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-20 object-cover rounded-lg mb-2">` : ""}
+    <strong class="block">${esc(a.nombre)}</strong>
+    <small class="text-slate-500">${esc(a.barrio || "")}${a.ciudad ? ", " + esc(a.ciudad) : ""}</small>
+    ${a.precio ? `<div class="font-semibold text-indigo-600">${esc(a.precio)}</div>` : ""}
+    <div class="flex flex-wrap gap-1.5 mt-2">
+      <a href="anuncio.html?id=${a.id}" class="bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Ver anuncio</a>
+      <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">WhatsApp</a>
+      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
+    </div>
+  </div>`;
 }
 
-// ---------- Auth ----------
+function renderizarMarcadores(ajustarVista) {
+  capaMarcadores.clearLayers();
+  marcadoresPorId.clear();
+  const nuevos = [];
+  listaFiltrada.forEach(a => {
+    if (!tieneCoords(a)) return;
+    const m = L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria), title: a.nombre });
+    m.bindPopup(popupHTML(a), { maxWidth: 240 });
+    // Mapa → lista: al tocar un pin se resalta su tarjeta
+    m.on("click", () => resaltarTarjeta(a.id, true));
+    marcadoresPorId.set(a.id, m);
+    nuevos.push(m);
+  });
+  capaMarcadores.addLayers(nuevos); // addLayers (en lote) es mucho más rápido que addLayer uno a uno
+
+  // fitBounds: el mapa se ajusta solo para mostrar los resultados filtrados
+  if (ajustarVista && nuevos.length) {
+    mapa.fitBounds(capaMarcadores.getBounds().pad(0.2), { maxZoom: 15 });
+  }
+}
+
+// Lista → mapa: el botón "Ver en mapa" de una tarjeta vuela hasta su pin
+function verEnMapa(id) {
+  const m = marcadoresPorId.get(id);
+  if (!m) { mostrarToast("Este anuncio no tiene ubicación en el mapa", "error"); return; }
+  $("map").scrollIntoView({ behavior: "smooth", block: "center" });
+  resaltarTarjeta(id, false);
+  capaMarcadores.zoomToShowLayer(m, () => m.openPopup()); // desagrupa el cluster si hace falta
+}
+
+function resaltarTarjeta(id, desplazar) {
+  // si la tarjeta está en una página aún no mostrada, la mostramos
+  let idx = listaFiltrada.findIndex(a => a.id === id);
+  if (idx === -1) return;
+  while (idx >= paginaActual * POR_PAGINA) { paginaActual++; renderizarLista(); }
+
+  document.querySelectorAll(".tarjeta-activa").forEach(el => el.classList.remove("tarjeta-activa"));
+  const tarjeta = $("tarjeta-" + id);
+  if (!tarjeta) return;
+  tarjeta.classList.add("tarjeta-activa");
+  // En celular el mapa está ARRIBA de la lista: moverse a la tarjeta sacaría al
+  // usuario del mapa. Solo hacemos scroll cuando mapa y lista van lado a lado.
+  if (desplazar && window.matchMedia("(min-width: 1024px)").matches) {
+    tarjeta.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+// "Buscar en esta zona": limita los resultados a lo que se ve en el mapa
+function buscarEnZona() {
+  limitesZona = mapa.getBounds();
+  $("btn-quitar-zona").classList.remove("hidden");
+  aplicarFiltros({ ajustarMapa: false });
+}
+function quitarZona() {
+  limitesZona = null;
+  $("btn-quitar-zona").classList.add("hidden");
+  aplicarFiltros();
+}
+
+// =====================================================================
+// CATEGORÍAS (dibujadas desde CATEGORIAS de data.js)
+// =====================================================================
+function renderizarCategorias() {
+  $("chips-categorias").innerHTML = CATEGORIAS.map(c =>
+    `<button type="button" data-cat="${esc(c.id)}" class="categoria-btn px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">${c.icono} ${esc(c.nombre)}</button>`
+  ).join("");
+
+  $("form-categoria").innerHTML = CATEGORIAS.filter(c => c.id !== "todos").map(c =>
+    `<option value="${esc(c.id)}">${c.icono} ${esc(c.nombre)}</option>`
+  ).join("");
+  marcarCategoriaActiva();
+}
+
+function marcarCategoriaActiva() {
+  document.querySelectorAll(".categoria-btn").forEach(btn => {
+    const activa = btn.dataset.cat === categoriaActiva;
+    btn.classList.toggle("bg-white", activa);
+    btn.classList.toggle("text-indigo-700", activa);
+    btn.classList.toggle("shadow-sm", activa);
+    btn.classList.toggle("bg-white/15", !activa);
+    btn.classList.toggle("hover:bg-white/25", !activa);
+    btn.setAttribute("aria-pressed", activa ? "true" : "false");
+  });
+}
+
+// =====================================================================
+// FILTROS
+// =====================================================================
+function actualizarCiudadesFiltro() {
+  const depto = $("filtro-departamento").value;
+  const sel = $("filtro-ciudad");
+  sel.innerHTML = '<option value="">Todas las ciudades</option>';
+  (DEPARTAMENTOS[depto] || []).forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  aplicarFiltros();
+}
+
+function aplicarFiltros({ ajustarMapa = true } = {}) {
+  if (!capaMarcadores) return;
+
+  const texto = normalizar($("buscador").value.trim());
+  const pMin = parseInt($("filtro-precio-min").value, 10) || 0;
+  const pMax = parseInt($("filtro-precio-max").value, 10) || Infinity;
+  const hayFiltroPrecio = pMin > 0 || pMax !== Infinity;
+  const soloFoto = $("filtro-con-foto").checked;
+  const soloPrecio = $("filtro-con-precio").checked;
+  const estado = $("filtro-estado").value;
+  const departamento = $("filtro-departamento").value;
+  const ciudad = $("filtro-ciudad").value;
+  const radio = parseFloat($("filtro-radio").value) || 0;
+  const orden = $("ordenar-por").value;
+
+  let lista = baseDatosAnuncios.filter(a => {
+    if (categoriaActiva !== "todos" && a.categoria !== categoriaActiva) return false;
+    if (texto) {
+      const pajar = normalizar([a.nombre, a.desc, a.barrio, a.ciudad].join(" "));
+      if (!pajar.includes(texto)) return false;
+    }
+    const precioNum = extraerPrecio(a.precio);
+    if (hayFiltroPrecio && !(precioNum !== null && precioNum >= pMin && precioNum <= pMax)) return false;
+    if (soloFoto && !a.imagen) return false;
+    if (soloPrecio && !precioNum) return false;
+    if (estado && a.estado !== estado) return false;
+    if (departamento && a.departamento !== departamento) return false;
+    if (ciudad && a.ciudad !== ciudad) return false;
+    if (radio && ubicacionUsuario && !(tieneCoords(a) && distanciaKm(ubicacionUsuario, a) <= radio)) return false;
+    if (limitesZona && !(tieneCoords(a) && limitesZona.contains([a.lat, a.lng]))) return false;
+    return true;
+  });
+
+  const dist = a => (ubicacionUsuario && tieneCoords(a)) ? distanciaKm(ubicacionUsuario, a) : Infinity;
+  if (orden === "recientes") lista.sort((a, b) => b.fecha - a.fecha);
+  else if (orden === "cercanos") lista.sort((a, b) => dist(a) - dist(b));
+  else if (orden === "precio-asc") lista.sort((a, b) => (extraerPrecio(a.precio) ?? Infinity) - (extraerPrecio(b.precio) ?? Infinity));
+  else if (orden === "precio-desc") lista.sort((a, b) => (extraerPrecio(b.precio) ?? 0) - (extraerPrecio(a.precio) ?? 0));
+  else if (orden === "nombre") lista.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  listaFiltrada = lista;
+  paginaActual = 1;
+  renderizarLista();
+  renderizarMarcadores(ajustarMapa && !limitesZona);
+  if (usuarioActual) renderizarMisAnuncios();
+}
+
+function limpiarFiltros() {
+  $("buscador").value = "";
+  ["filtro-precio-min", "filtro-precio-max"].forEach(id => { $(id).value = ""; });
+  ["filtro-con-foto", "filtro-con-precio"].forEach(id => { $(id).checked = false; });
+  $("filtro-estado").value = "";
+  $("filtro-departamento").value = "";
+  $("filtro-radio").value = "0";
+  $("ordenar-por").value = "recientes";
+  categoriaActiva = "todos";
+  limitesZona = null;
+  $("btn-quitar-zona").classList.add("hidden");
+  marcarCategoriaActiva();
+  actualizarCiudadesFiltro();
+}
+
+// =====================================================================
+// LISTA DE TARJETAS (con paginación)
+// =====================================================================
+function tarjetaHTML(a) {
+  const icono = iconosCategoria[a.categoria] || "📦";
+  const foto = urlSegura(a.imagen);
+  const km = (ubicacionUsuario && tieneCoords(a)) ? distanciaKm(ubicacionUsuario, a) : null;
+  const badgeEstado = a.estado === "nuevo"
+    ? '<span class="badge-nuevo text-xs font-semibold px-2 py-0.5 rounded-full">Nuevo</span>'
+    : a.estado === "usado"
+      ? '<span class="badge-usado text-xs font-semibold px-2 py-0.5 rounded-full">Usado</span>'
+      : "";
+  // Siempre dibujamos el icono de la categoría de fondo; la <img> va ENCIMA.
+  // Si la foto falla al cargar, se quita la <img> y queda el icono (sin código extra por tarjeta).
+  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+    <a href="anuncio.html?id=${a.id}" class="relative h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
+      <span class="text-5xl">${icono}</span>
+      ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
+      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">${esc(a.precio)}</div>` : ""}
+    </a>
+    <div class="p-4 flex flex-col flex-1">
+      <div class="flex items-center gap-2 mb-1 flex-wrap">
+        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(a.ciudad || a.barrio || "")}</span>
+        ${badgeEstado}
+        ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
+      </div>
+      <h3 class="font-bold text-slate-900 mb-1 line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
+      <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${esc(a.desc || "")}</p>
+      <div class="flex gap-2">
+        <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
+        ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 rounded-xl" title="Ver en el mapa">📍 Mapa</button>` : ""}
+      </div>
+      ${EDITOR ? `<div class="flex gap-2 mt-2">
+        <button type="button" data-accion="editar" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
+        <button type="button" data-accion="eliminar-admin" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
+      </div>` : ""}
+    </div>
+  </article>`;
+}
+
+function renderizarLista() {
+  const cont = $("contenedor-anuncios");
+  const total = listaFiltrada.length;
+  const visibles = listaFiltrada.slice(0, paginaActual * POR_PAGINA);
+
+  $("contador-resultados").textContent = total + (total === 1 ? " resultado" : " resultados");
+  $("estado-vacio").classList.toggle("hidden", total > 0);
+
+  cont.innerHTML = visibles.map(tarjetaHTML).join("");
+
+  const restantes = total - visibles.length;
+  $("contenedor-mas").classList.toggle("hidden", restantes <= 0);
+  if (restantes > 0) $("btn-mas").textContent = `Mostrar más (${restantes} restantes)`;
+}
+
+// =====================================================================
+// AUTENTICACIÓN (provisional, solo en este navegador)
+// =====================================================================
+// HONESTIDAD: esto sigue siendo "de juguete". Cualquiera con las herramientas
+// del navegador puede ver/editar localStorage. Lo que mejoramos: ya NO se
+// guarda la contraseña en texto plano (se guarda un hash con sal). La
+// autenticación de verdad (servidor, sesiones, recuperar contraseña) llega con Supabase.
+async function hashPassword(password, salt) {
+  if (!window.crypto || !crypto.subtle) throw new Error("Tu navegador necesita HTTPS para proteger la contraseña.");
+  const datos = new TextEncoder().encode(salt + password);
+  const buf = await crypto.subtle.digest("SHA-256", datos);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function nuevaSal() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function leerUsuarios() {
+  try { return JSON.parse(localStorage.getItem("mercafree_usuarios") || "[]"); }
+  catch (e) { return []; }
+}
+
 function cambiarModoAuth() {
   modoAuth = modoAuth === "login" ? "registro" : "login";
-  if (modoAuth === "registro") {
-    $("auth-titulo").textContent = "Crear cuenta";
-    $("auth-subtitulo").textContent = "Regístrate para gestionar tus anuncios";
-    $("campo-nombre").classList.remove("hidden");
-    $("auth-switch-text").textContent = "¿Ya tienes cuenta?";
-    $("auth-switch-btn").textContent = "Inicia sesión";
-  } else {
-    $("auth-titulo").textContent = "Iniciar sesión";
-    $("auth-subtitulo").textContent = "Accede para gestionar tus anuncios";
-    $("campo-nombre").classList.add("hidden");
-    $("auth-switch-text").textContent = "¿No tienes cuenta?";
-    $("auth-switch-btn").textContent = "Regístrate";
-  }
+  const reg = modoAuth === "registro";
+  $("auth-titulo").textContent = reg ? "Crear cuenta" : "Iniciar sesión";
+  $("auth-subtitulo").textContent = reg ? "Regístrate para gestionar tus anuncios" : "Accede para gestionar tus anuncios";
+  $("campo-nombre").classList.toggle("hidden", !reg);
+  $("auth-switch-text").textContent = reg ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
+  $("auth-switch-btn").textContent = reg ? "Inicia sesión" : "Regístrate";
+  $("auth-password").autocomplete = reg ? "new-password" : "current-password";
 }
 
-function manejarAuth(e) {
+async function manejarAuth(e) {
   e.preventDefault();
   const email = $("auth-email").value.trim().toLowerCase();
   const password = $("auth-password").value;
   const nombre = $("auth-nombre").value.trim();
-  let usuarios = JSON.parse(localStorage.getItem("mercafree_usuarios") || "[]");
+  const usuarios = leerUsuarios();
 
-  if (modoAuth === "registro") {
-    if (usuarios.find(u => u.email === email)) {
-      alert("Este correo ya está registrado");
-      return;
+  try {
+    if (modoAuth === "registro") {
+      if (usuarios.some(u => u.email === email)) { mostrarToast("Este correo ya está registrado", "error"); return; }
+      const salt = nuevaSal();
+      const nuevo = { id: Date.now(), nombre: nombre || email.split("@")[0], email, salt, hash: await hashPassword(password, salt) };
+      usuarios.push(nuevo);
+      localStorage.setItem("mercafree_usuarios", JSON.stringify(usuarios));
+      guardarUsuario({ id: nuevo.id, nombre: nuevo.nombre, email: nuevo.email }); // sin hash en la sesión
+      mostrarToast("✅ Cuenta creada");
+    } else {
+      const u = usuarios.find(x => x.email === email);
+      let ok = false;
+      if (u && u.hash) {
+        ok = (await hashPassword(password, u.salt)) === u.hash;
+      } else if (u && u.password === password) {
+        // cuenta vieja con contraseña en texto plano → la convertimos a hash ahora
+        u.salt = nuevaSal(); u.hash = await hashPassword(password, u.salt); delete u.password;
+        localStorage.setItem("mercafree_usuarios", JSON.stringify(usuarios));
+        ok = true;
+      }
+      if (!ok) { mostrarToast("Correo o contraseña incorrectos", "error"); return; }
+      guardarUsuario({ id: u.id, nombre: u.nombre, email: u.email });
+      mostrarToast("✅ Bienvenido");
     }
-    const nuevo = { id: Date.now(), nombre: nombre || email.split("@")[0], email, password };
-    usuarios.push(nuevo);
-    localStorage.setItem("mercafree_usuarios", JSON.stringify(usuarios));
-    guardarUsuario(nuevo);
-    mostrarToast("✅ Cuenta creada");
-  } else {
-    const user = usuarios.find(u => u.email === email && u.password === password);
-    if (!user) {
-      alert("Correo o contraseña incorrectos");
-      return;
-    }
-    guardarUsuario(user);
-    mostrarToast("✅ Bienvenido");
+  } catch (err) {
+    mostrarToast(err.message || "No se pudo iniciar sesión", "error");
+    return;
   }
-  toggleModal("modal-auth");
+  $("form-auth").reset();
+  cerrarModal("modal-auth");
   actualizarUIAuth();
-  aplicarFiltros();
+  aplicarFiltros({ ajustarMapa: false });
 }
 
 function cerrarSesion() {
   guardarUsuario(null);
   actualizarUIAuth();
-  aplicarFiltros();
   mostrarToast("Sesión cerrada");
 }
 
 function actualizarUIAuth() {
-  const btn = $("btn-auth");
-  const seccion = $("seccion-mis-anuncios");
   if (usuarioActual) {
-    btn.textContent = usuarioActual.nombre.split(" ")[0];
-    seccion.classList.remove("hidden");
+    $("btn-auth").textContent = usuarioActual.nombre.split(" ")[0];
+    $("seccion-mis-anuncios").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
-    btn.textContent = "Iniciar sesión";
-    seccion.classList.add("hidden");
+    $("btn-auth").textContent = "Iniciar sesión";
+    $("seccion-mis-anuncios").classList.add("hidden");
   }
 }
 
 function renderizarMisAnuncios() {
   const cont = $("lista-mis-anuncios");
   const mis = baseDatosAnuncios.filter(a => a.owner === usuarioActual.id);
-  if (mis.length === 0) {
-    cont.innerHTML = '<p class="text-sm text-slate-500">Aún no tienes anuncios.</p>';
-    return;
-  }
+  if (!mis.length) { cont.innerHTML = '<p class="text-sm text-slate-500">Aún no tienes anuncios.</p>'; return; }
   cont.innerHTML = mis.map(a =>
-    `<div class="flex justify-between items-center bg-white rounded-lg px-3 py-2 border">
-      <span class="text-sm font-medium truncate">${a.nombre}</span>
-      <div class="flex gap-2">
-        <button onclick="editarAnuncio(${a.id})" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Editar</button>
-        <button onclick="eliminarAnuncio(${a.id})" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Eliminar</button>
+    `<div data-id="${a.id}" class="flex justify-between items-center bg-white rounded-lg px-3 py-2 border">
+      <a href="anuncio.html?id=${a.id}" class="text-sm font-medium truncate hover:text-indigo-600">${esc(a.nombre)}</a>
+      <div class="flex gap-2 shrink-0 ml-2">
+        <button type="button" data-accion="editar" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Editar</button>
+        <button type="button" data-accion="eliminar" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Eliminar</button>
       </div>
     </div>`
   ).join("");
 }
 
-// ---------- Filtros ----------
-function toggleFiltrosAvanzados() {
-  $("panel-filtros").classList.toggle("hidden");
-}
-
-function filtrarCategoria(cat) {
-  categoriaFiltroActiva = cat;
-  document.querySelectorAll(".categoria-btn").forEach(btn => {
-    btn.classList.remove("bg-white", "text-indigo-700", "shadow-sm");
-    btn.classList.add("bg-white/15");
+// =====================================================================
+// FORMULARIO PUBLICAR / EDITAR (por pasos)
+// =====================================================================
+function irAPaso(n) {
+  pasoActual = n;
+  document.querySelectorAll("#formulario-registro [data-paso]").forEach(f =>
+    f.classList.toggle("hidden", Number(f.dataset.paso) !== n));
+  document.querySelectorAll(".barra-paso").forEach((b, i) => {
+    b.classList.toggle("bg-indigo-600", i < n);
+    b.classList.toggle("bg-slate-200", i >= n);
   });
-  if (typeof event !== "undefined" && event.currentTarget) {
-    event.currentTarget.classList.remove("bg-white/15");
-    event.currentTarget.classList.add("bg-white", "text-indigo-700", "shadow-sm");
-  }
-  aplicarFiltros();
+  const total = NOMBRES_PASOS.length;
+  $("paso-label").textContent = `Paso ${n} de ${total} · ${NOMBRES_PASOS[n - 1]}`;
+  $("btn-atras").classList.toggle("invisible", n === 1);
+  $("btn-siguiente").classList.toggle("hidden", n === total);
+  $("btn-submit-anuncio").classList.toggle("hidden", n !== total);
+  $("formulario-registro").scrollTop = 0;
+  if (n === 2) iniciarMapaFormulario(); // el mapa se crea cuando su paso ya es visible
 }
 
-function actualizarCiudades() {
-  const depto = $("filtro-departamento").value;
-  const selectCiudad = $("filtro-ciudad");
-  selectCiudad.innerHTML = '<option value="">Todas las ciudades</option>';
-  if (depto && DEPARTAMENTOS[depto]) {
-    DEPARTAMENTOS[depto].forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
-      selectCiudad.appendChild(opt);
-    });
+// Valida solo los campos del paso actual con las reglas nativas del HTML
+// (required, pattern, maxlength...). Así el usuario ve el error donde está.
+function validarPaso(n) {
+  const campos = document.querySelectorAll(
+    `#formulario-registro [data-paso="${n}"] input, #formulario-registro [data-paso="${n}"] select, #formulario-registro [data-paso="${n}"] textarea`);
+  for (const c of campos) {
+    if (c.type === "file") continue;
+    if (!c.checkValidity()) { c.reportValidity(); return false; }
   }
-  aplicarFiltros();
+  return true;
 }
 
-function aplicarFiltros() {
-  if (!grupoMarcadores) return;
-
-  const texto = $("buscador").value.toLowerCase().trim();
-  const pMin = parseInt($("filtro-precio-min").value) || 0;
-  const pMax = parseInt($("filtro-precio-max").value) || Infinity;
-  const soloFoto = $("filtro-con-foto").checked;
-  const soloPrecio = $("filtro-con-precio").checked;
-  const estado = $("filtro-estado").value;
-  const departamento = $("filtro-departamento").value;
-  const ciudad = $("filtro-ciudad").value;
-  const orden = $("ordenar-por").value;
-
-  let lista = baseDatosAnuncios.filter(a => {
-    const catOk = categoriaFiltroActiva === "todos" || a.categoria === categoriaFiltroActiva;
-    const txtOk = a.nombre.toLowerCase().includes(texto) ||
-                  (a.desc || "").toLowerCase().includes(texto) ||
-                  (a.barrio || "").toLowerCase().includes(texto) ||
-                  (a.ciudad || "").toLowerCase().includes(texto);
-    const precioNum = extraerPrecio(a.precio);
-    const precioOk = (!precioNum && pMin === 0 && pMax === Infinity) ||
-                     (precioNum && precioNum >= pMin && precioNum <= pMax);
-    const fotoOk = !soloFoto || (a.imagen && a.imagen.length > 5);
-    const precioSoloOk = !soloPrecio || (a.precio && a.precio.length > 0);
-    const estadoOk = !estado || a.estado === estado;
-    const deptoOk = !departamento || a.departamento === departamento;
-    const ciudadOk = !ciudad || a.ciudad === ciudad;
-    return catOk && txtOk && precioOk && fotoOk && precioSoloOk && estadoOk && deptoOk && ciudadOk;
-  });
-
-  if (orden === "recientes") lista.sort((a, b) => (b.fecha || b.id) - (a.fecha || a.id));
-  else if (orden === "precio-asc") lista.sort((a, b) => (extraerPrecio(a.precio) || Infinity) - (extraerPrecio(b.precio) || Infinity));
-  else if (orden === "precio-desc") lista.sort((a, b) => (extraerPrecio(b.precio) || 0) - (extraerPrecio(a.precio) || 0));
-  else if (orden === "nombre") lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-  renderizarAnuncios(lista);
-  if (usuarioActual) renderizarMisAnuncios();
-}
-
-// ---------- Render ----------
-function toggleDetalle(id) {
-  const el = document.getElementById("detalle-" + id);
-  if (!el) return;
-  const estabaAbierto = el.classList.contains("abierto");
-  document.querySelectorAll(".detalle-anuncio").forEach(d => d.classList.remove("abierto"));
-  if (!estabaAbierto) el.classList.add("abierto");
-}
-
-function renderizarAnuncios(lista) {
-  const cont = $("contenedor-anuncios");
-  const vacio = $("estado-vacio");
-  const contador = $("contador-resultados");
-
-  if (grupoMarcadores) grupoMarcadores.clearLayers();
-
-  contador.textContent = lista.length + (lista.length === 1 ? " resultado" : " resultados");
-
-  if (lista.length === 0) {
-    cont.innerHTML = "";
-    vacio.classList.remove("hidden");
-    return;
-  }
-  vacio.classList.add("hidden");
-
-  cont.innerHTML = lista.map(a => {
-    const tieneImg = a.imagen && a.imagen.length > 5;
-    const icono = iconosCategoria[a.categoria] || "📦";
-    const badgeEstado = a.estado === "nuevo"
-      ? '<span class="badge-nuevo text-xs font-semibold px-2 py-0.5 rounded-full">Nuevo</span>'
-      : a.estado === "usado"
-        ? '<span class="badge-usado text-xs font-semibold px-2 py-0.5 rounded-full">Usado</span>'
-        : "";
-
-    let imgHtml = "";
-    if (tieneImg) {
-      imgHtml = `<div class="relative h-40 overflow-hidden bg-slate-100">
-        <img src="${a.imagen}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
-        ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg">${a.precio}</div>` : ""}
-      </div>`;
-    } else {
-      imgHtml = `<div class="h-24 bg-slate-100 flex items-center justify-center relative">
-        <span class="text-4xl">${icono}</span>
-        ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg">${a.precio}</div>` : ""}
-      </div>`;
-    }
-
-    return `<article class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-      ${imgHtml}
-      <div class="p-4 flex flex-col flex-1">
-        <div class="flex items-center gap-2 mb-1 flex-wrap">
-          <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${a.ciudad || a.barrio || ""}</span>
-          ${badgeEstado}
-        </div>
-        <h3 class="font-bold text-slate-900 mb-1 line-clamp-2">${a.nombre}</h3>
-        <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${a.desc || ""}</p>
-        
-        <button onclick="toggleDetalle(${a.id})" class="text-sm text-indigo-600 font-medium mb-2 text-left hover:underline">
-          Ver más detalles ▾
-        </button>
-        
-        <div id="detalle-${a.id}" class="detalle-anuncio text-sm text-slate-600 space-y-1 mb-3">
-          <p><strong>📍 Ubicación:</strong> ${a.barrio || ""}${a.ciudad ? ", " + a.ciudad : ""}${a.departamento ? " (" + a.departamento + ")" : ""}</p>
-          ${a.precio ? `<p><strong>💰 Precio:</strong> ${a.precio}</p>` : ""}
-          <p><strong>📱 WhatsApp:</strong> ${a.whatsapp ? a.whatsapp.replace(/^57/, "") : "No disponible"}</p>
-          <p><strong>📝 Descripción:</strong> ${a.desc || "Sin descripción"}</p>
-          <p><strong>🏷️ Categoría:</strong> ${a.categoria || ""} · <strong>Estado:</strong> ${a.estado || "—"}</p>
-          ${a.lat && a.lng ? `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-600 hover:underline">🗺️ Cómo llegar (Google Maps)</a>` : ""}
-        </div>
-        
-        <div class="flex gap-2">
-          <a href="https://wa.me/${a.whatsapp}" target="_blank" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
-          ${a.lat && a.lng ? `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">🗺️ Cómo llegar</a>` : ""}
-        </div>
-        ${EDITOR ? `<div class="flex gap-2 mt-2">
-          <button onclick="editarAnuncio(${a.id})" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
-          <button onclick="eliminarAnuncioAdmin(${a.id})" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
-        </div>` : ""}
-      </div>
-    </article>`;
-  }).join("");
-
-  // Marcadores con iconos por categoría
-  if (grupoMarcadores) {
-    lista.forEach(a => {
-      if (!a.lat || !a.lng) return;
-      let popup = `<div style="min-width:200px;font-family:sans-serif">`;
-      if (a.imagen) popup += `<img src="${a.imagen}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-bottom:6px" onerror="this.style.display='none'">`;
-      popup += `<strong>${a.nombre}</strong><br>`;
-      popup += `<small style="color:#666">${a.ciudad || a.barrio || ""}</small><br>`;
-      if (a.precio) popup += `<span style="color:#4f46e5;font-weight:600">${a.precio}</span><br>`;
-      if (a.estado) popup += `<span style="font-size:12px">${a.estado === "nuevo" ? "🆕 Nuevo" : "Usado"}</span><br>`;
-      popup += `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">`;
-      popup += `<a href="https://wa.me/${a.whatsapp}" target="_blank" style="background:#22c55e;color:white;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">WhatsApp</a>`;
-      popup += `<a href="${urlGoogleMaps(a.lat, a.lng, a.nombre)}" target="_blank" rel="noopener" style="background:#3b82f6;color:white;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none">🗺️ Cómo llegar</a>`;
-      popup += `</div></div>`;
-      L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria) }).bindPopup(popup).addTo(grupoMarcadores);
-    });
-  }
-}
-
-// ---------- Publicar / Editar ----------
-function registrarAnuncio(e) {
-  e.preventDefault();
-  const idEdit = $("form-edit-id").value;
-
-  const anuncio = {
-    id: idEdit ? parseInt(idEdit) : Date.now(),
-    nombre: $("form-nombre").value.trim(),
-    categoria: $("form-categoria").value,
-    estado: $("form-estado").value,
-    departamento: $("form-departamento").value,
-    ciudad: $("form-ciudad").value.trim(),
-    barrio: $("form-barrio").value.trim(),
-    lat: parseFloat($("form-lat").value) || 6.1759,
-    lng: parseFloat($("form-lng").value) || -75.5917,
-    whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
-    precio: $("form-precio").value.trim(),
-    desc: $("form-descripcion").value.trim(),
-    imagen: imagenActualBase64 || $("form-imagen-base64").value || "",
-    owner: usuarioActual ? usuarioActual.id : null,
-    fecha: Date.now()
-  };
-
-  if (idEdit) {
-    const idx = baseDatosAnuncios.findIndex(a => a.id === parseInt(idEdit));
-    if (idx !== -1) baseDatosAnuncios[idx] = anuncio;
-    mostrarToast("✅ Anuncio actualizado");
-  } else {
-    baseDatosAnuncios.unshift(anuncio);
-    mostrarToast("✅ ¡Anuncio publicado!");
-  }
-
-  guardarAnuncios();
+function resetFormulario() {
   $("formulario-registro").reset();
-  $("form-edit-id").value = "";
-  $("form-lat").value = "6.1759";
-  $("form-lng").value = "-75.5917";
-  quitarFoto();
-  $("btn-submit-anuncio").innerHTML = "⚡ Publicar Enseguida";
-  toggleModal("modal-publicar");
-  aplicarFiltros();
-}
-
-function editarAnuncio(id) {
-  const a = baseDatosAnuncios.find(x => x.id === id);
-  if (!a) return;
-  $("form-nombre").value = a.nombre;
-  $("form-categoria").value = a.categoria;
-  $("form-estado").value = a.estado || "usado";
-  $("form-departamento").value = a.departamento || "Antioquia";
+  fotosForm = [];
+  renderizarFotosForm();
+  coordsForm = ubicacionUsuario ? { ...ubicacionUsuario }
+    : (mapa ? { lat: mapa.getCenter().lat, lng: mapa.getCenter().lng } : { ...CENTRO_DEFECTO });
+  $("publicar-titulo").textContent = "🚀 Publica tu anuncio";
+  $("btn-submit-anuncio").textContent = "⚡ Publicar";
   actualizarCiudadesForm();
-  $("form-ciudad").value = a.ciudad || "";
-  $("form-barrio").value = a.barrio || "";
-  $("form-whatsapp").value = (a.whatsapp || "").replace(/^57/, "");
-  $("form-precio").value = a.precio || "";
-  $("form-descripcion").value = a.desc || "";
-  $("form-edit-id").value = a.id;
-  if (a.imagen) {
-    imagenActualBase64 = a.imagen;
-    $("form-imagen-base64").value = a.imagen;
-    $("preview-imagen").src = a.imagen;
-    $("preview-imagen").classList.remove("hidden");
-    $("placeholder-foto").classList.add("hidden");
-    $("btn-quitar-foto").classList.remove("hidden");
-  }
-  $("btn-submit-anuncio").innerHTML = "💾 Guardar cambios";
-  toggleModal("modal-publicar");
-}
-
-function eliminarAnuncio(id) {
-  if (!confirm("¿Eliminar este anuncio?")) return;
-  baseDatosAnuncios = baseDatosAnuncios.filter(a => a.id !== id);
-  guardarAnuncios();
-  aplicarFiltros();
-  mostrarToast("Anuncio eliminado");
 }
 
 function actualizarCiudadesForm() {
   const depto = $("form-departamento").value;
-  const select = $("form-ciudad");
-  // Para el formulario usamos un input de texto libre + datalist opcional
-  // Aquí solo actualizamos el valor por defecto si es necesario
+  $("lista-ciudades").innerHTML = (DEPARTAMENTOS[depto] || []).map(c => `<option value="${esc(c)}">`).join("");
 }
 
-// ---------- Foto ----------
+function fijarCoordsForm(latlng) {
+  coordsForm = { lat: latlng.lat, lng: latlng.lng };
+  $("form-coords-label").textContent = latlng.lat.toFixed(5) + ", " + latlng.lng.toFixed(5);
+}
+
+function iniciarMapaFormulario() {
+  if (!mapaFormulario) {
+    mapaFormulario = crearMapaBase("map-formulario", [coordsForm.lat, coordsForm.lng], 15);
+    marcadorFormulario = L.marker([coordsForm.lat, coordsForm.lng], {
+      draggable: true, icon: iconoMarcador($("form-categoria").value)
+    }).addTo(mapaFormulario);
+    marcadorFormulario.on("dragend", () => fijarCoordsForm(marcadorFormulario.getLatLng()));
+    mapaFormulario.on("click", e => { marcadorFormulario.setLatLng(e.latlng); fijarCoordsForm(e.latlng); });
+  } else {
+    // El mapa se crea UNA vez y se reutiliza (antes se destruía y recreaba cada vez)
+    mapaFormulario.setView([coordsForm.lat, coordsForm.lng], 15);
+    marcadorFormulario.setLatLng([coordsForm.lat, coordsForm.lng]);
+    marcadorFormulario.setIcon(iconoMarcador($("form-categoria").value));
+  }
+  mapaFormulario.invalidateSize();
+  fijarCoordsForm(coordsForm);
+}
+
+async function usarMiUbicacionFormulario() {
+  try {
+    await pedirUbicacion();
+    fijarCoordsForm(ubicacionUsuario);
+    if (mapaFormulario) {
+      marcadorFormulario.setLatLng([ubicacionUsuario.lat, ubicacionUsuario.lng]);
+      mapaFormulario.setView([ubicacionUsuario.lat, ubicacionUsuario.lng], 16);
+    }
+    mostrarToast("Ubicación tomada");
+  } catch (err) {
+    mostrarToast(mensajeErrorUbicacion(err), "error");
+  }
+}
+
+// ---------- Fotos ----------
+// Reduce la foto a máx. 800 px y la comprime a JPEG: una foto de celular de
+// 4 MB queda en ~80 KB. Imprescindible mientras guardemos en localStorage.
 function comprimirImagen(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error("lectura"));
     reader.onload = e => {
       const img = new Image();
+      img.onerror = () => reject(new Error("imagen"));
       img.onload = () => {
-        const canvas = document.createElement("canvas");
         let w = img.width, h = img.height;
         if (w > 800) { h = Math.round(h * 800 / w); w = 800; }
+        const canvas = document.createElement("canvas");
         canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL("image/jpeg", 0.7));
@@ -484,159 +537,237 @@ function comprimirImagen(file) {
   });
 }
 
-async function previsualizarFoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const base64 = await comprimirImagen(file);
-    imagenActualBase64 = base64;
-    $("form-imagen-base64").value = base64;
-    $("preview-imagen").src = base64;
-    $("preview-imagen").classList.remove("hidden");
-    $("placeholder-foto").classList.add("hidden");
-    $("btn-quitar-foto").classList.remove("hidden");
-  } catch (err) {
-    alert("Error al procesar la imagen");
+async function agregarFotos(files) {
+  const libres = MAX_FOTOS - fotosForm.length;
+  if (libres <= 0) { mostrarToast(`Máximo ${MAX_FOTOS} fotos`, "error"); return; }
+  for (const f of Array.from(files).slice(0, libres)) {
+    try { fotosForm.push(await comprimirImagen(f)); }
+    catch (err) { mostrarToast("No se pudo procesar una de las imágenes", "error"); }
   }
+  if (files.length > libres) mostrarToast(`Solo se agregaron ${libres} (máximo ${MAX_FOTOS})`, "error");
+  renderizarFotosForm();
 }
 
-function quitarFoto() {
-  imagenActualBase64 = null;
-  $("form-imagen-base64").value = "";
-  $("form-foto").value = "";
-  $("preview-imagen").classList.add("hidden");
-  $("preview-imagen").src = "";
-  $("placeholder-foto").classList.remove("hidden");
-  $("btn-quitar-foto").classList.add("hidden");
+function renderizarFotosForm() {
+  $("form-fotos-previews").innerHTML = fotosForm.map((src, i) =>
+    `<div class="relative aspect-square rounded-lg overflow-hidden border border-slate-200">
+      <img src="${esc(src)}" alt="Foto ${i + 1}" class="w-full h-full object-cover">
+      <button type="button" data-quitar-foto="${i}" aria-label="Quitar foto ${i + 1}" class="absolute top-1 right-1 bg-black/60 text-white w-6 h-6 rounded-full text-sm leading-none">×</button>
+      ${i === 0 ? '<span class="absolute bottom-1 left-1 bg-indigo-600 text-white text-[10px] px-1.5 rounded">Portada</span>' : ""}
+    </div>`).join("");
+  $("zona-subir-foto").classList.toggle("hidden", fotosForm.length >= MAX_FOTOS);
 }
 
-// ---------- Inicio ----------
-window.addEventListener("load", () => {
-  cargarDatos();
-  iniciarMapa();
-  actualizarUIAuth();
-
-  // Llenar select de departamentos
-  const selDepto = $("filtro-departamento");
-  const selFormDepto = $("form-departamento");
-  Object.keys(DEPARTAMENTOS).forEach(d => {
-    const o1 = document.createElement("option");
-    o1.value = d; o1.textContent = d;
-    selDepto.appendChild(o1);
-    const o2 = document.createElement("option");
-    o2.value = d; o2.textContent = d;
-    selFormDepto.appendChild(o2);
-  });
-
-  setTimeout(() => aplicarFiltros(), 300);
-});
-
-
-// ---------- Mapa del formulario (elegir ubicación) ----------
-function iniciarMapaFormulario() {
-  const div = $("map-formulario");
-  if (!div) return;
-  const lat = parseFloat($("form-lat").value) || 6.1759;
-  const lng = parseFloat($("form-lng").value) || -75.5917;
-
-  if (mapaFormulario) {
-    mapaFormulario.remove();
-    mapaFormulario = null;
-    marcadorFormulario = null;
-  }
-
-  mapaFormulario = L.map("map-formulario").setView([lat, lng], 15);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapaFormulario);
-
-  marcadorFormulario = L.marker([lat, lng], { draggable: true, icon: iconoMarcador($("form-categoria").value) }).addTo(mapaFormulario);
-  marcadorFormulario.on("dragend", function() {
-    const p = marcadorFormulario.getLatLng();
-    $("form-lat").value = p.lat.toFixed(6);
-    $("form-lng").value = p.lng.toFixed(6);
-    $("form-coords-label").textContent = p.lat.toFixed(5) + ", " + p.lng.toFixed(5);
-  });
-
-  mapaFormulario.on("click", function(e) {
-    marcadorFormulario.setLatLng(e.latlng);
-    $("form-lat").value = e.latlng.lat.toFixed(6);
-    $("form-lng").value = e.latlng.lng.toFixed(6);
-    $("form-coords-label").textContent = e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5);
-  });
-
-  setTimeout(function() { mapaFormulario.invalidateSize(true); }, 200);
-  setTimeout(function() { mapaFormulario.invalidateSize(true); }, 500);
-}
-
-function usarMiUbicacionFormulario() {
-  if (!navigator.geolocation) {
-    alert("Geolocalización no disponible");
+// ---------- Guardar ----------
+function registrarAnuncio(e) {
+  e.preventDefault();
+  if (pasoActual < NOMBRES_PASOS.length) { // Enter en un paso intermedio = "Siguiente"
+    if (validarPaso(pasoActual)) irAPaso(pasoActual + 1);
     return;
   }
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    $("form-lat").value = lat.toFixed(6);
-    $("form-lng").value = lng.toFixed(6);
-    $("form-coords-label").textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
-    if (mapaFormulario && marcadorFormulario) {
-      marcadorFormulario.setLatLng([lat, lng]);
-      mapaFormulario.setView([lat, lng], 16);
-    }
-    mostrarToast("Ubicación tomada");
-  }, function() {
-    alert("No se pudo obtener tu ubicación");
-  }, { enableHighAccuracy: true, timeout: 12000 });
+  for (let p = 1; p <= NOMBRES_PASOS.length; p++) {
+    if (!validarPaso(p)) { irAPaso(p); validarPaso(p); return; }
+  }
+
+  const previo = modoEdicionId ? baseDatosAnuncios.find(a => a.id === modoEdicionId) : null;
+  const precioNum = extraerPrecio($("form-precio").value);
+  const anuncio = normalizarAnuncio({
+    id: previo ? previo.id : Date.now(),
+    nombre: $("form-nombre").value.trim(),
+    categoria: $("form-categoria").value,
+    estado: $("form-estado").value,
+    departamento: $("form-departamento").value,
+    ciudad: $("form-ciudad").value.trim(),
+    barrio: $("form-barrio").value.trim(),
+    lat: coordsForm.lat,
+    lng: coordsForm.lng,
+    whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
+    precio: formatearPrecio(precioNum),      // siempre "$1.200.000", sin importar cómo lo escribió
+    desc: $("form-descripcion").value.trim(),
+    fotos: [...fotosForm],
+    owner: previo ? previo.owner : (usuarioActual ? usuarioActual.id : null), // editar NO cambia al dueño
+    fecha: previo ? previo.fecha : Date.now()
+  });
+
+  // Guardamos sobre una copia: si localStorage está lleno, deshacemos y avisamos.
+  const copia = [...baseDatosAnuncios];
+  if (previo) copia[copia.findIndex(a => a.id === previo.id)] = anuncio;
+  else copia.unshift(anuncio);
+  const anterior = baseDatosAnuncios;
+  baseDatosAnuncios = copia;
+  if (!guardarAnuncios()) { baseDatosAnuncios = anterior; return; }
+
+  mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
+  cerrarModal("modal-publicar");
+  // Quita filtros de categoría/búsqueda para que el usuario VEA su anuncio
+  $("buscador").value = "";
+  categoriaActiva = "todos";
+  marcarCategoriaActiva();
+  aplicarFiltros();
+  setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }
 
-// Sobrescribir toggleModal para inicializar mapa del form al abrir publicar
-const _toggleModalOriginal = toggleModal;
-toggleModal = function(id) {
-  _toggleModalOriginal(id);
-  if (id === "modal-publicar") {
-    const modal = $(id);
-    if (modal && !modal.classList.contains("hidden")) {
-      setTimeout(iniciarMapaFormulario, 250);
-    }
-  }
-};
+function editarAnuncio(id) {
+  const a = baseDatosAnuncios.find(x => x.id === id);
+  if (!a) return;
+  modoEdicionId = id;
+  resetFormulario();
+  $("form-nombre").value = a.nombre;
+  $("form-categoria").value = a.categoria;
+  $("form-estado").value = a.estado || "usado";
+  $("form-precio").value = extraerPrecio(a.precio) || "";
+  $("form-departamento").value = a.departamento || Object.keys(DEPARTAMENTOS)[0];
+  actualizarCiudadesForm();
+  $("form-ciudad").value = a.ciudad || "";
+  $("form-barrio").value = a.barrio || "";
+  $("form-whatsapp").value = (a.whatsapp || "").replace(/^57/, "");
+  $("form-descripcion").value = a.desc || "";
+  fotosForm = [...a.fotos];
+  renderizarFotosForm();
+  if (tieneCoords(a)) coordsForm = { lat: a.lat, lng: a.lng };
+  $("publicar-titulo").textContent = "✏️ Editar anuncio";
+  $("btn-submit-anuncio").textContent = "💾 Guardar cambios";
+  abrirModal("modal-publicar");
+}
 
-function eliminarAnuncioAdmin(id) {
-  if (!EDITOR) return;
-  if (!confirm("¿Eliminar este anuncio de forma permanente?")) return;
+function eliminarAnuncio(id, esAdmin) {
+  if (esAdmin && !EDITOR) return;
+  if (!confirm(esAdmin ? "¿Eliminar este anuncio de forma permanente?" : "¿Eliminar este anuncio?")) return;
+  const anterior = baseDatosAnuncios;
   baseDatosAnuncios = baseDatosAnuncios.filter(a => a.id !== id);
-  guardarAnuncios();
-  aplicarFiltros();
+  if (!guardarAnuncios()) { baseDatosAnuncios = anterior; return; }
+  aplicarFiltros({ ajustarMapa: false });
   mostrarToast("Anuncio eliminado");
 }
 
+// =====================================================================
+// MODO EDITOR (provisional)
+// =====================================================================
 function activarModoEditor() {
   if (!EDITOR) return;
-  const bar = $("ebar");
-  if (bar) {
-    bar.classList.remove("hidden");
-    const n = baseDatosAnuncios.length;
-    const c = $("ecount");
-    if (c) c.textContent = " · " + n + " anuncios en total";
-  }
-  // Mostrar enlace para salir
-  const link = $("elink");
-  if (link) {
-    link.href = location.pathname;
-    link.textContent = "Salir del modo editor";
-  }
-  const wrap = $("elinkw");
-  if (wrap) wrap.classList.remove("hidden");
+  $("ebar").classList.remove("hidden");
+  $("ecount").textContent = " · " + baseDatosAnuncios.length + " anuncios en total";
+  $("elink").href = location.pathname;
 }
 
-// Hook al load existente
-const _loadOriginal = window.onload;
-window.addEventListener("load", () => {
-  setTimeout(activarModoEditor, 400);
-});
+// =====================================================================
+// ARRANQUE: conectamos todos los eventos en un solo lugar
+// =====================================================================
+// POR QUÉ addEventListener y no onclick="..." en el HTML: el HTML queda limpio,
+// no dependemos de funciones globales ni de la variable global `event`, y es
+// más fácil ver de un vistazo qué hace cada control.
+function iniciarEventos() {
+  const filtrarConRetraso = debounce(() => aplicarFiltros(), 250);
+  $("buscador").addEventListener("input", filtrarConRetraso);
+  ["filtro-precio-min", "filtro-precio-max"].forEach(id => $(id).addEventListener("input", filtrarConRetraso));
+  ["filtro-estado", "filtro-ciudad", "filtro-con-foto", "filtro-con-precio"].forEach(id =>
+    $(id).addEventListener("change", () => aplicarFiltros()));
+  $("filtro-departamento").addEventListener("change", actualizarCiudadesFiltro);
 
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") {
-    $("modal-publicar").classList.add("hidden");
-    $("modal-auth").classList.add("hidden");
-  }
+  // Radio y "más cercanos" necesitan ubicación: se pide aquí, al elegir la opción.
+  const requiereUbicacion = async (selectId, valorSinUbicacion, esActiva) => {
+    const sel = $(selectId);
+    if (esActiva(sel.value) && !ubicacionUsuario) {
+      try { await pedirUbicacion(); mapa.setView([ubicacionUsuario.lat, ubicacionUsuario.lng], 14); }
+      catch (err) { mostrarToast(mensajeErrorUbicacion(err), "error"); sel.value = valorSinUbicacion; }
+    }
+    aplicarFiltros({ ajustarMapa: false });
+  };
+  $("filtro-radio").addEventListener("change", () => requiereUbicacion("filtro-radio", "0", v => parseFloat(v) > 0));
+  $("ordenar-por").addEventListener("change", () => requiereUbicacion("ordenar-por", "recientes", v => v === "cercanos"));
+
+  $("btn-filtros").addEventListener("click", () => {
+    const abierto = $("panel-filtros").classList.toggle("hidden") === false;
+    $("btn-filtros").setAttribute("aria-expanded", abierto ? "true" : "false");
+  });
+  $("btn-limpiar-filtros").addEventListener("click", limpiarFiltros);
+  document.querySelector('[data-accion-global="limpiar"]').addEventListener("click", limpiarFiltros);
+
+  // Delegación de eventos: UN listener en el contenedor sirve para todas las
+  // tarjetas, incluso las que se crean después.
+  $("chips-categorias").addEventListener("click", e => {
+    const b = e.target.closest("[data-cat]");
+    if (!b) return;
+    categoriaActiva = b.dataset.cat;
+    marcarCategoriaActiva();
+    aplicarFiltros();
+  });
+
+  const acciones = e => {
+    const b = e.target.closest("[data-accion]");
+    const fila = e.target.closest("[data-id]");
+    if (!b || !fila) return;
+    const id = Number(fila.dataset.id);
+    if (b.dataset.accion === "ver-mapa") verEnMapa(id);
+    else if (b.dataset.accion === "editar") editarAnuncio(id);
+    else if (b.dataset.accion === "eliminar") eliminarAnuncio(id, false);
+    else if (b.dataset.accion === "eliminar-admin") eliminarAnuncio(id, true);
+  };
+  $("contenedor-anuncios").addEventListener("click", acciones);
+  $("lista-mis-anuncios").addEventListener("click", acciones);
+  // Las imágenes no "burbujean" el evento error; con capture=true lo atrapamos igual.
+  $("contenedor-anuncios").addEventListener("error", e => {
+    if (e.target.tagName === "IMG") e.target.remove();
+  }, true);
+
+  $("btn-mas").addEventListener("click", () => {
+    paginaActual++;
+    renderizarLista();
+  });
+
+  $("btn-mi-ubicacion").addEventListener("click", centrarEnMiUbicacion);
+  $("btn-zona").addEventListener("click", buscarEnZona);
+  $("btn-quitar-zona").addEventListener("click", quitarZona);
+
+  // Auth
+  $("form-auth").addEventListener("submit", manejarAuth);
+  $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
+  $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);
+
+  // Formulario
+  $("formulario-registro").addEventListener("submit", registrarAnuncio);
+  $("btn-siguiente").addEventListener("click", () => { if (validarPaso(pasoActual)) irAPaso(pasoActual + 1); });
+  $("btn-atras").addEventListener("click", () => irAPaso(Math.max(1, pasoActual - 1)));
+  $("form-foto").addEventListener("change", async e => { await agregarFotos(e.target.files); e.target.value = ""; });
+  $("form-fotos-previews").addEventListener("click", e => {
+    const b = e.target.closest("[data-quitar-foto]");
+    if (!b) return;
+    fotosForm.splice(Number(b.dataset.quitarFoto), 1);
+    renderizarFotosForm();
+  });
+  $("form-departamento").addEventListener("change", actualizarCiudadesForm);
+  $("btn-gps-form").addEventListener("click", usarMiUbicacionFormulario);
+  // Solo dígitos en el WhatsApp (y quita un "57" inicial si pegaron +57...)
+  $("form-whatsapp").addEventListener("input", e => {
+    let d = e.target.value.replace(/\D/g, "");
+    if (d.length > 10 && d.startsWith("57")) d = d.slice(2);
+    e.target.value = d.slice(0, 10);
+  });
+
+  // Modales (utils.js dispara estos eventos)
+  document.addEventListener("modal:abierto", e => {
+    if (e.detail.id !== "modal-publicar") return;
+    if (!modoEdicionId) resetFormulario();
+    irAPaso(1);
+  });
+  document.addEventListener("modal:cerrado", e => {
+    if (e.detail.id === "modal-publicar") modoEdicionId = null;
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  cargarDatos();
+  renderizarCategorias();
+
+  Object.keys(DEPARTAMENTOS).forEach(d => {
+    $("filtro-departamento").add(new Option(d, d));
+    $("form-departamento").add(new Option(d, d));
+  });
+  actualizarCiudadesForm();
+
+  iniciarMapa();
+  iniciarEventos();
+  actualizarUIAuth();
+  aplicarFiltros();
+  activarModoEditor();
 });

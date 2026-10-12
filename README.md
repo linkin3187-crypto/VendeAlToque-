@@ -1,44 +1,35 @@
-# MercaFree – Clasificados de barrio
+# MercaFree
 
-Versión multi-archivo con filtros avanzados.
+Clasificados de barrio – versión lista para GitHub Pages.
 
-## Estructura
+## Cómo subir a GitHub Pages (paso a paso)
+
+1. Crea un repositorio nuevo en GitHub (ej: `mercafree`).
+2. Sube **TODOS** estos archivos en la **raíz** del repositorio (sin carpetas):
+   - index.html
+   - styles.css
+   - data.js
+   - app.js
+   - foro.js
+   - .nojekyll
+   - README.md
+3. Ve a **Settings → Pages**.
+4. En "Source" elige **Deploy from a branch**.
+5. Branch: **main** (o master) → carpeta **/ (root)**.
+6. Guarda y espera 1-2 minutos.
+7. Abre la URL que te da GitHub (ej: `https://TU-USUARIO.github.io/mercafree/`).
+
+## Archivos que deben estar juntos
 
 ```
-mercafree/
-├── index.html          ← Página principal
-├── css/
-│   └── styles.css      ← Estilos adicionales
-├── js/
-│   ├── data.js         ← Datos + localStorage
-│   └── app.js          ← Lógica (mapa, filtros, formularios)
+mercafree/          ← raíz del repositorio
+├── index.html
+├── styles.css
+├── data.js
+├── app.js
+├── foro.js
+├── .nojekyll
 └── README.md
 ```
 
-## Cómo usar
-
-1. Descarga la carpeta completa.
-2. Abre `index.html` con un servidor local (o súbelo a GitHub Pages / Netlify / Vercel).
-3. Si abres el archivo directamente (`file://`) algunos navegadores bloquean módulos. Mejor usa:
-
-```bash
-# Con Python
-python -m http.server 8000
-
-# O con VS Code / Live Server
-```
-
-## Nuevas funciones de esta versión
-
-- Filtros por **Departamento** y **Ciudad**
-- Filtro **Nuevo / Usado**
-- Vista expandida de cada anuncio (ubicación, precio, teléfono, descripción)
-- Edición y eliminación desde la página
-- Base para Foro de ventas
-- Publicación gratis sin registro + registro opcional
-
-## Próximos pasos sugeridos
-
-- Foro de ventas funcional
-- Favoritos
-- Más departamentos y ciudades
+Importante: no crees carpetas `css/` ni `js/`. Todo va en el mismo nivel.

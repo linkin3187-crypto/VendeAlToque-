@@ -60,6 +60,7 @@ function mensajeError(e) {
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
   if (/Límite de \d+ anuncios/i.test(m)) return m;
+  if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya reportaste este anuncio. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Sin conexión con el servidor. Revisa tu internet";
   if (/violates check constraint/i.test(m)) return "Algún dato no cumple las reglas (revisa título, WhatsApp, descripción y fotos)";

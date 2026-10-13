@@ -2,7 +2,7 @@
 
 Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con HTML, CSS y JavaScript puro, listo para GitHub Pages.
 
-> Estado: **Fase 1 completada** (prototipo estático mejorado). Los datos aún viven en el navegador (`localStorage`); la base de datos real llega en la Fase 2. Mira `ROADMAP.md`.
+> Estado: **Fase 2A (backend real con Supabase) — código listo para probar.** Los anuncios, cuentas, fotos, foro y reportes viven en Supabase; ya no en `localStorage`. Mira `ROADMAP.md`.
 
 ## Archivos (todos en la raíz del repositorio, sin carpetas)
 
@@ -12,7 +12,7 @@ Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con
 | `anuncio.html` + `anuncio.js` | Página de detalle de un anuncio (`anuncio.html?id=2`) |
 | `post.html` | Tema del foro con sus comentarios |
 | `utils.js` | Código compartido: escapar HTML, modales, avisos, helpers de mapa |
-| `data.js` | Categorías, datos de ejemplo y lectura/escritura de datos |
+| `data.js` | **Único archivo que habla con Supabase**: cuentas, anuncios, fotos, foro, reportes, lista de espera |
 | `app.js` | Lógica de `index.html` |
 | `foro.js` | Lógica del foro |
 | `styles.css` | Estilos que Tailwind no cubre |
@@ -26,12 +26,22 @@ Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con
 3. Espera 1-2 minutos y abre la URL de Pages.
 4. **Si no ves los cambios:** recarga forzada (en el celular: abre la página en una pestaña de incógnito) o sube el número `?v=2` → `?v=3` en los `<script>` y `<link>` de los HTML. Eso obliga al navegador a descargar los archivos nuevos.
 
-## Probar el modo editor
+## Supabase: lo que se configura en su panel (no en el código)
 
-Añade `?editar=1` a la URL (`.../index.html?editar=1`) para ver botones de editar/borrar en todos los anuncios. Es provisional: en la Fase 2 será un rol de administrador real con login.
+- **Authentication → URL Configuration:** pon como *Site URL* la dirección de tu GitHub Pages (y añádela a *Redirect URLs*). Sin esto, los correos de confirmar cuenta y recuperar contraseña apuntan a un sitio equivocado.
+- **Authentication → Sign In / Providers → Email:** decide si exigir confirmar el correo (recomendado en producción).
+- **Hacerte administrador:** regístrate en la web y luego ejecuta en el *SQL Editor* (cambia el correo):
+  ```sql
+  update public.perfiles set rol = 'admin'
+  where id = (select id from auth.users where email = 'tu@correo.com');
+  ```
+  Con rol `moderador` o `admin` aparece la barra "Modo moderador" y puedes editar o borrar cualquier anuncio, tema o comentario. Ya **no existe** `?editar=1`.
+- La clave de `data.js` (`sb_publishable_…`) es **pública por diseño**. La seguridad la dan las reglas RLS de la base de datos. **Nunca** pegues la clave `service_role` / `secret` en este repositorio.
 
 ## Límites conocidos (a propósito, se resuelven en fases siguientes)
 
-- Cada visitante solo ve **sus** anuncios (no hay servidor todavía).
-- Las cuentas son de prueba y viven solo en este navegador.
+- Para **publicar, comentar o reportar** hace falta cuenta. Ver y contactar es libre.
+- El WhatsApp de cada anuncio es legible por cualquiera que consulte la API pública (es lo que hace funcionar el botón). Ocultarlo hasta pulsar el botón es de la Fase 4.
+- Google y las vistas previas de WhatsApp no ejecutan JavaScript: el SEO por anuncio llega con la migración de la Fase 3.
+- Faltan términos y condiciones, política de datos (Ley 1581) y panel de moderación (Fase 2B).
 - Tailwind se carga por CDN (cómodo para aprender; en producción se compila).

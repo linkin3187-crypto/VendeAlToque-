@@ -3,7 +3,11 @@
 // antes estaba copiado en varios archivos (escapar HTML, toast, modo editor,
 // modales) vive ahora aquí, una sola vez. Si algo cambia, lo cambias en un sitio.
 
-const EDITOR = /[?&]editar=1/.test(location.search);
+// EDITOR = "esta persona es moderadora/admin". Antes se activaba con ?editar=1 (cualquiera
+// podía usarlo). Ahora lo decide data.js según el ROL guardado en la base de datos, y
+// además las reglas RLS de la base impiden borrar o editar lo ajeno aunque alguien
+// manipule esta variable desde la consola del navegador.
+let EDITOR = false;
 const $ = id => document.getElementById(id);
 
 // ---------- Seguridad ----------
@@ -121,7 +125,16 @@ function actualizarBloqueoScroll() {
 
 document.addEventListener("click", e => {
   const abrir = e.target.closest("[data-abrir]");
-  if (abrir) { abrirModal(abrir.dataset.abrir); return; }
+  if (abrir) {
+    // data-requiere-login: publicar, escribir en el foro, etc. exigen cuenta (lo exige también la base de datos)
+    if (abrir.hasAttribute("data-requiere-login") && typeof usuarioActual !== "undefined" && !usuarioActual) {
+      mostrarToast("Inicia sesión para continuar", "error");
+      abrirModal("modal-auth");
+      return;
+    }
+    abrirModal(abrir.dataset.abrir);
+    return;
+  }
 
   const cerrar = e.target.closest("[data-cerrar]");
   if (cerrar) {

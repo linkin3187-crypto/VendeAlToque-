@@ -313,6 +313,12 @@ function renderizarLista() {
 
   $("contador-resultados").textContent = total + (total === 1 ? " resultado" : " resultados");
   $("estado-vacio").classList.toggle("hidden", total > 0);
+  // Base de datos vacía (aún nadie publicó) vs. filtros que no encuentran nada
+  const sinAnuncios = baseDatosAnuncios.length === 0;
+  $("vacio-icono").textContent = sinAnuncios ? "🚀" : "🔍";
+  $("vacio-titulo").textContent = sinAnuncios ? "Aún no hay anuncios en tu zona" : "No encontramos resultados";
+  $("vacio-texto").textContent = sinAnuncios ? "¡Sé el primero en publicar! Es gratis y toma un minuto." : "Prueba con otra búsqueda o quita filtros";
+  $("vacio-limpiar").classList.toggle("hidden", sinAnuncios);
 
   cont.innerHTML = visibles.map(tarjetaHTML).join("");
 
@@ -322,34 +328,18 @@ function renderizarLista() {
 }
 
 // =====================================================================
-// AUTENTICACIÓN (provisional, solo en este navegador)
+// AUTENTICACIÓN (Supabase Auth: cuentas reales)
 // =====================================================================
-// HONESTIDAD: esto sigue siendo "de juguete". Cualquiera con las herramientas
-// del navegador puede ver/editar localStorage. Lo que mejoramos: ya NO se
-// guarda la contraseña en texto plano (se guarda un hash con sal). La
-// autenticación de verdad (servidor, sesiones, recuperar contraseña) llega con Supabase.
-async function hashPassword(password, salt) {
-  if (!window.crypto || !crypto.subtle) throw new Error("Tu navegador necesita HTTPS para proteger la contraseña.");
-  const datos = new TextEncoder().encode(salt + password);
-  const buf = await crypto.subtle.digest("SHA-256", datos);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-function nuevaSal() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-function leerUsuarios() {
-  try { return JSON.parse(localStorage.getItem("mercafree_usuarios") || "[]"); }
-  catch (e) { return []; }
-}
-
+// Las contraseñas NUNCA pasan por nuestro código ni se guardan en el navegador:
+// Supabase las recibe por HTTPS y guarda solo un hash. La sesión (un token) la
+// administra la librería. Las funciones reales están en data.js.
 function cambiarModoAuth() {
   modoAuth = modoAuth === "login" ? "registro" : "login";
   const reg = modoAuth === "registro";
   $("auth-titulo").textContent = reg ? "Crear cuenta" : "Iniciar sesión";
-  $("auth-subtitulo").textContent = reg ? "Regístrate para gestionar tus anuncios" : "Accede para gestionar tus anuncios";
+  $("auth-subtitulo").textContent = reg ? "Regístrate para publicar y gestionar tus anuncios" : "Accede para publicar y gestionar tus anuncios";
   $("campo-nombre").classList.toggle("hidden", !reg);
+  $("auth-olvido").classList.toggle("hidden", reg);
   $("auth-switch-text").textContent = reg ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
   $("auth-switch-btn").textContent = reg ? "Inicia sesión" : "Regístrate";
   $("auth-password").autocomplete = reg ? "new-password" : "current-password";
@@ -360,55 +350,81 @@ async function manejarAuth(e) {
   const email = $("auth-email").value.trim().toLowerCase();
   const password = $("auth-password").value;
   const nombre = $("auth-nombre").value.trim();
-  const usuarios = leerUsuarios();
-
+  const btn = $("form-auth").querySelector('button[type="submit"]');
+  btn.disabled = true;
   try {
     if (modoAuth === "registro") {
-      if (usuarios.some(u => u.email === email)) { mostrarToast("Este correo ya está registrado", "error"); return; }
-      const salt = nuevaSal();
-      const nuevo = { id: Date.now(), nombre: nombre || email.split("@")[0], email, salt, hash: await hashPassword(password, salt) };
-      usuarios.push(nuevo);
-      localStorage.setItem("mercafree_usuarios", JSON.stringify(usuarios));
-      guardarUsuario({ id: nuevo.id, nombre: nuevo.nombre, email: nuevo.email }); // sin hash en la sesión
+      const { confirmar } = await registrarUsuario(email, password, nombre);
+      if (confirmar) {
+        $("form-auth").reset();
+        cerrarModal("modal-auth");
+        mostrarToast("📧 Revisa tu correo y confirma tu cuenta para entrar");
+        return;
+      }
       mostrarToast("✅ Cuenta creada");
     } else {
-      const u = usuarios.find(x => x.email === email);
-      let ok = false;
-      if (u && u.hash) {
-        ok = (await hashPassword(password, u.salt)) === u.hash;
-      } else if (u && u.password === password) {
-        // cuenta vieja con contraseña en texto plano → la convertimos a hash ahora
-        u.salt = nuevaSal(); u.hash = await hashPassword(password, u.salt); delete u.password;
-        localStorage.setItem("mercafree_usuarios", JSON.stringify(usuarios));
-        ok = true;
-      }
-      if (!ok) { mostrarToast("Correo o contraseña incorrectos", "error"); return; }
-      guardarUsuario({ id: u.id, nombre: u.nombre, email: u.email });
+      await iniciarSesion(email, password);
       mostrarToast("✅ Bienvenido");
     }
   } catch (err) {
     mostrarToast(err.message || "No se pudo iniciar sesión", "error");
     return;
+  } finally {
+    btn.disabled = false;
   }
   $("form-auth").reset();
   cerrarModal("modal-auth");
-  actualizarUIAuth();
-  aplicarFiltros({ ajustarMapa: false });
+  alCambiarSesion();
 }
 
-function cerrarSesion() {
-  guardarUsuario(null);
-  actualizarUIAuth();
+async function cerrarSesion() {
+  await cerrarSesionDB();
+  alCambiarSesion();
   mostrarToast("Sesión cerrada");
 }
 
+// Se llama cada vez que alguien entra o sale: repinta todo lo que depende de la sesión.
+function alCambiarSesion() {
+  actualizarUIAuth();
+  activarModoEditor();
+  aplicarFiltros({ ajustarMapa: false });
+}
+
+async function olvidePassword() {
+  const email = $("auth-email").value.trim().toLowerCase();
+  if (!email) { mostrarToast("Escribe tu correo arriba y vuelve a pulsar", "error"); $("auth-email").focus(); return; }
+  try {
+    await recuperarPassword(email);
+    mostrarToast("📧 Si ese correo tiene cuenta, te enviamos un enlace");
+  } catch (err) {
+    mostrarToast(err.message, "error");
+  }
+}
+
+async function guardarNuevaPassword(e) {
+  e.preventDefault();
+  const nueva = $("nueva-password").value;
+  try {
+    await cambiarPassword(nueva);
+    $("form-nueva-password").reset();
+    cerrarModal("modal-nueva-password");
+    mostrarToast("✅ Contraseña actualizada");
+    alCambiarSesion();
+  } catch (err) {
+    mostrarToast(err.message, "error");
+  }
+}
+
 function actualizarUIAuth() {
+  const btn = $("btn-auth");
   if (usuarioActual) {
-    $("btn-auth").textContent = usuarioActual.nombre.split(" ")[0];
+    btn.textContent = usuarioActual.nombre.split(" ")[0];
+    btn.removeAttribute("data-abrir");            // con sesión, el botón lleva a "Mis anuncios"
     $("seccion-mis-anuncios").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
-    $("btn-auth").textContent = "Iniciar sesión";
+    btn.textContent = "Iniciar sesión";
+    btn.setAttribute("data-abrir", "modal-auth");
     $("seccion-mis-anuncios").classList.add("hidden");
   }
 }
@@ -471,9 +487,42 @@ function resetFormulario() {
   actualizarCiudadesForm();
 }
 
+// La ciudad es una LISTA CERRADA (tabla `municipios`): así "envigado" y "Envigado"
+// nunca cuentan como lugares distintos. Si la suya no está, "Mi ciudad no está" la
+// manda a la lista de espera para saber a dónde expandirse.
 function actualizarCiudadesForm() {
   const depto = $("form-departamento").value;
-  $("lista-ciudades").innerHTML = (DEPARTAMENTOS[depto] || []).map(c => `<option value="${esc(c)}">`).join("");
+  $("form-ciudad").innerHTML =
+    '<option value="">Elige tu ciudad…</option>' +
+    (DEPARTAMENTOS[depto] || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
+    '<option value="__otra">Mi ciudad no está en la lista…</option>';
+}
+
+function alElegirCiudadForm(e) {
+  if (e.target.value === "__otra") {
+    e.target.value = "";
+    abrirModal("modal-espera");
+    return;
+  }
+  // Al crear un anuncio, centramos el mapa del formulario en la ciudad elegida.
+  const m = buscarMunicipio($("form-departamento").value, e.target.value);
+  if (m && m.lat != null && m.lng != null && !modoEdicionId && mapaFormulario) {
+    marcadorFormulario.setLatLng([m.lat, m.lng]);
+    mapaFormulario.setView([m.lat, m.lng], 14);
+    fijarCoordsForm({ lat: m.lat, lng: m.lng });
+  }
+}
+
+async function enviarListaEspera(e) {
+  e.preventDefault();
+  try {
+    await unirseListaEspera($("espera-ciudad").value, $("espera-whatsapp").value);
+    $("form-espera").reset();
+    cerrarModal("modal-espera");
+    mostrarToast("✅ ¡Gracias! Te avisaremos cuando lleguemos a tu ciudad");
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+  }
 }
 
 function fijarCoordsForm(latlng) {
@@ -515,7 +564,7 @@ async function usarMiUbicacionFormulario() {
 
 // ---------- Fotos ----------
 // Reduce la foto a máx. 800 px y la comprime a JPEG: una foto de celular de
-// 4 MB queda en ~80 KB. Imprescindible mientras guardemos en localStorage.
+// 4 MB queda en ~80 KB. El bucket de Storage solo admite archivos de hasta 1 MB.
 function comprimirImagen(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -559,7 +608,7 @@ function renderizarFotosForm() {
 }
 
 // ---------- Guardar ----------
-function registrarAnuncio(e) {
+async function registrarAnuncio(e) {
   e.preventDefault();
   if (pasoActual < NOMBRES_PASOS.length) { // Enter en un paso intermedio = "Siguiente"
     if (validarPaso(pasoActual)) irAPaso(pasoActual + 1);
@@ -568,34 +617,47 @@ function registrarAnuncio(e) {
   for (let p = 1; p <= NOMBRES_PASOS.length; p++) {
     if (!validarPaso(p)) { irAPaso(p); validarPaso(p); return; }
   }
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para publicar", "error");
+    cerrarModal("modal-publicar");
+    abrirModal("modal-auth");
+    return;
+  }
+  const precio = extraerPrecio($("form-precio").value);
+  if (precio !== null && precio > 99999999999) { mostrarToast("El precio es demasiado alto", "error"); irAPaso(1); return; }
 
   const previo = modoEdicionId ? baseDatosAnuncios.find(a => a.id === modoEdicionId) : null;
-  const precioNum = extraerPrecio($("form-precio").value);
-  const anuncio = normalizarAnuncio({
-    id: previo ? previo.id : Date.now(),
-    nombre: $("form-nombre").value.trim(),
-    categoria: $("form-categoria").value,
-    estado: $("form-estado").value,
-    departamento: $("form-departamento").value,
-    ciudad: $("form-ciudad").value.trim(),
-    barrio: $("form-barrio").value.trim(),
-    lat: coordsForm.lat,
-    lng: coordsForm.lng,
-    whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
-    precio: formatearPrecio(precioNum),      // siempre "$1.200.000", sin importar cómo lo escribió
-    desc: $("form-descripcion").value.trim(),
-    fotos: [...fotosForm],
-    owner: previo ? previo.owner : (usuarioActual ? usuarioActual.id : null), // editar NO cambia al dueño
-    fecha: previo ? previo.fecha : Date.now()
-  });
+  const btn = $("btn-submit-anuncio");
+  const textoBtn = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Guardando…";   // subir fotos puede tardar unos segundos con datos móviles
 
-  // Guardamos sobre una copia: si localStorage está lleno, deshacemos y avisamos.
-  const copia = [...baseDatosAnuncios];
-  if (previo) copia[copia.findIndex(a => a.id === previo.id)] = anuncio;
-  else copia.unshift(anuncio);
-  const anterior = baseDatosAnuncios;
-  baseDatosAnuncios = copia;
-  if (!guardarAnuncios()) { baseDatosAnuncios = anterior; return; }
+  let anuncio;
+  try {
+    anuncio = await guardarAnuncio({
+      nombre: $("form-nombre").value.trim(),
+      categoria: $("form-categoria").value,
+      estado: $("form-estado").value,
+      departamento: $("form-departamento").value,
+      ciudad: $("form-ciudad").value,
+      barrio: $("form-barrio").value.trim(),
+      lat: coordsForm.lat,
+      lng: coordsForm.lng,
+      whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
+      precio,                                   // número o null; se muestra siempre como "$1.200.000"
+      desc: $("form-descripcion").value.trim(),
+      fotos: [...fotosForm]
+    }, previo ? previo.id : null);
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+    return;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoBtn;
+  }
+
+  if (previo) baseDatosAnuncios = baseDatosAnuncios.map(a => (a.id === previo.id ? anuncio : a));
+  else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
   cerrarModal("modal-publicar");
@@ -604,6 +666,7 @@ function registrarAnuncio(e) {
   categoriaActiva = "todos";
   marcarCategoriaActiva();
   aplicarFiltros();
+  activarModoEditor();
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }
 
@@ -630,24 +693,27 @@ function editarAnuncio(id) {
   abrirModal("modal-publicar");
 }
 
-function eliminarAnuncio(id, esAdmin) {
-  if (esAdmin && !EDITOR) return;
+async function eliminarAnuncio(id, esAdmin) {
+  if (esAdmin && !EDITOR) return;   // (solo visual: la base de datos rechaza el borrado si no eres moderador)
   if (!confirm(esAdmin ? "¿Eliminar este anuncio de forma permanente?" : "¿Eliminar este anuncio?")) return;
-  const anterior = baseDatosAnuncios;
+  try {
+    await eliminarAnuncioDB(id);
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+    return;
+  }
   baseDatosAnuncios = baseDatosAnuncios.filter(a => a.id !== id);
-  if (!guardarAnuncios()) { baseDatosAnuncios = anterior; return; }
   aplicarFiltros({ ajustarMapa: false });
+  activarModoEditor();
   mostrarToast("Anuncio eliminado");
 }
 
 // =====================================================================
-// MODO EDITOR (provisional)
+// MODO MODERADOR (se activa por el ROL de tu cuenta, no por la URL)
 // =====================================================================
 function activarModoEditor() {
-  if (!EDITOR) return;
-  $("ebar").classList.remove("hidden");
-  $("ecount").textContent = " · " + baseDatosAnuncios.length + " anuncios en total";
-  $("elink").href = location.pathname;
+  $("ebar").classList.toggle("hidden", !EDITOR);
+  if (EDITOR) $("ecount").textContent = " · " + baseDatosAnuncios.length + " anuncios activos";
 }
 
 // =====================================================================
@@ -722,7 +788,18 @@ function iniciarEventos() {
   // Auth
   $("form-auth").addEventListener("submit", manejarAuth);
   $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
+  $("auth-olvido").addEventListener("click", olvidePassword);
   $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);
+  $("form-nueva-password").addEventListener("submit", guardarNuevaPassword);
+  $("btn-auth").addEventListener("click", () => {
+    if (usuarioActual) $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.addEventListener("sesion:cambio", alCambiarSesion);          // sesión cambió en otra pestaña
+  document.addEventListener("sesion:recuperar", () => abrirModal("modal-nueva-password")); // llegó por el enlace del correo
+
+  // Lista de espera ("Mi ciudad no está")
+  $("form-espera").addEventListener("submit", enviarListaEspera);
+  $("form-ciudad").addEventListener("change", alElegirCiudadForm);
 
   // Formulario
   $("formulario-registro").addEventListener("submit", registrarAnuncio);
@@ -755,19 +832,24 @@ function iniciarEventos() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarDatos();
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1) La pantalla se arma ya (categorías, mapa, eventos); los esqueletos se ven mientras llegan los datos.
   renderizarCategorias();
+  iniciarMapa();
+  iniciarEventos();
+
+  // 2) Datos reales desde Supabase
+  await cargarDatos();
 
   Object.keys(DEPARTAMENTOS).forEach(d => {
     $("filtro-departamento").add(new Option(d, d));
     $("form-departamento").add(new Option(d, d));
   });
   actualizarCiudadesForm();
-
-  iniciarMapa();
-  iniciarEventos();
   actualizarUIAuth();
   aplicarFiltros();
   activarModoEditor();
+
+  // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
+  if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");
 });

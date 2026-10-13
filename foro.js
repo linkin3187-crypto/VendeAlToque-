@@ -1,44 +1,18 @@
 // ===== MercaFree - Foro de Ventas =====
 // Requiere utils.js y data.js (de ahí vienen esc, EDITOR, CATEGORIAS_FORO...).
-// Se usa en index.html (lista) y en post.html (carga los datos).
+// Se usa en index.html (lista de temas) y en post.html (reutiliza renderizado y datos).
 
 let postsForo = [];
 let categoriaForoActiva = "todos";
 
-function cargarForo() {
-  try {
-    const guardados = localStorage.getItem("mercafree_foro");
-    if (guardados) {
-      postsForo = JSON.parse(guardados);
-    } else {
-      postsForo = [
-        { id: 1, titulo: "¿Alguien vende llantas 195/65 R15?",
-          contenido: "Busco un juego de llantas en buen estado para un Mazda 3. Preferiblemente en Envigado o Sabaneta.",
-          categoria: "autos", autor: "Carlos M.", fecha: Date.now() - 86400000 * 2,
-          respuestas: [{ autor: "Andrés", texto: "Yo tengo un juego casi nuevo, te escribo al WhatsApp.", fecha: Date.now() - 86400000 }] },
-        { id: 2, titulo: "Recomiendo carpintero en La Paz",
-          contenido: "Necesitaba un clóset y me lo hicieron muy bien. Si alguien necesita el contacto me avisa.",
-          categoria: "servicios", autor: "Laura G.", fecha: Date.now() - 86400000 * 5, respuestas: [] },
-        { id: 3, titulo: "iPhone 13 en buen estado",
-          contenido: "Vendo iPhone 13 de 128GB, batería al 89%. Precio negociable. Zona El Poblado.",
-          categoria: "tecnologia", autor: "Anónimo", fecha: Date.now() - 3600000 * 8, respuestas: [] }
-      ];
-      guardarForo();
-    }
-  } catch (e) {
-    console.error("Error cargando foro:", e);
-    postsForo = [];
-  }
+// Los temas viven en Supabase (tabla temas_foro + comentarios_foro). data.js los trae.
+async function cargarForo() {
+  postsForo = await cargarTemasForo();
 }
 
-function guardarForo() {
-  try {
-    localStorage.setItem("mercafree_foro", JSON.stringify(postsForo));
-    return true;
-  } catch (e) {
-    mostrarToast("⚠️ No se pudo guardar (almacenamiento lleno)", "error");
-    return false;
-  }
+// ¿Puede esta persona borrar el tema? Su autor o un moderador (la base de datos lo exige igual).
+function puedeBorrarTema(p) {
+  return EDITOR || (!!usuarioActual && !!p.autorId && p.autorId === usuarioActual.id);
 }
 
 function renderizarChipsForo() {
@@ -93,9 +67,9 @@ function renderizarForo() {
         <div class="detalle-anuncio border-t border-slate-100 bg-slate-50 px-4 pb-4">
           <p class="text-sm text-slate-700 whitespace-pre-wrap pt-3 mb-3">${esc(p.contenido)}</p>
           <div class="flex flex-wrap gap-2">
-            <a href="post.html?id=${Number(p.id)}${EDITOR ? "&editar=1" : ""}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">Ver tema y comentarios →</a>
+            <a href="post.html?id=${Number(p.id)}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">Ver tema y comentarios →</a>
             <button type="button" data-toggle class="text-sm text-slate-500 px-3 py-2 hover:text-slate-700">Cerrar</button>
-            ${EDITOR ? `<button type="button" data-borrar class="text-sm bg-red-100 text-red-600 font-semibold px-3 py-2 rounded-lg">🗑️ Borrar tema</button>` : ""}
+            ${puedeBorrarTema(p) ? `<button type="button" data-borrar class="text-sm bg-red-100 text-red-600 font-semibold px-3 py-2 rounded-lg">🗑️ Borrar tema</button>` : ""}
           </div>
         </div>
       </article>`;
@@ -109,12 +83,17 @@ function togglePreviewForo(articulo) {
   if (!abierto) panel.classList.add("abierto");
 }
 
-function eliminarPostForo(id) {
-  if (!EDITOR) return;
+async function eliminarPostForo(id) {
+  const post = postsForo.find(p => p.id === id);
+  if (!post || !puedeBorrarTema(post)) return;   // (solo visual: la base de datos lo exige también)
   if (!confirm("¿Borrar este tema del foro y todos sus comentarios?")) return;
-  const anterior = postsForo;
+  try {
+    await borrarTemaForo(id);
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+    return;
+  }
   postsForo = postsForo.filter(p => p.id !== id);
-  if (!guardarForo()) { postsForo = anterior; return; }
   renderizarForo();
   mostrarToast("Tema eliminado del foro");
 }
@@ -137,20 +116,27 @@ function toggleAnonimoPost() {
   input.value = anonimo ? "" : ((usuarioActual && usuarioActual.nombre) || "");
 }
 
-function publicarEnForo(e) {
+async function publicarEnForo(e) {
   e.preventDefault();
   const titulo = $("foro-titulo").value.trim();
   const contenido = $("foro-contenido").value.trim();
   if (!titulo || !contenido) { mostrarToast("Escribe un título y el contenido", "error"); return; }
 
+  // "Anónimo" solo oculta tu nombre a los demás; la cuenta que publicó queda registrada para moderación.
   let autor = $("foro-autor").value.trim();
   if ($("foro-anonimo").checked || !autor) autor = "Anónimo";
 
-  const nuevo = { id: Date.now(), titulo, contenido, categoria: $("foro-categoria").value, autor, fecha: Date.now(), respuestas: [] };
-  const anterior = postsForo;
-  postsForo = [nuevo, ...postsForo];
-  if (!guardarForo()) { postsForo = anterior; return; }
-
+  const btn = $("form-foro-post").querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    const nuevo = await crearTemaForo({ titulo, contenido, categoria: $("foro-categoria").value, autor });
+    postsForo = [nuevo, ...postsForo];
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+    return;
+  } finally {
+    btn.disabled = false;
+  }
   cerrarModal("modal-foro-post");
   renderizarForo();
   mostrarToast("✅ Publicado en el foro");
@@ -160,7 +146,7 @@ function publicarEnForo(e) {
 function iniciarForo() {
   if (!$("foro-posts")) return;
   renderizarChipsForo();
-  renderizarForo();
+  $("foro-posts").innerHTML = '<div class="skeleton h-24 rounded-xl"></div><div class="skeleton h-24 rounded-xl"></div>';
 
   $("foro-categoria").innerHTML = CATEGORIAS_FORO.filter(c => c.id !== "todos")
     .map(c => `<option value="${esc(c.id)}">${c.icono} ${esc(c.nombre)}</option>`).join("");
@@ -186,9 +172,15 @@ function iniciarForo() {
   document.addEventListener("modal:abierto", e => {
     if (e.detail.id === "modal-foro-post") prepararModalNuevoPost();
   });
+  // Al entrar o salir, el botón "Borrar tema" aparece/desaparece
+  document.addEventListener("sesion:cambio", renderizarForo);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarForo();
+// Solo carga los temas en index.html (post.html carga uno solo, por su cuenta).
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!$("foro-posts")) return;
   iniciarForo();
+  await cargarSesion();
+  await cargarForo();
+  renderizarForo();
 });

@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
@@ -24,6 +24,8 @@
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-6">
+    <div id="anuncio-cargando" class="text-center py-16 text-slate-500">Cargando anuncio…</div>
+
     <div id="anuncio-error" class="hidden text-center py-16">
       <div class="text-5xl mb-4">😕</div>
       <h2 class="text-xl font-bold text-slate-700 mb-2">Anuncio no encontrado</h2>
@@ -62,6 +64,7 @@
           <p class="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-lg p-3">
             🛡️ Consejo: reúnete en un lugar público y revisa el producto antes de pagar. MercaFree no procesa pagos.
           </p>
+          <button type="button" id="btn-reportar" class="text-xs text-slate-400 hover:text-red-600 underline">🚩 Reportar este anuncio</button>
         </section>
       </div>
 
@@ -87,9 +90,36 @@
     <a href="index.html" class="hover:text-indigo-600">MercaFree</a> · Clasificados de barrio
   </footer>
 
+  <!-- MODAL REPORTAR -->
+  <div id="modal-reportar" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="reportar-titulo">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative modal-enter">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="reportar-titulo" class="text-xl font-black text-indigo-900 mb-1">🚩 Reportar anuncio</h3>
+      <p class="text-sm text-slate-500 mb-4">Un moderador lo revisará. Gracias por cuidar la comunidad.</p>
+      <form id="form-reportar" class="space-y-4">
+        <div>
+          <label for="reporte-motivo" class="block text-xs font-bold text-slate-500 mb-1">Motivo</label>
+          <select id="reporte-motivo" required class="w-full border border-slate-300 p-3 rounded-xl bg-white">
+            <option value="estafa">Parece una estafa</option>
+            <option value="prohibido">Contenido o producto prohibido</option>
+            <option value="duplicado">Anuncio duplicado</option>
+            <option value="vendido">Ya se vendió</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label for="reporte-detalle" class="block text-xs font-bold text-slate-500 mb-1">Detalle (opcional)</label>
+          <textarea id="reporte-detalle" rows="3" maxlength="300" class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl">Enviar reporte</button>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=2"></script>
-  <script src="data.js?v=2"></script>
-  <script src="anuncio.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=3"></script>
+  <script src="data.js?v=3"></script>
+  <script src="anuncio.js?v=3"></script>
 </body>
 </html>

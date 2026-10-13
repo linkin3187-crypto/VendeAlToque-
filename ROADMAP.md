@@ -11,20 +11,20 @@
 ## Fase 1: Prototipo estático mejorado ✅ (hecha)
 Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, formulario por pasos, guardado seguro. Ver `GUIA-DE-CAMBIOS.md`.
 
-## Fase 2A: Backend real (en curso)
+## Fase 2A: Backend real (código listo; falta probar con el servidor real y publicar)
 **Meta:** que lo que publica una persona lo vea todo el mundo.
 **Herramienta:** Supabase (Postgres + Auth + Storage + PostGIS), enlazado con este repositorio de GitHub.
 
 | # | Paso | Por qué |
 |---|---|---|
-| 1 | Pasarme la URL del proyecto y la clave `anon` (nunca la `service_role`) | La `anon` es pública por diseño; su seguridad la dan las reglas RLS |
-| 2 | Crear tablas: `perfiles`, `municipios`, `anuncios` (con columna geográfica y `expira_en`), `fotos_anuncio`, `reportes`, `temas_foro`, `comentarios_foro`, `lista_espera` | Todo el modelo de datos en un script SQL que ejecutas una vez |
-| 3 | **RLS (seguridad por filas):** cualquiera lee anuncios activos; solo el dueño edita los suyos; solo el rol admin/moderador borra ajenos | Reemplaza el falso `?editar=1`: la regla vive en la base de datos, no en el navegador |
-| 4 | Login real: correo + Google (recuperar contraseña incluido) | El teléfono con OTP necesita SMS de pago: se pospone |
-| 5 | Fotos en Supabase Storage con límite de tamaño | Adiós al límite de 5 MB de `localStorage` |
-| 6 | **Ciudad como lista cerrada** (tabla `municipios`) + "Mi ciudad no está" que se envía a revisión | Evita que "envigado" y "Envigado" cuenten como lugares distintos |
-| 7 | Reescribir `data.js` para hablar con Supabase (el resto de la app casi no cambia) | Por eso en la Fase 1 aislamos todo el acceso a datos en un solo archivo |
-| 8 | **Base limpia:** NO se migran los anuncios de ejemplo (sus números de WhatsApp son inventados y podrían ser de personas reales) | Mostrar anuncios falsos a usuarios reales es engañarlos |
+| 1 ✅ | URL del proyecto y clave pública en `data.js` (nunca la `service_role`) | La `anon` es pública por diseño; su seguridad la dan las reglas RLS |
+| 2 ✅ | Crear tablas: `perfiles`, `municipios`, `anuncios` (con columna geográfica y `expira_en`), `fotos_anuncio`, `reportes`, `temas_foro`, `comentarios_foro`, `lista_espera` | Todo el modelo de datos en un script SQL que ejecutas una vez |
+| 3 ✅ | **RLS (seguridad por filas):** cualquiera lee anuncios activos; solo el dueño edita los suyos; solo el rol admin/moderador borra ajenos | Reemplaza el falso `?editar=1`: la regla vive en la base de datos, no en el navegador |
+| 4 ✅ | Login real: correo y contraseña, con recuperar contraseña (Google queda pendiente: se activa en el panel de Supabase) | El teléfono con OTP necesita SMS de pago: se pospone |
+| 5 ✅ | Fotos en Supabase Storage con límite de tamaño | Adiós al límite de 5 MB de `localStorage` |
+| 6 ✅ | **Ciudad como lista cerrada** (tabla `municipios`) + "Mi ciudad no está" que se envía a revisión | Evita que "envigado" y "Envigado" cuenten como lugares distintos |
+| 7 ✅ | Reescribir `data.js` para hablar con Supabase (el resto de la app casi no cambia) | Por eso en la Fase 1 aislamos todo el acceso a datos en un solo archivo |
+| 8 ✅ | **Base limpia:** NO se migran los anuncios de ejemplo (sus números de WhatsApp son inventados y podrían ser de personas reales) | Mostrar anuncios falsos a usuarios reales es engañarlos |
 | 9 | Vencimiento a 30 días (`expira_en`) y reglas básicas anti-spam (límite de publicaciones por usuario, palabras prohibidas) | Mantiene fresco el catálogo y frena el abuso desde el día uno |
 
 ## Fase 2B: Mínimo legal + beta cerrada

@@ -6,12 +6,12 @@
   <title>Tema del foro | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="theme-color" content="#4f46e5">
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
   <div id="ebar-post" class="hidden bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2 text-sm text-center">
-    <b>✏️ Modo editor</b> — puedes borrar este tema o comentarios
+    <b>🛡️ Modo moderador</b> — puedes borrar este tema o cualquier comentario
   </div>
   <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center gap-3">
@@ -52,13 +52,18 @@
         
         <div id="lista-comentarios" class="space-y-3 mb-6"></div>
 
+        <div id="aviso-login-comentar" class="hidden border-t border-slate-100 pt-5 text-sm text-slate-600">
+          Para comentar necesitas una cuenta.
+          <a href="index.html#login" class="text-indigo-600 font-semibold underline">Inicia sesión o regístrate</a>
+        </div>
+
         <form id="form-comentario" class="border-t border-slate-100 pt-5 space-y-3">
           <h3 class="font-semibold text-sm text-slate-700">Escribir un comentario</h3>
           <textarea id="comentario-texto" required rows="3" maxlength="600" placeholder="Escribe tu comentario..." class="w-full border border-slate-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none"></textarea>
           
           <div class="flex flex-wrap items-center gap-3">
             <label class="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" id="comentario-anonimo" class="w-4 h-4 rounded" onchange="toggleAnonimoComentario()">
+              <input type="checkbox" id="comentario-anonimo" class="w-4 h-4 rounded">
               <span>Publicar anónimo</span>
             </label>
             <input type="text" id="comentario-autor" maxlength="40" placeholder="Tu nombre" class="flex-1 min-w-[140px] border border-slate-300 p-2.5 rounded-xl text-sm">
@@ -76,117 +81,99 @@
     <a href="index.html" class="hover:text-indigo-600">MercaFree</a> · Foro de ventas
   </footer>
 
-  <script src="utils.js?v=2"></script>
-  <script src="data.js?v=2"></script>
-  <script src="foro.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=3"></script>
+  <script src="data.js?v=3"></script>
+  <script src="foro.js?v=3"></script>
   <script>
-    function toggleAnonimoComentario() {
-      const check = document.getElementById("comentario-anonimo");
-      const input = document.getElementById("comentario-autor");
-      if (check.checked) {
-        input.value = "";
-        input.disabled = true;
-        input.placeholder = "Anónimo";
-      } else {
-        input.disabled = false;
-        input.placeholder = "Tu nombre";
-        if (usuarioActual) {
-          input.value = usuarioActual.nombre || "";
-        }
-      }
+    let temaActual = null;
+
+    function puedeBorrarComentario(c) {
+      return EDITOR || (!!usuarioActual && !!c.autorId && c.autorId === usuarioActual.id);
     }
 
-    function cargarPaginaPost() {
-      const params = new URLSearchParams(location.search);
-      const id = parseInt(params.get("id"), 10);
-      
-      if (EDITOR) {
-        const bar = document.getElementById("ebar-post");
-        if (bar) bar.classList.remove("hidden");
-        const back = document.getElementById("back-foro");
-        if (back) back.href = "index.html?editar=1#seccion-foro";
-      }
+    async function cargarPaginaPost() {
+      const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+      const error = () => { $("post-loading").classList.add("hidden"); $("post-error").classList.remove("hidden"); };
+      if (!id || isNaN(id)) { error(); return; }
 
-      document.getElementById("post-loading").classList.add("hidden");
+      await cargarSesion();                 // quién eres (y si eres moderador)
+      const post = await cargarTemaForo(id);
+      $("post-loading").classList.add("hidden");
+      if (!post) { error(); return; }
+      temaActual = post;
 
-      if (!id || isNaN(id)) {
-        document.getElementById("post-error").classList.remove("hidden");
-        return;
-      }
-
-      // foro.js ya cargó los temas; data.js nos da cargarUsuario()
-      cargarUsuario();
-
-      const post = postsForo.find(p => p.id === id);
-      if (!post) {
-        document.getElementById("post-error").classList.remove("hidden");
-        return;
-      }
+      if (EDITOR) $("ebar-post").classList.remove("hidden");
 
       const cat = CATEGORIAS_FORO.find(c => c.id === post.categoria) || { icono: "📦", nombre: post.categoria };
       const fecha = new Date(post.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      $("post-meta").innerHTML = `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${esc(cat.nombre)}</span>`;
+      $("post-titulo").textContent = post.titulo;
+      document.title = post.titulo + " | MercaFree";
+      $("post-autor").textContent = "👤 " + (post.autor || "Anónimo");
+      $("post-fecha").textContent = fecha;
+      $("post-texto").textContent = post.contenido;
 
-      document.getElementById("post-meta").innerHTML = `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${esc(cat.nombre)}</span>`;
-      document.getElementById("post-titulo").textContent = post.titulo;
-      document.getElementById("post-autor").textContent = "👤 " + (post.autor || "Anónimo");
-      document.getElementById("post-fecha").textContent = fecha;
-      document.getElementById("post-texto").textContent = post.contenido;
+      prepararAccionesPost();
+      renderComentarios();
+      $("post-contenido").classList.remove("hidden");
+    }
 
-      renderComentarios(post);
-      document.getElementById("post-contenido").classList.remove("hidden");
+    // Botón de borrar tema, formulario de comentar y avisos según la sesión
+    function prepararAccionesPost() {
+      const post = temaActual;
+      const puedeBorrar = EDITOR || (!!usuarioActual && !!post.autorId && post.autorId === usuarioActual.id);
+      $("admin-post-actions").classList.toggle("hidden", !puedeBorrar);
+      $("btn-borrar-tema").onclick = async function () {
+        if (!confirm("¿Borrar este tema y todos sus comentarios?")) return;
+        try { await borrarTemaForo(post.id); }
+        catch (err) { mostrarToast(mensajeError(err), "error"); return; }
+        location.href = "index.html#seccion-foro";
+      };
 
-      if (EDITOR) {
-        const adm = document.getElementById("admin-post-actions");
-        if (adm) adm.classList.remove("hidden");
-        document.getElementById("btn-borrar-tema").onclick = function() {
-          if (!confirm("¿Borrar este tema y todos sus comentarios?")) return;
-          postsForo = postsForo.filter(p => p.id !== post.id);
-          guardarForo();
-          mostrarToast("Tema eliminado");
-          location.href = "index.html?editar=1#seccion-foro";
-        };
-      }
+      $("form-comentario").classList.toggle("hidden", !usuarioActual);
+      $("aviso-login-comentar").classList.toggle("hidden", !!usuarioActual);
+      if (usuarioActual) $("comentario-autor").value = usuarioActual.nombre || "";
 
-      // Prefill autor
-      if (usuarioActual && usuarioActual.nombre) {
-        document.getElementById("comentario-autor").value = usuarioActual.nombre;
-      }
+      $("comentario-anonimo").onchange = function () {
+        const input = $("comentario-autor");
+        input.disabled = this.checked;
+        input.placeholder = this.checked ? "Anónimo" : "Tu nombre";
+        input.value = this.checked ? "" : ((usuarioActual && usuarioActual.nombre) || "");
+      };
 
-      document.getElementById("form-comentario").onsubmit = function(e) {
+      $("form-comentario").onsubmit = async function (e) {
         e.preventDefault();
-        const texto = document.getElementById("comentario-texto").value.trim();
-        const anonimo = document.getElementById("comentario-anonimo").checked;
-        let autor = document.getElementById("comentario-autor").value.trim();
-        if (anonimo || !autor) autor = "Anónimo";
-
+        const texto = $("comentario-texto").value.trim();
         if (!texto) return;
-
-        if (!post.respuestas) post.respuestas = [];
-        const copiaResp = [...post.respuestas];
-        post.respuestas.push({ autor, texto, fecha: Date.now() });
-
-        // Guardar en el array global y localStorage
-        const idx = postsForo.findIndex(p => p.id === post.id);
-        if (idx !== -1) postsForo[idx] = post;
-        if (!guardarForo()) { post.respuestas = copiaResp; return; }
-
-        document.getElementById("comentario-texto").value = "";
-        renderComentarios(post);
+        let autor = $("comentario-autor").value.trim();
+        if ($("comentario-anonimo").checked || !autor) autor = "Anónimo";
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        try {
+          const nuevo = await crearComentarioForo(post.id, { texto, autor });
+          post.respuestas.push(nuevo);
+        } catch (err) {
+          mostrarToast(mensajeError(err), "error");
+          return;
+        } finally {
+          btn.disabled = false;
+        }
+        $("comentario-texto").value = "";
+        renderComentarios();
         mostrarToast("✅ Comentario publicado");
       };
     }
 
-    function renderComentarios(post) {
-      const lista = post.respuestas || [];
-      document.getElementById("num-comentarios").textContent = "(" + lista.length + ")";
-      const cont = document.getElementById("lista-comentarios");
-
-      if (lista.length === 0) {
+    function renderComentarios() {
+      const lista = temaActual.respuestas || [];
+      $("num-comentarios").textContent = "(" + lista.length + ")";
+      const cont = $("lista-comentarios");
+      if (!lista.length) {
         cont.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Sé el primero en comentar</p>';
         return;
       }
-
-      cont.innerHTML = lista.map((r, i) => {
+      cont.innerHTML = lista.map(r => {
         const f = new Date(r.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
         return `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
           <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
@@ -194,23 +181,23 @@
             <span>${f}</span>
           </div>
           <p class="text-sm text-slate-700 whitespace-pre-wrap">${esc(r.texto)}</p>
-          ${EDITOR ? `<button type="button" onclick="borrarComentario(${post.id}, ${i})" class="mt-2 text-xs text-red-600 font-medium hover:underline">Eliminar comentario</button>` : ""}
+          ${puedeBorrarComentario(r) ? `<button type="button" data-borrar-comentario="${Number(r.id)}" class="mt-2 text-xs text-red-600 font-medium hover:underline">Eliminar comentario</button>` : ""}
         </div>`;
       }).join("");
     }
 
-    function borrarComentario(postId, index) {
-      if (!EDITOR) return;
+    // Delegación de eventos: un solo listener para todos los botones "Eliminar comentario"
+    $("lista-comentarios").addEventListener("click", async e => {
+      const b = e.target.closest("[data-borrar-comentario]");
+      if (!b) return;
+      const id = Number(b.dataset.borrarComentario);
       if (!confirm("¿Eliminar este comentario?")) return;
-      const post = postsForo.find(p => p.id === postId);
-      if (!post || !post.respuestas) return;
-      post.respuestas.splice(index, 1);
-      const idx = postsForo.findIndex(p => p.id === postId);
-      if (idx !== -1) postsForo[idx] = post;
-      if (typeof guardarForo === "function") guardarForo();
-      renderComentarios(post);
+      try { await borrarComentarioForo(id); }
+      catch (err) { mostrarToast(mensajeError(err), "error"); return; }
+      temaActual.respuestas = temaActual.respuestas.filter(c => c.id !== id);
+      renderComentarios();
       mostrarToast("Comentario eliminado");
-    }
+    });
 
     window.addEventListener("load", cargarPaginaPost);
   </script>

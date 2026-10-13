@@ -7,8 +7,8 @@
 let anuncioActual = null;
 let fotoActiva = 0;
 
-function cargarAnuncioDesdeURL() {
-  cargarDatos();
+async function cargarAnuncioDesdeURL() {
+  await cargarDatos();   // trae municipios, sesión y anuncios desde Supabase
   const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
   return baseDatosAnuncios.find(a => a.id === id) || null;
 }
@@ -123,6 +123,7 @@ function renderizarAnuncio(a) {
   // El número NO se muestra en pantalla (evita que lo copien robots); solo el botón.
   $("btn-whatsapp").href = urlWhatsApp(a.whatsapp, a.nombre);
   $("btn-compartir").addEventListener("click", compartir);
+  prepararReporte(a);
 
   renderizarGaleria(a);
 
@@ -139,7 +140,35 @@ function renderizarAnuncio(a) {
   $("anuncio-contenido").classList.remove("hidden");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// ---------- Reportar anuncio ----------
+// Cualquier persona con cuenta puede reportar; solo los moderadores ven los reportes.
+function prepararReporte(a) {
+  $("btn-reportar").addEventListener("click", () => {
+    if (!usuarioActual) {
+      mostrarToast("Inicia sesión para reportar un anuncio", "error");
+      setTimeout(() => { location.href = "index.html#login"; }, 1200);
+      return;
+    }
+    abrirModal("modal-reportar");
+  });
+  $("form-reportar").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      await crearReporte(a.id, $("reporte-motivo").value, $("reporte-detalle").value.trim());
+      e.target.reset();
+      cerrarModal("modal-reportar");
+      mostrarToast("✅ Gracias. Revisaremos este anuncio");
+    } catch (err) {
+      mostrarToast(mensajeError(err), "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   // "Volver": si venimos de nuestra propia página, regresa a donde estaba el usuario
   $("btn-volver").addEventListener("click", e => {
     if (document.referrer.startsWith(location.origin) && history.length > 1) {
@@ -148,7 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const a = cargarAnuncioDesdeURL();
+  const a = await cargarAnuncioDesdeURL();
+  $("anuncio-cargando").classList.add("hidden");
   if (!a) { $("anuncio-error").classList.remove("hidden"); return; }
   renderizarAnuncio(a);
 });

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -31,7 +31,7 @@
         <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-full text-sm transition">
           Iniciar sesión
         </button>
-        <button data-abrir="modal-publicar" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1.5">
+        <button data-abrir="modal-publicar" data-requiere-login class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1.5">
           <span class="text-lg">+</span>
           <span>Publicar Gratis</span>
         </button>
@@ -39,13 +39,12 @@
     </div>
   </header>
 
-  <!-- BARRA MODO EDITOR -->
+  <!-- BARRA MODO MODERADOR (solo la ven cuentas con rol moderador/admin) -->
   <div id="ebar" class="hidden bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2.5 text-sm">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
-      <b>✏️ Modo editor activo</b>
+      <b>🛡️ Modo moderador</b>
       <span id="ecount"></span>
-      <span class="text-amber-700">· Cambios solo en este navegador (en la Fase 2 será un rol real de administrador)</span>
-      <a id="elink" href="index.html" class="ml-auto text-amber-800 font-semibold underline">Salir del modo editor</a>
+      <span class="text-amber-700">· Puedes editar y eliminar cualquier anuncio o tema del foro</span>
     </div>
   </div>
 
@@ -179,9 +178,7 @@
         </div>
       </div>
 
-      <!-- Esqueletos: se ven mientras carga y los reemplaza la lista real.
-           Hoy se ven un instante; con la base de datos de la Fase 2 (que tarda
-           en responder) serán mucho más útiles. -->
+      <!-- Esqueletos: se ven mientras llegan los anuncios desde Supabase y los reemplaza la lista real. -->
       <div id="contenedor-anuncios" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div class="skeleton h-72 rounded-2xl"></div>
         <div class="skeleton h-72 rounded-2xl"></div>
@@ -194,10 +191,10 @@
       </div>
 
       <div id="estado-vacio" class="hidden text-center py-16">
-        <div class="text-5xl mb-4">🔍</div>
-        <h3 class="text-xl font-bold text-slate-700 mb-2">No encontramos resultados</h3>
-        <p class="text-slate-500 text-sm mb-3">Prueba con otra búsqueda o quita filtros</p>
-        <button type="button" data-accion-global="limpiar" class="text-indigo-600 font-semibold text-sm underline">Limpiar filtros</button>
+        <div id="vacio-icono" class="text-5xl mb-4">🔍</div>
+        <h3 id="vacio-titulo" class="text-xl font-bold text-slate-700 mb-2">No encontramos resultados</h3>
+        <p id="vacio-texto" class="text-slate-500 text-sm mb-3">Prueba con otra búsqueda o quita filtros</p>
+        <button type="button" id="vacio-limpiar" data-accion-global="limpiar" class="text-indigo-600 font-semibold text-sm underline">Limpiar filtros</button>
       </div>
     </section>
   </main>
@@ -210,7 +207,7 @@
           <h2 class="text-xl font-bold">💬 Foro de Ventas</h2>
           <p class="text-sm text-slate-500">Toca un tema para desplegarlo o entra para ver comentarios · <span id="foro-contador">0 publicaciones</span></p>
         </div>
-        <button data-abrir="modal-foro-post" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow">
+        <button data-abrir="modal-foro-post" data-requiere-login class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow">
           + Nueva publicación
         </button>
       </div>
@@ -287,8 +284,7 @@
             </div>
             <div>
               <label for="form-ciudad" class="block text-xs font-bold text-slate-500 mb-1">Ciudad *</label>
-              <input type="text" id="form-ciudad" list="lista-ciudades" required placeholder="Envigado" class="w-full border border-slate-300 p-3 rounded-xl">
-              <datalist id="lista-ciudades"></datalist>
+              <select id="form-ciudad" required class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
             </div>
           </div>
           <div>
@@ -352,13 +348,50 @@
           <label for="auth-password" class="block text-xs font-bold text-slate-500 mb-1">Contraseña</label>
           <input type="password" id="auth-password" required minlength="6" autocomplete="current-password" placeholder="••••••••" class="w-full border border-slate-300 p-3 rounded-xl">
         </div>
-        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Continuar</button>
+        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl disabled:opacity-60">Continuar</button>
+        <button type="button" id="auth-olvido" class="w-full text-xs text-slate-500 hover:text-indigo-600 underline">¿Olvidaste tu contraseña?</button>
       </form>
       <div class="mt-4 text-center text-sm">
         <span id="auth-switch-text">¿No tienes cuenta?</span>
         <button type="button" id="auth-switch-btn" class="text-indigo-600 font-semibold ml-1">Regístrate</button>
       </div>
-      <p class="mt-4 text-[11px] text-slate-400 text-center">Cuenta de prueba guardada solo en este navegador. El inicio de sesión real llega con la base de datos (Fase 2).</p>
+      <p class="mt-4 text-[11px] text-slate-400 text-center">Necesitas una cuenta para publicar anuncios o escribir en el foro. Ver y contactar es gratis y sin cuenta.</p>
+    </div>
+  </div>
+
+  <!-- ============ MODAL LISTA DE ESPERA ("Mi ciudad no está") ============ -->
+  <div id="modal-espera" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]" role="dialog" aria-modal="true" aria-labelledby="espera-titulo">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative modal-enter">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="espera-titulo" class="text-xl font-black text-indigo-900 mb-1">📍 Aún no llegamos a tu ciudad</h3>
+      <p class="text-sm text-slate-500 mb-4">Empezamos por el Valle de Aburrá. Déjanos tu ciudad y te avisamos cuando abramos allá.</p>
+      <form id="form-espera" class="space-y-4">
+        <div>
+          <label for="espera-ciudad" class="block text-xs font-bold text-slate-500 mb-1">Tu ciudad *</label>
+          <input type="text" id="espera-ciudad" required minlength="2" maxlength="60" placeholder="Ej. Rionegro" class="w-full border border-slate-300 p-3 rounded-xl">
+        </div>
+        <div>
+          <label for="espera-whatsapp" class="block text-xs font-bold text-slate-500 mb-1">WhatsApp (opcional, para avisarte)</label>
+          <div class="flex">
+            <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-sm text-slate-600">+57</span>
+            <input type="tel" id="espera-whatsapp" inputmode="numeric" pattern="3[0-9]{9}" title="10 dígitos, empieza por 3" placeholder="3001234567" class="w-full border border-slate-300 p-3 rounded-r-xl">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl">Avisarme</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODAL NUEVA CONTRASEÑA (llegas por el enlace del correo) ============ -->
+  <div id="modal-nueva-password" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[120]" role="dialog" aria-modal="true" aria-labelledby="nueva-pass-titulo">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative modal-enter">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="nueva-pass-titulo" class="text-xl font-black text-indigo-900 mb-1">Nueva contraseña</h3>
+      <p class="text-sm text-slate-500 mb-4">Escribe la contraseña que usarás de ahora en adelante.</p>
+      <form id="form-nueva-password" class="space-y-4">
+        <input type="password" id="nueva-password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres" class="w-full border border-slate-300 p-3 rounded-xl">
+        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">Guardar contraseña</button>
+      </form>
     </div>
   </div>
 
@@ -387,19 +420,20 @@
             <span class="font-medium text-slate-700">Publicar como anónimo</span>
           </label>
           <input type="text" id="foro-autor" maxlength="40" placeholder="Tu nombre" class="w-full border border-slate-300 p-3 rounded-xl">
-          <p class="text-xs text-slate-400 mt-1">Si iniciaste sesión se usará tu nombre. Puedes marcar anónimo si lo prefieres.</p>
+          <p class="text-xs text-slate-400 mt-1">Se usará tu nombre. "Anónimo" lo oculta a los demás, pero los moderadores pueden ver qué cuenta publicó si hay un abuso.</p>
         </div>
         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl">Publicar</button>
       </form>
     </div>
   </div>
 
-  <!-- Scripts: el orden importa. utils → data → (librerías) → app/foro -->
+  <!-- Scripts: el orden importa. librerías → utils → data (Supabase) → foro/app -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-  <script src="utils.js?v=2"></script>
-  <script src="data.js?v=2"></script>
-  <script src="foro.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=3"></script>
+  <script src="data.js?v=3"></script>
+  <script src="foro.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

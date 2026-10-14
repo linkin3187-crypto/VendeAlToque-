@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -169,7 +169,11 @@
           <button type="button" id="btn-zona" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-full">🔎 Buscar en esta zona</button>
           <button type="button" id="btn-quitar-zona" class="hidden text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-3 py-1.5 rounded-full">✖ Quitar filtro de zona</button>
         </div>
-        <p class="text-xs text-slate-400 mt-2 text-center">Toca un pin para ver el anuncio · Los números agrupan pines cercanos</p>
+        <p class="text-xs text-slate-600 mt-3 text-center flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <span><i class="leyenda-pin leyenda-pin-anuncio"></i> <b>Anuncio de venta</b> (pin grande naranja)</span>
+          <span><i class="leyenda-pin leyenda-pin-comercio"></i> <b>Comercio</b> (pin pequeño blanco)</span>
+        </p>
+        <p class="text-xs text-slate-400 mt-1 text-center">Toca un pin para ver el anuncio o comercio · Los números agrupan pines cercanos</p>
       </div>
     </section>
 
@@ -450,9 +454,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=5"></script>
-  <script src="data.js?v=5"></script>
-  <script src="foro.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="utils.js?v=7"></script>
+  <script src="data.js?v=7"></script>
+  <script src="foro.js?v=7"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

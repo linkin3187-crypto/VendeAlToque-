@@ -52,12 +52,29 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 
 **Criterio para pasar a la siguiente fase:** beta cerrada funcionando con 20-50 vendedores reales, sin errores graves en una semana y con respuestas de usuarios sobre la portada nueva.
 
-## Fase 2D: Vitrina del comercio (antes de salir a buscar tiendas)
-**Meta:** que lo que se le ofrece a un comercio **exista de verdad** el día que lo visitemos. Hoy la ficha de comercio solo tiene nombre, dirección, teléfono, horario y una foto. No hay catálogo, ofertas ni pedidos, y **no se le promete a nadie lo que no existe**.
-- **Reclamar mi negocio:** la persona pide administrar su ficha (ya existe la solicitud); un moderador la aprueba tras verificar que es el dueño (llamada o visita; más adelante, código por WhatsApp).
-- **Ficha enriquecida:** botón de WhatsApp, hasta 5 fotos, «oferta del día» (texto corto con fecha de vencimiento) y sello «verificado en persona».
-- **QR con código por comercio** (`?ref=nombre-del-comercio`): permite medir cuántas visitas y registros trae cada sticker.
-- **Atribución de datos:** mostrar «Datos de comercios: © colaboradores de OpenStreetMap» en el directorio y en el mapa (la licencia ODbL lo exige; consúltalo con el abogado).
+## Fase 2D: Verificación y vitrina del comercio (antes de salir a buscar tiendas)
+**Meta:** que lo que se le ofrece a un comercio **exista de verdad** el día que lo visitemos, y que el sello «verificado» signifique algo concreto. La ficha actual solo tiene nombre, dirección, teléfono, horario y una foto.
+**Idea central:** el comercio verificado recibe **gratis una vitrina propia** (su página con un mini-inventario de hasta 20 productos), algo que un usuario normal no tiene. Es la razón para dejarse visitar y para volver a actualizar.
+**Alcance:** vitrina + contacto por WhatsApp. **No** hay carrito con pago, domicilios ni pedidos dentro de la plataforma (eso es la Fase 6): el pedido se arma y se envía por WhatsApp.
+
+| Sub-fase | Qué se construye | Esfuerzo |
+|---|---|---|
+| **2D.1 Verificación** | Tabla `verificaciones_comercio` (comercio, quién verificó, fecha, método, foto de la fachada, notas). Niveles de sello (ver abajo). **Modo visita** en el editor: desde el celular, foto de la fachada, GPS del pin en la puerta y lista de comprobación; al terminar se marca el comercio. Repetir la verificación cada 12 meses o si hay reportes. | Mediano |
+| **2D.2 Reclamar mi negocio** | El dueño entra con su cuenta, acepta los términos y autoriza publicar los datos del negocio; un moderador aprueba tras verificarlo. Se agrega `owner_id` a `comercios`. | Pequeño |
+| **2D.3 Vitrina** | Página `tienda.html?id=…`: foto de portada, «abierto ahora» según el horario, botón de WhatsApp y los productos (nombre, precio, foto, «disponible»/«agotado»). Tabla `productos_comercio` con tope de 20 por comercio y RLS (lectura pública solo de comercios activos; escritura del dueño o moderadores). Botón «Reportar producto». Aviso «actualizado hace X días»; si pasan 30 días sin tocarlo, se marca «desactualizado». | Grande |
+| **2D.4 Pedir por WhatsApp** | El visitante marca productos y se abre WhatsApp con el mensaje armado («Hola, quiero: 2 × …, 1 × …»). Sin pago. Es la versión realista de «pedir» antes de la Fase 6. | Pequeño |
+| **2D.5 Extras** | QR con código por comercio (`?ref=nombre`) para medir registros por sticker, y la atribución «Datos de comercios: © colaboradores de OpenStreetMap» (licencia ODbL, consúltalo con el abogado). | Pequeño |
+
+**Niveles de sello (cada uno dice exactamente qué significa y la fecha):**
+1. **Ubicado:** viene de OpenStreetMap, sin comprobar.
+2. **Verificado por teléfono:** se llamó al número publicado y se confirmó nombre y dirección.
+3. **Verificado en persona:** un moderador visitó el local y comprobó que existe, que atiende y que quien responde es dueño o administrador.
+
+**Protocolo de visita (comprobar siempre):** (1) el local existe y atiende en esa dirección, con foto de la fachada y el número visible, sin clientes en la foto; (2) quien atiende es el dueño o administrador, según una prueba simple (por ejemplo, el registro mercantil si lo tiene); **no se guarda copia de la cédula**; (3) el teléfono publicado es del negocio; (4) el pin queda sobre la puerta, usando el GPS del editor; (5) el dueño acepta los términos y autoriza publicar. Se guarda el registro de la visita.
+
+**Reglas de contenido de la vitrina (a revisar con el abogado):** no se publican medicamentos de venta con fórmula médica ni productos regulados (la venta de medicamentos por internet tiene normas propias). Los licores y el tabaco son solo para mayores de edad, con aviso.
+
+**Palanca futura:** el tope gratuito de 20 productos y la vitrina básica son la base de los planes de la Fase 5; **no se anuncian precios** hasta tener datos de la beta.
 
 ## Estrategia de crecimiento (arranque en frío)
 **Principio:** **densidad antes que alcance.** Un mapa con poca vida hace que la gente no vuelva. Se concentra el esfuerzo en 1 o 2 municipios hasta que se vea movimiento, y solo entonces se abre el siguiente. Umbral inicial (**hipótesis que se corrige con la beta**): ~30 anuncios activos y ~15 comercios verificados por municipio.
@@ -66,7 +83,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | Etapa | Qué se hace | Condición para empezar |
 |---|---|---|
 | **G0 Preparación** | Ubicación aproximada (2C.1), términos revisados por abogado y NIT confirmado, moderación probada, atribución de OpenStreetMap, comercios verificados en persona, métricas básicas | Nada se promociona antes de esto |
-| **G1 Comercios** | Visita en persona con folleto; reclamar ficha (2D); sticker QR con código propio; «Programa Fundadores» para las primeras tiendas | 2D publicada y probada |
+| **G1 Comercios** | **Piloto de 15-20 tiendas en un solo municipio**, visita en persona con el protocolo de la 2D; reclamar ficha; vitrina gratis con hasta 20 productos; sticker QR con código propio; «Programa Fundadores» | 2D.1 a 2D.3 publicadas y probadas |
 | **G2 Vendedores** | Beta cerrada con 20-50 vendedores invitados uno a uno (de los grupos de Facebook y del barrio) | G0 completa |
 | **G3 Grupos de Facebook** | **Gradual:** (1) publicación fijada que presenta MercaFree; (2) formato «publica en MercaFree y comparte aquí el enlace»; (3) solo después, regla del grupo que pida el enlace. **No** se prohíbe publicar de golpe. Los grupos siguen vivos: son el canal de distribución. | G2 con vendedores activos |
 | **G4 Confianza como mensaje** | Se promete solo lo **verificable**: «comercio verificado en persona», «teléfono verificado», «miembro desde…». Consejos de seguridad en cada ficha y puntos de encuentro seguros (supermercados, bancos, farmacias del directorio). | Cuando esos sellos existan de verdad (Fase 4) |
@@ -84,7 +101,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | Extraer datos de Google Maps, Facebook o Mercado Libre | Va contra sus términos de uso | Solo enlaces a Google Maps; nada de extracción |
 | Pedir cédula para «verificar» | Dato personal delicado: obliga a custodiarlo y a justificar su uso | No se recolecta por ahora; verificación por teléfono y por visita |
 | «Sin estafas», «vecinos 100% reales» | Promesa que no podemos garantizar (publicidad engañosa) | Prometer solo verificaciones concretas y explicar qué significa cada sello |
-| Ofrecer catálogo y pedidos a las tiendas | Hoy no existen | Ofrecer solo lo de la Fase 2D |
+| Ofrecer a las tiendas algo que aún no existe | Quema la confianza de las primeras tiendas | Ofrecer solo lo ya publicado de la 2D (vitrina y pedido por WhatsApp), nunca pagos ni domicilios |
 | Depender de Facebook | Una suspensión deja sin audiencia | Canales propios (WhatsApp y correo) |
 
 ## Fase 3: SEO y escala

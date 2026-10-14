@@ -24,6 +24,7 @@ let modoEdicionId = null;                 // id del anuncio que se está editand
 let pasoActual = 1;
 let fotosForm = [];                       // fotos del formulario (base64)
 let coordsForm = { ...CENTRO_DEFECTO };
+let ubicacionExactaCargada = null;   // punto REAL del anuncio que se edita (solo dueño); null al crear
 let pinManual = false;   // true cuando la persona colocó el pin a mano (no lo movemos solos)
 let geoTimer = null, geoSeq = 0;
 let mapaFormulario = null;
@@ -99,11 +100,12 @@ function popupHTML(a) {
     ${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-20 object-cover rounded-lg mb-2">` : ""}
     <strong class="block">${esc(a.nombre)}</strong>
     <small class="text-slate-500">${esc(a.barrio || "")}${a.ciudad ? ", " + esc(a.ciudad) : ""}</small>
+    ${a.ubicacionAprox ? '<small class="block text-slate-400">📍 Zona aproximada</small>' : ""}
     ${a.precio ? `<div class="font-semibold text-indigo-600">${esc(a.precio)}</div>` : ""}
     <div class="flex flex-wrap gap-1.5 mt-2">
       <a href="anuncio.html?id=${a.id}" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md no-underline">Ver anuncio completo →</a>
       <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">WhatsApp</a>
-      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
+      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">${a.ubicacionAprox ? "Cómo llegar a la zona" : "Cómo llegar"}</a>
     </div>
   </div>`;
 }
@@ -360,7 +362,9 @@ function tarjetaHTML(a) {
       : "";
   // Siempre dibujamos el icono de la categoría de fondo; la <img> va ENCIMA.
   // Si la foto falla al cargar, se quita la <img> y queda el icono (sin código extra por tarjeta).
-  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+  const guardado = favoritosIds.has(a.id);
+  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio relative bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+    <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${guardado ? "❤️" : "🤍"}</button>
     <a href="anuncio.html?id=${a.id}" class="relative h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
       <span class="text-5xl">${icono}</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
@@ -469,6 +473,7 @@ async function cerrarSesion() {
 // Se llama cada vez que alguien entra o sale: repinta todo lo que depende de la sesión.
 function alCambiarSesion() {
   actualizarUIAuth();
+  refrescarCorazones();
   activarModoEditor();
   aplicarFiltros({ ajustarMapa: false });
 }
@@ -504,12 +509,51 @@ function actualizarUIAuth() {
     btn.textContent = usuarioActual.nombre.split(" ")[0];
     btn.removeAttribute("data-abrir");            // con sesión, el botón lleva a "Mis anuncios"
     $("seccion-mis-anuncios").classList.remove("hidden");
+    $("link-favoritos").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
     btn.textContent = "Iniciar sesión";
     btn.setAttribute("data-abrir", "modal-auth");
     $("seccion-mis-anuncios").classList.add("hidden");
+    $("link-favoritos").classList.add("hidden");
   }
+}
+
+// ---------- Favoritos (corazón) ----------
+function pintarCorazon(btn, guardado) {
+  btn.textContent = guardado ? "❤️" : "🤍";
+  btn.setAttribute("aria-pressed", String(guardado));
+  btn.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+}
+
+async function alternarCorazon(id, btn) {
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para guardar favoritos", "error");
+    abrirModal("modal-auth");
+    return;
+  }
+  const antes = favoritosIds.has(id);
+  pintarCorazon(btn, !antes);             // respuesta inmediata; si falla se revierte
+  btn.disabled = true;
+  try {
+    const ahora = await alternarFavorito(id);
+    pintarCorazon(btn, ahora);
+    mostrarToast(ahora ? "❤️ Guardado en favoritos" : "Quitado de favoritos");
+  } catch (err) {
+    pintarCorazon(btn, antes);
+    mostrarToast(mensajeError(err), "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Al entrar/salir alguien: pone cada corazón de la pantalla en su estado correcto (sin repintar la lista).
+async function refrescarCorazones() {
+  await cargarFavoritos();
+  document.querySelectorAll('[data-accion="favorito"]').forEach(b => {
+    const fila = b.closest("[data-id]");
+    if (fila) pintarCorazon(b, favoritosIds.has(Number(fila.dataset.id)));
+  });
 }
 
 function renderizarMisAnuncios() {
@@ -562,6 +606,8 @@ function validarPaso(n) {
 function resetFormulario() {
   $("formulario-registro").reset();
   pinManual = false; geoSeq++; avisoGeo(null);
+  ubicacionExactaCargada = null;
+  $("form-aprox").disabled = false; $("form-aprox-nota").classList.add("hidden");
   fotosForm = [];
   renderizarFotosForm();
   coordsForm = ubicacionUsuario ? { ...ubicacionUsuario }
@@ -801,6 +847,8 @@ async function registrarAnuncio(e) {
       barrio: $("form-barrio").value.trim(),
       lat: coordsForm.lat,
       lng: coordsForm.lng,
+      aprox: $("form-aprox").checked,
+      exactaOriginal: ubicacionExactaCargada,
       whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
       precio,                                   // número o null; se muestra siempre como "$1.200.000"
       desc: $("form-descripcion").value.trim(),
@@ -818,6 +866,7 @@ async function registrarAnuncio(e) {
   else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
+  if (anuncio.avisoUbicacion) mostrarToast("Se guardó el anuncio, pero no pudimos guardar tu punto exacto. Ábrelo con «Editar» y guarda de nuevo.", "error");
   cerrarModal("modal-publicar");
   // Quita filtros de categoría/búsqueda para que el usuario VEA su anuncio
   $("buscador").value = "";
@@ -829,9 +878,13 @@ async function registrarAnuncio(e) {
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }
 
-function editarAnuncio(id) {
+async function editarAnuncio(id) {
   const a = baseDatosAnuncios.find(x => x.id === id);
   if (!a) return;
+  const ajeno = !!(a.owner && usuarioActual && a.owner !== usuarioActual.id);   // un moderador editando el anuncio de otra persona
+  // Si la ubicación es aproximada, el pin público NO es el real: traemos el real (solo lo entrega el dueño).
+  let exacta = null;
+  if (a.ubicacionAprox && !ajeno) exacta = await cargarUbicacionExacta(id);
   modoEdicionId = id;
   resetFormulario();
   $("form-nombre").value = a.nombre;
@@ -846,7 +899,11 @@ function editarAnuncio(id) {
   $("form-descripcion").value = a.desc || "";
   fotosForm = [...a.fotos];
   renderizarFotosForm();
-  if (tieneCoords(a)) coordsForm = { lat: a.lat, lng: a.lng };
+  ubicacionExactaCargada = exacta;
+  if (exacta) coordsForm = { lat: exacta.lat, lng: exacta.lng };
+  else if (tieneCoords(a)) coordsForm = { lat: a.lat, lng: a.lng };
+  $("form-aprox").checked = !!a.ubicacionAprox;
+  if (ajeno) { $("form-aprox").disabled = true; $("form-aprox-nota").classList.remove("hidden"); }
   pinManual = true; geoSeq++; avisoGeo(null);   // al editar respetamos el pin guardado
   $("publicar-titulo").textContent = "✏️ Editar anuncio";
   $("btn-submit-anuncio").textContent = "💾 Guardar cambios";
@@ -926,6 +983,7 @@ function iniciarEventos() {
     if (!b || !fila) return;
     const id = Number(fila.dataset.id);
     if (b.dataset.accion === "ver-mapa") verEnMapa(id);
+    else if (b.dataset.accion === "favorito") alternarCorazon(id, b);
     else if (b.dataset.accion === "editar") editarAnuncio(id);
     else if (b.dataset.accion === "eliminar") eliminarAnuncio(id, false);
     else if (b.dataset.accion === "eliminar-admin") eliminarAnuncio(id, true);
@@ -1012,6 +1070,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   refrescarOpcionesUbicacion();
   actualizarCiudadesForm();
   actualizarUIAuth();
+  await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
   aplicarFiltros();
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.

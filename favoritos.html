@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis favoritos | MercaFree</title>
+  <meta name="robots" content="noindex">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=9">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span></a>
+      <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Anuncios y mapa</a>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-black text-indigo-900">❤️ Mis favoritos</h1>
+    <p class="text-sm text-slate-500 mt-1 mb-4">Los anuncios que guardaste. Solo tú los ves.</p>
+    <div id="fav-cargando" class="text-slate-500 text-sm">Cargando…</div>
+    <div id="fav-lista" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    <div id="fav-vacio" class="hidden text-center py-12 text-slate-500">
+      <div class="text-4xl mb-2">🤍</div>
+      <p class="text-sm">Aún no guardaste anuncios. Toca el corazón de cualquier anuncio para verlo aquí.</p>
+      <a href="index.html" class="inline-block mt-3 text-indigo-600 underline text-sm">Ver anuncios</a>
+    </div>
+    <div id="fav-sinsesion" class="hidden text-center py-12 text-slate-500">
+      <div class="text-4xl mb-2">🔒</div>
+      <p class="text-sm">Inicia sesión para ver tus favoritos.</p>
+      <a href="index.html#login" class="inline-block mt-3 text-indigo-600 underline text-sm">Iniciar sesión</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=9"></script>
+  <script src="data.js?v=9"></script>
+  <script src="favoritos.js?v=9"></script>
+</body>
+</html>

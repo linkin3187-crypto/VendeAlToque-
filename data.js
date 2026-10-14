@@ -59,7 +59,7 @@ function mensajeError(e) {
   if (/User already registered/i.test(m)) return "Este correo ya está registrado";
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
-  if (/Límite de \d+ anuncios/i.test(m)) return m;
+  if (/Límite de \d+ (anuncios|favoritos)/i.test(m)) return m;
   if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya enviaste esto antes. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Sin conexión con el servidor. Revisa tu internet";
@@ -105,6 +105,7 @@ function filaAAnuncio(r) {
     desc: r.descripcion,
     fotos: r.fotos || [],
     owner: r.owner_id,
+    ubicacionAprox: !!r.ubicacion_aprox,   // true = lat/lng públicos están desplazados (ver anuncios_ubicacion)
     fecha: Date.parse(r.creado_en)
   });
 }
@@ -202,11 +203,36 @@ async function guardarAnuncio(d, id) {
     precio: d.precio,                 // número o null
     municipio_id: muni.id,
     barrio: d.barrio,
-    lat: d.lat,
-    lng: d.lng,
     whatsapp: d.whatsapp,             // "573001234567"
     fotos
   };
+
+  // --- Ubicación ---
+  // d.lat/d.lng es el punto REAL que marcó la persona. Si pidió «zona aproximada» (lo normal),
+  // al anuncio público va un punto desplazado y el real se guarda aparte, solo para ella.
+  // Un moderador que edita un anuncio AJENO no cambia la ubicación (no conoce el punto real).
+  const ajeno = !!(previo && previo.owner && usuarioActual && previo.owner !== usuarioActual.id);
+  const aprox = d.aprox !== false;
+  let puntoExacto = null;             // lo que hay que guardar en la tabla privada
+  if (!ajeno) {
+    const igual = (a, b) => a && b && Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+    const referencia = d.exactaOriginal || (previo ? { lat: previo.lat, lng: previo.lng } : null);
+    // Sin mover el pin no se vuelve a desplazar: si no, al editar varias veces se podría promediar el punto real.
+    const sinCambio = !!previo && previo.ubicacionAprox && igual({ lat: d.lat, lng: d.lng }, referencia);
+    if (aprox) {
+      if (sinCambio) {
+        fila.lat = previo.lat; fila.lng = previo.lng;
+        if (d.exactaOriginal) puntoExacto = d.exactaOriginal;
+      } else {
+        const p = desplazarCoords(d.lat, d.lng);
+        fila.lat = p.lat; fila.lng = p.lng;
+        puntoExacto = { lat: d.lat, lng: d.lng };
+      }
+    } else {
+      fila.lat = d.lat; fila.lng = d.lng;
+    }
+    fila.ubicacion_aprox = aprox;
+  }
 
   const consulta = id
     ? sb.from("anuncios").update(fila).eq("id", id)
@@ -219,7 +245,34 @@ async function guardarAnuncio(d, id) {
   }
   // al editar: borra de Storage las fotos que el usuario quitó
   if (previo) await borrarFotosStorage(previo.fotos.filter(f => !fotos.includes(f)));
-  return filaAAnuncio(data);
+
+  // Punto real en la tabla privada. Si falla, el anuncio YA quedó guardado: solo avisamos.
+  let avisoUbicacion = false;
+  if (!ajeno) {
+    try {
+      if (aprox && puntoExacto) {
+        const { error: e2 } = await sb.from("anuncios_ubicacion").upsert({
+          anuncio_id: data.id, lat: puntoExacto.lat, lng: puntoExacto.lng, actualizado_en: new Date().toISOString()
+        }, { onConflict: "anuncio_id" });
+        if (e2) throw e2;
+      } else if (!aprox && previo) {
+        await sb.from("anuncios_ubicacion").delete().eq("anuncio_id", data.id);   // ya no hace falta
+      }
+    } catch (e) {
+      console.error("ubicación privada:", e);
+      avisoUbicacion = true;
+    }
+  }
+  const resultado = filaAAnuncio(data);
+  resultado.avisoUbicacion = avisoUbicacion;
+  return resultado;
+}
+
+// Punto REAL de un anuncio tuyo (la regla RLS solo se lo entrega al dueño y a moderadores).
+async function cargarUbicacionExacta(id) {
+  const { data, error } = await sb.from("anuncios_ubicacion").select("lat, lng").eq("anuncio_id", id).maybeSingle();
+  if (error || !data) return null;
+  return { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
 }
 
 async function eliminarAnuncioDB(id) {
@@ -227,6 +280,47 @@ async function eliminarAnuncioDB(id) {
   const { error } = await sb.from("anuncios").delete().eq("id", id);
   if (error) throw error;
   if (previo) await borrarFotosStorage(previo.fotos);
+}
+
+// =====================================================================
+// FAVORITOS (corazón «Guardar»; cada persona ve solo los suyos)
+// =====================================================================
+let favoritosIds = new Set();
+
+async function cargarFavoritos() {
+  if (!usuarioActual) { favoritosIds = new Set(); return favoritosIds; }
+  const { data, error } = await sb.from("favoritos").select("anuncio_id").limit(500);
+  if (error) { console.error("favoritos:", error); return favoritosIds; }   // si falla, no borramos lo que ya sabíamos
+  favoritosIds = new Set((data || []).map(r => Number(r.anuncio_id)));
+  return favoritosIds;
+}
+
+// Guarda o quita un favorito. Devuelve true si quedó guardado.
+async function alternarFavorito(anuncioId) {
+  if (!usuarioActual) throw new Error("Inicia sesión para guardar favoritos");
+  const id = Number(anuncioId);
+  if (favoritosIds.has(id)) {
+    const { error } = await sb.from("favoritos").delete().eq("anuncio_id", id).eq("usuario_id", usuarioActual.id);
+    if (error) throw error;
+    favoritosIds.delete(id);
+    return false;
+  }
+  const { error } = await sb.from("favoritos").insert({ anuncio_id: id });
+  if (error && !/duplicate key|23505/i.test(error.message || "")) throw error;   // «ya estaba guardado» no es un error
+  favoritosIds.add(id);
+  return true;
+}
+
+// Trae los anuncios (activos y vigentes) de una lista de ids, p. ej. para «Mis favoritos».
+async function cargarAnunciosPorIds(ids) {
+  if (!ids.length) return [];
+  const { data, error } = await sb.from("anuncios").select("*")
+    .in("id", ids)
+    .eq("estado_publicacion", "activo")
+    .gt("expira_en", new Date().toISOString())
+    .order("creado_en", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(filaAAnuncio);
 }
 
 // =====================================================================

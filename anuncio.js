@@ -168,15 +168,26 @@ function renderizarAnuncio(a) {
 
   // El número NO se muestra en pantalla (evita que lo copien robots); solo el botón.
   $("btn-whatsapp").href = urlWhatsApp(a.whatsapp, a.nombre);
+  $("barra-whatsapp").href = $("btn-whatsapp").href;
   $("btn-compartir").addEventListener("click", compartir);
+  $("barra-compartir").addEventListener("click", compartir);
+  $("barra-acciones").classList.remove("hidden");
+  $("barra-acciones").classList.add("md:hidden");
+  prepararGuardar(a);
   prepararReporte(a);
 
   renderizarGaleria(a);
 
   if (tieneCoords(a)) {
     $("btn-como-llegar").href = urlGoogleMaps(a.lat, a.lng);
-    const mapa = crearMapaBase("map-anuncio", [a.lat, a.lng], 16, { scrollWheelZoom: false });
-    L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria) }).addTo(mapa);
+    const aprox = !!a.ubicacionAprox;
+    if (aprox) {
+      $("btn-como-llegar").textContent = "🗺️ Cómo llegar a la zona";
+      $("nota-zona").classList.remove("hidden");
+    }
+    const mapa = crearMapaBase("map-anuncio", [a.lat, a.lng], aprox ? 15 : 16, { scrollWheelZoom: false });
+    if (aprox) L.circle([a.lat, a.lng], { radius: RADIO_MAX_APROX_M + 100, color: "#4f46e5", weight: 2, fillOpacity: 0.12 }).addTo(mapa);
+    else L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria) }).addTo(mapa);
   } else {
     $("btn-como-llegar").classList.add("hidden");
     $("seccion-mapa").classList.add("hidden");
@@ -184,6 +195,38 @@ function renderizarAnuncio(a) {
 
   renderizarSimilares(a);
   $("anuncio-contenido").classList.remove("hidden");
+}
+
+// ---------- Guardar en favoritos ----------
+function pintarGuardar(guardado) {
+  const t = guardado ? "❤️" : "🤍";
+  $("btn-guardar").textContent = t + (guardado ? " Guardado" : " Guardar");
+  $("barra-guardar").textContent = t;
+  [$("btn-guardar"), $("barra-guardar")].forEach(b => b.setAttribute("aria-pressed", String(guardado)));
+  $("barra-guardar").setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+}
+
+function prepararGuardar(a) {
+  pintarGuardar(favoritosIds.has(a.id));
+  const accion = async () => {
+    if (!usuarioActual) {
+      mostrarToast("Inicia sesión para guardar favoritos", "error");
+      setTimeout(() => { location.href = "index.html#login"; }, 1200);
+      return;
+    }
+    const antes = favoritosIds.has(a.id);
+    pintarGuardar(!antes);
+    try {
+      const ahora = await alternarFavorito(a.id);
+      pintarGuardar(ahora);
+      mostrarToast(ahora ? "❤️ Guardado en favoritos" : "Quitado de favoritos");
+    } catch (err) {
+      pintarGuardar(antes);
+      mostrarToast(mensajeError(err), "error");
+    }
+  };
+  $("btn-guardar").addEventListener("click", accion);
+  $("barra-guardar").addEventListener("click", accion);
 }
 
 // ---------- Reportar anuncio ----------
@@ -224,6 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   const a = await cargarAnuncioDesdeURL();
+  if (usuarioActual) await cargarFavoritos();
   $("anuncio-cargando").classList.add("hidden");
   if (!a) { $("anuncio-error").classList.remove("hidden"); return; }
   renderizarAnuncio(a);

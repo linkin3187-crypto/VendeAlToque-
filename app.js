@@ -135,6 +135,7 @@ function popupComercioHTML(c) {
       ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
       <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
     </div>
+    ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="block mt-2 text-center bg-teal-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
     <a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>
   </div>`;
 }
@@ -474,6 +475,7 @@ async function cerrarSesion() {
 function alCambiarSesion() {
   actualizarUIAuth();
   refrescarCorazones();
+  refrescarMiTienda();
   activarModoEditor();
   aplicarFiltros({ ajustarMapa: false });
 }
@@ -548,6 +550,11 @@ async function alternarCorazon(id, btn) {
 }
 
 // Al entrar/salir alguien: pone cada corazón de la pantalla en su estado correcto (sin repintar la lista).
+async function refrescarMiTienda() {
+  const mis = usuarioActual ? await cargarMisComercios() : [];
+  $("link-mi-tienda").classList.toggle("hidden", !mis.length);
+}
+
 async function refrescarCorazones() {
   await cargarFavoritos();
   document.querySelectorAll('[data-accion="favorito"]').forEach(b => {
@@ -1070,6 +1077,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   refrescarOpcionesUbicacion();
   actualizarCiudadesForm();
   actualizarUIAuth();
+  refrescarMiTienda();
   await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
   aplicarFiltros();
   activarModoEditor();

@@ -88,7 +88,7 @@ function urlGoogleMaps(lat, lng) {
 function mostrarToast(msg, tipo = "ok") {
   const t = document.createElement("div");
   const color = tipo === "error" ? "bg-red-600" : "bg-green-600";
-  t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 ${color} text-white px-6 py-3 rounded-full shadow-lg z-[200] font-medium text-sm max-w-[90vw] text-center`;
+  t.className = `fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 ${color} text-white px-6 py-3 rounded-full shadow-lg z-[200] font-medium text-sm max-w-[90vw] text-center`;
   t.setAttribute("role", "status");
   t.textContent = msg; // textContent: nunca interpreta HTML
   document.body.appendChild(t);
@@ -204,4 +204,18 @@ async function consultarNominatim(q, centro, signal) {
   if (!r.ok) throw new Error("nominatim " + r.status);
   const j = await r.json();
   return j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon), tipo: j[0].addresstype || j[0].type } : null;
+}
+
+// ---------- Ubicación aproximada (privacidad) ----------
+// El punto que ven los demás se desplaza entre 150 y 350 m en una dirección al azar.
+// El punto real se guarda aparte (tabla `anuncios_ubicacion`), visible solo para su dueño.
+const RADIO_MAX_APROX_M = 350;
+function desplazarCoords(lat, lng) {
+  const r = crypto.getRandomValues(new Uint32Array(2));
+  const metros = 150 + 200 * (r[0] / 4294967296);
+  const angulo = 2 * Math.PI * (r[1] / 4294967296);
+  return {
+    lat: +(lat + (metros * Math.cos(angulo)) / 111320).toFixed(6),
+    lng: +(lng + (metros * Math.sin(angulo)) / (111320 * Math.cos(lat * Math.PI / 180))).toFixed(6)
+  };
 }

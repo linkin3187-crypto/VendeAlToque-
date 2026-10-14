@@ -60,7 +60,7 @@ function mensajeError(e) {
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
   if (/Límite de \d+ anuncios/i.test(m)) return m;
-  if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya reportaste este anuncio. ¡Gracias, lo revisaremos!";
+  if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya enviaste esto antes. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Sin conexión con el servidor. Revisa tu internet";
   if (/violates check constraint/i.test(m)) return "Algún dato no cumple las reglas (revisa título, WhatsApp, descripción y fotos)";
@@ -483,5 +483,32 @@ async function resolverReportesDeAnuncio(anuncioId, estado) {
 
 async function cambiarVisibilidadAnuncio(id, estadoPublicacion) {
   const { error } = await sb.from("anuncios").update({ estado_publicacion: estadoPublicacion }).eq("id", id);
+  if (error) throw error;
+}
+
+// =====================================================================
+// SOLICITUDES DE COMERCIOS (dueños que piden actualizar, retirar o reclamar su ficha)
+// =====================================================================
+async function crearSolicitudComercio(comercioId, { tipo, nombre, contacto, mensaje }) {
+  if (!usuarioActual) throw new Error("Inicia sesión para enviar la solicitud");
+  const { error } = await sb.from("solicitudes_comercio").insert({
+    comercio_id: comercioId, tipo, nombre_contacto: nombre, contacto, mensaje: mensaje || null
+  });
+  if (error) throw error;
+}
+
+// Solo moderadores
+async function cargarSolicitudesComercio(estado) {
+  let q = sb.from("solicitudes_comercio")
+    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, comercio:comercios(id, nombre, tipo, municipio_id)")
+    .order("creado_en", { ascending: false }).limit(200);
+  if (estado) q = q.eq("estado", estado);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function resolverSolicitudComercio(id, estado) {
+  const { error } = await sb.from("solicitudes_comercio").update({ estado }).eq("id", id);
   if (error) throw error;
 }

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MercaFree | Clasificados y Comercios de Barrio</title>
-  <meta name="description" content="Clasificados gratis de tu barrio. Autos, inmuebles, tecnología, comida y más. Publica gratis.">
+  <title>MercaFree | Clasificados y directorio de comercios del Valle de Aburrá</title>
+  <meta name="description" content="Clasificados gratis y directorio de comercios del Valle de Aburrá: compra, vende y encuentra farmacias, panaderías, supermercados y más cerca de ti.">
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
 
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -25,10 +25,10 @@
         <h1 class="text-2xl font-black tracking-tight">
           <span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span>
         </h1>
-        <span class="hidden sm:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">Clasificados de barrio</span>
+        <span class="hidden sm:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">Clasificados + Directorio de comercios</span>
       </div>
       <div class="flex items-center gap-2">
-        <a href="comercios.html" class="hidden sm:inline-block text-white/90 hover:text-white font-semibold px-3 py-2 text-sm">🏪 Comercios</a>
+        <a href="comercios.html" class="btn-3d btn-3d-comercios btn-3d-chico">🏪 Comercios</a>
         <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-full text-sm transition">
           Iniciar sesión
         </button>
@@ -55,8 +55,13 @@
   <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-8 pt-6 px-4">
     <div class="max-w-4xl mx-auto">
       <div class="text-center mb-5">
-        <h2 class="text-2xl sm:text-3xl font-bold mb-1">Encuentra todo lo que necesitas cerca de ti</h2>
-        <p class="text-indigo-200 text-sm">Comercios, productos y servicios de tu barrio • 100% gratis</p>
+        <h2 class="text-3xl sm:text-5xl font-black leading-tight mb-2 tracking-tight">Compra, vende y <span class="text-yellow-300">encuentra comercios</span> cerca de ti</h2>
+        <p class="text-white text-base sm:text-lg font-semibold">Clasificados de barrio + Directorio de comercios del Valle de Aburrá</p>
+        <p class="text-indigo-200 text-sm mt-1">Anuncia gratis, contacta por WhatsApp y ubica farmacias, panaderías, cajeros y más en el mapa • 100% gratis</p>
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-5">
+          <a href="#contenido" class="btn-3d btn-3d-blanco">🛒 Ver clasificados</a>
+          <a href="comercios.html" class="btn-3d btn-3d-comercios">🏪 Directorio de comercios</a>
+        </div>
       </div>
 
       <div class="relative mb-5">
@@ -144,7 +149,7 @@
   </div>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <main id="contenido" class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
     <!-- MAPA (en escritorio se queda fijo al hacer scroll) -->
     <section class="lg:col-span-5 lg:sticky lg:top-20 self-start">
@@ -445,9 +450,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=4"></script>
-  <script src="data.js?v=4"></script>
-  <script src="foro.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="utils.js?v=5"></script>
+  <script src="data.js?v=5"></script>
+  <script src="foro.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

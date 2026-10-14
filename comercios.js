@@ -1,5 +1,5 @@
 // ===== MercaFree - Directorio de comercios verificados (comercios.html) =====
-// POR QUÉ solo verificados: "verificado" significa que alguien del equipo visitó el local.
+// POR QUÉ solo verificados: "verificado" significa que el equipo confirmó el negocio por teléfono o en persona; la etiqueta de cada comercio dice cuál.
 // Los no verificados se quedan en el mapa (con su etiqueta) pero no se listan aquí.
 
 let verificados = [];
@@ -13,11 +13,12 @@ function tarjetaComercio(c) {
     <div class="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      <span class="absolute top-2 left-2 bg-green-600 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">✔ Verificado</span>
+      <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : "bg-green-100 text-green-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">✔ ${esc((SELLOS[c.nivel] || SELLOS[2]).corto)}</span>
     </div>
     <div class="p-4 flex-1 flex flex-col">
       <h2 class="font-bold text-lg leading-tight">${esc(c.nombre)}</h2>
       <p class="text-xs text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</p>
+      ${c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc((SELLOS[c.nivel] || SELLOS[2]).corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
       ${c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}

@@ -240,9 +240,11 @@ function filaEditor(c) {
     <div class="flex flex-wrap items-center gap-2 mb-2">
       <b>${esc(t ? t.icono : "📍")} ${esc(c.nombre)}</b>
       <span class="text-xs text-slate-500">${esc(c.ciudad)}</span>
-      ${c.verificado ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-semibold">✔ Verificado</span>' : '<span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">Sin verificar</span>'}
+      <span class="text-xs ${(SELLOS[c.nivel] || SELLOS[1]).clase} px-2 py-0.5 rounded-full font-semibold">${c.nivel >= 2 ? "✔ " : ""}${esc((SELLOS[c.nivel] || SELLOS[1]).corto)}${c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</span>
+      ${selloVencido(c) ? '<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-semibold">⚠ Vencida: repetir verificación</span>' : ""}
       ${c.activo ? "" : '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculto</span>'}
-      <button type="button" data-acc="ubicacion" class="ml-auto text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
+      <button type="button" data-acc="verificar" class="ml-auto text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">✅ Verificar</button>
+      <button type="button" data-acc="ubicacion" class=" text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
       <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
       <a href="${esc(urlMapaNombre(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1.5 rounded-lg font-semibold">🔎 Buscar en Google</a>
     </div>
@@ -258,7 +260,6 @@ function filaEditor(c) {
         </div></label>
     </div>
     <div class="flex flex-wrap items-center gap-4 mt-2 text-sm">
-      <label class="flex items-center gap-1.5"><input type="checkbox" data-k="verificado" ${c.verificado ? "checked" : ""}> Verificado</label>
       <label class="flex items-center gap-1.5"><input type="checkbox" data-k="activo" ${c.activo ? "checked" : ""}> Visible en el mapa</label>
       <button type="button" data-acc="guardar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">Guardar</button>
       <button type="button" data-acc="borrar" class="text-red-600 hover:underline text-xs">Borrar</button>
@@ -268,7 +269,8 @@ function filaEditor(c) {
 
 function pintarLista() {
   const m = $("ac-filtro-muni").value, v = $("ac-filtro-ver").value;
-  const lista = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && (!v || (v === "si") === c.verificado));
+  const pasa = c => !v || (v === "no" && c.nivel === 1) || (v === "tel" && c.nivel === 2) || (v === "persona" && c.nivel === 3) || (v === "vencida" && selloVencido(c));
+  const lista = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasa(c));
   $("ac-lista").innerHTML = lista.length ? lista.map(filaEditor).join("")
     : '<p class="text-sm text-slate-400 text-center py-8">Aún no hay comercios. Importa algunos arriba.</p>';
 }
@@ -420,12 +422,109 @@ async function guardarUbicacion() {
   } finally { b.disabled = false; }
 }
 
+// ---------- Modo visita / verificación (Fase 2D.1) ----------
+// Protocolo: existe y atiende · quien atiende es dueño o administrador (SIN guardar copia de la cédula) ·
+// teléfono del negocio · pin sobre la puerta (GPS) · el dueño acepta los términos y autoriza publicar.
+const LISTA_VERIF = {
+  telefono: [
+    ["nombre_dir", "Confirmé el nombre y la dirección con quien contestó"],
+    ["telefono_negocio", "El número publicado es del negocio"]
+  ],
+  visita: [
+    ["existe", "El local existe y atiende en esta dirección"],
+    ["responsable", "Quien atiende es el dueño o administrador (prueba simple, p. ej. registro mercantil; no guardes copia de la cédula)"],
+    ["telefono_negocio", "El teléfono publicado es del negocio"],
+    ["pin_puerta", "El pin quedó sobre la puerta (captura el GPS en la puerta o confirma el pin actual)"],
+    ["terminos", "El dueño acepta los términos y autoriza publicar los datos del negocio"]
+  ]
+};
+let comercioVi = null, gpsVi = null;
+
+const metodoVi = () => document.querySelector('input[name="vi-metodo"]:checked').value;
+
+function pintarListaVi() {
+  const m = metodoVi();
+  $("vi-lista").innerHTML = LISTA_VERIF[m].map(([k, t]) =>
+    `<label class="flex items-start gap-2"><input type="checkbox" data-v="${k}" class="mt-1 shrink-0"> <span>${esc(t)}</span></label>`).join("");
+  $("vi-visita").classList.toggle("hidden", m !== "visita");
+}
+
+function errorVi(msg) {
+  const e = $("vi-error");
+  e.textContent = msg || "";
+  e.classList.toggle("hidden", !msg);
+}
+
+async function abrirVisita(id) {
+  comercioVi = listaAdmin.find(c => c.id === id);
+  if (!comercioVi) return;
+  gpsVi = null;
+  $("vi-nombre").textContent = comercioVi.nombre;
+  $("vi-actual").textContent = "Sello actual: " + (SELLOS[comercioVi.nivel] || SELLOS[1]).corto + (comercioVi.verificadoEn ? " · " + fechaSello(comercioVi) : "");
+  document.querySelector('input[name="vi-metodo"][value="visita"]').checked = true;
+  $("vi-foto").value = ""; $("vi-notas").value = ""; $("vi-gps-txt").textContent = "Sin capturar: se conserva el pin actual";
+  errorVi("");
+  pintarListaVi();
+  $("vi-historial").innerHTML = '<li class="text-slate-400">Cargando…</li>';
+  abrirModal("modal-visita");
+  try {
+    const h = await cargarVerificaciones(id);
+    $("vi-historial").innerHTML = h.length ? h.map(v => {
+      const f = new Date(v.creado_en).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+      return `<li>${v.resultado === "aprobada" ? "✅" : "❌"} ${f} · ${v.metodo === "visita" ? "En persona" : "Por teléfono"}${v.verificador_id === (usuarioActual && usuarioActual.id) ? " · tú" : ""}${v.notas ? " · " + esc(v.notas) : ""}</li>`;
+    }).join("") : '<li class="text-slate-400">Sin verificaciones registradas.</li>';
+  } catch (err) {
+    $("vi-historial").innerHTML = '<li class="text-slate-400">No se pudo cargar el historial.</li>';
+  }
+}
+
+function gpsVisita() {
+  if (!navigator.geolocation) { errorVi("Tu navegador no permite usar el GPS"); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    gpsVi = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    $("vi-gps-txt").textContent = `GPS capturado (±${Math.round(pos.coords.accuracy)} m): ${gpsVi.lat.toFixed(5)}, ${gpsVi.lng.toFixed(5)}`;
+    errorVi("");
+  }, err => errorVi(err && err.code === 1 ? "Permiso de ubicación denegado. Actívalo en el navegador." : "No pudimos obtener el GPS. Puedes confirmar el pin actual."),
+  { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+async function enviarVerificacion(resultado) {
+  if (!comercioVi) return;
+  const m = metodoVi();
+  const lista = {};
+  document.querySelectorAll("#vi-lista [data-v]").forEach(i => { lista[i.dataset.v] = i.checked; });
+  const notas = $("vi-notas").value.trim();
+  const archivo = $("vi-foto").files[0];
+  if (resultado === "aprobada") {
+    if (Object.values(lista).some(v => !v)) { errorVi("Marca todos los puntos de la lista para aprobar. Si algo no se cumple, usa «No se pudo verificar»."); return; }
+    if (m === "visita" && !archivo) { errorVi("Falta la foto de la fachada."); return; }
+  } else if (notas.length < 5) { errorVi("Explica en las notas por qué no se pudo verificar."); return; }
+  errorVi("");
+  const botones = [$("vi-aprobar"), $("vi-rechazar")];
+  botones.forEach(b => { b.disabled = true; });
+  try {
+    await crearVerificacion({
+      comercioId: comercioVi.id, metodo: m, resultado, lista, notas,
+      foto: (m === "visita" && archivo) ? await comprimir(archivo) : null,
+      lat: resultado === "aprobada" && m === "visita" && gpsVi ? gpsVi.lat : null,
+      lng: resultado === "aprobada" && m === "visita" && gpsVi ? gpsVi.lng : null
+    });
+    cerrarModal("modal-visita");
+    mostrarToast(resultado === "aprobada" ? "✅ Verificación registrada" : "Registrado: el comercio vuelve a «Ubicado»");
+    await refrescarLista();
+  } catch (err) {
+    console.error(err);
+    errorVi(mensajeError(err));
+  } finally { botones.forEach(b => { b.disabled = false; }); }
+}
+
 async function accionEditor(e) {
   const b = e.target.closest("[data-acc]");
   const fila = e.target.closest("[data-id]");
   if (!b || !fila) return;
   const id = Number(fila.dataset.id);
   if (b.dataset.acc === "ubicacion") { abrirUbicacion(id); return; }
+  if (b.dataset.acc === "verificar") { abrirVisita(id); return; }
   b.disabled = true;
   try {
     if (b.dataset.acc === "borrar") {
@@ -439,7 +538,7 @@ async function accionEditor(e) {
       if (!nombre || nombre.length < 2) throw new Error("El nombre es obligatorio");
       const cambios = {
         nombre, direccion: texto("direccion"), telefono: texto("telefono"), horario: texto("horario"),
-        verificado: val("verificado").checked, activo: val("activo").checked
+        activo: val("activo").checked
       };
       const archivo = fila.querySelector("[data-foto]").files[0];
       if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
@@ -482,6 +581,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ub-direccion").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarDireccionUb(); } });
   $("ub-gps").addEventListener("click", gpsUb);
   $("ub-guardar").addEventListener("click", guardarUbicacion);
+  document.querySelectorAll('input[name="vi-metodo"]').forEach(r => r.addEventListener("change", pintarListaVi));
+  $("vi-gps").addEventListener("click", gpsVisita);
+  $("vi-aprobar").addEventListener("click", () => enviarVerificacion("aprobada"));
+  $("vi-rechazar").addEventListener("click", () => enviarVerificacion("rechazada"));
   ["ac-filtro-muni", "ac-filtro-ver"].forEach(id => $(id).addEventListener("change", pintarLista));
   $("ac-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   await refrescarLista();

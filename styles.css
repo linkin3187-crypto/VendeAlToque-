@@ -4,7 +4,7 @@
    ANTES: `.leaflet-container { height: 420px }` afectaba a TODOS los mapas de la
    app. Ahora cada mapa define su propia altura por id. */
 #map { height: 420px; }
-#map-formulario { height: 220px; border-radius: 12px; border: 1px solid #cbd5e1; }
+#map-formulario, #map-ubicacion { height: 220px; border-radius: 12px; border: 1px solid #cbd5e1; }
 #map-anuncio { height: 280px; }
 @media (max-width: 640px) { #map { height: 320px; } }
 

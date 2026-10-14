@@ -242,7 +242,8 @@ function filaEditor(c) {
       <span class="text-xs text-slate-500">${esc(c.ciudad)}</span>
       ${c.verificado ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-semibold">✔ Verificado</span>' : '<span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">Sin verificar</span>'}
       ${c.activo ? "" : '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculto</span>'}
-      <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="ml-auto text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
+      <button type="button" data-acc="ubicacion" class="ml-auto text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
+      <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
       <a href="${esc(urlMapaNombre(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1.5 rounded-lg font-semibold">🔎 Buscar en Google</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -298,11 +299,133 @@ function comprimir(file) {
   });
 }
 
+// ---------- Corregir la ubicación de un comercio ----------
+// Un solo mapa (en una ventana) que se reutiliza para cualquier comercio de la lista.
+let mapaUb = null, marcadorUb = null, comercioUb = null, coordsUb = null, geoSeqUb = 0;
+
+const AVISOS_UB = {
+  buscando: ["⏳ Buscando en el mapa…", "bg-slate-100 text-slate-600"],
+  exacta:   ["📍 Encontramos la dirección. Revisa que el pin quede sobre el local; si no, arrástralo.", "bg-emerald-50 text-emerald-800"],
+  nombre:   ["📍 Encontramos un lugar por el nombre. Confirma que sea el local correcto.", "bg-amber-50 text-amber-800"],
+  nada:     ["No encontramos esa dirección. Pruébala de otra forma o mueve el pin tú.", "bg-rose-50 text-rose-700"],
+  error:    ["No pudimos buscar ahora. Mueve el pin a mano o usa el GPS.", "bg-rose-50 text-rose-700"],
+  manual:   ["✅ Pin movido por ti. Pulsa «Guardar ubicación» para dejarlo así.", "bg-indigo-50 text-indigo-700"],
+  gps:      ["✅ Usamos tu ubicación GPS. Úsala solo si estás en el local.", "bg-indigo-50 text-indigo-700"]
+};
+
+function avisoUb(tipo) {
+  const el = $("ub-estado");
+  if (!tipo) { el.className = "hidden"; el.textContent = ""; return; }
+  el.className = "text-xs font-semibold rounded-lg px-3 py-2 mb-2 " + AVISOS_UB[tipo][1];
+  el.textContent = AVISOS_UB[tipo][0];
+}
+
+function fijarCoordsUb(lat, lng, mover) {
+  coordsUb = { lat, lng };
+  if (mover) marcadorUb.setLatLng([lat, lng]);
+  let txt = lat.toFixed(5) + ", " + lng.toFixed(5);
+  if (comercioUb && Number.isFinite(comercioUb.lat)) {
+    const m = Math.round(distanciaKm(comercioUb, coordsUb) * 1000);
+    txt += m >= 5 ? ` · a ${m} m de la ubicación actual` : " · sin cambios";
+  }
+  $("ub-coords").textContent = txt;
+  $("ub-google").href = urlMapa({ lat, lng });
+}
+
+function iconoPinUb(tipo) {
+  const t = TIPOS_COMERCIO.find(x => x.id === tipo);
+  return L.divIcon({ className: "marcador-cat", html: `<div class="pin-mapa"><span>${t ? t.icono : "📍"}</span></div>`,
+    iconSize: [44, 44], iconAnchor: [22, 44] });
+}
+
+function abrirUbicacion(id) {
+  const c = listaAdmin.find(x => x.id === id);
+  if (!c) return;
+  comercioUb = c; geoSeqUb++;
+  $("ub-nombre").textContent = c.nombre;
+  $("ub-direccion").value = c.direccion || "";
+  avisoUb(null);
+  abrirModal("modal-ubicacion");
+  const centro = [c.lat, c.lng];
+  if (!mapaUb) {
+    mapaUb = crearMapaBase("map-ubicacion", centro, 18);
+    marcadorUb = L.marker(centro, { draggable: true, icon: iconoPinUb(c.tipo) }).addTo(mapaUb);
+    marcadorUb.on("dragend", () => { const p = marcadorUb.getLatLng(); fijarCoordsUb(p.lat, p.lng, false); avisoUb("manual"); });
+    mapaUb.on("click", e => { fijarCoordsUb(e.latlng.lat, e.latlng.lng, true); avisoUb("manual"); });
+  } else {
+    marcadorUb.setIcon(iconoPinUb(c.tipo));
+    mapaUb.setView(centro, 18);
+  }
+  marcadorUb.setLatLng(centro);
+  fijarCoordsUb(c.lat, c.lng, false);
+  setTimeout(() => mapaUb.invalidateSize(), 60);   // el mapa se creó con la ventana recién abierta
+}
+
+async function buscarDireccionUb() {
+  const c = comercioUb;
+  const dir = $("ub-direccion").value.trim();
+  if (!dir) { mostrarToast("Escribe una dirección", "error"); return; }
+  const miSeq = ++geoSeqUb;
+  const muni = municipios.find(m => m.id === c.municipioId);
+  const centro = muni && muni.lat != null ? { lat: muni.lat, lng: muni.lng } : null;
+  const lugar = [c.ciudad, muni ? muni.departamento : "", "Colombia"].filter(Boolean).join(", ");
+  const calle = dir.split(/#|\bno\.?\s|\bnro\.?\s/i)[0].trim();
+  const intentos = [[[dir.replace(/#/g, " "), lugar].join(", "), "exacta"]];
+  if (calle && calle !== dir) intentos.push([[calle, lugar].join(", "), "exacta"]);
+  intentos.push([[c.nombre, lugar].join(", "), "nombre"]);
+  avisoUb("buscando");
+  const ctrl = new AbortController(), corte = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    for (const [q, nivel] of intentos) {
+      const r = await consultarNominatim(q, centro, ctrl.signal);
+      if (miSeq !== geoSeqUb) return;
+      if (r) {
+        fijarCoordsUb(r.lat, r.lng, true);
+        mapaUb.setView([r.lat, r.lng], 18);
+        avisoUb(nivel);
+        return;
+      }
+    }
+    if (miSeq === geoSeqUb) avisoUb("nada");
+  } catch (err) {
+    if (miSeq === geoSeqUb) avisoUb("error");
+  } finally { clearTimeout(corte); }
+}
+
+function gpsUb() {
+  if (!navigator.geolocation) { mostrarToast("Tu navegador no permite usar el GPS", "error"); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    fijarCoordsUb(lat, lng, true);
+    mapaUb.setView([lat, lng], 18);
+    avisoUb("gps");
+  }, err => mostrarToast(err && err.code === 1
+      ? "Permiso de ubicación denegado. Actívalo en el navegador."
+      : "No pudimos obtener tu ubicación. Mueve el pin a mano.", "error"),
+  { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+}
+
+async function guardarUbicacion() {
+  if (!comercioUb || !coordsUb) return;
+  const b = $("ub-guardar");
+  b.disabled = true;
+  try {
+    await guardarComercioDB(comercioUb.id, { lat: +coordsUb.lat.toFixed(6), lng: +coordsUb.lng.toFixed(6) });
+    cerrarModal("modal-ubicacion");
+    mostrarToast("✅ Ubicación guardada");
+    await refrescarLista();
+  } catch (err) {
+    console.error(err);
+    mostrarToast(mensajeError(err), "error");
+  } finally { b.disabled = false; }
+}
+
 async function accionEditor(e) {
   const b = e.target.closest("[data-acc]");
   const fila = e.target.closest("[data-id]");
   if (!b || !fila) return;
   const id = Number(fila.dataset.id);
+  if (b.dataset.acc === "ubicacion") { abrirUbicacion(id); return; }
   b.disabled = true;
   try {
     if (b.dataset.acc === "borrar") {
@@ -355,6 +478,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     actualizarResumen();
   });
   $("ac-lista").addEventListener("click", accionEditor);
+  $("ub-buscar").addEventListener("click", buscarDireccionUb);
+  $("ub-direccion").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarDireccionUb(); } });
+  $("ub-gps").addEventListener("click", gpsUb);
+  $("ub-guardar").addEventListener("click", guardarUbicacion);
   ["ac-filtro-muni", "ac-filtro-ver"].forEach(id => $(id).addEventListener("change", pintarLista));
   $("ac-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   await refrescarLista();

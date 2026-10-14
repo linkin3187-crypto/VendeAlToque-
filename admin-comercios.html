@@ -6,7 +6,8 @@
   <meta name="robots" content="noindex">
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -73,9 +74,36 @@
     </div>
   </main>
 
+
+  <!-- Ubicación exacta de un comercio -->
+  <div id="modal-ubicacion" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="ub-titulo">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[94vh] overflow-auto">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="ub-titulo" class="text-lg font-black text-indigo-900 pr-8">📍 Ubicación de <span id="ub-nombre"></span></h3>
+      <p class="text-xs text-slate-500 mb-3">Mueve el pin hasta el sitio exacto: arrástralo, toca el mapa, busca la dirección o usa el GPS estando en el local.</p>
+      <div class="flex gap-2 mb-2">
+        <input type="text" id="ub-direccion" autocomplete="off" placeholder="Dirección: Calle 37 Sur # 43A-20" class="flex-1 min-w-0 border border-slate-300 p-2.5 rounded-xl text-sm">
+        <button type="button" id="ub-buscar" class="shrink-0 text-sm bg-indigo-600 text-white font-bold px-4 rounded-xl">🔍 Buscar</button>
+      </div>
+      <p id="ub-estado" class="hidden text-xs font-semibold rounded-lg px-3 py-2 mb-2" role="status"></p>
+      <div id="map-ubicacion"></div>
+      <div class="flex flex-wrap items-center gap-2 mt-2">
+        <button type="button" id="ub-gps" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">Usar mi ubicación GPS</button>
+        <a id="ub-google" href="#" target="_blank" rel="noopener" class="text-xs bg-blue-100 text-blue-800 font-semibold px-3 py-1.5 rounded-lg">🔎 Comparar en Google Maps</a>
+        <span id="ub-coords" class="text-xs text-slate-400"></span>
+      </div>
+      <p class="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2 mt-3">⚠️ Confirma que el pin quede sobre la puerta del local. La búsqueda por dirección puede quedar a unas cuadras.</p>
+      <div class="flex gap-2 mt-4">
+        <button type="button" data-cerrar class="flex-1 border border-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl">Cancelar</button>
+        <button type="button" id="ub-guardar" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-60">💾 Guardar ubicación</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=7"></script>
-  <script src="data.js?v=7"></script>
-  <script src="admin-comercios.js?v=7"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="utils.js?v=8"></script>
+  <script src="data.js?v=8"></script>
+  <script src="admin-comercios.js?v=8"></script>
 </body>
 </html>

@@ -190,3 +190,18 @@ function crearMapaBase(idElemento, centro, zoom, opciones) {
   }
   return mapa;
 }
+
+// ---------- Buscar una dirección en el mapa (Nominatim / OpenStreetMap) ----------
+// Gratis y sin clave. Respetar: máx. 1 consulta por segundo. `centro` limita la búsqueda
+// a ~13 km alrededor de la ciudad para no caer en otra.
+async function consultarNominatim(q, centro, signal) {
+  const p = new URLSearchParams({ format: "jsonv2", limit: "1", countrycodes: "co", q, "accept-language": "es" });
+  if (centro) {   // caja de ~13 km alrededor de la ciudad
+    p.set("viewbox", [centro.lng - 0.12, centro.lat + 0.12, centro.lng + 0.12, centro.lat - 0.12].join(","));
+    p.set("bounded", "1");
+  }
+  const r = await fetch("https://nominatim.openstreetmap.org/search?" + p, { signal, headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error("nominatim " + r.status);
+  const j = await r.json();
+  return j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon), tipo: j[0].addresstype || j[0].type } : null;
+}

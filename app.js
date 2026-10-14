@@ -105,7 +105,7 @@ function popupHTML(a) {
     <div class="flex flex-wrap gap-1.5 mt-2">
       <a href="anuncio.html?id=${a.id}" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md no-underline">Ver anuncio completo →</a>
       <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">WhatsApp</a>
-      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">${a.ubicacionAprox ? "Cómo llegar a la zona" : "Cómo llegar"}</a>
+      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" data-como-llegar data-lat="${a.lat}" data-lng="${a.lng}" data-nombre="${esc(a.nombre)}" data-aprox="${a.ubicacionAprox ? 1 : 0}" data-ciudad="${esc(a.ciudad || "")}" data-whatsapp="${esc(a.whatsapp || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">${a.ubicacionAprox ? "Cómo llegar a la zona" : "Cómo llegar"}</a>
     </div>
   </div>`;
 }
@@ -133,7 +133,7 @@ function popupComercioHTML(c) {
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${c.verificado ? "✔ Verificado por MercaFree" : "Dato de OpenStreetMap · sin verificar"}</div>
     <div class="flex flex-wrap gap-1.5 mt-2">
       ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
-      <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
+      <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
     </div>
     <a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>
   </div>`;

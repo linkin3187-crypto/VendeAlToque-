@@ -23,7 +23,7 @@ function tarjetaComercio(c) {
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
       <div class="flex flex-wrap gap-2 mt-auto pt-3">
         ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
-        <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>
+        <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>
       </div>
       <button type="button" data-solicitar="${c.id}" class="mt-3 text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Solicitar actualización</button>
     </div>

@@ -507,7 +507,9 @@ function filaAComercio(r) {
     municipioId: r.municipio_id, ciudad: m.nombre || "",
     direccion: r.direccion || "", telefono: r.telefono || "", horario: r.horario || "",
     foto: r.foto_url || "", lat: parseFloat(r.lat), lng: parseFloat(r.lng),
-    verificado: !!r.verificado, activo: !!r.activo
+    verificado: !!r.verificado, activo: !!r.activo,
+    nivel: Number(r.nivel_verificacion) || (r.verificado ? 2 : 1),          // 1 ubicado · 2 por teléfono · 3 en persona
+    verificadoEn: r.verificado_en || null
   };
 }
 
@@ -549,6 +551,53 @@ async function importarComerciosDB(filas) {
 async function subirFotoComercio(dataUrl) {
   const [url] = await subirFotos([dataUrl]);
   return url;
+}
+
+// ---------- Sello de verificación (Fase 2D.1) ----------
+// Cada nivel dice exactamente qué significa; así el sello nunca promete más de lo comprobado.
+const SELLOS = {
+  1: { corto: "Ubicado", largo: "Dato de OpenStreetMap · sin verificar", clase: "bg-amber-100 text-amber-800" },
+  2: { corto: "Verificado por teléfono", largo: "✔ Verificado por teléfono", clase: "bg-green-100 text-green-800" },
+  3: { corto: "Verificado en persona", largo: "✔ Verificado en persona", clase: "bg-green-600 text-white" }
+};
+const MESES_VIGENCIA = 12;
+
+function fechaSello(c) {
+  if (!c.verificadoEn) return "";
+  return new Date(c.verificadoEn).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+}
+function selloVencido(c) {
+  if (c.nivel < 2 || !c.verificadoEn) return false;
+  const lim = new Date(c.verificadoEn); lim.setMonth(lim.getMonth() + MESES_VIGENCIA);
+  return lim < new Date();
+}
+
+// Registra una verificación (solo moderadores). El trigger de la base aplica el resultado al comercio.
+// datos: { comercioId, metodo: "telefono"|"visita", resultado: "aprobada"|"rechazada", lista, foto (data:), lat, lng, notas }
+async function crearVerificacion(datos) {
+  if (!usuarioActual) throw new Error("Inicia sesión");
+  const fila = {
+    comercio_id: datos.comercioId,
+    metodo: datos.metodo,
+    resultado: datos.resultado,
+    nivel: datos.metodo === "visita" ? 3 : 2,
+    lista: datos.lista || {},
+    notas: (datos.notas || "").trim() || null,
+    lat: datos.lat != null ? +datos.lat.toFixed(6) : null,
+    lng: datos.lng != null ? +datos.lng.toFixed(6) : null
+  };
+  if (datos.foto) fila.foto_fachada_url = await subirFotoComercio(datos.foto);
+  const { data, error } = await sb.from("verificaciones_comercio").insert(fila).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function cargarVerificaciones(comercioId) {
+  const { data, error } = await sb.from("verificaciones_comercio")
+    .select("id, metodo, resultado, nivel, notas, foto_fachada_url, creado_en, verificador_id")
+    .eq("comercio_id", comercioId).order("creado_en", { ascending: false }).limit(20);
+  if (error) throw error;
+  return data || [];
 }
 
 // =====================================================================

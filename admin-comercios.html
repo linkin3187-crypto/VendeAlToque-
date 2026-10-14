@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -61,14 +61,14 @@
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h2 class="text-lg font-black text-indigo-900">2 · Verificar y completar datos</h2>
-          <div class="flex gap-2 text-sm">
+          <div class="flex flex-wrap gap-2 text-sm">
             <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white"></select>
             <select id="ac-filtro-ver" class="border border-slate-300 rounded-lg p-1.5 bg-white">
-              <option value="">Todos</option><option value="no">Sin verificar</option><option value="si">Verificados</option>
+              <option value="">Todos</option><option value="no">Sin verificar</option><option value="tel">Por teléfono</option><option value="persona">En persona</option><option value="vencida">Verificación vencida (+12 meses)</option>
             </select>
           </div>
         </div>
-        <p class="text-sm text-slate-500 mb-3">Cuando visites un local: confirma que existe con <b>Google Maps</b> (botón azul), agrega teléfono, horario y foto, marca <b>Verificado</b> y guarda. Si ya no existe, desmarca <b>Visible</b> o bórralo.</p>
+        <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo.</p>
         <div id="ac-lista" class="space-y-3"></div>
       </section>
     </div>
@@ -100,10 +100,42 @@
     </div>
   </div>
 
+  <!-- Modo visita / verificación -->
+  <div id="modal-visita" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="vi-titulo">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[94vh] overflow-auto">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="vi-titulo" class="text-lg font-black text-indigo-900 pr-8">✅ Verificar <span id="vi-nombre"></span></h3>
+      <p id="vi-actual" class="text-xs text-slate-500 mb-3"></p>
+      <div class="grid grid-cols-2 gap-2 mb-3" role="radiogroup" aria-label="Método">
+        <label class="border border-slate-300 rounded-xl p-2.5 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50"><input type="radio" name="vi-metodo" value="telefono" class="mr-1">📞 <b>Por teléfono</b><br><span class="text-xs text-slate-500">Se llamó al número publicado</span></label>
+        <label class="border border-slate-300 rounded-xl p-2.5 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50"><input type="radio" name="vi-metodo" value="visita" class="mr-1" checked>🚶 <b>En persona</b><br><span class="text-xs text-slate-500">Visita al local</span></label>
+      </div>
+      <div id="vi-lista" class="space-y-2 text-sm mb-3"></div>
+      <div id="vi-visita" class="space-y-2 mb-3">
+        <label class="block text-xs font-bold text-slate-500">📷 Foto de la fachada (con el número visible, sin clientes)
+          <input type="file" id="vi-foto" accept="image/*" capture="environment" class="mt-1 block w-full text-xs font-normal"></label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="vi-gps" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">📍 Capturar GPS en la puerta</button>
+          <span id="vi-gps-txt" class="text-xs text-slate-500">Sin capturar: se conserva el pin actual</span>
+        </div>
+      </div>
+      <label class="block text-xs font-bold text-slate-500 mb-3">Notas (opcional; obligatorias si no se pudo verificar)
+        <textarea id="vi-notas" maxlength="500" rows="2" class="mt-1 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></textarea>
+        <span class="font-normal text-amber-700">No escribas cédula ni datos personales del dueño.</span></label>
+      <p id="vi-error" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3" role="alert"></p>
+      <div class="flex gap-2">
+        <button type="button" id="vi-rechazar" class="flex-1 border border-red-300 text-red-700 font-semibold py-2.5 rounded-xl text-sm disabled:opacity-60">No se pudo verificar</button>
+        <button type="button" id="vi-aprobar" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-60">✅ Aprobar</button>
+      </div>
+      <h4 class="text-xs font-bold text-slate-500 uppercase mt-5 mb-2">Historial</h4>
+      <ul id="vi-historial" class="text-xs text-slate-600 space-y-1"></ul>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=12"></script>
-  <script src="data.js?v=12"></script>
-  <script src="admin-comercios.js?v=12"></script>
+  <script src="utils.js?v=13"></script>
+  <script src="data.js?v=13"></script>
+  <script src="admin-comercios.js?v=13"></script>
 </body>
 </html>

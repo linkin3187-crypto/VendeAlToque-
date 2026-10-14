@@ -259,6 +259,14 @@ function filaEditor(c) {
           <input type="file" data-foto accept="image/*" class="text-xs font-normal">
         </div></label>
     </div>
+    <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
+      <span class="font-bold text-slate-500">🙋 Dueño:</span>
+      ${c.ownerId ? '<span class="bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-semibold">asignado</span>' : '<span class="text-slate-400">sin asignar</span>'}
+      <input data-dueno placeholder="correo de su cuenta" class="border border-slate-300 p-1.5 rounded-lg w-44 sm:w-56">
+      <button type="button" data-acc="dueno" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-2.5 py-1.5 rounded-lg">Asignar</button>
+      ${c.ownerId ? '<button type="button" data-acc="quitar-dueno" class="text-red-600 hover:underline">Quitar</button>' : ""}
+      ${c.nProductos ? `<a href="tienda.html?id=${c.id}" class="ml-auto text-indigo-600 underline">🛍️ ${c.nProductos} producto(s)</a>` : ""}
+    </div>
     <div class="flex flex-wrap items-center gap-4 mt-2 text-sm">
       <label class="flex items-center gap-1.5"><input type="checkbox" data-k="activo" ${c.activo ? "checked" : ""}> Visible en el mapa</label>
       <button type="button" data-acc="guardar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">Guardar</button>
@@ -278,27 +286,6 @@ function pintarLista() {
 async function refrescarLista() {
   try { listaAdmin = await cargarComerciosAdmin(); pintarLista(); }
   catch (e) { mostrarToast(mensajeError(e), "error"); }
-}
-
-// Reduce la foto a 800 px de ancho (JPEG) antes de subirla: ahorra espacio y datos.
-function comprimir(file) {
-  return new Promise((ok, mal) => {
-    const lector = new FileReader();
-    lector.onerror = () => mal(new Error("No se pudo leer la imagen"));
-    lector.onload = () => {
-      const img = new Image();
-      img.onerror = () => mal(new Error("Imagen no válida"));
-      img.onload = () => {
-        const esc_ = Math.min(1, 800 / img.width);
-        const cv = document.createElement("canvas");
-        cv.width = Math.round(img.width * esc_); cv.height = Math.round(img.height * esc_);
-        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-        ok(cv.toDataURL("image/jpeg", 0.8));
-      };
-      img.src = lector.result;
-    };
-    lector.readAsDataURL(file);
-  });
 }
 
 // ---------- Corregir la ubicación de un comercio ----------
@@ -525,6 +512,17 @@ async function accionEditor(e) {
   const id = Number(fila.dataset.id);
   if (b.dataset.acc === "ubicacion") { abrirUbicacion(id); return; }
   if (b.dataset.acc === "verificar") { abrirVisita(id); return; }
+  if (b.dataset.acc === "dueno" || b.dataset.acc === "quitar-dueno") {
+    const correo = fila.querySelector("[data-dueno]").value.trim();
+    if (b.dataset.acc === "dueno" && !correo) { mostrarToast("Escribe el correo de la cuenta del dueño", "error"); return; }
+    b.disabled = true;
+    try {
+      await asignarDuenoComercio(id, b.dataset.acc === "dueno" ? { email: correo } : {});
+      mostrarToast(b.dataset.acc === "dueno" ? "✅ Dueño asignado" : "Dueño quitado");
+      await refrescarLista();
+    } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+    return;
+  }
   b.disabled = true;
   try {
     if (b.dataset.acc === "borrar") {

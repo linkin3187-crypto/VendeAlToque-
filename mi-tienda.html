@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Mi tienda | MercaFree</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=14">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span> <span class="text-sm font-semibold text-indigo-200">· Mi tienda</span></a>
+      <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Inicio</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    <div id="mt-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+    <div id="mt-sin-sesion" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">🔒</div>
+      <h2 class="text-xl font-bold text-slate-700 mb-2">Inicia sesión para ver tu tienda</h2>
+      <a href="index.html#login" class="text-indigo-600 font-medium hover:underline">Iniciar sesión</a>
+    </div>
+    <div id="mt-sin-tienda" class="hidden text-center py-12">
+      <div class="text-5xl mb-3">🏪</div>
+      <h2 class="text-xl font-bold text-slate-700 mb-2">Aún no administras ningún comercio</h2>
+      <p class="text-sm text-slate-500 mb-4 max-w-md mx-auto">Si tienes un negocio, búscalo en el directorio y toca <b>«¿Es tu negocio?»</b> → «Soy el dueño». Un moderador lo confirmará y aquí podrás cargar tus productos.</p>
+      <a href="comercios.html" class="inline-block bg-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl">Buscar mi negocio</a>
+    </div>
+
+    <div id="mt-panel" class="hidden space-y-6">
+      <div id="mt-selector-caja" class="hidden">
+        <label class="text-xs font-bold text-slate-500">Comercio <select id="mt-selector" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal"></select></label>
+      </div>
+
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <h2 id="mt-nombre" class="text-xl font-black text-indigo-900"></h2>
+          <span id="mt-sello" class="text-xs font-semibold px-2 py-0.5 rounded-full"></span>
+        </div>
+        <p id="mt-estado" class="text-sm rounded-lg px-3 py-2 mt-2"></p>
+        <a id="mt-ver" class="inline-block mt-2 text-sm text-indigo-600 underline">👁️ Ver mi tienda como la ve el público</a>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="text-lg font-black text-indigo-900 mb-1">1 · Datos de tu negocio</h2>
+        <p class="text-xs text-slate-500 mb-3">El nombre y la ubicación los confirma MercaFree al verificarte. Si hay un error, escríbenos desde «¿Es tu negocio?» en el directorio.</p>
+        <form id="form-negocio" class="space-y-3">
+          <label class="block text-xs font-bold text-slate-500">Descripción corta (máx. 300)
+            <textarea id="mt-desc" maxlength="300" rows="2" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej: Droguería de barrio con domicilio. Atendemos desde 1998."></textarea></label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="block text-xs font-bold text-slate-500">WhatsApp para pedidos (10 dígitos)
+              <input id="mt-wa" inputmode="numeric" maxlength="14" placeholder="300 123 4567" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+            <label class="block text-xs font-bold text-slate-500">Teléfono fijo (opcional)
+              <input id="mt-tel" maxlength="40" placeholder="604 123 4567" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          </div>
+          <label class="block text-xs font-bold text-slate-500">Horario
+            <input id="mt-hor" maxlength="120" placeholder="Lun-Sáb 8:00-20:00, Dom 9-14" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+            <span class="font-normal text-slate-400">Con este formato mostramos «Abierto ahora» automáticamente.</span></label>
+          <label class="block text-xs font-bold text-slate-500">Foto de portada
+            <div class="flex items-center gap-2 mt-1"><img id="mt-foto-prev" alt="" class="hidden w-14 h-14 rounded object-cover"><input type="file" id="mt-foto" accept="image/*" class="text-xs font-normal"></div></label>
+          <fieldset class="text-sm space-y-2">
+            <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo entregas?</legend>
+            <label class="flex items-center gap-2"><input type="checkbox" id="mt-recoge"> Se recoge en el local</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="mt-dom"> Domicilio con mis propios domiciliarios</label>
+            <input id="mt-dom-info" maxlength="200" placeholder="Zona, costo y tiempo. Ej: Centro de Envigado, $3.000, 30 min" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm">
+          </fieldset>
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl disabled:opacity-60">💾 Guardar datos</button>
+        </form>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <h2 class="text-lg font-black text-indigo-900">2 · Mis productos <span id="mt-cuenta" class="text-sm font-semibold text-slate-500"></span></h2>
+          <button type="button" id="mt-agregar" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-sm">➕ Agregar producto</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-1">Hasta 20 productos gratis. Mantenlos al día: pasados 30 días sin cambios, tu tienda muestra el aviso «desactualizada».</p>
+        <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">No se permiten medicamentos con fórmula médica ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan.</p>
+        <div id="mt-productos" class="space-y-3"></div>
+        <p id="mt-vacio" class="hidden text-center text-sm text-slate-400 py-6">Aún no tienes productos. Toca «Agregar producto».</p>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=14"></script>
+  <script src="data.js?v=14"></script>
+  <script src="mi-tienda.js?v=14"></script>
+</body>
+</html>

@@ -366,3 +366,102 @@ document.addEventListener("click", e => {
   });
 }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarComoLlegar(); });
+
+// ---------- Fotos ----------
+// Reduce la foto a 800 px de ancho (JPEG) antes de subirla: ahorra espacio y datos.
+function comprimir(file) {
+  return new Promise((ok, mal) => {
+    const lector = new FileReader();
+    lector.onerror = () => mal(new Error("No se pudo leer la imagen"));
+    lector.onload = () => {
+      const img = new Image();
+      img.onerror = () => mal(new Error("Imagen no válida"));
+      img.onload = () => {
+        const esc_ = Math.min(1, 800 / img.width);
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(img.width * esc_); cv.height = Math.round(img.height * esc_);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        ok(cv.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = lector.result;
+    };
+    lector.readAsDataURL(file);
+  });
+}
+
+// =====================================================================
+// HORARIO («abierto ahora») y PEDIDO por WhatsApp (Fase 2D.3/2D.4)
+// =====================================================================
+// El horario es texto libre que escribe el comercio. Entendemos los formatos comunes
+// («Lun-Sáb 8:00-20:00, Dom 9-14», «24 horas», «Todos los días 7am-9pm»); si no se entiende,
+// devolvemos null y simplemente NO mostramos «abierto/cerrado» (mejor callar que equivocarse).
+const DIAS_ES = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
+const sinTildes = s => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+function ahoraColombia(fecha) {
+  const p = new Intl.DateTimeFormat("en-US", { timeZone: "America/Bogota", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(fecha || new Date()).reduce((o, x) => (o[x.type] = x.value, o), {});
+  const dia = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(p.weekday.toLowerCase().slice(0, 3));
+  return { dia, minutos: parseInt(p.hour, 10) * 60 + parseInt(p.minute, 10) };
+}
+
+function aMinutos(h, m, ampm) {
+  let hh = parseInt(h, 10);
+  if (ampm === "pm" && hh < 12) hh += 12;
+  if (ampm === "am" && hh === 12) hh = 0;
+  return hh * 60 + (m ? parseInt(m, 10) : 0);
+}
+
+function diasDeTexto(t) {
+  if (/todos los dias|diario|lunes a domingo|l-d/.test(t)) return [0, 1, 2, 3, 4, 5, 6];
+  const nombres = [...t.matchAll(/\b(dom|lun|mar|mie|jue|vie|sab)[a-z]*/g)].map(m => DIAS_ES.indexOf(m[1]));
+  if (!nombres.length) return null;
+  if (nombres.length >= 2 && /[-–]|\ba\b/.test(t.replace(/\d.*/, ""))) {      // rango «lun-sab» (da la vuelta si hace falta)
+    const out = []; let d = nombres[0];
+    for (let k = 0; k < 7; k++) { out.push(d); if (d === nombres[1]) break; d = (d + 1) % 7; }
+    return out;
+  }
+  return [...new Set(nombres)];
+}
+
+// Devuelve true/false (abierto/cerrado ahora) o null si no se puede saber.
+function estaAbierto(horario, fecha) {
+  const txt = sinTildes(horario);
+  if (!txt.trim()) return null;
+  const ahora = ahoraColombia(fecha);
+  if (/24 ?(h|horas)/.test(txt)) return true;
+  let entendido = false, abierto = false;
+  for (const seg of txt.split(/[;,/\n|]+|\by\b/)) {
+    const hm = seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:[-–]|\ba\b|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if (!hm) continue;
+    const dias = diasDeTexto(seg.slice(0, hm.index)) || [0, 1, 2, 3, 4, 5, 6];
+    const ini = aMinutos(hm[1], hm[2], hm[3]);
+    let fin = aMinutos(hm[4], hm[5], hm[6]);
+    if (!hm[3] && !hm[6] && fin < ini && ini <= 12 * 60 && fin <= 12 * 60) fin += 12 * 60;   // «8-6» = 8:00-18:00
+    entendido = true;
+    const hoy = dias.includes(ahora.dia);
+    const ayer = dias.includes((ahora.dia + 6) % 7);
+    if (fin > ini) { if (hoy && ahora.minutos >= ini && ahora.minutos < fin) abierto = true; }
+    else {                                                                      // cruza medianoche (p. ej. 18:00-02:00)
+      if (hoy && ahora.minutos >= ini) abierto = true;
+      if (ayer && ahora.minutos < fin) abierto = true;
+    }
+  }
+  return entendido ? abierto : null;
+}
+
+// Mensaje de pedido por WhatsApp. items: [{nombre, precio, cantidad}]; modo: "recoger" | "domicilio" | ""
+function mensajePedido(comercio, items, modo) {
+  const peso = n => "$" + Number(n).toLocaleString("es-CO");
+  const lineas = items.map(i => `• ${i.cantidad} × ${i.nombre}${i.precio != null ? " (" + peso(i.precio * i.cantidad) + ")" : ""}`);
+  const total = items.reduce((s, i) => s + (i.precio != null ? i.precio * i.cantidad : 0), 0);
+  const conPrecio = items.every(i => i.precio != null);
+  return [`Hola, vi tu tienda «${comercio.nombre}» en MercaFree y quiero pedir:`, ...lineas,
+    total && conPrecio ? `Total aproximado: ${peso(total)}` : "",
+    modo === "domicilio" ? "Lo quiero a domicilio." : modo === "recoger" ? "Lo recojo en el local." : "",
+    "¿Lo tienen disponible?"].filter(Boolean).join("\n");
+}
+
+function urlWhatsAppTexto(numero, texto) {
+  return `https://wa.me/${String(numero || "").replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
+}

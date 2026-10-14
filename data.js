@@ -59,7 +59,8 @@ function mensajeError(e) {
   if (/User already registered/i.test(m)) return "Este correo ya está registrado";
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
-  if (/Límite de \d+ (anuncios|favoritos)/i.test(m)) return m;
+  if (/Límite de \d+ (anuncios|favoritos|productos)/i.test(m)) return m;
+  if (/Solo puedes cambiar|Solo moderadores|No existe una cuenta|Esa persona no tiene perfil/i.test(m)) return m;
   if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya enviaste esto antes. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Sin conexión con el servidor. Revisa tu internet";
@@ -509,7 +510,10 @@ function filaAComercio(r) {
     foto: r.foto_url || "", lat: parseFloat(r.lat), lng: parseFloat(r.lng),
     verificado: !!r.verificado, activo: !!r.activo,
     nivel: Number(r.nivel_verificacion) || (r.verificado ? 2 : 1),          // 1 ubicado · 2 por teléfono · 3 en persona
-    verificadoEn: r.verificado_en || null
+    verificadoEn: r.verificado_en || null,
+    ownerId: r.owner_id || null, descripcion: r.descripcion || "", whatsapp: r.whatsapp || "",
+    recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
+    nProductos: Number(r.n_productos) || 0
   };
 }
 
@@ -551,6 +555,102 @@ async function importarComerciosDB(filas) {
 async function subirFotoComercio(dataUrl) {
   const [url] = await subirFotos([dataUrl]);
   return url;
+}
+
+// =====================================================================
+// VITRINA DEL COMERCIO (Fase 2D.3): tienda pública, panel del dueño y reportes
+// =====================================================================
+function filaAProducto(r) {
+  return {
+    id: Number(r.id), comercioId: Number(r.comercio_id), nombre: r.nombre, descripcion: r.descripcion || "",
+    precio: r.precio == null ? null : Number(r.precio), foto: r.foto_url || "",
+    disponible: !!r.disponible, oculto: !!r.oculto, actualizado: r.actualizado_en
+  };
+}
+
+// Un comercio por id (el público solo ve los activos; el dueño y los moderadores ven el suyo aunque esté oculto)
+async function cargarComercioPorId(id) {
+  const { data, error } = await sb.from("comercios").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? filaAComercio(data) : null;
+}
+
+async function cargarProductos(comercioId) {
+  const { data, error } = await sb.from("productos_comercio").select("*")
+    .eq("comercio_id", comercioId).order("creado_en", { ascending: true }).limit(50);
+  if (error) throw error;
+  return (data || []).map(filaAProducto);
+}
+
+// Comercios de los que soy dueño (para «Mi tienda»)
+async function cargarMisComercios() {
+  if (!usuarioActual) return [];
+  const { data, error } = await sb.from("comercios").select("*").eq("owner_id", usuarioActual.id).order("nombre");
+  if (error) { console.error("mis comercios:", error); return []; }
+  return (data || []).map(filaAComercio);
+}
+
+// El dueño solo puede cambiar: descripcion, whatsapp, telefono, horario, foto_url, recoge, domicilio, domicilio_info
+async function guardarMiComercio(id, cambios) {
+  const { data, error } = await sb.from("comercios").update(cambios).eq("id", id).select().single();
+  if (error) throw error;
+  return filaAComercio(data);
+}
+
+async function guardarProducto(comercioId, d, id) {
+  const fila = {
+    nombre: d.nombre.trim(), descripcion: (d.descripcion || "").trim() || null,
+    precio: d.precio == null ? null : Math.round(d.precio), disponible: d.disponible !== false
+  };
+  if (d.foto) fila.foto_url = d.foto.startsWith("data:") ? await subirFotoComercio(d.foto) : d.foto;
+  if (d.quitarFoto) fila.foto_url = null;
+  if (id) {
+    const { data, error } = await sb.from("productos_comercio").update(fila).eq("id", id).select().single();
+    if (error) throw error;
+    return filaAProducto(data);
+  }
+  fila.comercio_id = comercioId;
+  const { data, error } = await sb.from("productos_comercio").insert(fila).select().single();
+  if (error) throw error;
+  return filaAProducto(data);
+}
+
+async function eliminarProducto(id) {
+  const { error } = await sb.from("productos_comercio").delete().eq("id", id);
+  if (error) throw error;
+}
+
+async function crearReporteProducto(productoId, motivo, detalle) {
+  if (!usuarioActual) throw new Error("Inicia sesión para reportar");
+  const { error } = await sb.from("reportes_producto").insert({ producto_id: productoId, motivo, detalle: detalle || null });
+  if (error) throw error;
+}
+
+// Solo moderadores
+async function cargarReportesProducto(estado) {
+  let q = sb.from("reportes_producto")
+    .select("id, motivo, detalle, estado, creado_en, producto:productos_comercio(id, nombre, oculto, comercio_id)")
+    .order("creado_en", { ascending: false }).limit(200);
+  if (estado) q = q.eq("estado", estado);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function resolverReporteProducto(id, estado) {
+  const { error } = await sb.from("reportes_producto").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
+
+async function ocultarProducto(id, oculto) {
+  const { error } = await sb.from("productos_comercio").update({ oculto }).eq("id", id);
+  if (error) throw error;
+}
+
+// Solo moderadores: aprueba el reclamo de un dueño (por id de usuario o por correo); sin datos, quita al dueño
+async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
+  const { error } = await sb.rpc("asignar_dueno_comercio", { p_comercio: comercioId, p_usuario: usuarioId || null, p_email: email || null });
+  if (error) throw error;
 }
 
 // ---------- Sello de verificación (Fase 2D.1) ----------
@@ -643,7 +743,7 @@ async function crearSolicitudComercio(comercioId, { tipo, nombre, contacto, mens
 // Solo moderadores
 async function cargarSolicitudesComercio(estado) {
   let q = sb.from("solicitudes_comercio")
-    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, comercio:comercios(id, nombre, tipo, municipio_id)")
+    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, solicitante_id, comercio:comercios(id, nombre, tipo, municipio_id, owner_id)")
     .order("creado_en", { ascending: false }).limit(200);
   if (estado) q = q.eq("estado", estado);
   const { data, error } = await q;

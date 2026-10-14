@@ -221,52 +221,73 @@ function desplazarCoords(lat, lng) {
 }
 
 // =====================================================================
-// CÓMO LLEGAR (Fase 2C.6): menú con opciones de transporte
+// CÓMO LLEGAR (Fase 2C.6/2C.7): menú con opciones de transporte
 // =====================================================================
 // POR QUÉ solo enlaces: no hay APIs, claves ni costos, y no prometemos nada que una app
 // externa no pueda cumplir. Si una app cambia su enlace, se corrige aquí, en un solo lugar.
-// Privacidad: si el anuncio es de zona aproximada, TODOS los enlaces llevan a la zona, nunca al punto real.
+// Privacidad: si el anuncio es de zona aproximada, los enlaces llevan a la zona, nunca al punto real;
+// el comprador puede pegar el punto que el vendedor le dé por WhatsApp y los enlaces se actualizan.
 const LINEAS_TAXI = {
   // "Envigado": [{ nombre: "Taxi Libre", tel: "6044440000" }],   ← las agrega el administrador
 };
 
-function opcionesComoLlegar(lat, lng, nombre) {
-  const destino = encodeURIComponent(lat + "," + lng);
+// Convierte lo que pegó la persona en un destino. Acepta coordenadas («6.17,-75.59»), un enlace de Google Maps
+// o de «ubicación» de WhatsApp (traen las coordenadas dentro) o una dirección escrita.
+function interpretarDestino(texto, ciudad) {
+  const t = String(texto || "").trim().slice(0, 300);
+  if (!t) return null;
+  const m = t.match(/(-?\d{1,2}\.\d{3,})\s*(?:,|%2C)\s*(-?\d{1,3}\.\d{3,})/i);
+  if (m) {
+    const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng, nombre: "Punto acordado" };
+  }
+  if (/^https?:\/\//i.test(t)) return null;   // un enlace sin coordenadas legibles (p. ej. enlace corto) no lo podemos usar
+  return { texto: ciudad && !t.toLowerCase().includes(ciudad.toLowerCase()) ? `${t}, ${ciudad}, Colombia` : `${t}, Colombia`, nombre: t };
+}
+
+function opcionesComoLlegar(dest) {
+  const conCoords = dest.lat !== undefined;
+  const destino = encodeURIComponent(conCoords ? dest.lat + "," + dest.lng : dest.texto);
   const gm = modo => `https://www.google.com/maps/dir/?api=1&destination=${destino}&travelmode=${modo}`;
-  const uber = "https://m.uber.com/ul/?action=setPickup&pickup=my_location" +
-    `&dropoff[latitude]=${encodeURIComponent(lat)}&dropoff[longitude]=${encodeURIComponent(lng)}` +
-    `&dropoff[nickname]=${encodeURIComponent(nombre || "Destino")}`;
+  const drop = conCoords
+    ? `&dropoff[latitude]=${encodeURIComponent(dest.lat)}&dropoff[longitude]=${encodeURIComponent(dest.lng)}`
+    : `&dropoff[formatted_address]=${destino}`;
+  const uber = "https://m.uber.com/ul/?action=setPickup&pickup=my_location" + drop +
+    `&dropoff[nickname]=${encodeURIComponent(dest.nombre || "Destino")}`;
   return {
     llegar: [
       { icono: "🚇", texto: "Transporte público (metro y buses)", url: gm("transit") },
       { icono: "🚶", texto: "A pie", url: gm("walking") },
       { icono: "🚲", texto: "En bicicleta", url: gm("bicycling") },
       { icono: "🚗", texto: "En carro o moto (Google Maps)", url: gm("driving") },
-      { icono: "🧭", texto: "Navegar con Waze", url: `https://waze.com/ul?ll=${destino}&navigate=yes` }
+      { icono: "🧭", texto: "Navegar con Waze", url: conCoords ? `https://waze.com/ul?ll=${destino}&navigate=yes` : `https://waze.com/ul?q=${destino}&navigate=yes` }
     ],
-    pedir: [
-      { icono: "🚕", texto: "Pedir Uber (destino ya puesto)", url: uber }
-    ],
+    pedir: [{ icono: "🚕", texto: "Pedir Uber (destino ya puesto)", url: uber }],
     // DiDi e inDrive no ofrecen un enlace público fiable que lleve el destino: copiamos el punto para pegarlo en la app.
-    copiar: `https://www.google.com/maps/search/?api=1&query=${destino}`
+    copiar: conCoords ? `https://www.google.com/maps/search/?api=1&query=${destino}` : dest.texto
   };
 }
 
+// Lugares públicos cerca de un punto. La búsqueda se centra en el mapa con «@lat,lng,zoom»
+// (poner las coordenadas dentro del texto de búsqueda no funciona).
+function urlBuscarCerca(tipo, lat, lng) {
+  return `https://www.google.com/maps/search/${encodeURIComponent(tipo)}/@${lat},${lng},15z`;
+}
+
 function mensajeEncuentro(nombreAnuncio) {
-  return `Hola, vi tu anuncio «${nombreAnuncio}» en MercaFree. ¿Nos vemos en un lugar público y concurrido, como una estación del metro, un centro comercial o un CAI? ¿Cuál te queda mejor?`;
+  return `Hola, vi tu anuncio «${nombreAnuncio}» en MercaFree. ¿Nos vemos en un lugar público y concurrido, como una estación del metro, un centro comercial o un CAI? ¿Cuál te queda mejor? Cuando lo definas, mándame la ubicación por WhatsApp.`;
 }
 
 // datos: { lat, lng, nombre, aprox, ciudad, whatsapp (opcional: activa «punto de encuentro») }
 function abrirComoLlegar(datos) {
   cerrarComoLlegar();
-  const op = opcionesComoLlegar(datos.lat, datos.lng, datos.nombre);
-  const fila = o => `<a href="${esc(o.url)}" target="_blank" rel="noopener" class="flex items-center gap-3 border border-slate-200 hover:border-indigo-400 rounded-xl px-3 py-3 text-sm font-medium"><span class="text-xl">${o.icono}</span>${esc(o.texto)}</a>`;
+  const filaH = o => `<a href="${esc(o.url)}" target="_blank" rel="noopener" class="flex items-center gap-3 border border-slate-200 hover:border-indigo-400 rounded-xl px-3 py-3 text-sm font-medium"><span class="text-xl">${o.icono}</span>${esc(o.texto)}</a>`;
   const taxis = (LINEAS_TAXI[datos.ciudad] || []).map(t =>
     `<a href="tel:${esc(String(t.tel).replace(/[^\d+]/g, ""))}" class="flex items-center gap-3 border border-slate-200 hover:border-indigo-400 rounded-xl px-3 py-3 text-sm font-medium"><span class="text-xl">📞</span>Taxi: ${esc(t.nombre)}</a>`).join("");
-  const q = tipo => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tipo + " cerca de " + datos.lat + "," + datos.lng)}`;
+  const q = tipo => urlBuscarCerca(tipo, datos.lat, datos.lng);
   const encuentro = datos.whatsapp ? `
       <h4 class="text-xs font-bold text-slate-500 uppercase mt-4 mb-2">🛡️ Punto de encuentro seguro</h4>
-      <p class="text-xs text-slate-500 mb-2">Para compras entre personas, reúnanse en un lugar público y concurrido.</p>
+      <p class="text-xs text-slate-500 mb-2">Para compras entre personas, reúnanse en un lugar público y concurrido. Estos atajos buscan cerca de ${datos.aprox ? "la zona del anuncio" : "el anuncio"}.</p>
       <div class="flex flex-wrap gap-2 mb-2">
         <a href="${esc(q("estación de metro"))}" target="_blank" rel="noopener" class="text-xs bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5">🚇 Estaciones</a>
         <a href="${esc(q("centro comercial"))}" target="_blank" rel="noopener" class="text-xs bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5">🏬 Centros comerciales</a>
@@ -280,23 +301,51 @@ function abrirComoLlegar(datos) {
   v.innerHTML = `<div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl max-h-[92vh] overflow-auto relative">
     <button type="button" data-cl-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
     <h3 class="text-lg font-black text-indigo-900">🗺️ ¿Cómo quieres llegar?</h3>
-    <p class="text-xs text-slate-500 mb-3">${datos.aprox ? "Es una <b>zona aproximada</b>: el vendedor te dará el punto exacto cuando acuerden el encuentro." : esc(datos.nombre || "")}</p>
-    <div class="space-y-2">${op.llegar.map(fila).join("")}</div>
-    <h4 class="text-xs font-bold text-slate-500 uppercase mt-4 mb-2">Pedir transporte</h4>
-    <div class="space-y-2">${op.pedir.map(fila).join("")}${taxis}
-      <button type="button" id="cl-copiar" class="w-full flex items-center gap-3 border border-slate-200 hover:border-indigo-400 rounded-xl px-3 py-3 text-sm font-medium text-left"><span class="text-xl">📋</span>Copiar destino para DiDi o inDrive</button>
+    <p id="cl-destino-txt" class="text-xs text-slate-500 mb-3"></p>
+    <div id="cl-opciones"></div>
+    <div class="mt-4 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+      <label for="cl-punto" class="block text-xs font-bold text-indigo-900 mb-1">📍 ¿Ya acordaron el punto de encuentro?</label>
+      <p class="text-xs text-slate-500 mb-2">Pega aquí la dirección o la ubicación que te envió el vendedor por WhatsApp y las opciones de arriba se actualizan.</p>
+      <div class="flex gap-2">
+        <input id="cl-punto" type="text" maxlength="300" placeholder="Ej: Estación Envigado, o pega la ubicación" class="flex-1 min-w-0 border border-slate-300 rounded-lg p-2 text-sm">
+        <button type="button" id="cl-usar" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3 rounded-lg">Usar</button>
+      </div>
+      <p id="cl-punto-msg" class="hidden text-xs text-red-600 mt-1"></p>
+      <button type="button" id="cl-volver" class="hidden text-xs text-indigo-700 underline mt-1">↩ Volver al destino del anuncio</button>
     </div>${encuentro}
     <p class="text-[11px] text-slate-400 mt-4">MercaFree no presta servicios de transporte ni tiene alianza con estas aplicaciones; son enlaces de ayuda.</p>
   </div>`;
+  let op = null;
+  const pintar = (dest, esPunto) => {
+    op = opcionesComoLlegar(dest);
+    $("cl-opciones").innerHTML = `<div class="space-y-2">${op.llegar.map(filaH).join("")}</div>
+      <h4 class="text-xs font-bold text-slate-500 uppercase mt-4 mb-2">Pedir transporte</h4>
+      <div class="space-y-2">${op.pedir.map(filaH).join("")}${taxis}
+        <button type="button" id="cl-copiar" class="w-full flex items-center gap-3 border border-slate-200 hover:border-indigo-400 rounded-xl px-3 py-3 text-sm font-medium text-left"><span class="text-xl">📋</span>Copiar destino para DiDi o inDrive</button>
+      </div>`;
+    $("cl-destino-txt").innerHTML = esPunto
+      ? `Destino: <b>${esc(dest.nombre)}</b> (el punto que acordaron)`
+      : (datos.aprox ? "Es una <b>zona aproximada</b>: el vendedor te dará el punto exacto cuando acuerden el encuentro. Cuando lo tengas, pégalo abajo." : esc(datos.nombre || ""));
+    $("cl-volver").classList.toggle("hidden", !esPunto);
+  };
   v.addEventListener("click", async e => {
     if (e.target === v || e.target.closest("[data-cl-cerrar]")) { cerrarComoLlegar(); return; }
     if (e.target.closest("#cl-copiar")) {
       try { await navigator.clipboard.writeText(op.copiar); mostrarToast("📋 Destino copiado: pégalo en la app"); }
       catch (err) { window.prompt("Copia el destino:", op.copiar); }
     }
+    if (e.target.closest("#cl-usar")) {
+      const d = interpretarDestino($("cl-punto").value, datos.ciudad);
+      const msg = $("cl-punto-msg");
+      if (!d) { msg.textContent = "No pudimos leer ese punto. Escribe la dirección o pega la ubicación completa."; msg.classList.remove("hidden"); return; }
+      msg.classList.add("hidden");
+      pintar(d, true);
+    }
+    if (e.target.closest("#cl-volver")) { $("cl-punto").value = ""; pintar({ lat: datos.lat, lng: datos.lng, nombre: datos.nombre }, false); }
   });
   document.body.appendChild(v);
   document.body.style.overflow = "hidden";
+  pintar({ lat: datos.lat, lng: datos.lng, nombre: datos.nombre }, false);
 }
 
 function cerrarComoLlegar() {

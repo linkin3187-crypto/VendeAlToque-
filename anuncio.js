@@ -23,12 +23,56 @@ function mostrarFoto(i) {
     const img = document.createElement("img");
     img.src = src;
     img.alt = `${anuncioActual.nombre} - foto ${fotoActiva + 1}`;
-    img.className = "absolute inset-0 w-full h-full object-cover";
+    img.className = "absolute inset-0 w-full h-full object-cover cursor-zoom-in";
     img.addEventListener("error", () => img.remove()); // si falla, queda el icono de fondo
     cont.appendChild(img);
   }
   document.querySelectorAll(".miniatura").forEach((m, idx) =>
     m.setAttribute("aria-current", idx === fotoActiva ? "true" : "false"));
+}
+
+// ---------- Foto completa (visor) ----------
+// POR QUÉ: la galería recorta la foto (object-cover) para que todas se vean parejas.
+// Al tocarla se abre este visor con la foto ENTERA (object-contain); tocar de nuevo,
+// la X o Escape lo contraen.
+function abrirVisor() {
+  const src = urlSegura(anuncioActual.fotos[fotoActiva]);
+  if (!src) return;
+  let v = $("visor-foto");
+  if (!v) {
+    v = document.createElement("div");
+    v.id = "visor-foto";
+    v.className = "fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-2 cursor-zoom-out";
+    v.setAttribute("role", "dialog");
+    v.setAttribute("aria-label", "Foto ampliada");
+    v.innerHTML = '<button type="button" id="visor-cerrar" aria-label="Cerrar foto" class="absolute top-3 right-4 text-white text-4xl leading-none">&times;</button>' +
+      '<button type="button" id="visor-ant" aria-label="Foto anterior" class="absolute left-2 top-1/2 -translate-y-1/2 text-white text-5xl px-2">&#8249;</button>' +
+      '<button type="button" id="visor-sig" aria-label="Foto siguiente" class="absolute right-2 top-1/2 -translate-y-1/2 text-white text-5xl px-2">&#8250;</button>' +
+      '<img id="visor-img" alt="" class="max-w-full max-h-full object-contain select-none">';
+    v.addEventListener("click", e => {
+      if (e.target.id === "visor-ant") { mostrarFoto(fotoActiva - 1); actualizarVisor(); return; }
+      if (e.target.id === "visor-sig") { mostrarFoto(fotoActiva + 1); actualizarVisor(); return; }
+      cerrarVisor();   // clic en la foto, el fondo o la X: contrae
+    });
+    document.body.appendChild(v);
+  }
+  v.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  const multiple = anuncioActual.fotos.length > 1;
+  $("visor-ant").classList.toggle("hidden", !multiple);
+  $("visor-sig").classList.toggle("hidden", !multiple);
+  actualizarVisor();
+}
+function actualizarVisor() {
+  const img = $("visor-img");
+  if (!img) return;
+  img.src = urlSegura(anuncioActual.fotos[fotoActiva]);
+  img.alt = `${anuncioActual.nombre} - foto ${fotoActiva + 1}`;
+}
+function cerrarVisor() {
+  const v = $("visor-foto");
+  if (v) v.classList.add("hidden");
+  document.body.style.overflow = "";
 }
 
 function renderizarGaleria(a) {
@@ -46,10 +90,12 @@ function renderizarGaleria(a) {
   }
   if (a.fotos.length) {
     mostrarFoto(0);
+    $("galeria-principal").addEventListener("click", e => { if (e.target.tagName === "IMG") abrirVisor(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarVisor(); });
     // Flechas del teclado para cambiar de foto
     document.addEventListener("keydown", e => {
-      if (e.key === "ArrowRight") mostrarFoto(fotoActiva + 1);
-      if (e.key === "ArrowLeft") mostrarFoto(fotoActiva - 1);
+      if (e.key === "ArrowRight") { mostrarFoto(fotoActiva + 1); actualizarVisor(); }
+      if (e.key === "ArrowLeft") { mostrarFoto(fotoActiva - 1); actualizarVisor(); }
     });
   }
 }

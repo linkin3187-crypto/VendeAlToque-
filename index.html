@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -45,6 +45,8 @@
       <b>🛡️ Modo moderador</b>
       <span id="ecount"></span>
       <span class="text-amber-700">· Puedes editar y eliminar cualquier anuncio o tema del foro</span>
+      <a href="moderacion.html" class="ml-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 rounded-full text-xs">🚩 Reportes</a>
+      <a href="admin-comercios.html" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1 rounded-full text-xs">🏪 Comercios</a>
     </div>
   </div>
 
@@ -152,6 +154,10 @@
             📍 Mi ubicación
           </button>
         </div>
+        <label class="flex items-center gap-2 text-xs text-slate-600 mb-2 cursor-pointer w-fit">
+          <input type="checkbox" id="chk-comercios" checked class="accent-indigo-600">
+          <span>🏪 Mostrar comercios cercanos (farmacias, cajeros, panaderías…)</span>
+        </label>
         <div id="map"></div>
         <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
           <button type="button" id="btn-zona" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-full">🔎 Buscar en esta zona</button>
@@ -220,6 +226,11 @@
   <footer class="bg-white border-t border-slate-200 mt-8 py-8">
     <div class="max-w-7xl mx-auto px-4 text-center">
       <p class="text-slate-500 text-sm">© 2026 <span class="font-bold text-indigo-600">MercaFree</span> — 100% gratis</p>
+      <p class="text-slate-400 text-xs mt-2">
+        <a href="terminos.html" class="hover:text-indigo-600 underline">Términos y condiciones</a> ·
+        <a href="privacidad.html" class="hover:text-indigo-600 underline">Política de privacidad</a> ·
+        Mapas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" class="hover:text-indigo-600 underline">OpenStreetMap</a>
+      </p>
     </div>
   </footer>
 
@@ -355,6 +366,7 @@
         <span id="auth-switch-text">¿No tienes cuenta?</span>
         <button type="button" id="auth-switch-btn" class="text-indigo-600 font-semibold ml-1">Regístrate</button>
       </div>
+      <p id="auth-terminos" class="hidden mt-3 text-[11px] text-slate-500 text-center">Al crear tu cuenta aceptas los <a href="terminos.html" target="_blank" class="underline text-indigo-600">Términos y condiciones</a> y la <a href="privacidad.html" target="_blank" class="underline text-indigo-600">Política de privacidad</a> (tratamiento de datos, Ley 1581).</p>
       <p class="mt-4 text-[11px] text-slate-400 text-center">Necesitas una cuenta para publicar anuncios o escribir en el foro. Ver y contactar es gratis y sin cuenta.</p>
     </div>
   </div>
@@ -431,9 +443,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=3"></script>
-  <script src="data.js?v=3"></script>
-  <script src="foro.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="utils.js?v=4"></script>
+  <script src="data.js?v=4"></script>
+  <script src="foro.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

@@ -27,7 +27,8 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | 8 ✅ | **Base limpia:** NO se migran los anuncios de ejemplo (sus números de WhatsApp son inventados y podrían ser de personas reales) | Mostrar anuncios falsos a usuarios reales es engañarlos |
 | 9 | Vencimiento a 30 días (`expira_en`) y reglas básicas anti-spam (límite de publicaciones por usuario, palabras prohibidas) | Mantiene fresco el catálogo y frena el abuso desde el día uno |
 
-## Fase 2B: Mínimo legal + beta cerrada
+## Fase 2B: Mínimo legal + beta cerrada (en curso)
+**Hecho:** términos, política de datos (`terminos.html`, `privacidad.html`), botón reportar, panel de moderación (`moderacion.html`), visor de foto completa, comercios del mapa (`admin-comercios.html`, tabla `comercios`). **Falta:** completar datos del responsable en los textos legales, revisión por abogado, verificar comercios en persona, dominio propio.
 **Antes de abrir al público** (consúltalo con un abogado local):
 - Términos y condiciones, política de tratamiento de datos (Ley 1581 de 2012, habeas data) y lista de contenido prohibido.
 - Botón **"Reportar anuncio"** y un panel simple de moderación (rol moderador).

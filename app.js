@@ -10,6 +10,7 @@ const NOMBRES_PASOS = ["Qué vendes", "Dónde está", "Contacto"];
 let mapa = null;
 let capaMarcadores = null;                // grupo con clusters
 const marcadoresPorId = new Map();        // id de anuncio → marcador (para sincronizar lista y mapa)
+let capaComercios = null;                 // pines de comercios (farmacias, cajeros...)
 let marcadorUsuario = null;
 let ubicacionUsuario = null;              // {lat,lng}; solo si el usuario la autorizó
 let limitesZona = null;                   // bounds del botón "Buscar en esta zona"
@@ -40,6 +41,7 @@ function iniciarMapa() {
     maxClusterRadius: 45
   });
   mapa.addLayer(capaMarcadores);
+  capaComercios = L.layerGroup().addTo(mapa);
   // IMPORTANTE: ya NO pedimos el GPS al cargar. Los navegadores lo penalizan y
   // asusta al usuario. Solo se pide cuando toca "Mi ubicación" (acción explícita).
 }
@@ -102,6 +104,45 @@ function popupHTML(a) {
       <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
     </div>
   </div>`;
+}
+
+// ---------- Comercios (datos de OpenStreetMap, verificados por el equipo) ----------
+function iconoComercio(tipo) {
+  const emoji = iconosComercio[tipo] || "🏪";
+  return L.divIcon({
+    className: "marcador-cat",
+    html: `<div class="pin-comercio"><span>${emoji}</span></div>`,
+    iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28]
+  });
+}
+
+function popupComercioHTML(c) {
+  const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+  const foto = urlSegura(c.foto);
+  const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
+  return `<div class="popup-anuncio">
+    ${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-20 object-cover rounded-lg mb-2">` : ""}
+    <strong class="block">${esc(c.nombre)}</strong>
+    <small class="text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</small>
+    ${c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
+    ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
+    <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${c.verificado ? "✔ Verificado por MercaFree" : "Dato de OpenStreetMap · sin verificar"}</div>
+    <div class="flex flex-wrap gap-1.5 mt-2">
+      ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
+      <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
+    </div>
+  </div>`;
+}
+
+function pintarComercios() {
+  if (!capaComercios) return;
+  capaComercios.clearLayers();
+  if (!$("chk-comercios").checked) return;
+  comercios.forEach(c => {
+    if (!tieneCoords(c)) return;
+    L.marker([c.lat, c.lng], { icon: iconoComercio(c.tipo), title: c.nombre, zIndexOffset: -500 })
+      .bindPopup(popupComercioHTML(c), { maxWidth: 240 }).addTo(capaComercios);
+  });
 }
 
 function renderizarMarcadores(ajustarVista) {
@@ -340,6 +381,7 @@ function cambiarModoAuth() {
   $("auth-subtitulo").textContent = reg ? "Regístrate para publicar y gestionar tus anuncios" : "Accede para publicar y gestionar tus anuncios";
   $("campo-nombre").classList.toggle("hidden", !reg);
   $("auth-olvido").classList.toggle("hidden", reg);
+  $("auth-terminos").classList.toggle("hidden", !reg);
   $("auth-switch-text").textContent = reg ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?";
   $("auth-switch-btn").textContent = reg ? "Inicia sesión" : "Regístrate";
   $("auth-password").autocomplete = reg ? "new-password" : "current-password";
@@ -783,6 +825,7 @@ function iniciarEventos() {
 
   $("btn-mi-ubicacion").addEventListener("click", centrarEnMiUbicacion);
   $("btn-zona").addEventListener("click", buscarEnZona);
+  $("chk-comercios").addEventListener("change", pintarComercios);
   $("btn-quitar-zona").addEventListener("click", quitarZona);
 
   // Auth
@@ -849,6 +892,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   actualizarUIAuth();
   aplicarFiltros();
   activarModoEditor();
+  // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
+  cargarComercios().then(pintarComercios);
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");

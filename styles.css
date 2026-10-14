@@ -118,3 +118,11 @@
 /* --- Galería de la página de detalle --- */
 .miniatura { border: 2px solid transparent; }
 .miniatura[aria-current="true"] { border-color: #6366f1; }
+
+/* Pines de comercios: más pequeños y de otro color que los anuncios */
+.pin-comercio {
+  width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: #fff; border: 2px solid #0f766e; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  display: flex; align-items: center; justify-content: center;
+}
+.pin-comercio span { transform: rotate(45deg); font-size: 14px; line-height: 1; }

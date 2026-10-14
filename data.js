@@ -389,3 +389,99 @@ async function unirseListaEspera(ciudad, whatsapp10) {
   });
   if (error) throw error;
 }
+
+// =====================================================================
+// COMERCIOS (farmacias, cajeros, etc. importados de OpenStreetMap)
+// =====================================================================
+const TIPOS_COMERCIO = [
+  { id: "farmacia",      nombre: "Farmacias",         icono: "💊", osm: ['["amenity"="pharmacy"]'] },
+  { id: "cajero",        nombre: "Cajeros",           icono: "🏧", osm: ['["amenity"="atm"]'] },
+  { id: "comida_rapida", nombre: "Comida rápida",     icono: "🍔", osm: ['["amenity"="fast_food"]'] },
+  { id: "panaderia",     nombre: "Panaderías",        icono: "🥖", osm: ['["shop"="bakery"]'] },
+  { id: "supermercado",  nombre: "Supermercados",     icono: "🛒", osm: ['["shop"="supermarket"]'] },
+  { id: "banco",         nombre: "Bancos",            icono: "🏦", osm: ['["amenity"="bank"]'] }
+];
+const iconosComercio = {};
+TIPOS_COMERCIO.forEach(t => { iconosComercio[t.id] = t.icono; });
+
+let comercios = [];   // lista pública de comercios activos
+
+function filaAComercio(r) {
+  const m = municipios.find(x => x.id === r.municipio_id) || {};
+  return {
+    id: Number(r.id), osmId: r.osm_id, nombre: r.nombre, tipo: r.tipo,
+    municipioId: r.municipio_id, ciudad: m.nombre || "",
+    direccion: r.direccion || "", telefono: r.telefono || "", horario: r.horario || "",
+    foto: r.foto_url || "", lat: parseFloat(r.lat), lng: parseFloat(r.lng),
+    verificado: !!r.verificado, activo: !!r.activo
+  };
+}
+
+async function cargarComercios() {
+  const { data, error } = await sb.from("comercios").select("*").eq("activo", true).limit(2000);
+  if (error) { console.error("comercios:", error); comercios = []; return comercios; }
+  comercios = (data || []).map(filaAComercio);
+  return comercios;
+}
+
+// Solo moderadores/admin: lista TODOS (incluye ocultos) para el editor.
+async function cargarComerciosAdmin() {
+  const { data, error } = await sb.from("comercios").select("*").order("municipio_id").order("tipo").order("nombre").limit(2000);
+  if (error) throw error;
+  return (data || []).map(filaAComercio);
+}
+
+async function guardarComercioDB(id, cambios) {
+  const { data, error } = await sb.from("comercios").update(cambios).eq("id", id).select().single();
+  if (error) throw error;
+  return filaAComercio(data);
+}
+
+async function eliminarComercioDB(id) {
+  const { error } = await sb.from("comercios").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Inserta comercios nuevos; los que ya existen (mismo osm_id) se saltan.
+async function importarComerciosDB(filas) {
+  if (!filas.length) return 0;
+  const { data, error } = await sb.from("comercios")
+    .upsert(filas, { onConflict: "osm_id", ignoreDuplicates: true }).select("id");
+  if (error) throw error;
+  return (data || []).length;
+}
+
+// Sube una foto (data:image/jpeg;base64) a TU carpeta del bucket y devuelve la URL pública.
+async function subirFotoComercio(dataUrl) {
+  const [url] = await subirFotos([dataUrl]);
+  return url;
+}
+
+// =====================================================================
+// REPORTES (solo moderadores)
+// =====================================================================
+async function cargarReportes(estado) {
+  let q = sb.from("reportes")
+    .select("id, motivo, detalle, estado, creado_en, reportante:perfiles!reportante_id(nombre), anuncio:anuncios(id, nombre, estado_publicacion, fotos, barrio, whatsapp, owner_id)")
+    .order("creado_en", { ascending: false }).limit(300);
+  if (estado) q = q.eq("estado", estado);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function resolverReporte(id, estado) {
+  const { error } = await sb.from("reportes").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
+
+// Marca como resuelto TODOS los reportes pendientes de un anuncio.
+async function resolverReportesDeAnuncio(anuncioId, estado) {
+  const { error } = await sb.from("reportes").update({ estado }).eq("anuncio_id", anuncioId).eq("estado", "pendiente");
+  if (error) throw error;
+}
+
+async function cambiarVisibilidadAnuncio(id, estadoPublicacion) {
+  const { error } = await sb.from("anuncios").update({ estado_publicacion: estadoPublicacion }).eq("id", id);
+  if (error) throw error;
+}

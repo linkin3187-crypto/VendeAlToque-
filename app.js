@@ -24,6 +24,8 @@ let modoEdicionId = null;                 // id del anuncio que se está editand
 let pasoActual = 1;
 let fotosForm = [];                       // fotos del formulario (base64)
 let coordsForm = { ...CENTRO_DEFECTO };
+let pinManual = false;   // true cuando la persona colocó el pin a mano (no lo movemos solos)
+let geoTimer = null, geoSeq = 0;
 let mapaFormulario = null;
 let marcadorFormulario = null;
 
@@ -559,6 +561,7 @@ function validarPaso(n) {
 
 function resetFormulario() {
   $("formulario-registro").reset();
+  pinManual = false; geoSeq++; avisoGeo(null);
   fotosForm = [];
   renderizarFotosForm();
   coordsForm = ubicacionUsuario ? { ...ubicacionUsuario }
@@ -592,6 +595,7 @@ function alElegirCiudadForm(e) {
     mapaFormulario.setView([m.lat, m.lng], 14);
     fijarCoordsForm({ lat: m.lat, lng: m.lng });
   }
+  if (!pinManual && $("form-barrio").value.trim().length >= 3) programarGeocodificar(300);
 }
 
 async function enviarListaEspera(e) {
@@ -617,8 +621,8 @@ function iniciarMapaFormulario() {
     marcadorFormulario = L.marker([coordsForm.lat, coordsForm.lng], {
       draggable: true, icon: iconoMarcador($("form-categoria").value)
     }).addTo(mapaFormulario);
-    marcadorFormulario.on("dragend", () => fijarCoordsForm(marcadorFormulario.getLatLng()));
-    mapaFormulario.on("click", e => { marcadorFormulario.setLatLng(e.latlng); fijarCoordsForm(e.latlng); });
+    marcadorFormulario.on("dragend", () => { pinManual = true; fijarCoordsForm(marcadorFormulario.getLatLng()); avisoGeo("manual"); });
+    mapaFormulario.on("click", e => { pinManual = true; marcadorFormulario.setLatLng(e.latlng); fijarCoordsForm(e.latlng); avisoGeo("manual"); });
   } else {
     // El mapa se crea UNA vez y se reutiliza (antes se destruía y recreaba cada vez)
     mapaFormulario.setView([coordsForm.lat, coordsForm.lng], 15);
@@ -632,6 +636,7 @@ function iniciarMapaFormulario() {
 async function usarMiUbicacionFormulario() {
   try {
     await pedirUbicacion();
+    pinManual = true; avisoGeo("gps");
     fijarCoordsForm(ubicacionUsuario);
     if (mapaFormulario) {
       marcadorFormulario.setLatLng([ubicacionUsuario.lat, ubicacionUsuario.lng]);
@@ -640,6 +645,90 @@ async function usarMiUbicacionFormulario() {
     mostrarToast("Ubicación tomada");
   } catch (err) {
     mostrarToast(mensajeErrorUbicacion(err), "error");
+  }
+}
+
+// ---------- Ubicar el pin escribiendo barrio o dirección ----------
+// Usa Nominatim (el buscador de direcciones de OpenStreetMap, gratis y sin clave).
+// Reglas: máx. 1 consulta/seg (debounce), solo Colombia, y limitado a los alrededores
+// de la ciudad elegida para que "Centro" no caiga en otra ciudad.
+const AVISOS_GEO = {
+  buscando: ["⏳ Buscando en el mapa…", "bg-slate-100 text-slate-600"],
+  exacta:   ["📍 Encontramos la dirección. Confirma que el pin esté exacto; si no, arrástralo.", "bg-emerald-50 text-emerald-800"],
+  barrio:   ["📍 Ubicación aproximada según el barrio. Mueve el pin hasta el lugar exacto.", "bg-amber-50 text-amber-800"],
+  nada:     ["No encontramos ese lugar. Prueba con otra escritura o toca el mapa para marcarlo tú.", "bg-rose-50 text-rose-700"],
+  error:    ["No pudimos buscar ahora. Toca el mapa o arrastra el pin para marcar el lugar.", "bg-rose-50 text-rose-700"],
+  manual:   ["✅ Pin colocado por ti. Si cambias el barrio o la dirección, pulsa 🔍 Buscar para recolocarlo.", "bg-indigo-50 text-indigo-700"],
+  gps:      ["✅ Usamos tu ubicación GPS. Revisa que el pin esté donde está el artículo.", "bg-indigo-50 text-indigo-700"]
+};
+
+function avisoGeo(tipo) {
+  const el = $("form-geo-estado");
+  if (!el) return;
+  if (!tipo) { el.className = "hidden"; el.textContent = ""; return; }
+  const [txt, clases] = AVISOS_GEO[tipo];
+  el.className = "text-xs font-semibold rounded-lg px-3 py-2 mb-2 " + clases;
+  el.textContent = txt;
+}
+
+async function consultarNominatim(q, centro, signal) {
+  const p = new URLSearchParams({ format: "jsonv2", limit: "1", countrycodes: "co", q, "accept-language": "es" });
+  if (centro) {   // caja de ~13 km alrededor de la ciudad
+    p.set("viewbox", [centro.lng - 0.12, centro.lat + 0.12, centro.lng + 0.12, centro.lat - 0.12].join(","));
+    p.set("bounded", "1");
+  }
+  const r = await fetch("https://nominatim.openstreetmap.org/search?" + p, { signal, headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error("nominatim " + r.status);
+  const j = await r.json();
+  return j[0] ? { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon), tipo: j[0].addresstype || j[0].type } : null;
+}
+
+function programarGeocodificar(ms) {
+  clearTimeout(geoTimer);
+  geoTimer = setTimeout(() => geocodificarFormulario(false), ms);
+}
+
+async function geocodificarFormulario(forzar) {
+  const ciudad = $("form-ciudad").value;
+  const barrio = $("form-barrio").value.trim();
+  const dir = $("form-direccion").value.trim();
+  if (!ciudad) { if (forzar) mostrarToast("Primero elige la ciudad", "error"); return; }
+  if (!barrio && !dir) { if (forzar) mostrarToast("Escribe el barrio o la dirección", "error"); return; }
+  if (pinManual && !forzar) return;          // nunca movemos un pin que la persona colocó
+  const miSeq = ++geoSeq;
+  const depto = $("form-departamento").value;
+  const muni = buscarMunicipio(depto, ciudad);
+  const centro = muni && muni.lat != null ? { lat: muni.lat, lng: muni.lng } : null;
+  const lugar = [ciudad, depto, "Colombia"].join(", ");
+  const calle = dir.split(/#|\bno\.?\s|\bnro\.?\s/i)[0].trim();   // "Calle 37 Sur # 43A-20" -> "Calle 37 Sur"
+  // De lo más exacto a lo más general; nos quedamos con el primer acierto.
+  const intentos = [];
+  if (dir) intentos.push([[dir.replace(/#/g, " "), barrio, lugar].filter(Boolean).join(", "), "exacta"]);
+  if (calle && calle !== dir) intentos.push([[calle, barrio, lugar].filter(Boolean).join(", "), "exacta"]);
+  if (barrio) intentos.push([[barrio, lugar].join(", "), "barrio"]);
+  avisoGeo("buscando");
+  const ctrl = new AbortController();
+  const corte = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    for (const [q, nivel] of intentos) {
+      const hallado = await consultarNominatim(q, centro, ctrl.signal);
+      if (miSeq !== geoSeq) return;            // llegó una búsqueda más nueva (o se cerró el formulario)
+      if (hallado) {
+        pinManual = false;
+        fijarCoordsForm(hallado);
+        if (mapaFormulario) {
+          marcadorFormulario.setLatLng([hallado.lat, hallado.lng]);
+          mapaFormulario.setView([hallado.lat, hallado.lng], nivel === "exacta" ? 17 : 16);
+        }
+        avisoGeo(nivel);
+        return;
+      }
+    }
+    if (miSeq === geoSeq) avisoGeo("nada");
+  } catch (err) {
+    if (miSeq === geoSeq) avisoGeo("error");
+  } finally {
+    clearTimeout(corte);
   }
 }
 
@@ -770,6 +859,7 @@ function editarAnuncio(id) {
   fotosForm = [...a.fotos];
   renderizarFotosForm();
   if (tieneCoords(a)) coordsForm = { lat: a.lat, lng: a.lng };
+  pinManual = true; geoSeq++; avisoGeo(null);   // al editar respetamos el pin guardado
   $("publicar-titulo").textContent = "✏️ Editar anuncio";
   $("btn-submit-anuncio").textContent = "💾 Guardar cambios";
   abrirModal("modal-publicar");
@@ -898,6 +988,10 @@ function iniciarEventos() {
   });
   $("form-departamento").addEventListener("change", actualizarCiudadesForm);
   $("btn-gps-form").addEventListener("click", usarMiUbicacionFormulario);
+  $("btn-buscar-dir").addEventListener("click", () => geocodificarFormulario(true));
+  $("form-barrio").addEventListener("input", () => { if (!pinManual && $("form-barrio").value.trim().length >= 3) programarGeocodificar(1100); });
+  $("form-direccion").addEventListener("input", () => { if (!pinManual && $("form-direccion").value.trim().length >= 5) programarGeocodificar(1100); });
+  $("form-direccion").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); geocodificarFormulario(true); } });
   // Solo dígitos en el WhatsApp (y quita un "57" inicial si pegaron +57...)
   $("form-whatsapp").addEventListener("input", e => {
     let d = e.target.value.replace(/\D/g, "");

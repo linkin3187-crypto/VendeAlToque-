@@ -131,6 +131,7 @@ function popupComercioHTML(c) {
       ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
       <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
     </div>
+    <a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>
   </div>`;
 }
 
@@ -233,15 +234,51 @@ function marcarCategoriaActiva() {
 // =====================================================================
 // FILTROS
 // =====================================================================
-function actualizarCiudadesFiltro() {
+// ---------- Filtros dinámicos ----------
+// POR QUÉ: antes el filtro mostraba TODOS los municipios, aunque no tuvieran anuncios, y
+// el usuario elegía "Barbosa" para ver una lista vacía. Ahora solo aparecen los
+// departamentos y ciudades que SÍ tienen anuncios, con su cantidad: "Envigado (3)".
+function ubicacionesConAnuncios() {
+  const mapa = {};                                   // { depto: { ciudad: cantidad } }
+  baseDatosAnuncios.forEach(a => {
+    if (!a.departamento || !a.ciudad) return;
+    const d = (mapa[a.departamento] = mapa[a.departamento] || {});
+    d[a.ciudad] = (d[a.ciudad] || 0) + 1;
+  });
+  return mapa;
+}
+
+// Reconstruye las opciones de departamento (se llama al cargar y cuando cambian los anuncios).
+function refrescarOpcionesUbicacion() {
+  const ub = ubicacionesConAnuncios();
+  const selD = $("filtro-departamento");
+  const actual = selD.value;
+  selD.innerHTML = '<option value="">Todos</option>';
+  Object.keys(ub).sort().forEach(d => {
+    const total = Object.values(ub[d]).reduce((x, y) => x + y, 0);
+    const o = new Option(`${d} (${total})`, d);
+    selD.add(o);
+  });
+  selD.value = ub[actual] ? actual : "";            // si ese departamento ya no tiene anuncios, se limpia
+  const ciudadActual = $("filtro-ciudad").value;
+  llenarCiudadesFiltro();
+  if ([...$("filtro-ciudad").options].some(o => o.value === ciudadActual)) $("filtro-ciudad").value = ciudadActual;
+}
+
+function llenarCiudadesFiltro() {
+  const ub = ubicacionesConAnuncios();
   const depto = $("filtro-departamento").value;
   const sel = $("filtro-ciudad");
   sel.innerHTML = '<option value="">Todas las ciudades</option>';
-  (DEPARTAMENTOS[depto] || []).forEach(c => {
-    const o = document.createElement("option");
-    o.value = c; o.textContent = c;
-    sel.appendChild(o);
+  const ciudades = {};
+  (depto ? [depto] : Object.keys(ub)).forEach(d => {
+    Object.entries(ub[d] || {}).forEach(([c, n]) => { ciudades[c] = (ciudades[c] || 0) + n; });
   });
+  Object.keys(ciudades).sort((x, y) => x.localeCompare(y, "es")).forEach(c => sel.add(new Option(`${c} (${ciudades[c]})`, c)));
+}
+
+function actualizarCiudadesFiltro() {
+  llenarCiudadesFiltro();
   aplicarFiltros();
 }
 
@@ -707,6 +744,7 @@ async function registrarAnuncio(e) {
   $("buscador").value = "";
   categoriaActiva = "todos";
   marcarCategoriaActiva();
+  refrescarOpcionesUbicacion();
   aplicarFiltros();
   activarModoEditor();
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
@@ -745,6 +783,7 @@ async function eliminarAnuncio(id, esAdmin) {
     return;
   }
   baseDatosAnuncios = baseDatosAnuncios.filter(a => a.id !== id);
+  refrescarOpcionesUbicacion();
   aplicarFiltros({ ajustarMapa: false });
   activarModoEditor();
   mostrarToast("Anuncio eliminado");
@@ -884,10 +923,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 2) Datos reales desde Supabase
   await cargarDatos();
 
-  Object.keys(DEPARTAMENTOS).forEach(d => {
-    $("filtro-departamento").add(new Option(d, d));
-    $("form-departamento").add(new Option(d, d));
-  });
+  // El formulario de publicar ofrece TODOS los municipios; el filtro solo los que tienen anuncios.
+  Object.keys(DEPARTAMENTOS).forEach(d => $("form-departamento").add(new Option(d, d)));
+  refrescarOpcionesUbicacion();
   actualizarCiudadesForm();
   actualizarUIAuth();
   aplicarFiltros();

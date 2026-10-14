@@ -111,6 +111,47 @@ async function accionReporte(e) {
   }
 }
 
+// ---------- Solicitudes de comercios ----------
+const TIPOS_SOLICITUD = { actualizar: "✏️ Actualizar datos", retirar: "🗑️ Retirar del directorio", reclamar: "🙋 Reclama la ficha (es el dueño)" };
+
+function tarjetaSolicitud(s) {
+  const c = s.comercio;
+  return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" data-sol="${s.id}">
+    <div class="flex flex-wrap items-center gap-2">
+      <h3 class="font-bold">${esc(c ? c.nombre : "(comercio eliminado)")}</h3>
+      <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">${esc(TIPOS_SOLICITUD[s.tipo] || s.tipo)}</span>
+      <span class="text-xs text-slate-400">${esc(fechaCorta(s.creado_en))}</span>
+    </div>
+    <p class="text-sm mt-2"><b>${esc(s.nombre_contacto)}</b> · <span class="select-all">${esc(s.contacto)}</span></p>
+    ${s.mensaje ? `<p class="text-sm text-slate-600 mt-1">“${esc(s.mensaje)}”</p>` : ""}
+    <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+      <button type="button" data-sacc="atendida" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Marcar atendida</button>
+      <button type="button" data-sacc="descartada" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar</button>
+    </div>
+  </article>`;
+}
+
+async function pintarSolicitudes() {
+  try {
+    const lista = await cargarSolicitudesComercio("pendiente");
+    $("n-solicitudes").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("sol-lista").innerHTML = lista.length ? lista.map(tarjetaSolicitud).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">No hay solicitudes pendientes.</p>';
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+
+async function accionSolicitud(e) {
+  const b = e.target.closest("[data-sacc]");
+  const t = e.target.closest("[data-sol]");
+  if (!b || !t) return;
+  b.disabled = true;
+  try {
+    await resolverSolicitudComercio(Number(t.dataset.sol), b.dataset.sacc);
+    mostrarToast("✔ Hecho");
+    await pintarSolicitudes();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("mod-cargando").classList.add("hidden");
@@ -130,5 +171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   $("mod-lista").addEventListener("click", accionReporte);
   $("mod-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
+  $("sol-lista").addEventListener("click", accionSolicitud);
   pintarReportes();
+  pintarSolicitudes();
 });

@@ -25,6 +25,7 @@ function tarjetaComercio(c) {
         ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
         <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>
       </div>
+      <button type="button" data-solicitar="${c.id}" class="mt-3 text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Solicitar actualización</button>
     </div>
   </article>`;
 }
@@ -41,9 +42,44 @@ function pintar() {
   document.querySelectorAll("#co-tipos [data-tipo]").forEach(b => b.setAttribute("aria-selected", b.dataset.tipo === tipoActivo ? "true" : "false"));
 }
 
+// ---------- Solicitud del dueño ----------
+let comercioSolicitud = null;
+
+function abrirSolicitud(id) {
+  const c = comercios.find(x => x.id === id);
+  if (!c) return;
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para enviar la solicitud", "error");
+    setTimeout(() => { location.href = "index.html#login"; }, 1200);
+    return;
+  }
+  comercioSolicitud = c;
+  $("sol-comercio").textContent = c.nombre + " · " + c.ciudad;
+  $("sol-nombre").value = usuarioActual.nombre || "";
+  $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = "actualizar";
+  abrirModal("modal-solicitud");
+}
+
+async function enviarSolicitud(e) {
+  e.preventDefault();
+  if (!comercioSolicitud) return;
+  const btn = $("sol-enviar");
+  btn.disabled = true;
+  try {
+    await crearSolicitudComercio(comercioSolicitud.id, {
+      tipo: $("sol-tipo").value, nombre: $("sol-nombre").value.trim(),
+      contacto: $("sol-contacto").value.trim(), mensaje: $("sol-mensaje").value.trim()
+    });
+    cerrarModal("modal-solicitud");
+    mostrarToast("✅ Solicitud enviada. Te contactaremos pronto");
+  } catch (err) {
+    mostrarToast(mensajeError(err), "error");
+  } finally { btn.disabled = false; }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
-  await cargarComercios();
+  await Promise.all([cargarComercios(), cargarSesion()]);
   verificados = comercios.filter(c => c.verificado);
   const chip = (id, txt) => `<button type="button" role="tab" data-tipo="${id}" class="co-chip px-3 py-1.5 rounded-full text-sm font-semibold border border-slate-300 bg-white text-slate-600">${txt}</button>`;
   $("co-tipos").innerHTML = chip("todos", "Todos") + TIPOS_COMERCIO.map(t => chip(t.id, `${t.icono} ${esc(t.nombre)}`)).join("");
@@ -54,6 +90,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     tipoActivo = b.dataset.tipo; pintar();
   });
   $("co-muni").addEventListener("change", pintar);
+  $("co-lista").addEventListener("click", e => {
+    const b = e.target.closest("[data-solicitar]");
+    if (b) abrirSolicitud(Number(b.dataset.solicitar));
+  });
+  $("form-solicitud").addEventListener("submit", enviarSolicitud);
+  // Enlace desde el mapa: comercios.html?solicitar=ID abre el formulario de ese comercio
+  const pedido = parseInt(new URLSearchParams(location.search).get("solicitar"), 10);
+  if (pedido) abrirSolicitud(pedido);
   $("co-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   pintar();
 });

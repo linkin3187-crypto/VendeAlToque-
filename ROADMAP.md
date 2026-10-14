@@ -44,7 +44,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 
 | Sub-fase | Qué se construye | Por qué (valor) | Esfuerzo |
 |---|---|---|---|
-| **2C.1 Privacidad y ficha** | **Ubicación aproximada** en anuncios de personas (el pin se muestra desplazado/redondeado ~300 m y se avisa «Zona aproximada»; los comercios sí muestran la dirección exacta). «Publicado hace X días». Etiquetas claras: estado (nuevo/usado), precio fijo o negociable. Contador de fotos «1/10» con puntos. **Barra fija inferior en móvil:** Compartir · Guardar · Escribir por WhatsApp. | Hoy el pin de un anuncio es exacto: puede revelar la casa de la persona (riesgo de seguridad y de habeas data). Se corrige **antes** de abrir al público. | Pequeño |
+| **2C.1 Privacidad y ficha** | **Ubicación aproximada** en anuncios de personas (el pin se muestra desplazado/redondeado ~300 m y se avisa «Zona aproximada»; los comercios sí muestran la dirección exacta). «Publicado hace X días». Etiquetas claras: estado (nuevo/usado), precio fijo o negociable. Contador de fotos «1/10» con puntos. **Consejos de seguridad en la ficha** (ver el artículo en persona, no adelantar dinero, encontrarse en un lugar público). **Barra fija inferior en móvil:** Compartir · Guardar · Escribir por WhatsApp. | Hoy el pin de un anuncio es exacto: puede revelar la casa de la persona (riesgo de seguridad y de habeas data). Se corrige **antes** de abrir al público. | Pequeño |
 | **2C.2 Favoritos** | Tabla `favoritos` (usuario + anuncio, RLS: cada quien ve solo los suyos), corazón «Guardar» en tarjeta y ficha, página «Mis favoritos». | Primer motivo para registrarse y volver; base para avisos futuros (bajó de precio, vendido). | Pequeño |
 | **2C.3 Portada** | **Navegación inferior en móvil:** Inicio · Buscar · Publicar · Comercios · Entrar. **Accesos rápidos** arriba: «Publicar», «Comercios cerca», «Mapa». **Selector de vista:** lista · cuadrícula · mapa. **Ordenar:** recientes · cercanos · precio. **«Selección del día»:** al inicio la eligen los moderadores (campo en `anuncios`) o se arma sola con los más recientes que tengan foto; sin dinero de por medio. | Es lo que más gusta de la referencia: portada ordenada, rápida de usar con el pulgar y con algo nuevo cada día. | Mediano |
 | **2C.4 Similares mejorados** | «Anuncios similares» ordenados por categoría + cercanía, con distancia («a 2 km»). Texto corto que explica cómo se ordenan los resultados. | Más páginas vistas por visita; transparencia con el usuario. | Pequeño |
@@ -52,12 +52,40 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 
 **Criterio para pasar a la siguiente fase:** beta cerrada funcionando con 20-50 vendedores reales, sin errores graves en una semana y con respuestas de usuarios sobre la portada nueva.
 
-## Plan de arranque comercial (en paralelo a 2A/2B)
-1. **Programa Fundadores:** las primeras 100 tiendas del Valle reciben el plan destacado gratis; cada una trae su clientela.
-2. **Presencia física:** QR en ferreterías, panaderías y tiendas.
-3. **Compartir:** botón de compartir por WhatsApp (ya existe en cada anuncio) y un canal de "mejores anuncios del día".
-4. **SEO local:** Google Business Profile y, en la Fase 3, páginas `/envigado/autos`.
-5. **Métricas a vigilar:** anuncios por día, clics a WhatsApp por anuncio, vendedores que vuelven en 7 días, relación oferta/demanda.
+## Fase 2D: Vitrina del comercio (antes de salir a buscar tiendas)
+**Meta:** que lo que se le ofrece a un comercio **exista de verdad** el día que lo visitemos. Hoy la ficha de comercio solo tiene nombre, dirección, teléfono, horario y una foto. No hay catálogo, ofertas ni pedidos, y **no se le promete a nadie lo que no existe**.
+- **Reclamar mi negocio:** la persona pide administrar su ficha (ya existe la solicitud); un moderador la aprueba tras verificar que es el dueño (llamada o visita; más adelante, código por WhatsApp).
+- **Ficha enriquecida:** botón de WhatsApp, hasta 5 fotos, «oferta del día» (texto corto con fecha de vencimiento) y sello «verificado en persona».
+- **QR con código por comercio** (`?ref=nombre-del-comercio`): permite medir cuántas visitas y registros trae cada sticker.
+- **Atribución de datos:** mostrar «Datos de comercios: © colaboradores de OpenStreetMap» en el directorio y en el mapa (la licencia ODbL lo exige; consúltalo con el abogado).
+
+## Estrategia de crecimiento (arranque en frío)
+**Principio:** **densidad antes que alcance.** Un mapa con poca vida hace que la gente no vuelva. Se concentra el esfuerzo en 1 o 2 municipios hasta que se vea movimiento, y solo entonces se abre el siguiente. Umbral inicial (**hipótesis que se corrige con la beta**): ~30 anuncios activos y ~15 comercios verificados por municipio.
+**Lo que ya controlamos:** una audiencia propia en grupos de Facebook (cifras a confirmar con datos reales de cada grupo), el directorio de comercios importado y el mapa hiperlocal. No competimos en presupuesto: competimos en cercanía y confianza.
+
+| Etapa | Qué se hace | Condición para empezar |
+|---|---|---|
+| **G0 Preparación** | Ubicación aproximada (2C.1), términos revisados por abogado y NIT confirmado, moderación probada, atribución de OpenStreetMap, comercios verificados en persona, métricas básicas | Nada se promociona antes de esto |
+| **G1 Comercios** | Visita en persona con folleto; reclamar ficha (2D); sticker QR con código propio; «Programa Fundadores» para las primeras tiendas | 2D publicada y probada |
+| **G2 Vendedores** | Beta cerrada con 20-50 vendedores invitados uno a uno (de los grupos de Facebook y del barrio) | G0 completa |
+| **G3 Grupos de Facebook** | **Gradual:** (1) publicación fijada que presenta MercaFree; (2) formato «publica en MercaFree y comparte aquí el enlace»; (3) solo después, regla del grupo que pida el enlace. **No** se prohíbe publicar de golpe. Los grupos siguen vivos: son el canal de distribución. | G2 con vendedores activos |
+| **G4 Confianza como mensaje** | Se promete solo lo **verificable**: «comercio verificado en persona», «teléfono verificado», «miembro desde…». Consejos de seguridad en cada ficha y puntos de encuentro seguros (supermercados, bancos, farmacias del directorio). | Cuando esos sellos existan de verdad (Fase 4) |
+| **G5 Retención** | Aviso a los 25 días para renovar, «marcar como vendido», favoritos con aviso, canal de WhatsApp con los mejores anuncios del día | Después de G2 |
+
+**Canales propios:** además de Facebook, cada persona que llega se invita a un canal que MercaFree controla (canal de WhatsApp y lista de correo). Si un grupo se suspende, la audiencia no se pierde.
+
+**Métricas a vigilar:** anuncios nuevos por día, clics a WhatsApp por anuncio, vendedores que vuelven en 7 días, relación oferta/demanda, registros por QR (según el código de cada comercio) y registros por grupo de Facebook.
+
+### Riesgos y límites (revisar con abogado local)
+| Idea | Riesgo | Cómo lo hacemos |
+|---|---|---|
+| Mensajes automáticos masivos a comercios | WhatsApp prohíbe el envío masivo no solicitado; la Ley 1581 y la Ley 2300 de 2023 regulan el contacto comercial | Visita o mensaje **individual**, con opción de no volver a escribir |
+| Datos de OpenStreetMap | Licencia ODbL: exige atribución y puede exigir compartir la base derivada | Mostrar la atribución; consultarlo antes de abrir al público |
+| Extraer datos de Google Maps, Facebook o Mercado Libre | Va contra sus términos de uso | Solo enlaces a Google Maps; nada de extracción |
+| Pedir cédula para «verificar» | Dato personal delicado: obliga a custodiarlo y a justificar su uso | No se recolecta por ahora; verificación por teléfono y por visita |
+| «Sin estafas», «vecinos 100% reales» | Promesa que no podemos garantizar (publicidad engañosa) | Prometer solo verificaciones concretas y explicar qué significa cada sello |
+| Ofrecer catálogo y pedidos a las tiendas | Hoy no existen | Ofrecer solo lo de la Fase 2D |
+| Depender de Facebook | Una suspensión deja sin audiencia | Canales propios (WhatsApp y correo) |
 
 ## Fase 3: SEO y escala
 **Meta:** que Google indexe los anuncios (tráfico orgánico = la fuente gratuita más importante de OLX y Revolico).
@@ -67,6 +95,7 @@ Pasos: migrar a Astro o Next.js con renderizado en servidor (Vercel o Cloudflare
 
 ## Fase 4: Confianza y moderación con IA
 Búsquedas guardadas con aviso, ocultar el número hasta pulsar el botón (el WhatsApp hoy se puede leer desde la API pública), vendedores verificados (teléfono) y chat interno.
+- **Puntos de encuentro seguros:** al coordinar la entrega, sugerir comercios verificados del directorio (supermercados, bancos, farmacias) cercanos a ambas partes. Une el directorio de comercios con la seguridad.
 - **Reputación del vendedor** (se muestra en el perfil público de la 2C.5 y en la ficha): sello simple calculado por reglas claras (antigüedad de la cuenta, anuncios activos, reportes resueltos, verificación): «Nuevo» → «En crecimiento» → «Confiable». Se muestra en la ficha junto al nombre.
 - **Seguir a un vendedor y «Pedir algo»:** botón «+ Seguir» (aviso cuando publique algo nuevo) y una solicitud directa a la tienda («no veo lo que busco»: el comprador deja qué necesita y el vendedor recibe los datos organizados). Solo cuando haya vendedores con varios anuncios.
 - **Preguntas públicas en el anuncio:** el comprador pregunta, el vendedor responde y todos lo ven (reduce preguntas repetidas por WhatsApp). Se enlaza con el foro existente.

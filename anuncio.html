@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=11" />
+  <link rel="stylesheet" href="styles.css?v=12" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
@@ -56,12 +56,15 @@
           <div class="space-y-2">
             <a id="btn-whatsapp" target="_blank" rel="noopener" class="hidden md:block w-full text-center bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl shadow">💬 Escribir por WhatsApp</a>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <a id="btn-como-llegar" target="_blank" rel="noopener" class="text-center bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl text-sm">🗺️ Cómo llegar</a>
+              <a id="btn-como-llegar" target="_blank" rel="noopener" class="col-span-2 md:col-span-1 text-center bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl text-sm">🗺️ Cómo llegar</a>
               <button type="button" id="btn-compartir" class="hidden md:block bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🔗 Compartir</button>
               <button type="button" id="btn-guardar" aria-pressed="false" class="hidden md:block bg-white border border-slate-300 hover:border-rose-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🤍 Guardar</button>
             </div>
           </div>
 
+          <p id="ayuda-llegar" class="hidden text-sm text-blue-900 bg-blue-50 border-2 border-blue-200 rounded-xl p-3 leading-snug">
+            🗺️ <b>¿Para qué sirve «Cómo llegar»?</b> Toca ese botón azul y verás todas las formas de ir: <b>metro y buses, a pie, bicicleta, carro o Uber</b>. También te ayuda a <b>acordar un punto de encuentro seguro</b> con el vendedor.
+          </p>
           <p class="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-lg p-3">
             🛡️ Consejo: reúnete en un lugar público y revisa el producto antes de pagar. MercaFree no procesa pagos.
           </p>
@@ -133,8 +136,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=11"></script>
-  <script src="data.js?v=11"></script>
-  <script src="anuncio.js?v=11"></script>
+  <script src="utils.js?v=12"></script>
+  <script src="data.js?v=12"></script>
+  <script src="anuncio.js?v=12"></script>
 </body>
 </html>

@@ -14,28 +14,29 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=11" />
+  <link rel="stylesheet" href="styles.css?v=12" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
   <!-- HEADER -->
   <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
-      <div class="flex items-center gap-2.5">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-3.5 flex flex-wrap justify-between items-center gap-x-3 gap-y-2.5">
+      <div class="flex items-center gap-2.5 shrink-0">
         <h1 class="text-2xl font-black tracking-tight">
           <span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span>
         </h1>
-        <span class="hidden sm:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">Clasificados + Directorio de comercios</span>
+        <span class="hidden md:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">Clasificados + Directorio de comercios</span>
       </div>
-      <div class="flex items-center gap-2">
-        <a href="comercios.html" class="btn-3d btn-3d-comercios btn-3d-chico">🏪 Comercios</a>
+      <!-- En el celular las acciones pasan a su propia fila (ancho completo) para que nada tape el nombre ni se salga de la pantalla -->
+      <div class="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto">
+        <a href="comercios.html" class="btn-3d btn-3d-comercios btn-3d-chico whitespace-nowrap">🏪 Comercios</a>
         <a href="favoritos.html" id="link-favoritos" class="hidden bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm transition" aria-label="Mis favoritos">❤️<span class="hidden sm:inline"> Favoritos</span></a>
-        <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-4 py-2 rounded-full text-sm transition">
+        <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-3 sm:px-4 py-2 rounded-full text-sm transition truncate max-w-[7.5rem] sm:max-w-none">
           Iniciar sesión
         </button>
-        <button data-abrir="modal-publicar" data-requiere-login class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1.5">
-          <span class="text-lg">+</span>
-          <span>Publicar Gratis</span>
+        <button data-abrir="modal-publicar" data-requiere-login class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 sm:px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
+          <span class="text-lg leading-none">+</span>
+          <span>Publicar<span class="hidden sm:inline"> Gratis</span></span>
         </button>
       </div>
     </div>
@@ -472,9 +473,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=11"></script>
-  <script src="data.js?v=11"></script>
-  <script src="foro.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="utils.js?v=12"></script>
+  <script src="data.js?v=12"></script>
+  <script src="foro.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

@@ -179,6 +179,7 @@ function renderizarAnuncio(a) {
   renderizarGaleria(a);
 
   if (tieneCoords(a)) {
+    $("ayuda-llegar").classList.remove("hidden");
     const bcl = $("btn-como-llegar");
     bcl.href = urlGoogleMaps(a.lat, a.lng);
     Object.assign(bcl.dataset, { comoLlegar: "", lat: a.lat, lng: a.lng, nombre: a.nombre, aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "", whatsapp: a.whatsapp || "" });
@@ -219,7 +220,7 @@ function renderizarGuia(a) {
     : `<p class="text-xs text-slate-500">Cuatro pasos sencillos para comprar con tranquilidad:</p><ol>
         ${paso(1, "Escríbele al vendedor", "Toca el botón verde de WhatsApp para preguntar si sigue disponible y el precio final.", btn("whatsapp", "💬 Abrir WhatsApp"))}
         ${paso(2, "Acuerden dónde verse", "Propón un lugar público y concurrido. " + (aprox ? "El mapa muestra solo una zona aproximada; el vendedor te dirá el punto exacto." : ""), btn("llegar", "🗺️ Ver opciones para llegar"))}
-        ${paso(3, "Elige cómo llegar", "En «Cómo llegar» verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
+        ${paso(3, "Elige cómo llegar", "Toca el botón azul <b>«Cómo llegar»</b>: verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
         ${paso(4, "Revisa antes de pagar", "Mira y prueba el producto. Paga solo cuando lo tengas en la mano y no adelantes dinero. Si algo no se ve bien, usa «Reportar este anuncio».")}
       </ol>`;
   $("guia-contenido").addEventListener("click", e => {

@@ -195,8 +195,44 @@ function renderizarAnuncio(a) {
     $("seccion-mapa").classList.add("hidden");
   }
 
+  renderizarGuia(a);
   renderizarSimilares(a);
   $("anuncio-contenido").classList.remove("hidden");
+}
+
+// ---------- Guía rápida (para quien no es de tecnología) ----------
+// Una persona ve los pasos para comprar; el dueño del anuncio ve los pasos para vender.
+function renderizarGuia(a) {
+  const esDueno = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
+  const paso = (n, titulo, texto, boton) => `<li class="flex gap-3 mt-3">
+      <span class="shrink-0 w-7 h-7 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm">${n}</span>
+      <div><p class="font-semibold text-slate-900">${titulo}</p><p class="text-slate-600">${texto}</p>${boton || ""}</div></li>`;
+  const btn = (accion, texto) => `<button type="button" data-guia="${accion}" class="mt-1.5 text-xs font-semibold bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-100 rounded-lg px-3 py-1.5">${texto}</button>`;
+  const aprox = a.ubicacionAprox;
+  $("guia-contenido").innerHTML = esDueno
+    ? `<p class="text-xs text-slate-500">Este es tu anuncio. Así lo ven y así te contactan:</p><ol>
+        ${paso(1, "Te escriben por WhatsApp", "Las personas interesadas te escriben desde el botón verde. Tu número no se muestra en pantalla.")}
+        ${paso(2, "Acuerden precio y lugar", "Reúnete en un lugar público y concurrido (estación del metro, centro comercial, CAI). No des tu dirección de casa.")}
+        ${paso(3, "Tu ubicación está protegida", aprox ? "El mapa muestra solo una zona cercana, no tu punto exacto. Tú le dices al comprador dónde encontrarse." : "Tu anuncio muestra el punto exacto. Si es tu casa, edítalo y activa «Mostrar solo la zona aproximada».")}
+        ${paso(4, "Cuando se venda", "Entra a «Mis anuncios» y elimínalo o edítalo para no recibir más mensajes.")}
+      </ol>`
+    : `<p class="text-xs text-slate-500">Cuatro pasos sencillos para comprar con tranquilidad:</p><ol>
+        ${paso(1, "Escríbele al vendedor", "Toca el botón verde de WhatsApp para preguntar si sigue disponible y el precio final.", btn("whatsapp", "💬 Abrir WhatsApp"))}
+        ${paso(2, "Acuerden dónde verse", "Propón un lugar público y concurrido. " + (aprox ? "El mapa muestra solo una zona aproximada; el vendedor te dirá el punto exacto." : ""), btn("llegar", "🗺️ Ver opciones para llegar"))}
+        ${paso(3, "Elige cómo llegar", "En «Cómo llegar» verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
+        ${paso(4, "Revisa antes de pagar", "Mira y prueba el producto. Paga solo cuando lo tengas en la mano y no adelantes dinero. Si algo no se ve bien, usa «Reportar este anuncio».")}
+      </ol>`;
+  $("guia-contenido").addEventListener("click", e => {
+    const b = e.target.closest("[data-guia]");
+    if (!b) return;
+    if (b.dataset.guia === "whatsapp") $(window.matchMedia("(min-width: 768px)").matches ? "btn-whatsapp" : "barra-whatsapp").click();
+    if (b.dataset.guia === "llegar" && !$("btn-como-llegar").classList.contains("hidden")) $("btn-como-llegar").click();
+  });
+  $("guia-rapida").classList.remove("hidden");
+  try { if (localStorage.getItem("mf_guia_cerrada") === "1") $("guia-rapida").open = false; } catch (e) { /* sin almacenamiento: queda abierta */ }
+  $("guia-rapida").addEventListener("toggle", () => {
+    try { localStorage.setItem("mf_guia_cerrada", $("guia-rapida").open ? "0" : "1"); } catch (e) { /* no pasa nada */ }
+  });
 }
 
 // ---------- Guardar en favoritos ----------

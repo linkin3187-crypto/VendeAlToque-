@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=11" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -332,6 +332,7 @@
               <span id="form-coords-label" class="text-xs text-slate-400"></span>
             </div>
             <p class="text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-3 py-2 mt-2">⚠️ <b>Confirma que el pin esté en el lugar exacto.</b> La búsqueda automática puede quedar a unas cuadras: si no es correcto, arrastra el pin o toca el mapa donde corresponde.</p>
+            <p class="text-xs text-slate-500 mt-2">💡 ¿Te reúnes en un lugar público (estación, centro comercial)? Pon el pin ahí y desmarca la casilla de abajo: los compradores verán el punto exacto y podrán llegar con precisión.</p>
             <label class="flex items-start gap-2 text-sm bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5 mt-2">
               <input type="checkbox" id="form-aprox" checked class="mt-1 shrink-0">
               <span><b>🔒 Mostrar solo la zona aproximada</b> <span class="text-emerald-700">(recomendado)</span><br>
@@ -471,9 +472,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=10"></script>
-  <script src="data.js?v=10"></script>
-  <script src="foro.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="utils.js?v=11"></script>
+  <script src="data.js?v=11"></script>
+  <script src="foro.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>

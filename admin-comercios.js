@@ -3,7 +3,7 @@
 // llamar a Overpass, pero tu navegador sí. La seguridad no depende de esta página: la base
 // de datos solo deja escribir en `comercios` a cuentas con rol moderador/admin.
 
-const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 const CUOTA_DEFECTO = { farmacia: 2, cajero: 2, comida_rapida: 2, panaderia: 2, supermercado: 1, banco: 1 };
 let candidatos = [];      // vista previa: [{fila, marcado}]
 let listaAdmin = [];
@@ -11,40 +11,63 @@ let listaAdmin = [];
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 
 // ---------- Overpass ----------
-// Consulta ligera: una sola búsqueda por municipio con expresiones regulares (en vez de 12 uniones).
+// Consulta ligera por municipio: solo nodos y áreas (sin relaciones) y máximo 400 elementos.
 function consultaOverpass(m, radio) {
   const a = `(around:${radio},${m.lat},${m.lng})`;
-  return `[out:json][timeout:25];(nwr${a}["amenity"~"^(pharmacy|atm|fast_food|bank)$"];nwr${a}["shop"~"^(bakery|supermarket)$"];);out center tags qt;`;
+  const am = '["amenity"~"^(pharmacy|atm|fast_food|bank)$"]', sh = '["shop"~"^(bakery|supermarket)$"]';
+  return `[out:json][timeout:20][maxsize:8000000];(node${a}${am};way${a}${am};node${a}${sh};way${a}${sh};);out center tags qt 400;`;
 }
 
 let cancelar = false;
-const TIEMPO_MAX_MS = 35000;   // si un servidor no responde en 35 s, se prueba el siguiente
+const controles = new Set();          // peticiones en vuelo (para poder abortarlas al cancelar)
+const ESCALONADO_MS = 6000;           // si el servidor 1 no responde en 6 s, se lanza también el 2, y luego el 3
+const TIEMPO_MAX_MS = 25000;          // tope por petición
 
-async function fetchConTiempo(url, opciones) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), TIEMPO_MAX_MS);
-  try { return await fetch(url, Object.assign({ signal: ctl.signal }, opciones)); }
-  finally { clearTimeout(t); }
+// "Peticiones con relevo": lanza el servidor 1; si tarda o falla, suma el 2 y el 3 sin cancelar el anterior.
+// Gana el primero que responda bien y se abortan los demás. Con servidores públicos saturados es lo que más ayuda.
+function pedirOverpass(consulta) {
+  return new Promise((ok, mal) => {
+    let siguiente = 0, vivos = 0, terminado = false, temporizador = null;
+    const mios = [], errores = [];
+    const fin = (fn, valor) => {
+      if (terminado) return;
+      terminado = true; clearTimeout(temporizador);
+      mios.forEach(c => { c.abort(); controles.delete(c); });
+      fn(valor);
+    };
+    const programar = () => {
+      clearTimeout(temporizador);
+      if (!terminado && siguiente < OVERPASS.length) temporizador = setTimeout(() => { if (lanzar()) programar(); }, ESCALONADO_MS);
+    };
+    const lanzar = () => {
+      if (terminado || cancelar || siguiente >= OVERPASS.length) return false;
+      const url = OVERPASS[siguiente++];
+      const ctl = new AbortController(); mios.push(ctl); controles.add(ctl); vivos++;
+      const t = setTimeout(() => ctl.abort(), TIEMPO_MAX_MS);
+      fetch(url, { method: "POST", body: "data=" + encodeURIComponent(consulta), signal: ctl.signal,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" } })
+        .then(r => { if (!r.ok) throw new Error("respondió " + r.status); return r.json(); })
+        .then(d => { if (!d || !Array.isArray(d.elements)) throw new Error("respuesta vacía"); fin(ok, d); })
+        .catch(e => {
+          errores.push(new URL(url).hostname + ": " + (e.name === "AbortError" ? (cancelar ? "cancelado" : "tardó demasiado") : (e.message || "sin conexión")));
+        })
+        .finally(() => {
+          clearTimeout(t); vivos--;
+          if (terminado) return;
+          if (cancelar) { if (vivos === 0) fin(mal, new Error("Cancelado")); return; }
+          if (lanzar()) programar();                                // falló uno: sube el siguiente ya
+          else if (vivos === 0) fin(mal, new Error("Ningún servidor respondió (" + errores.join("; ") + ")"));
+        });
+      return true;
+    };
+    lanzar(); programar();
+  });
 }
 
-async function pedirOverpass(consulta) {
-  let ultimoError;
-  for (const url of OVERPASS) {
-    for (let intento = 0; intento < 2; intento++) {
-      if (cancelar) throw new Error("Cancelado");
-      try {
-        const r = await fetchConTiempo(url, { method: "POST", body: "data=" + encodeURIComponent(consulta),
-          headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-        if (r.status === 429 || r.status === 504) { ultimoError = new Error("Overpass ocupado (" + r.status + ")"); await dormir(3000); continue; }
-        if (!r.ok) throw new Error("Overpass respondió " + r.status);
-        return await r.json();
-      } catch (e) {
-        ultimoError = e.name === "AbortError" ? new Error("Overpass tardó demasiado") : e;
-        break;                                   // con este servidor basta un intento: pasa al siguiente
-      }
-    }
-  }
-  throw ultimoError || new Error("No se pudo consultar Overpass");
+function cancelarBusqueda() {
+  cancelar = true;
+  controles.forEach(c => c.abort());   // corta las peticiones que estén esperando
+  $("ac-estado").textContent = "Cancelando…";
 }
 
 function tipoDeTags(t) {
@@ -79,17 +102,25 @@ function aFila(el, muni) {
   };
 }
 
-// Elige hasta `cuota[tipo]` por tipo, los más cercanos al centro y sin repetir (misma marca a <60 m).
-function elegir(filas, muni, cuota) {
+// Elige los más cercanos al centro, sin repetir y sin pasarse de la cuota.
+// `existentes` = lo que ya está guardado en ese municipio: sus osm_id se omiten (aunque estén ocultos)
+// y lo que ya hay VISIBLE cuenta dentro de la cuota (así volver a importar no agrega más de lo pedido).
+function elegir(filas, muni, cuota, existentes) {
   const centro = { lat: muni.lat, lng: muni.lng };
-  const porTipo = {};
+  const ids = new Set(existentes.map(e => e.osmId).filter(Boolean));
+  const porTipo = {}, omitidos = { yaGuardado: 0, parecido: 0 };
+  existentes.filter(e => e.activo).forEach(e => { (porTipo[e.tipo] = porTipo[e.tipo] || []).push(e); });
+  const nuevos = [];
   filas.sort((a, b) => distanciaKm(centro, a) - distanciaKm(centro, b)).forEach(f => {
+    if (ids.has(f.osm_id)) { omitidos.yaGuardado++; return; }
     const grupo = porTipo[f.tipo] = porTipo[f.tipo] || [];
+    // misma marca y mismo tipo a menos de 60 m de uno guardado o ya elegido = es el mismo lugar
+    const todos = existentes.filter(e => e.tipo === f.tipo).concat(grupo, nuevos.filter(n => n.tipo === f.tipo));
+    if (todos.some(g => normalizar(g.nombre) === normalizar(f.nombre) && distanciaKm(g, f) < 0.06)) { omitidos.parecido++; return; }
     if (grupo.length >= (cuota[f.tipo] || 0)) return;
-    if (grupo.some(g => normalizar(g.nombre) === normalizar(f.nombre) && distanciaKm(g, f) < 0.06)) return;
-    grupo.push(f);
+    grupo.push(f); nuevos.push(f);
   });
-  return Object.values(porTipo).flat();
+  return { nuevos, omitidos };
 }
 
 function leerCuotas() {
@@ -98,37 +129,62 @@ function leerCuotas() {
   return c;
 }
 
-async function buscar() {
+const estadoMuni = {};   // id municipio → "pend" | "buscando" | "ok" | "fallo"
+
+function pintarProgreso(lista) {
+  const icono = { pend: "⏳", buscando: "🔎", ok: "✔", fallo: "✖" };
+  $("ac-progreso").innerHTML = lista.map(m =>
+    `<li class="px-2 py-1 rounded-full border ${estadoMuni[m.id] === "fallo" ? "bg-red-50 border-red-200 text-red-700" : estadoMuni[m.id] === "ok" ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-600"}">${icono[estadoMuni[m.id]] || "⏳"} ${esc(m.nombre)}</li>`).join("");
+}
+
+async function buscar(soloFallidos) {
   const btn = $("ac-buscar");
   btn.disabled = true; cancelar = false;
   $("ac-cancelar").classList.remove("hidden");
-  candidatos = [];
+  $("ac-reintentar").classList.add("hidden");
   const cuota = leerCuotas();
   const radio = parseInt($("ac-radio").value, 10);
   const sel = $("ac-muni").value;
-  const lista = municipios.filter(m => sel === "todos" || String(m.id) === sel);
-  const fallaron = [];
-  const inicio = Date.now();
+  let lista = municipios.filter(m => sel === "todos" || String(m.id) === sel);
+  if (soloFallidos === true) lista = lista.filter(m => estadoMuni[m.id] === "fallo");
+  else candidatos = [];
+  lista.forEach(m => { estadoMuni[m.id] = "pend"; });
+  const inicio = Date.now(), totales = { yaGuardado: 0, parecido: 0 };
+  let existentes;
   try {
-    for (let i = 0; i < lista.length; i++) {
-      if (cancelar) break;
+    pintarProgreso(lista);
+    $("ac-estado").textContent = "Revisando lo que ya tienes guardado…";
+    existentes = await cargarComerciosAdmin();
+    for (let i = 0; i < lista.length && !cancelar; i++) {
       const m = lista[i];
-      $("ac-estado").textContent = `Buscando en ${m.nombre} (${i + 1}/${lista.length})… ${Math.round((Date.now() - inicio) / 1000)} s`;
+      estadoMuni[m.id] = "buscando"; pintarProgreso(lista);
+      const tick = setInterval(() => { $("ac-estado").textContent = `Buscando en ${m.nombre} (${i + 1}/${lista.length})… ${Math.round((Date.now() - inicio) / 1000)} s`; }, 500);
       try {
         const datos = await pedirOverpass(consultaOverpass(m, radio));
         const filas = (datos.elements || []).map(el => aFila(el, m)).filter(Boolean);
-        elegir(filas, m, cuota).forEach(f => candidatos.push({ fila: f, marcado: true }));
-        pintarPrevia();                                   // ya se ve lo que va llegando
+        const ya = existentes.filter(e => e.municipioId === m.id)
+          .concat(candidatos.filter(c => c.fila.municipio_id === m.id).map(c => ({ ...c.fila, osmId: c.fila.osm_id, activo: true })));
+        const { nuevos, omitidos } = elegir(filas, m, cuota, ya);
+        totales.yaGuardado += omitidos.yaGuardado; totales.parecido += omitidos.parecido;
+        nuevos.forEach(f => candidatos.push({ fila: f, marcado: true }));
+        estadoMuni[m.id] = "ok";
+        pintarPrevia();
       } catch (e) {
-        console.error(m.nombre, e);
-        fallaron.push(m.nombre);                          // un municipio que falla NO detiene a los demás
-      }
-      if (i < lista.length - 1) await dormir(1000);
+        console.warn(m.nombre, e.message);
+        estadoMuni[m.id] = cancelar ? "pend" : "fallo";
+      } finally { clearInterval(tick); }
+      pintarProgreso(lista);
+      if (i < lista.length - 1 && !cancelar) await dormir(800);
     }
+    const fallaron = lista.filter(m => estadoMuni[m.id] === "fallo");
     let msg = cancelar ? "Búsqueda cancelada. " : "";
-    if (fallaron.length) msg += `⚠️ No respondieron: ${fallaron.join(", ")}. Elige ese municipio en la lista y pulsa Buscar de nuevo.`;
-    else if (!candidatos.length) msg += "Overpass no devolvió comercios con nombre. Prueba con un radio mayor.";
+    if (totales.yaGuardado || totales.parecido) msg += `Se omitieron ${totales.yaGuardado + totales.parecido} que ya estaban guardados o eran el mismo lugar. `;
+    if (fallaron.length) { msg += `⚠️ No respondieron: ${fallaron.map(m => m.nombre).join(", ")}.`; $("ac-reintentar").classList.remove("hidden"); }
+    else if (!cancelar && !candidatos.length) msg += "No hay comercios nuevos para esos filtros (o ya tienes la cuota completa). Prueba subiendo la cuota o el radio.";
     $("ac-estado").textContent = msg;
+  } catch (e) {
+    console.error(e);
+    $("ac-estado").textContent = "⚠️ " + (e.message || e);
   } finally {
     btn.disabled = false;
     $("ac-cancelar").classList.add("hidden");
@@ -250,7 +306,7 @@ async function accionEditor(e) {
   b.disabled = true;
   try {
     if (b.dataset.acc === "borrar") {
-      if (!confirm("¿Borrar este comercio? Si solo no existe, mejor desmarca “Visible”.")) { b.disabled = false; return; }
+      if (!confirm("¿Borrar este comercio? Si solo no existe, mejor desmarca “Visible”: así una nueva importación no lo vuelve a traer.")) { b.disabled = false; return; }
       await eliminarComercioDB(id);
       mostrarToast("🗑️ Comercio borrado");
     } else {
@@ -288,8 +344,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ac-muni").innerHTML = '<option value="todos">Todos (10)</option>' + opciones;
   $("ac-filtro-muni").innerHTML = '<option value="">Todos los municipios</option>' + opciones;
 
-  $("ac-buscar").addEventListener("click", buscar);
-  $("ac-cancelar").addEventListener("click", () => { cancelar = true; });
+  $("ac-buscar").addEventListener("click", () => buscar(false));
+  $("ac-reintentar").addEventListener("click", () => buscar(true));
+  $("ac-cancelar").addEventListener("click", cancelarBusqueda);
   $("ac-importar").addEventListener("click", guardarSeleccion);
   $("ac-previa-lista").addEventListener("change", e => {
     const i = e.target.dataset.i;

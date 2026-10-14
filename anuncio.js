@@ -179,7 +179,9 @@ function renderizarAnuncio(a) {
   renderizarGaleria(a);
 
   if (tieneCoords(a)) {
-    $("btn-como-llegar").href = urlGoogleMaps(a.lat, a.lng);
+    const bcl = $("btn-como-llegar");
+    bcl.href = urlGoogleMaps(a.lat, a.lng);
+    Object.assign(bcl.dataset, { comoLlegar: "", lat: a.lat, lng: a.lng, nombre: a.nombre, aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "", whatsapp: a.whatsapp || "" });
     const aprox = !!a.ubicacionAprox;
     if (aprox) {
       $("btn-como-llegar").textContent = "🗺️ Cómo llegar a la zona";

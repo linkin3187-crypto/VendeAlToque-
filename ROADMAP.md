@@ -62,3 +62,8 @@ Pagos protegidos, pedidos, domicilios para tiendas, calificaciones y disputas, W
 
 ## Fase 7: Expansión
 Otras ciudades por demanda (cuando una llegue a ~30 anuncios se activa con su página, `/bogota`, `/cali`), otros países (código de país en WhatsApp, multimoneda, pagos locales) y versión liviana estilo Revolico.
+
+---
+
+## Notas de avance
+- **Oct 2026:** el formulario de publicar ubica el pin solo al escribir barrio o dirección (OpenStreetMap/Nominatim). Si algún día falla mucho en direcciones exactas, el reemplazo previsto es Google Places (con clave y costo por uso).

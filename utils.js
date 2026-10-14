@@ -160,9 +160,9 @@ function iconoMarcador(categoria) {
   return L.divIcon({
     className: "marcador-cat",
     html: `<div class="pin-mapa"><span>${emoji}</span></div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -34]
+    iconSize: [44, 44],
+    iconAnchor: [22, 44],
+    popupAnchor: [0, -42]
   });
 }
 

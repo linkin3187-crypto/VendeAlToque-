@@ -11,23 +11,37 @@ let listaAdmin = [];
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 
 // ---------- Overpass ----------
+// Consulta ligera: una sola búsqueda por municipio con expresiones regulares (en vez de 12 uniones).
 function consultaOverpass(m, radio) {
-  const filtros = TIPOS_COMERCIO.map(t => t.osm[0]);
-  const partes = filtros.map(f => `node(around:${radio},${m.lat},${m.lng})${f};way(around:${radio},${m.lat},${m.lng})${f};`).join("");
-  return `[out:json][timeout:30];(${partes});out center tags;`;
+  const a = `(around:${radio},${m.lat},${m.lng})`;
+  return `[out:json][timeout:25];(nwr${a}["amenity"~"^(pharmacy|atm|fast_food|bank)$"];nwr${a}["shop"~"^(bakery|supermarket)$"];);out center tags qt;`;
+}
+
+let cancelar = false;
+const TIEMPO_MAX_MS = 35000;   // si un servidor no responde en 35 s, se prueba el siguiente
+
+async function fetchConTiempo(url, opciones) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), TIEMPO_MAX_MS);
+  try { return await fetch(url, Object.assign({ signal: ctl.signal }, opciones)); }
+  finally { clearTimeout(t); }
 }
 
 async function pedirOverpass(consulta) {
   let ultimoError;
   for (const url of OVERPASS) {
     for (let intento = 0; intento < 2; intento++) {
+      if (cancelar) throw new Error("Cancelado");
       try {
-        const r = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(consulta),
+        const r = await fetchConTiempo(url, { method: "POST", body: "data=" + encodeURIComponent(consulta),
           headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-        if (r.status === 429 || r.status === 504) { await dormir(4000); continue; }
+        if (r.status === 429 || r.status === 504) { ultimoError = new Error("Overpass ocupado (" + r.status + ")"); await dormir(3000); continue; }
         if (!r.ok) throw new Error("Overpass respondió " + r.status);
         return await r.json();
-      } catch (e) { ultimoError = e; await dormir(1500); }
+      } catch (e) {
+        ultimoError = e.name === "AbortError" ? new Error("Overpass tardó demasiado") : e;
+        break;                                   // con este servidor basta un intento: pasa al siguiente
+      }
     }
   }
   throw ultimoError || new Error("No se pudo consultar Overpass");
@@ -86,27 +100,39 @@ function leerCuotas() {
 
 async function buscar() {
   const btn = $("ac-buscar");
-  btn.disabled = true;
+  btn.disabled = true; cancelar = false;
+  $("ac-cancelar").classList.remove("hidden");
   candidatos = [];
   const cuota = leerCuotas();
   const radio = parseInt($("ac-radio").value, 10);
   const sel = $("ac-muni").value;
   const lista = municipios.filter(m => sel === "todos" || String(m.id) === sel);
+  const fallaron = [];
+  const inicio = Date.now();
   try {
     for (let i = 0; i < lista.length; i++) {
+      if (cancelar) break;
       const m = lista[i];
-      $("ac-estado").textContent = `Buscando en ${m.nombre} (${i + 1}/${lista.length})…`;
-      const datos = await pedirOverpass(consultaOverpass(m, radio));
-      const filas = (datos.elements || []).map(el => aFila(el, m)).filter(Boolean);
-      elegir(filas, m, cuota).forEach(f => candidatos.push({ fila: f, marcado: true }));
-      if (i < lista.length - 1) await dormir(1500);          // cortesía con el servidor público
+      $("ac-estado").textContent = `Buscando en ${m.nombre} (${i + 1}/${lista.length})… ${Math.round((Date.now() - inicio) / 1000)} s`;
+      try {
+        const datos = await pedirOverpass(consultaOverpass(m, radio));
+        const filas = (datos.elements || []).map(el => aFila(el, m)).filter(Boolean);
+        elegir(filas, m, cuota).forEach(f => candidatos.push({ fila: f, marcado: true }));
+        pintarPrevia();                                   // ya se ve lo que va llegando
+      } catch (e) {
+        console.error(m.nombre, e);
+        fallaron.push(m.nombre);                          // un municipio que falla NO detiene a los demás
+      }
+      if (i < lista.length - 1) await dormir(1000);
     }
-    $("ac-estado").textContent = candidatos.length ? "" : "Overpass no devolvió comercios con nombre. Prueba con un radio mayor.";
-    pintarPrevia();
-  } catch (e) {
-    console.error(e);
-    $("ac-estado").textContent = "⚠️ " + (e.message || e) + " — Inténtalo de nuevo en un minuto.";
-  } finally { btn.disabled = false; }
+    let msg = cancelar ? "Búsqueda cancelada. " : "";
+    if (fallaron.length) msg += `⚠️ No respondieron: ${fallaron.join(", ")}. Elige ese municipio en la lista y pulsa Buscar de nuevo.`;
+    else if (!candidatos.length) msg += "Overpass no devolvió comercios con nombre. Prueba con un radio mayor.";
+    $("ac-estado").textContent = msg;
+  } finally {
+    btn.disabled = false;
+    $("ac-cancelar").classList.add("hidden");
+  }
 }
 
 function nombreMuni(id) { return (municipios.find(m => m.id === id) || {}).nombre || ""; }
@@ -263,6 +289,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ac-filtro-muni").innerHTML = '<option value="">Todos los municipios</option>' + opciones;
 
   $("ac-buscar").addEventListener("click", buscar);
+  $("ac-cancelar").addEventListener("click", () => { cancelar = true; });
   $("ac-importar").addEventListener("click", guardarSeleccion);
   $("ac-previa-lista").addEventListener("change", e => {
     const i = e.target.dataset.i;

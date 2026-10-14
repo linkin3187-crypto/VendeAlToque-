@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comercios verificados | MercaFree</title>
+  <meta name="description" content="Farmacias, panaderías, supermercados y más del Valle de Aburrá, verificados por el equipo de MercaFree.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=5">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span></a>
+      <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Anuncios y mapa</a>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-black text-indigo-900">🏪 Comercios verificados</h1>
+    <p class="text-sm text-slate-500 mt-1 mb-4">Negocios del Valle de Aburrá que el equipo de MercaFree visitó y confirmó. En el <a href="index.html" class="text-indigo-600 underline">mapa</a> verás además otros comercios aún sin verificar.</p>
+
+    <div class="flex flex-wrap gap-2 mb-3" id="co-tipos" role="tablist"></div>
+    <div class="mb-4">
+      <label for="co-muni" class="text-xs font-bold text-slate-500 mr-1">Municipio</label>
+      <select id="co-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white text-sm"></select>
+      <span id="co-contador" class="text-sm text-slate-500 ml-2"></span>
+    </div>
+
+    <div id="co-lista" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+    <div id="co-vacio" class="hidden text-center py-12 text-slate-500">
+      <div class="text-4xl mb-2">🔎</div>
+      <p id="co-vacio-txt" class="text-sm"></p>
+    </div>
+  </main>
+
+  <footer class="text-center py-8 text-sm text-slate-400">
+    <a href="index.html" class="hover:text-indigo-600">MercaFree</a> ·
+    <a href="terminos.html" class="hover:text-indigo-600 underline">Términos</a> ·
+    <a href="privacidad.html" class="hover:text-indigo-600 underline">Privacidad</a> ·
+    Datos base © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" class="hover:text-indigo-600 underline">OpenStreetMap</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=5"></script>
+  <script src="data.js?v=5"></script>
+  <script src="comercios.js?v=5"></script>
+</body>
+</html>

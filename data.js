@@ -358,7 +358,7 @@ async function refrescarUsuario(sesion) {
 async function registrarUsuario(email, password, nombre) {
   const { data, error } = await sb.auth.signUp({
     email, password,
-    options: { data: { nombre }, emailRedirectTo: location.origin + location.pathname }
+    options: { data: refGuardado() ? { nombre, ref: refGuardado() } : { nombre }, emailRedirectTo: location.origin + location.pathname }
   });
   if (error) throw new Error(mensajeError(error));
   // Si el proyecto exige confirmar el correo, no hay sesión todavía.
@@ -370,6 +370,13 @@ async function iniciarSesion(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw new Error(mensajeError(error));
   await refrescarUsuario(data.session);
+}
+
+// Resumen de registros por código de origen (solo moderadores)
+async function cargarResumenReferidos() {
+  const { data, error } = await sb.rpc("resumen_referidos");
+  if (error) throw new Error(mensajeError(error));
+  return (data || []).map(r => ({ ref: r.ref, registros: Number(r.registros), ultimos7: Number(r.registros_7d), conAnuncio: Number(r.con_anuncio), conNegocio: Number(r.con_negocio) }));
 }
 
 async function cerrarSesionDB() {

@@ -98,6 +98,8 @@ function renderizarTienda(c, ps) {
   const ll = $("t-llegar");
   ll.href = urlGoogleMaps(c.lat, c.lng);
   Object.assign(ll.dataset, { comoLlegar: "", lat: c.lat, lng: c.lng, nombre: c.nombre, ciudad: c.ciudad || "" });
+  $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id;
+  $("t-reportar").addEventListener("click", () => abrirReporteComercio(c));
   $("t-compartir").addEventListener("click", async () => {
     const datos = { title: c.nombre, text: `${c.nombre} en MercaFree`, url: location.href };
     if (navigator.share) { try { await navigator.share(datos); } catch (e) { /* canceló */ } return; }

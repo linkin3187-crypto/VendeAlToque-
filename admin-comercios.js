@@ -310,7 +310,7 @@ function pintarLista() {
 }
 
 // ---------- Resumen de pendientes ----------
-let otrosPend = { negocios: null, solicitudes: null, reportes: null };
+let otrosPend = { negocios: null, solicitudes: null, reportes: null, comercios: null };
 
 function tarjetaPend(icono, n, texto, atributos, href) {
   const cls = "text-left border rounded-xl p-3 " + (n > 0 ? "border-indigo-200 bg-indigo-50 hover:border-indigo-400" : "border-slate-200 bg-slate-50 text-slate-400");
@@ -327,8 +327,9 @@ function pintarPendientes() {
     tarjetaPend("🛠️", sinVer("equipo"), "Agregados por el equipo, sin verificar", 'data-ir="equipo"'),
     tarjetaPend("📥", sinVer("osm"), "Importados, sin verificar", 'data-ir="osm"'),
     tarjetaPend("📨", otrosPend.solicitudes, "Solicitudes de comercios", "", "moderacion.html#solicitudes"),
+    tarjetaPend("⚠️", otrosPend.comercios, "Comercios reportados", "", "moderacion.html#reportes-comercios"),
     tarjetaPend("🛍️", otrosPend.reportes, "Productos reportados", "", "moderacion.html#productos"),
-    tarjetaPend("⚠️", listaAdmin.filter(selloVencido).length, "Verificaciones vencidas", 'data-ir-estado="vencida"')
+    tarjetaPend("⏰", listaAdmin.filter(selloVencido).length, "Verificaciones vencidas", 'data-ir-estado="vencida"')
   ].join("");
 }
 
@@ -337,7 +338,8 @@ async function cargarOtrosPendientes() {
   await Promise.all([
     leer("negocios", () => cargarNegociosPendientes("pendiente", false)),
     leer("solicitudes", () => cargarSolicitudesComercio("pendiente")),
-    leer("reportes", () => cargarReportesProducto("pendiente"))
+    leer("reportes", () => cargarReportesProducto("pendiente")),
+    leer("comercios", () => cargarReportesComercio("pendiente"))
   ]);
   pintarPendientes();
 }

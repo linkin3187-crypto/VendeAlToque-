@@ -126,6 +126,7 @@ function tarjetaSolicitud(s) {
     ${s.mensaje ? `<p class="text-sm text-slate-600 mt-1">“${esc(s.mensaje)}”</p>` : ""}
     <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
       ${s.tipo === "reclamar" && s.solicitante_id && c && !c.owner_id ? `<button type="button" data-sdueno="${esc(s.solicitante_id)}" data-scom="${c.id}" class="text-xs bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg font-semibold">👤 Asignar como dueño</button>` : ""}
+      ${s.tipo === "retirar" && c && c.activo ? `<button type="button" data-socultar="${c.id}" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar comercio</button>` : ""}
       ${s.tipo === "reclamar" && c && c.owner_id ? '<span class="text-xs text-teal-700 font-semibold self-center">✔ Ya tiene dueño</span>' : ""}
       <button type="button" data-sacc="atendida" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Marcar atendida</button>
       <button type="button" data-sacc="descartada" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar</button>
@@ -143,6 +144,18 @@ async function pintarSolicitudes() {
 }
 
 async function accionSolicitud(e) {
+  const o = e.target.closest("[data-socultar]");
+  if (o) {
+    if (!confirm("¿Ocultar este comercio? Confirma antes que quien lo pide realmente lo representa (llámalo o escríbele). Podrás volver a mostrarlo desde Comercios.")) return;
+    o.disabled = true;
+    try {
+      await guardarComercioDB(Number(o.dataset.socultar), { activo: false });
+      await resolverSolicitudComercio(Number(e.target.closest("[data-sol]").dataset.sol), "atendida");
+      mostrarToast("🙈 Comercio oculto y solicitud atendida");
+      await pintarSolicitudes();
+    } catch (err) { o.disabled = false; mostrarToast(mensajeError(err), "error"); }
+    return;
+  }
   const d = e.target.closest("[data-sdueno]");
   if (d) {
     if (!confirm("¿Asignar a esta persona como dueña del comercio? Confirma antes que realmente representa el negocio (protocolo de verificación).")) return;
@@ -163,6 +176,54 @@ async function accionSolicitud(e) {
     await resolverSolicitudComercio(Number(t.dataset.sol), b.dataset.sacc);
     mostrarToast("✔ Hecho");
     await pintarSolicitudes();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
+// ---------- Reportes de comercios ----------
+function tarjetaReporteComercio(r) {
+  const c = r.comercio;
+  return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" data-rc="${r.id}" data-com="${c ? c.id : ""}">
+    <div class="flex flex-wrap items-center gap-2">
+      <h3 class="font-bold">${esc(c ? c.nombre : "(comercio eliminado)")}</h3>
+      <span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">${esc(MOTIVOS_REPORTE_COMERCIO[r.motivo] || r.motivo)}</span>
+      ${c && !c.activo ? '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculto</span>' : ""}
+      <span class="text-xs text-slate-400">${esc(fechaCorta(r.creado_en))}</span>
+    </div>
+    ${r.detalle ? `<p class="text-sm text-slate-600 mt-1">“${esc(r.detalle)}”</p>` : ""}
+    <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+      ${c ? `<a href="tienda.html?id=${c.id}" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">Ver comercio</a>
+      <a href="admin-comercios.html?editar=${c.id}" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">✏️ Editar</a>` : ""}
+      ${c && c.activo ? '<button type="button" data-cacc="ocultar" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar comercio</button>' : ""}
+      <button type="button" data-cacc="revisado" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Revisado</button>
+      <button type="button" data-cacc="descartado" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar</button>
+    </div>
+  </article>`;
+}
+
+async function pintarReportesComercio() {
+  try {
+    const lista = await cargarReportesComercio("pendiente");
+    $("n-rcom").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("rcom-lista").innerHTML = lista.length ? lista.map(tarjetaReporteComercio).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">No hay reportes de comercios pendientes.</p>';
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+
+async function accionReporteComercio(e) {
+  const b = e.target.closest("[data-cacc]"), t = e.target.closest("[data-rc]");
+  if (!b || !t) return;
+  b.disabled = true;
+  try {
+    if (b.dataset.cacc === "ocultar") {
+      if (!confirm("¿Ocultar este comercio del mapa, del directorio y del inicio? Podrás volver a mostrarlo desde Comercios.")) { b.disabled = false; return; }
+      await guardarComercioDB(Number(t.dataset.com), { activo: false });
+      await resolverReporteComercio(Number(t.dataset.rc), "revisado");
+      mostrarToast("🙈 Comercio oculto");
+    } else {
+      await resolverReporteComercio(Number(t.dataset.rc), b.dataset.cacc);
+      mostrarToast("✔ Hecho");
+    }
+    await pintarReportesComercio();
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
@@ -353,6 +414,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("mod-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("sol-lista").addEventListener("click", accionSolicitud);
   $("rprod-lista").addEventListener("click", accionReporteProducto);
+  $("rcom-lista").addEventListener("click", accionReporteComercio);
+  pintarReportesComercio();
   $("neg-lista").addEventListener("click", accionNegocio);
   $("neg-lista").addEventListener("change", accionNegocio);
   pintarNegocios();

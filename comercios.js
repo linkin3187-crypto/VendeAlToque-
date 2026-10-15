@@ -9,25 +9,29 @@ function tarjetaComercio(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
   const foto = urlSegura(c.foto);
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
-  return `<article class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+  return `<article class="relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
     <div class="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : "bg-green-100 text-green-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">✔ ${esc((SELLOS[c.nivel] || SELLOS[2]).corto)}</span>
     </div>
     <div class="p-4 flex-1 flex flex-col">
-      <h2 class="font-bold text-lg leading-tight">${esc(c.nombre)}</h2>
+      <h2 class="font-bold text-lg leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h2>
       <p class="text-xs text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</p>
       ${c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc((SELLOS[c.nivel] || SELLOS[2]).corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
       ${c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
-      <div class="flex flex-wrap gap-2 mt-auto pt-3">
+      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${c.nivel >= 2 && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
+      <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
         ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
         <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>
       </div>
-      <button type="button" data-solicitar="${c.id}" class="mt-3 text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Solicitar actualización</button>
+      <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 relative z-10">
+        <button type="button" data-solicitar="${c.id}" class="text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Actualizar o retirar</button>
+        <button type="button" data-reportar-com="${c.id}" class="text-xs text-slate-500 hover:text-red-600 underline text-left">⚠️ Reportar este negocio</button>
+      </div>
     </div>
   </article>`;
 }
@@ -95,11 +99,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("co-lista").addEventListener("click", e => {
     const b = e.target.closest("[data-solicitar]");
     if (b) abrirSolicitud(Number(b.dataset.solicitar));
+    const r = e.target.closest("[data-reportar-com]");
+    if (r) { const c = comercios.find(x => x.id === Number(r.dataset.reportarCom)); if (c) abrirReporteComercio(c); }
   });
   $("form-solicitud").addEventListener("submit", enviarSolicitud);
   // Enlace desde el mapa: comercios.html?solicitar=ID abre el formulario de ese comercio
-  const pedido = parseInt(new URLSearchParams(location.search).get("solicitar"), 10);
+  const qs = new URLSearchParams(location.search);
+  const pedido = parseInt(qs.get("solicitar"), 10);
   if (pedido) abrirSolicitud(pedido);
+  const aReportar = comercios.find(x => x.id === parseInt(qs.get("reportar"), 10));
+  if (aReportar && !pedido) abrirReporteComercio(aReportar);
   $("co-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   pintar();
 });

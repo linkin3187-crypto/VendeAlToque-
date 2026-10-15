@@ -664,6 +664,76 @@ async function crearReporteProducto(productoId, motivo, detalle) {
   if (error) throw error;
 }
 
+// ---------- Reportar un comercio (Fase 2G) ----------
+const MOTIVOS_REPORTE_COMERCIO = {
+  cerrado: "Ya cerró o no existe",
+  datos: "Datos incorrectos (teléfono, horario, dirección)",
+  ubicacion: "Está en otro lugar en el mapa",
+  falso: "No parece un negocio real o posible engaño",
+  otro: "Otro motivo"
+};
+
+async function crearReporteComercio(comercioId, motivo, detalle) {
+  if (!usuarioActual) throw new Error("Inicia sesión para reportar");
+  const { error } = await sb.from("reportes_comercio").insert({ comercio_id: comercioId, motivo, detalle: detalle || null });
+  if (error) throw error;
+}
+
+// Solo moderadores
+async function cargarReportesComercio(estado) {
+  let q = sb.from("reportes_comercio")
+    .select("id, motivo, detalle, estado, creado_en, comercio:comercios(id, nombre, tipo, municipio_id, activo, owner_id)")
+    .order("creado_en", { ascending: false }).limit(200);
+  if (estado) q = q.eq("estado", estado);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function resolverReporteComercio(id, estado) {
+  const { error } = await sb.from("reportes_comercio").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
+
+// Ventana para reportar un comercio (se crea sola; sirve en cualquier página que cargue data.js)
+function abrirReporteComercio(c) {
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para reportar", "error");
+    setTimeout(() => { location.href = "index.html#login"; }, 1200);
+    return;
+  }
+  if (!$("modal-rep-com")) {
+    document.body.insertAdjacentHTML("beforeend", `<div id="modal-rep-com" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="rc-titulo">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[92vh] overflow-auto">
+        <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+        <h3 id="rc-titulo" class="text-xl font-black text-indigo-900 mb-1">⚠️ Reportar este negocio</h3>
+        <p class="text-sm text-slate-500 mb-4">Comercio: <b id="rc-nombre"></b></p>
+        <form id="form-rep-com" class="space-y-3">
+          <div><label for="rc-motivo" class="block text-xs font-bold text-slate-500 mb-1">¿Qué pasa?</label>
+            <select id="rc-motivo" class="w-full border border-slate-300 p-3 rounded-xl bg-white">${Object.entries(MOTIVOS_REPORTE_COMERCIO).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></div>
+          <div><label for="rc-detalle" class="block text-xs font-bold text-slate-500 mb-1">Cuéntanos más (opcional)</label>
+            <textarea id="rc-detalle" rows="3" maxlength="500" class="w-full border border-slate-300 p-3 rounded-xl"></textarea></div>
+          <button type="submit" id="rc-enviar" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl disabled:opacity-60">Enviar reporte</button>
+          <p class="text-[11px] text-slate-400 text-center">Un moderador lo revisa. Tu nombre no se muestra al comercio.</p>
+        </form>
+      </div></div>`);
+    $("form-rep-com").addEventListener("submit", async e => {
+      e.preventDefault();
+      const btn = $("rc-enviar"); btn.disabled = true;
+      try {
+        await crearReporteComercio(Number($("modal-rep-com").dataset.id), $("rc-motivo").value, $("rc-detalle").value.trim());
+        cerrarModal("modal-rep-com");
+        mostrarToast("✅ Gracias, un moderador lo revisará");
+      } catch (err) { mostrarToast(mensajeError(err), "error"); }
+      finally { btn.disabled = false; }
+    });
+  }
+  $("modal-rep-com").dataset.id = c.id;
+  $("rc-nombre").textContent = c.nombre;
+  $("rc-motivo").value = "datos"; $("rc-detalle").value = "";
+  abrirModal("modal-rep-com");
+}
+
 // Solo moderadores
 async function cargarReportesProducto(estado) {
   let q = sb.from("reportes_producto")
@@ -834,7 +904,7 @@ async function crearSolicitudComercio(comercioId, { tipo, nombre, contacto, mens
 // Solo moderadores
 async function cargarSolicitudesComercio(estado) {
   let q = sb.from("solicitudes_comercio")
-    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, solicitante_id, comercio:comercios(id, nombre, tipo, municipio_id, owner_id)")
+    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, solicitante_id, comercio:comercios(id, nombre, tipo, municipio_id, owner_id, activo)")
     .order("creado_en", { ascending: false }).limit(200);
   if (estado) q = q.eq("estado", estado);
   const { data, error } = await q;

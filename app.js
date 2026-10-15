@@ -230,7 +230,6 @@ function pintarComerciosFeed() {
   const cont = $("comercios-feed");
   if (!cont) return;
   pintarFiltrosComercios();
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
   const lista = comerciosFiltrados();
   $("seccion-comercios").classList.toggle("hidden", !comercios.length);
   if (!comercios.length) return;
@@ -295,8 +294,10 @@ function resaltarTarjeta(id, desplazar) {
   tarjeta.classList.add("tarjeta-activa");
   // En celular el mapa está ARRIBA de la lista: moverse a la tarjeta sacaría al
   // usuario del mapa. Solo hacemos scroll cuando mapa y lista van lado a lado.
-  if (desplazar && window.matchMedia("(min-width: 1024px)").matches) {
-    tarjeta.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (desplazar) {
+    const pista = $("contenedor-anuncios");
+    pista.scrollTo({ left: tarjeta.offsetLeft - (pista.clientWidth - tarjeta.offsetWidth) / 2, behavior: "smooth" });
+    if (window.matchMedia("(min-width: 1024px)").matches) pista.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 }
 
@@ -634,12 +635,14 @@ function actualizarUIAuth() {
     btn.removeAttribute("data-abrir");            // con sesión, el botón lleva a "Mis anuncios"
     $("seccion-mis-anuncios").classList.remove("hidden");
     $("link-favoritos").classList.remove("hidden");
+    $("btn-cerrar-sesion-header").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
     btn.textContent = "Iniciar sesión";
     btn.setAttribute("data-abrir", "modal-auth");
     $("seccion-mis-anuncios").classList.add("hidden");
     $("link-favoritos").classList.add("hidden");
+    $("btn-cerrar-sesion-header").classList.add("hidden");
   }
 }
 
@@ -993,7 +996,6 @@ async function registrarAnuncio(e) {
 
   if (previo) baseDatosAnuncios = baseDatosAnuncios.map(a => (a.id === previo.id ? anuncio : a));
   else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
   if (anuncio.avisoUbicacion) mostrarToast("Se guardó el anuncio, pero no pudimos guardar tu punto exacto. Ábrelo con «Editar» y guarda de nuevo.", "error");
@@ -1004,7 +1006,6 @@ async function registrarAnuncio(e) {
   marcarCategoriaActiva();
   refrescarOpcionesUbicacion();
   aplicarFiltros();
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
   activarModoEditor();
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }
@@ -1142,6 +1143,12 @@ function iniciarEventos() {
   $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
   $("auth-olvido").addEventListener("click", olvidePassword);
   $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);
+  $("btn-cerrar-sesion-header").addEventListener("click", cerrarSesion);
+  // Flechas del carrusel de anuncios (en celular se desliza con el dedo)
+  const pistaAnu = $("contenedor-anuncios");
+  const pasoAnu = dir => pistaAnu.scrollBy({ left: dir * Math.max(240, pistaAnu.clientWidth * 0.8), behavior: "smooth" });
+  $("anu-ant").addEventListener("click", () => pasoAnu(-1));
+  $("anu-sig").addEventListener("click", () => pasoAnu(1));
   $("form-nueva-password").addEventListener("submit", guardarNuevaPassword);
   $("btn-auth").addEventListener("click", () => {
     if (usuarioActual) $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" });

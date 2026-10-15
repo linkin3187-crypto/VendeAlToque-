@@ -74,18 +74,9 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 5. Debounce.
 6. Caché del navegador y cache busting.
 
-## Fase 2I · Diseño nuevo del inicio (con interruptor) y cómo revertirlo
+## Fase 2J · Publicaciones en carrusel, «Cerrar sesión» visible y «Mi tienda» 3D
 
-**Qué es:** una versión alternativa de `index.html` para celular y tablet (menos de 1024 px). Escritorio no cambia. Viene **apagada**: nadie la ve salvo que la active.
-
-**Cómo funciona (para estudiar):** un pequeño script en el `<head>` de `index.html` pone la clase `dn` en `<html>` si corresponde. Todo el CSS nuevo (en `styles.css`, bloque «DISEÑO NUEVO») solo se aplica cuando existe esa clase (`html.dn ...`). El atributo `data-v` dice qué pantalla se ve y cada bloque lleva `data-vista`. La lógica está en `diseno.js`. Sin la clase `dn`, la página es idéntica a la de antes.
-
-**Probarlo:** abre `.../index.html?diseno=nuevo` (queda guardado en ese navegador). Volver: `.../index.html?diseno=actual`.
-
-**Activarlo para todos:** en el `<head>` de `index.html` cambia `NUEVO_POR_DEFECTO = false` por `true` y sube el cambio.
-
-### Guía para revertir (de más fácil a más fuerte)
-1. **Solo tú:** `?diseno=actual`.
-2. **Para todos:** pon `NUEVO_POR_DEFECTO = false` y sube el cambio. (Quien lo activó con `?diseno=nuevo` conserva su preferencia hasta usar `?diseno=actual`.)
-3. **Deshacer todo el rediseño:** GitHub → Pull requests → *Closed/Merged* → el PR «Fase 2I» → botón **Revert** → se crea un PR de reversa → *Merge* → espera el check verde → Ctrl+F5.
-4. **Emergencia:** la rama `respaldo-antes-del-rediseno` guarda la página exacta de antes (no hay SQL en este cambio, la base de datos no se toca).
+- **Carrusel:** `#contenedor-anuncios` pasó de cuadrícula a fila con scroll horizontal (`.carrusel-anuncios` en `styles.css`, `scroll-snap`). Las tarjetas son las mismas (`tarjetaHTML`), solo con ancho fijo de 15.5rem. Flechas `‹ ›` en pantallas ≥640 px.
+- **Cerrar sesión:** botón `#btn-cerrar-sesion-header` en el encabezado; `actualizarUIAuth()` lo muestra solo con sesión.
+- **Mi tienda:** el enlace `#link-mi-tienda` usa las clases `btn-3d btn-3d-comercios` (mismo sitio).
+- **Revertir:** en GitHub, PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5. No hay SQL.

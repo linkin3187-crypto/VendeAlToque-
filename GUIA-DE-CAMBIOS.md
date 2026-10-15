@@ -173,3 +173,24 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Publicar:** «¿Cómo te contactan?» → 💬 WhatsApp y/o 📞 Teléfono (celular o fijo 60X), al menos uno. Botón «Usar el mismo número del WhatsApp».
 - Los **comercios siguen libres** (sin cuenta).
 - **Revertir:** primero, en el SQL Editor, deshacer la parte 2: `grant select on public.anuncios to anon, authenticated;` Luego el PR → **Revert**. La parte 1 puede quedarse.
+
+## Fase 2T · Entrar con Google
+
+**Archivos:** `data.js` (`entrarConGoogle`, `BOTON_GOOGLE_HTML`, `enviarRefSiFalta`), `app.js` (botón en «Iniciar sesión»), registro rápido (botón arriba). **SQL:** `supabase/14_login_google.sql` (nombre desde Google y código `?ref=` para cuentas de Google).
+
+**Orden:** (1) configurar Google (abajo) → (2) ejecutar el SQL 14 (debe mostrar 1 fila `asignar_ref_inicial`) → (3) fusionar el PR → check verde → Ctrl+F5. Si fusionas sin configurar Google, el botón solo dice «Entrar con Google aún no está activo. Usa tu correo» (no rompe nada).
+
+**Configurar Google (una vez):**
+1. Supabase → **Authentication → Sign In / Providers → Google**: copia la **Callback URL** que muestra (será parecida a `https://fhxglflgldwecyljphfx.supabase.co/auth/v1/callback`).
+2. [Google Cloud Console](https://console.cloud.google.com/) → crea un proyecto (ej. «MercaFree») → **Google Auth Platform**:
+   - **Branding:** nombre de la app, correo de soporte y logo (el nombre que verá la gente al entrar).
+   - **Audience:** *External* (cualquier cuenta de Google) y publícala («Publish app»).
+   - **Data Access:** deja `email` y `profile` y agrega `openid`.
+   - **Clients → Create client → Web application:** en *Authorized JavaScript origins* pon `https://linkin3187-crypto.github.io`; en *Authorized redirect URIs* pega la Callback URL del paso 1 → **Create** → copia el **Client ID** y el **Client secret**.
+3. Vuelve a Supabase → Google → actívalo, pega el Client ID y el Client secret → **Save**.
+4. Supabase → **Authentication → URL Configuration → Redirect URLs**: agrega `https://linkin3187-crypto.github.io/VendeAlToque-/**` (si ya lo hiciste en la 2S, no hace falta repetir).
+5. Cuando tengas dominio propio (2H), agrega también ese dominio en los pasos 2 (origins) y 4.
+
+**Cómo funciona:** en la ventana de «Iniciar sesión» y en el registro rápido aparece **«Continuar con Google»** arriba. Desde un anuncio, vuelve al mismo anuncio con el botón para contactar listo. El nombre se toma de Google. El código `?ref=` (QR de tiendas, grupos) se guarda una sola vez justo después de entrar.
+
+**Revertir:** PR → **Revert**. Para apagar Google sin tocar código: Supabase → Providers → Google → desactivar.

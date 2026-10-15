@@ -393,12 +393,14 @@ async function refrescarUsuario(sesion) {
     const s = sesion !== undefined ? sesion : (await sb.auth.getSession()).data.session;
     if (!s) { usuarioActual = null; EDITOR = false; return null; }
     const u = s.user;
-    let nombre = (u.user_metadata && u.user_metadata.nombre) || (u.email || "usuario").split("@")[0];
+    const md = u.user_metadata || {};
+    let nombre = md.nombre || md.full_name || md.name || (u.email || "usuario").split("@")[0];
     let rol = "usuario";
     const { data } = await sb.from("perfiles").select("nombre, rol").eq("id", u.id).maybeSingle();
     if (data) { nombre = data.nombre; rol = data.rol; }
     usuarioActual = { id: u.id, nombre, email: u.email, rol };
     EDITOR = esModerador();   // EDITOR (utils.js) ya no viene de la URL: viene del ROL en la base de datos
+    enviarRefSiFalta();       // cuentas creadas con Google: guarda el código ?ref= (una sola vez)
     return usuarioActual;
   } catch (e) {
     console.error("sesión:", e);
@@ -418,6 +420,35 @@ async function registrarUsuario(email, password, nombre, volverA) {
   if (data.session) await refrescarUsuario(data.session);
   return { confirmar: !data.session };
 }
+
+// ---------- Entrar con Google (Fase 2T · supabase/14_login_google.sql) ----------
+// Lleva a la pantalla de Google y vuelve a `volverA` (la misma página por defecto) ya con la sesión.
+// Requiere activar Google en Supabase → Authentication → Sign In / Providers y la URL en Redirect URLs.
+async function entrarConGoogle(volverA) {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: volverA || location.href.split("#")[0] }
+  });
+  if (error) {
+    if (/not enabled|unsupported provider/i.test(error.message || "")) throw new Error("Entrar con Google aún no está activo. Usa tu correo.");
+    throw new Error(mensajeError(error));
+  }
+}
+// Con Google no se puede mandar el código ?ref= al crear la cuenta: se envía justo después de entrar.
+// La base solo lo acepta una vez y en perfiles recién creados (menos de 1 hora).
+function enviarRefSiFalta() {
+  try {
+    const ref = refGuardado();
+    if (!ref || localStorage.getItem("mf_ref_enviado") === ref) return;
+    localStorage.setItem("mf_ref_enviado", ref);
+    sb.rpc("asignar_ref_inicial", { p_ref: ref }).then(() => {}, () => {});
+  } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+// Botón «Continuar con Google» (mismo en todas las ventanas de cuenta)
+const BOTON_GOOGLE_HTML = `<button type="button" data-google class="btn-google w-full flex items-center justify-center gap-2.5 bg-white border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/></svg>
+    Continuar con Google</button>
+  <div class="flex items-center gap-3 text-xs text-slate-400 my-3" aria-hidden="true"><span class="flex-1 h-px bg-slate-200"></span>o con tu correo<span class="flex-1 h-px bg-slate-200"></span></div>`;
 
 async function iniciarSesion(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -1163,7 +1194,8 @@ function crearRegistroRapido() {
             <span>✅ 100% gratis</span><span>✅ 30 segundos</span><span>✅ Sin tarjeta</span>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-1 bg-slate-100 rounded-xl p-1 mt-4" role="tablist">
+        <div class="mt-4" id="rr-google">${BOTON_GOOGLE_HTML}</div>
+        <div class="grid grid-cols-2 gap-1 bg-slate-100 rounded-xl p-1" role="tablist">
           <button type="button" data-rr-modo="registro" role="tab" class="rr-tab py-2 rounded-lg text-sm font-bold">Crear cuenta</button>
           <button type="button" data-rr-modo="login" role="tab" class="rr-tab py-2 rounded-lg text-sm font-bold">Ya tengo cuenta</button>
         </div>
@@ -1256,6 +1288,13 @@ function crearRegistroRapido() {
     } catch (err) {
       errorRapido(err.message || "No se pudo continuar");
     } finally { btn.disabled = false; }
+  });
+  $("rr-google").addEventListener("click", async e => {
+    const b = e.target.closest("[data-google]");
+    if (!b) return;
+    b.disabled = true;
+    try { await entrarConGoogle(urlContactoPendiente(registroRapidoCtx || {})); }   // vuelve al anuncio con el contacto pendiente
+    catch (err) { errorRapido(err.message); b.disabled = false; }
   });
   $("rr-accion").addEventListener("click", () => {
     const ctx = registroRapidoCtx || {};

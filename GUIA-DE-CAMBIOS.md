@@ -157,3 +157,19 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **🔑 Reclamar comercio:** en los comercios **sin dueño** (`owner_id` vacío) aparece una etiqueta amarilla pequeña que titila suave, «🔑 ¿Es tu negocio? Reclámalo», en la foto de la tarjeta (directorio e inicio) y en la ventanita del mapa. Abre el formulario de solicitud ya en «Soy el dueño: quiero administrar mi ficha» (`comercios.html?solicitar=ID&tipo=reclamar`). En la ficha del comercio sale como burbuja flotante abajo a la izquierda; se cierra con ✕ y no vuelve a salir en esa sesión. Los comercios con dueño no la muestran. Con «reducir movimiento» activado no titila. Clases: `.badge-reclamar`, `#burbuja-reclamar`.
 - **✏️ Editar mi publicación:** el dueño de un anuncio ve el botón amarillo en sus tarjetas (inicio y «Todos los anuncios») y arriba del título al abrir su anuncio. Abre el formulario de edición del inicio con `index.html?editar=ID`. Si otra persona usa ese enlace, ve «Solo el dueño puede editar esta publicación».
 - **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.
+
+## Fase 2S · Contacto con registro rápido + 📞 Llamar en anuncios
+
+**SQL en 2 partes (el orden importa):**
+1. `supabase/13_contacto_anuncios.sql` → **ANTES** de fusionar el PR. Agrega `telefono`, hace el WhatsApp opcional (al menos uno de los dos), crea `tiene_whatsapp`/`tiene_telefono`, la función `contacto_anuncio(id)` y el registro privado `contactos_anuncio`. No quita nada: la página actual sigue igual. Al final debe mostrar 3 filas.
+2. Fusionar el PR → esperar el check verde → Ctrl+F5.
+3. `supabase/13b_proteger_contacto.sql` → **DESPUÉS**. Cierra la lectura directa de `whatsapp` y `telefono` en la tabla `anuncios`. Al final debe mostrar 2 filas con `false`. (Si lo ejecutas antes de fusionar, la página vieja deja de cargar anuncios hasta que fusiones.) Si algún día agregas una columna nueva a `anuncios`, vuelve a ejecutar este archivo.
+
+**Cómo funciona:**
+- Todos ven los anuncios, el mapa (zona aproximada) y **Compartir**. Los botones 💬 WhatsApp, 📞 Llamar y 🗺️ Cómo llegar se ven igual que siempre.
+- Sin cuenta, al tocarlos sale la **ventana de registro rápido** (`#modal-rapido`, en `data.js`): nombre, correo y contraseña (o «Ya tengo cuenta»). Al terminar dice «¡Listo, Nombre!» con un botón grande para abrir el WhatsApp, llamar o ver cómo llegar.
+- El número **nunca viaja en la página**: al tocar el botón, `contacto_anuncio(id)` lo entrega solo a personas con cuenta, con límite de 60 anuncios distintos por día (contra robots). El dueño y los moderadores no tienen límite.
+- **Confirmación de correo:** si en Supabase está activado *Confirm email*, la ventana dice «Revisa tu correo»; el enlace del correo vuelve al mismo anuncio (`?contactar=whatsapp&anuncio=ID`) y muestra el botón para continuar. Para eso, en *Authentication → URL Configuration → Redirect URLs* agrega `https://linkin3187-crypto.github.io/VendeAlToque-/**`.
+- **Publicar:** «¿Cómo te contactan?» → 💬 WhatsApp y/o 📞 Teléfono (celular o fijo 60X), al menos uno. Botón «Usar el mismo número del WhatsApp».
+- Los **comercios siguen libres** (sin cuenta).
+- **Revertir:** primero, en el SQL Editor, deshacer la parte 2: `grant select on public.anuncios to anon, authenticated;` Luego el PR → **Revert**. La parte 1 puede quedarse.

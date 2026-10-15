@@ -193,4 +193,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     try { await cargarFavoritos(); } catch (e) { /* sin favoritos la lista sigue funcionando */ }
   }
   aplicarTodos();
+  revisarContactoPendiente();   // volvió del correo de confirmación con un contacto pendiente
 });

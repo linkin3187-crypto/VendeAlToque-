@@ -154,8 +154,8 @@ function popupHTML(a) {
     ${a.precio ? `<div class="font-semibold text-indigo-600">${esc(a.precio)}</div>` : ""}
     <div class="flex flex-wrap gap-1.5 mt-2">
       <a href="anuncio.html?id=${a.id}" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md no-underline">Ver anuncio completo →</a>
-      <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">WhatsApp</a>
-      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" data-como-llegar data-lat="${a.lat}" data-lng="${a.lng}" data-nombre="${esc(a.nombre)}" data-aprox="${a.ubicacionAprox ? 1 : 0}" data-ciudad="${esc(a.ciudad || "")}" data-whatsapp="${esc(a.whatsapp || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">${a.ubicacionAprox ? "Cómo llegar a la zona" : "Cómo llegar"}</a>
+      ${botonesContactoHTML(a, true)}
+      <a href="${esc(urlGoogleMaps(a.lat, a.lng))}" data-como-llegar data-anuncio="${a.id}" data-lat="${a.lat}" data-lng="${a.lng}" data-nombre="${esc(a.nombre)}" data-aprox="${a.ubicacionAprox ? 1 : 0}" data-ciudad="${esc(a.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">${a.ubicacionAprox ? "Cómo llegar a la zona" : "Cómo llegar"}</a>
     </div>
   </div>`;
 }
@@ -728,6 +728,13 @@ function validarPaso(n) {
     if (c.type === "file") continue;
     if (!c.checkValidity()) { c.reportValidity(); return false; }
   }
+  // Paso de contacto: WhatsApp, teléfono o ambos (al menos uno)
+  if (n === 3 && !$("form-whatsapp").value.trim() && !$("form-telefono").value.trim()) {
+    $("form-contacto-error").classList.remove("hidden");
+    $("form-whatsapp").focus();
+    return false;
+  }
+  if (n === 3) $("form-contacto-error").classList.add("hidden");
   return true;
 }
 
@@ -996,7 +1003,8 @@ async function registrarAnuncio(e) {
       lng: coordsForm.lng,
       aprox: $("form-aprox").checked,
       exactaOriginal: ubicacionExactaCargada,
-      whatsapp: "57" + $("form-whatsapp").value.replace(/\D/g, ""),
+      whatsapp: $("form-whatsapp").value.trim() ? "57" + $("form-whatsapp").value.replace(/\D/g, "") : null,
+      telefono: $("form-telefono").value.replace(/\D/g, "") || null,
       precio,                                   // número o null; se muestra siempre como "$1.200.000"
       desc: $("form-descripcion").value.trim(),
       fotos: [...fotosForm]
@@ -1044,7 +1052,11 @@ async function editarAnuncio(id) {
   actualizarCiudadesForm();
   $("form-ciudad").value = a.ciudad || "";
   $("form-barrio").value = a.barrio || "";
-  $("form-whatsapp").value = (a.whatsapp || "").replace(/^57/, "");
+  // El WhatsApp y el teléfono no vienen con el anuncio: se piden a la base (el dueño y los moderadores pueden)
+  let contacto = { whatsapp: "", telefono: "" };
+  try { contacto = await obtenerContactoAnuncio(id); } catch (e) { console.warn("contacto:", e); }
+  $("form-whatsapp").value = (contacto.whatsapp || "").replace(/^57/, "");
+  $("form-telefono").value = contacto.telefono || "";
   $("form-descripcion").value = a.desc || "";
   fotosForm = [...a.fotos];
   renderizarFotosForm();
@@ -1218,10 +1230,15 @@ function iniciarEventos() {
   $("form-direccion").addEventListener("input", () => { if (!pinManual && $("form-direccion").value.trim().length >= 5) programarGeocodificar(1100); });
   $("form-direccion").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); geocodificarFormulario(true); } });
   // Solo dígitos en el WhatsApp (y quita un "57" inicial si pegaron +57...)
-  $("form-whatsapp").addEventListener("input", e => {
+  ["form-whatsapp", "form-telefono"].forEach(id => $(id).addEventListener("input", e => {
     let d = e.target.value.replace(/\D/g, "");
     if (d.length > 10 && d.startsWith("57")) d = d.slice(2);
     e.target.value = d.slice(0, 10);
+    if (e.target.value) $("form-contacto-error").classList.add("hidden");
+  }));
+  $("form-mismo-numero").addEventListener("click", () => {
+    if (!$("form-whatsapp").value) { mostrarToast("Primero escribe tu WhatsApp", "error"); return; }
+    $("form-telefono").value = $("form-whatsapp").value; $("form-contacto-error").classList.add("hidden");
   });
 
   // Modales (utils.js dispara estos eventos)
@@ -1269,6 +1286,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");
+  revisarContactoPendiente();   // volvió del correo de confirmación con un contacto pendiente
   // Enlace "?editar=ID" (lo usan anuncio.html y anuncios.html): abre el formulario de edición de ese anuncio
   const idEditar = parseInt(new URLSearchParams(location.search).get("editar"), 10);
   if (idEditar) {

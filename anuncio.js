@@ -169,9 +169,15 @@ function renderizarAnuncio(a) {
     item("Categoría", cat.nombre) + item("Estado", a.estado || "—") +
     item("Barrio", a.barrio || "—") + item("Publicado", fecha);
 
-  // El número NO se muestra en pantalla (evita que lo copien robots); solo el botón.
-  $("btn-whatsapp").href = urlWhatsApp(a.whatsapp, a.nombre);
-  $("barra-whatsapp").href = $("btn-whatsapp").href;
+  // El número NO llega a la página: al tocar el botón, data.js lo pide a la base de datos (solo con cuenta;
+  // sin cuenta abre el registro rápido). Ver supabase/13_contacto_anuncios.sql.
+  const tieneWa = a.tieneWhatsapp !== false, tieneTel = !!a.tieneTelefono;
+  ["btn-whatsapp", "barra-whatsapp", "btn-llamar", "barra-llamar"].forEach(id => Object.assign($(id).dataset, { anuncio: a.id, nombre: a.nombre }));
+  if (!tieneWa) { $("btn-whatsapp").style.display = "none"; $("barra-whatsapp").style.display = "none"; }
+  if (tieneTel) {
+    $("btn-llamar").style.display = ""; $("barra-llamar").style.display = "";
+    if (!tieneWa) { $("barra-llamar").textContent = "📞 Llamar al vendedor"; $("barra-llamar").classList.add("flex-1"); }
+  }
   $("btn-compartir").addEventListener("click", compartir);
   $("barra-compartir").addEventListener("click", compartir);
   $("barra-acciones").classList.remove("hidden");
@@ -185,7 +191,7 @@ function renderizarAnuncio(a) {
     $("ayuda-llegar").classList.remove("hidden");
     const bcl = $("btn-como-llegar");
     bcl.href = urlGoogleMaps(a.lat, a.lng);
-    Object.assign(bcl.dataset, { comoLlegar: "", lat: a.lat, lng: a.lng, nombre: a.nombre, aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "", whatsapp: a.whatsapp || "" });
+    Object.assign(bcl.dataset, { comoLlegar: "", anuncio: a.id, lat: a.lat, lng: a.lng, nombre: a.nombre, aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "" });
     const aprox = !!a.ubicacionAprox;
     if (aprox) {
       $("btn-como-llegar").textContent = "🗺️ Cómo llegar a la zona";
@@ -215,13 +221,15 @@ function renderizarGuia(a) {
   const aprox = a.ubicacionAprox;
   $("guia-contenido").innerHTML = esDueno
     ? `<p class="text-xs text-slate-500">Este es tu anuncio. Así lo ven y así te contactan:</p><ol>
-        ${paso(1, "Te escriben por WhatsApp", "Las personas interesadas te escriben desde el botón verde. Tu número no se muestra en pantalla.")}
+        ${paso(1, "Te contactan con tu número protegido", "Las personas interesadas te escriben o te llaman desde los botones. Tu número no se muestra en pantalla y solo lo obtienen personas con cuenta en MercaFree.")}
         ${paso(2, "Acuerden precio y lugar", "Reúnete en un lugar público y concurrido (estación del metro, centro comercial, CAI). No des tu dirección de casa.")}
         ${paso(3, "Tu ubicación está protegida", aprox ? "El mapa muestra solo una zona cercana, no tu punto exacto. Tú le dices al comprador dónde encontrarse." : "Tu anuncio muestra el punto exacto. Si es tu casa, edítalo y activa «Mostrar solo la zona aproximada».")}
         ${paso(4, "Cuando se venda", "Entra a «Mis anuncios» y elimínalo o edítalo para no recibir más mensajes.")}
       </ol>`
     : `<p class="text-xs text-slate-500">Cuatro pasos sencillos para comprar con tranquilidad:</p><ol>
-        ${paso(1, "Escríbele al vendedor", "Toca el botón verde de WhatsApp para preguntar si sigue disponible y el precio final.", btn("whatsapp", "💬 Abrir WhatsApp"))}
+        ${a.tieneWhatsapp !== false
+          ? paso(1, "Escríbele al vendedor", "Toca el botón verde de WhatsApp para preguntar si sigue disponible y el precio final." + (a.tieneTelefono ? " También puedes llamarlo con 📞." : ""), btn("whatsapp", "💬 Abrir WhatsApp"))
+          : paso(1, "Llama al vendedor", "Este vendedor prefiere llamadas: toca 📞 para preguntar si sigue disponible y el precio final.", btn("llamar", "📞 Llamar"))}
         ${paso(2, "Acuerden dónde verse", "Propón un lugar público y concurrido. " + (aprox ? "El mapa muestra solo una zona aproximada; el vendedor te dirá el punto exacto." : ""), btn("llegar", "🗺️ Ver opciones para llegar"))}
         ${paso(3, "Elige cómo llegar", "Toca el botón azul <b>«Cómo llegar»</b>: verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
         ${paso(4, "Revisa antes de pagar", "Mira y prueba el producto. Paga solo cuando lo tengas en la mano y no adelantes dinero. Si algo no se ve bien, usa «Reportar este anuncio».")}
@@ -230,6 +238,7 @@ function renderizarGuia(a) {
     const b = e.target.closest("[data-guia]");
     if (!b) return;
     if (b.dataset.guia === "whatsapp") $(window.matchMedia("(min-width: 768px)").matches ? "btn-whatsapp" : "barra-whatsapp").click();
+    if (b.dataset.guia === "llamar") $(window.matchMedia("(min-width: 768px)").matches ? "btn-llamar" : "barra-llamar").click();
     if (b.dataset.guia === "llegar" && !$("btn-como-llegar").classList.contains("hidden")) $("btn-como-llegar").click();
   });
   $("guia-rapida").classList.remove("hidden");
@@ -313,4 +322,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("anuncio-cargando").classList.add("hidden");
   if (!a) { $("anuncio-error").classList.remove("hidden"); return; }
   renderizarAnuncio(a);
+  revisarContactoPendiente(id => (id === a.id ? a : null));   // volvió del correo de confirmación
 });

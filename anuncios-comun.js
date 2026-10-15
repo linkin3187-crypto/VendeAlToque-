@@ -175,6 +175,18 @@ function aplicarQueryAUI(qs) {
   if (hayAvanzados && $("panel-filtros").classList.contains("hidden")) $("btn-filtros").click();
 }
 
+// ---------- Botones de contacto (WhatsApp / 📞 Llamar) ----------
+// No llevan el número: al tocarlos, data.js pide el contacto (con cuenta) o abre el registro rápido.
+function botonesContactoHTML(a, chico) {
+  const base = `data-anuncio="${a.id}" data-nombre="${esc(a.nombre)}"`;
+  const wa = a.tieneWhatsapp !== false;          // anuncios viejos (sin el dato) se asumen con WhatsApp
+  const tel = !!a.tieneTelefono;
+  if (chico) return (wa ? `<button type="button" data-contacto="whatsapp" ${base} class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md">WhatsApp</button>` : "")
+    + (tel ? `<button type="button" data-contacto="llamar" ${base} class="bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded-md">📞 Llamar</button>` : "");
+  return (wa ? `<button type="button" data-contacto="whatsapp" ${base} class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</button>` : "")
+    + (tel ? `<button type="button" data-contacto="llamar" ${base} aria-label="Llamar al vendedor" title="Llamar" class="${wa ? "px-3" : "flex-1"} bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl">${wa ? "📞" : "📞 Llamar"}</button>` : "");
+}
+
 // ---------- Tarjeta de anuncio (igual en el inicio y en «Todos los anuncios») ----------
 function tarjetaHTML(a) {
   const icono = iconosCategoria[a.categoria] || "📦";
@@ -208,7 +220,7 @@ function tarjetaHTML(a) {
       <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${esc(a.desc || "")}</p>
       <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2.5 rounded-xl mb-2">Ver anuncio completo →</a>
       <div class="flex gap-2">
-        <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
+        ${botonesContactoHTML(a)}
         ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 rounded-xl" title="Ver en el mapa">📍 Mapa</button>` : ""}
       </div>
       ${esMio ? '<button type="button" data-accion="editar" class="btn-editar-mio mt-2 w-full text-sm font-bold py-2 rounded-xl">✏️ Editar mi publicación</button>' : ""}

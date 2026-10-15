@@ -180,12 +180,14 @@ function popupComercioHTML(c) {
     <small class="text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</small>
     ${c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
     ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
+    <div class="text-[11px] mt-1">${resumenCalifHTML(c)}</div>
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${esc((SELLOS[c.nivel] || SELLOS[1]).largo)}${c.verificado && c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</div>
     <div class="flex flex-wrap gap-1.5 mt-2">
       ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
       <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>
     </div>
     ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="block mt-2 text-center bg-teal-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
+    <a href="tienda.html?id=${c.id}#opinar" class="block mt-2 text-center bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">⭐ Calificar / ver opiniones</a>
     <a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>
   </div>`;
 }
@@ -281,6 +283,7 @@ function tarjetaComercioFeed(c) {
       <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
       <p class="text-xs text-slate-500">${esc(t ? t.nombre : "Comercio")} · ${esc(c.ciudad)}</p>
       ${ubicacionComercios && tieneCoords(c) ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistancia(distanciaComercio(c))} de ti</p>` : ""}
+      <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
       ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
       ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
@@ -289,6 +292,7 @@ function tarjetaComercioFeed(c) {
       <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg">📞 Llamar</a>` : ""}
         <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>
+        <a href="tienda.html?id=${c.id}#opinar" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold px-3 py-1.5 rounded-lg">⭐ Calificar</a>
         ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold px-3 py-1.5 rounded-lg">✏️ Editar</a>` : ""}
       </div>
     </div>
@@ -553,7 +557,7 @@ async function cerrarSesion() {
 function volverSiCorresponde() {
   try {
     const volver = sessionStorage.getItem("mf_volver");
-    if (volver && usuarioActual && /^[a-z-]+\.html$/.test(volver)) { sessionStorage.removeItem("mf_volver"); location.href = volver; return true; }
+    if (volver && usuarioActual && /^[a-z-]+\.html(\?id=\d+)?(#[a-z]+)?$/.test(volver)) { sessionStorage.removeItem("mf_volver"); location.href = volver; return true; }
   } catch (e) {}
   return false;
 }

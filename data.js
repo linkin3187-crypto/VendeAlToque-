@@ -962,3 +962,101 @@ async function resolverSolicitudComercio(id, estado) {
   const { error } = await sb.from("solicitudes_comercio").update({ estado }).eq("id", id);
   if (error) throw error;
 }
+
+// =====================================================================
+// CALIFICACIONES DE COMERCIOS (estrellas + opinión, estilo Google) · SQL 12
+// Cualquiera las lee; para escribir hace falta cuenta (1 opinión por persona y comercio, editable).
+// El dueño no puede calificarse; sí responder en público. Ver supabase/12_calificaciones.sql.
+// =====================================================================
+const MOTIVOS_REPORTE_CALIFICACION = {
+  ofensivo: "Insultos u ofensas",
+  falso: "Parece falsa o del propio negocio / competencia",
+  datos: "Tiene datos personales (teléfono, dirección…)",
+  spam: "Publicidad o spam",
+  otro: "Otro motivo"
+};
+
+function filaACalificacion(r) {
+  return {
+    id: Number(r.id), comercioId: Number(r.comercio_id), usuarioId: r.usuario_id,
+    autor: r.autor_nombre || "Usuario", estrellas: Number(r.estrellas) || 0,
+    comentario: r.comentario || "", respuesta: r.respuesta || "", respuestaEn: r.respuesta_en || null,
+    oculto: !!r.oculto, creado: r.creado_en, actualizado: r.actualizado_en || r.creado_en
+  };
+}
+
+// Todas las visibles de un comercio (más la propia si estuviera oculta; un moderador ve todas)
+async function cargarCalificaciones(comercioId) {
+  const { data, error } = await sb.from("calificaciones_comercio").select("*")
+    .eq("comercio_id", comercioId).order("creado_en", { ascending: false }).limit(500);
+  if (error) throw error;
+  return (data || []).map(filaACalificacion);
+}
+
+// Crea o actualiza MI opinión (id = la que ya tengo, si existe)
+async function guardarCalificacion(comercioId, estrellas, comentario, id) {
+  if (!usuarioActual) throw new Error("Inicia sesión para calificar");
+  const datos = { estrellas, comentario: (comentario || "").trim() || null };
+  const q = id
+    ? sb.from("calificaciones_comercio").update(datos).eq("id", id).select().single()
+    : sb.from("calificaciones_comercio").insert({ comercio_id: comercioId, ...datos }).select().single();
+  const { data, error } = await q;
+  if (error) {
+    if (/duplicate|unique/i.test(error.message || "")) throw new Error("Ya calificaste este negocio: recarga la página para editar tu opinión");
+    throw error;
+  }
+  return filaACalificacion(data);
+}
+
+async function borrarCalificacion(id) {
+  const { error } = await sb.from("calificaciones_comercio").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Respuesta pública del dueño (texto vacío = borrar la respuesta)
+async function responderCalificacion(id, texto) {
+  const { error } = await sb.rpc("responder_calificacion", { p_id: id, p_texto: texto || "" });
+  if (error) throw error;
+}
+
+async function crearReporteCalificacion(calificacionId, motivo, detalle) {
+  if (!usuarioActual) throw new Error("Inicia sesión para reportar");
+  const { error } = await sb.from("reportes_calificacion").insert({ calificacion_id: calificacionId, motivo, detalle: detalle || null });
+  if (error) {
+    if (/duplicate|unique/i.test(error.message || "")) throw new Error("Ya reportaste esta opinión. Un moderador la revisará");
+    throw error;
+  }
+}
+
+// Solo moderadores
+async function cargarReportesCalificacion(estado) {
+  let q = sb.from("reportes_calificacion")
+    .select("id, motivo, detalle, estado, creado_en, calificacion:calificaciones_comercio(id, comercio_id, autor_nombre, estrellas, comentario, oculto, comercio:comercios(id, nombre))")
+    .order("creado_en", { ascending: false }).limit(200);
+  if (estado) q = q.eq("estado", estado);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function resolverReporteCalificacion(id, estado) {
+  const { error } = await sb.from("reportes_calificacion").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
+
+async function ocultarCalificacion(id, oculto) {
+  const { error } = await sb.from("calificaciones_comercio").update({ oculto }).eq("id", id);
+  if (error) throw error;
+}
+
+// ---------- Estrellas para mostrar (★★★★☆) ----------
+function estrellasTexto(n) {
+  const llenas = Math.round(Math.max(0, Math.min(5, n)));
+  return "★".repeat(llenas) + "☆".repeat(5 - llenas);
+}
+// «⭐ 4,6 (23)» para tarjetas. Siempre muestra el promedio (transparencia, como Google).
+function resumenCalifHTML(c) {
+  const n = c.nCalif || 0;
+  if (!n) return '<span class="text-slate-400 font-normal">☆☆☆☆☆ Sin opiniones aún</span>';
+  return `<span class="text-amber-500" aria-hidden="true">${estrellasTexto(c.calif)}</span> <b class="text-slate-800">${String((c.calif || 0).toFixed(1)).replace(".", ",")}</b> <span class="text-slate-500 font-normal">(${n} ${n === 1 ? "opinión" : "opiniones"})</span>`;
+}

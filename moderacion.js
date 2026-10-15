@@ -276,6 +276,59 @@ async function accionReporteProducto(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Opiniones (calificaciones) reportadas ----------
+function tarjetaReporteCalificacion(r) {
+  const q = r.calificacion;
+  const com = q && q.comercio;
+  return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" data-rcal="${r.id}" data-cal="${q ? q.id : ""}">
+    <div class="flex flex-wrap items-center gap-2">
+      <h3 class="font-bold">${q ? `<span class="text-amber-500">${estrellasTexto(q.estrellas)}</span> ${esc(q.autor_nombre || "Usuario")}` : "(opinión eliminada)"}</h3>
+      <span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">${esc(MOTIVOS_REPORTE_CALIFICACION[r.motivo] || r.motivo)}</span>
+      ${q && q.oculto ? '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculta</span>' : ""}
+      <span class="text-xs text-slate-400">${esc(fechaCorta(r.creado_en))}</span>
+    </div>
+    ${com ? `<p class="text-xs text-slate-500 mt-0.5">Comercio: ${esc(com.nombre)}</p>` : ""}
+    ${q && q.comentario ? `<p class="text-sm text-slate-700 mt-2 bg-slate-50 rounded-lg p-2">“${esc(q.comentario)}”</p>` : ""}
+    ${r.detalle ? `<p class="text-xs text-slate-500 mt-1">Quien reporta dice: “${esc(r.detalle)}”</p>` : ""}
+    <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+      ${q ? `<a href="tienda.html?id=${q.comercio_id}#opiniones" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">Ver en la ficha</a>` : ""}
+      ${q && !q.oculto ? '<button type="button" data-qacc="ocultar" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar opinión</button>' : ""}
+      <button type="button" data-qacc="revisado" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Revisado</button>
+      <button type="button" data-qacc="descartado" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar (está bien)</button>
+    </div>
+  </article>`;
+}
+
+async function pintarReportesCalificacion() {
+  try {
+    const lista = await cargarReportesCalificacion("pendiente");
+    $("n-rcal").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("rcal-lista").innerHTML = lista.length ? lista.map(tarjetaReporteCalificacion).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">No hay opiniones reportadas pendientes.</p>';
+  } catch (e) {
+    // Si aún no se ejecutó el SQL 12, la sección queda vacía sin romper el resto
+    $("rcal-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Las calificaciones se activan al ejecutar supabase/12_calificaciones.sql.</p>';
+  }
+}
+
+async function accionReporteCalificacion(e) {
+  const b = e.target.closest("[data-qacc]");
+  const t = e.target.closest("[data-rcal]");
+  if (!b || !t) return;
+  b.disabled = true;
+  try {
+    if (b.dataset.qacc === "ocultar") {
+      await ocultarCalificacion(Number(t.dataset.cal), true);
+      await resolverReporteCalificacion(Number(t.dataset.rcal), "revisado");
+      mostrarToast("🙈 Opinión ocultada (ya no cuenta en el promedio)");
+    } else {
+      await resolverReporteCalificacion(Number(t.dataset.rcal), b.dataset.qacc);
+      mostrarToast("✔ Hecho");
+    }
+    await pintarReportesCalificacion();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 // ---------- Negocios nuevos por revisar (registrar-negocio.html) ----------
 const meterNegocios = {};   // señales ya cargadas por solicitud
 
@@ -421,6 +474,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarNegocios();
   pintarAprobadosSinVerificar();
   pintarReportesProducto();
+  $("rcal-lista").addEventListener("click", accionReporteCalificacion);
+  pintarReportesCalificacion();
   pintarReportes();
   pintarSolicitudes();
 });

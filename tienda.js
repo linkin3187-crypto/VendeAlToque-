@@ -121,9 +121,12 @@ function renderizarTienda(c, ps) {
 
   // Aviso si la tienda aún no es pública (solo la ven el dueño o un moderador)
   const publica = c.activo && c.nivel >= 2;
+  const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esModerador());
   if (!publica) {
     const av = $("t-aviso-privado");
-    av.textContent = "👀 Solo tú ves esta tienda: se publicará cuando el comercio esté activo y verificado por MercaFree.";
+    av.textContent = gestiona
+      ? "👀 Solo tú ves la vitrina de esta tienda: se publicará cuando el comercio esté activo y verificado por MercaFree."
+      : "ℹ️ Dato de mapa: MercaFree aún no ha verificado este comercio. Confirma horario y dirección antes de ir. Si lo conoces, tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
   pintarProductos();
@@ -158,6 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("t-cargando").classList.add("hidden");
   if (!c) { $("t-error").classList.remove("hidden"); return; }
   renderizarTienda(c, ps);
+  iniciarOpiniones();
   $("t-lista").addEventListener("click", manejarClicks);
   $("t-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("form-rep-prod").addEventListener("submit", async e => {
@@ -172,3 +176,251 @@ document.addEventListener("DOMContentLoaded", async () => {
     finally { btn.disabled = false; }
   });
 });
+
+// =====================================================================
+// OPINIONES (estrellas + comentario, estilo Google) · supabase/12_calificaciones.sql
+// =====================================================================
+const POR_PAGINA_OP = 10;
+let opiniones = [];
+let opVisibles = POR_PAGINA_OP;
+let miOpinion = null;        // la mía (si ya califiqué)
+let estrellasElegidas = 0;
+let opinionesActivas = true; // false si aún no se ejecutó el SQL 12
+const TEXTO_ESTRELLAS = ["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"];
+
+const esDuenoTienda = () => !!(usuarioActual && tienda && tienda.ownerId === usuarioActual.id);
+const numero1 = n => n.toFixed(1).replace(".", ",");
+
+function pintarResumenOpiniones() {
+  const vis = opiniones.filter(o => !o.oculto);
+  const n = vis.length;
+  const prom = n ? vis.reduce((s, o) => s + o.estrellas, 0) / n : 0;
+  $("op-promedio").textContent = n ? numero1(prom) : "–";
+  $("op-estrellas").textContent = estrellasTexto(prom);
+  $("op-total").textContent = n ? `${n} ${n === 1 ? "opinión" : "opiniones"}` : "Sin opiniones aún";
+  const cuenta = [0, 0, 0, 0, 0, 0];
+  vis.forEach(o => { cuenta[o.estrellas]++; });
+  $("op-barras").innerHTML = [5, 4, 3, 2, 1].map(e => `<div class="flex items-center gap-2 text-xs">
+      <span class="w-3 text-slate-600 font-semibold">${e}</span>
+      <div class="op-barra flex-1"><i style="width:${n ? Math.round(cuenta[e] * 100 / n) : 0}%"></i></div>
+      <span class="w-6 text-right text-slate-400">${cuenta[e]}</span></div>`).join("");
+  // Resumen corto bajo el nombre del comercio
+  $("t-calif-corto").innerHTML = n
+    ? `<span class="text-amber-500">${estrellasTexto(prom)}</span> <b>${numero1(prom)}</b> <span class="text-slate-500">(${n} ${n === 1 ? "opinión" : "opiniones"})</span>`
+    : '<span class="text-indigo-600 font-semibold">⭐ Sé el primero en calificar</span>';
+}
+
+function tarjetaOpinion(o) {
+  const mia = usuarioActual && o.usuarioId === usuarioActual.id;
+  const editada = o.actualizado && o.creado && (new Date(o.actualizado) - new Date(o.creado)) > 60000;
+  const inicial = (o.autor || "U").trim().charAt(0).toUpperCase();
+  const puedeResponder = esDuenoTienda() || esModerador();
+  return `<article class="py-4" data-op="${o.id}">
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 shrink-0 rounded-full bg-indigo-100 text-indigo-700 font-black flex items-center justify-center" aria-hidden="true">${esc(inicial)}</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-bold text-slate-800">${esc(o.autor)} ${mia ? '<span class="text-[11px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">Tu opinión</span>' : ""}</p>
+        <p class="text-xs text-slate-500"><span class="text-amber-500 text-sm" aria-label="${o.estrellas} de 5 estrellas">${estrellasTexto(o.estrellas)}</span> · ${esc(haceDias(o.creado))}${editada ? " · editada" : ""}</p>
+        ${o.oculto ? '<p class="text-xs bg-slate-100 text-slate-600 rounded-lg px-2 py-1 mt-1">🙈 Un moderador ocultó esta opinión (no cuenta en el promedio). Solo tú y los moderadores la ven.</p>' : ""}
+        ${o.comentario ? `<p class="text-sm text-slate-700 mt-1.5 whitespace-pre-wrap break-words">${esc(o.comentario)}</p>` : ""}
+        ${o.respuesta ? `<div class="mt-2 bg-slate-50 border-l-4 border-indigo-300 rounded-r-lg px-3 py-2">
+            <p class="text-xs font-bold text-indigo-900">🏪 Respuesta del negocio <span class="font-normal text-slate-400">· ${esc(haceDias(o.respuestaEn))}</span></p>
+            <p class="text-sm text-slate-700 whitespace-pre-wrap break-words">${esc(o.respuesta)}</p></div>` : ""}
+        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+          ${mia ? '<button type="button" data-opacc="editar" class="text-indigo-600 font-semibold hover:underline">✏️ Editar</button>' : ""}
+          ${puedeResponder ? `<button type="button" data-opacc="responder" class="text-indigo-600 font-semibold hover:underline">💬 ${o.respuesta ? "Editar respuesta" : "Responder"}</button>` : ""}
+          ${!mia ? '<button type="button" data-opacc="reportar" class="text-slate-500 hover:text-red-600 underline">🚩 Reportar</button>' : ""}
+          ${esModerador() ? `<button type="button" data-opacc="${o.oculto ? "mostrar" : "ocultar"}" class="text-amber-700 font-semibold hover:underline">${o.oculto ? "👁️ Mostrar" : "🙈 Ocultar"}</button>` : ""}
+        </div>
+        <form data-resp-form class="hidden mt-2 space-y-2">
+          <textarea maxlength="500" rows="2" class="w-full border border-slate-300 rounded-lg p-2 text-sm" placeholder="Responde con amabilidad: agradece o explica qué vas a mejorar">${esc(o.respuesta)}</textarea>
+          <div class="flex gap-2"><button type="submit" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Publicar respuesta</button>
+          <button type="button" data-opacc="cancelar-resp" class="text-xs border border-slate-300 px-3 py-1.5 rounded-lg">Cancelar</button></div>
+        </form>
+      </div>
+    </div>
+  </article>`;
+}
+
+function pintarListaOpiniones() {
+  const orden = $("op-orden").value;
+  const lista = opiniones.slice();
+  if (orden === "altas") lista.sort((a, b) => b.estrellas - a.estrellas || new Date(b.creado) - new Date(a.creado));
+  else if (orden === "bajas") lista.sort((a, b) => a.estrellas - b.estrellas || new Date(b.creado) - new Date(a.creado));
+  // La mía siempre arriba (como en Google)
+  if (miOpinion) { lista.splice(lista.findIndex(o => o.id === miOpinion.id), 1); lista.unshift(miOpinion); }
+  $("op-lista").innerHTML = lista.slice(0, opVisibles).map(tarjetaOpinion).join("");
+  $("op-vacio").classList.toggle("hidden", lista.length > 0);
+  const faltan = lista.length - opVisibles;
+  $("op-mas").classList.toggle("hidden", faltan <= 0);
+  if (faltan > 0) $("op-mas").textContent = `Ver más opiniones (${faltan})`;
+}
+
+function pintarBotonEscribir() {
+  const dueno = esDuenoTienda();
+  $("op-escribir").classList.toggle("hidden", dueno || !opinionesActivas);
+  $("op-es-dueno").classList.toggle("hidden", !dueno);
+  $("op-escribir").textContent = miOpinion ? "✏️ Editar mi opinión" : "✍️ Escribir una opinión";
+}
+
+function marcarEstrellas(n) {
+  estrellasElegidas = n;
+  document.querySelectorAll("#op-picker .op-star").forEach(b => {
+    const v = Number(b.dataset.est);
+    b.classList.toggle("encendida", v <= n);
+    b.setAttribute("aria-checked", v === n ? "true" : "false");
+  });
+  $("op-picker-txt").textContent = n ? `${n} ${n === 1 ? "estrella" : "estrellas"} · ${TEXTO_ESTRELLAS[n]}` : "Toca las estrellas";
+}
+
+function abrirFormOpinion() {
+  if (!usuarioActual) {
+    mostrarToast("Crea tu cuenta gratis (o inicia sesión) para calificar", "ok");
+    try { sessionStorage.setItem("mf_volver", "tienda.html?id=" + tienda.id + "#opinar"); } catch (e) {}
+    setTimeout(() => { location.href = "index.html#login"; }, 1000);
+    return;
+  }
+  if (esDuenoTienda()) { mostrarToast("No puedes calificar tu propio negocio", "error"); return; }
+  $("op-form-titulo").textContent = miOpinion ? "Edita tu opinión" : "Tu opinión";
+  $("op-nombre").textContent = usuarioActual.nombre || "Usuario";
+  marcarEstrellas(miOpinion ? miOpinion.estrellas : 0);
+  $("op-comentario").value = miOpinion ? miOpinion.comentario : "";
+  $("op-cuenta").textContent = $("op-comentario").value.length;
+  $("op-borrar").classList.toggle("hidden", !miOpinion);
+  $("op-form").classList.remove("hidden");
+  $("op-escribir").classList.add("hidden");
+  $("op-form").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function cerrarFormOpinion() {
+  $("op-form").classList.add("hidden");
+  pintarBotonEscribir();
+}
+
+async function recargarOpiniones() {
+  try {
+    opiniones = await cargarCalificaciones(tienda.id);
+    opinionesActivas = true;
+  } catch (err) {
+    console.warn("opiniones:", err);
+    opiniones = []; opinionesActivas = false;   // p. ej. aún no existe la tabla (SQL 12 sin ejecutar)
+  }
+  miOpinion = usuarioActual ? opiniones.find(o => o.usuarioId === usuarioActual.id) || null : null;
+  pintarResumenOpiniones();
+  pintarListaOpiniones();
+  pintarBotonEscribir();
+}
+
+async function publicarOpinion(e) {
+  e.preventDefault();
+  if (!estrellasElegidas) { mostrarToast("Elige de 1 a 5 estrellas", "error"); return; }
+  const btn = $("op-publicar"); btn.disabled = true;
+  try {
+    await guardarCalificacion(tienda.id, estrellasElegidas, $("op-comentario").value, miOpinion ? miOpinion.id : null);
+    mostrarToast(miOpinion ? "✅ Opinión actualizada" : "✅ ¡Gracias! Tu opinión ya está publicada");
+    cerrarFormOpinion();
+    await recargarOpiniones();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+  finally { btn.disabled = false; }
+}
+
+async function borrarMiOpinion() {
+  if (!miOpinion || !confirm("¿Borrar tu opinión? Podrás escribir otra cuando quieras.")) return;
+  try {
+    await borrarCalificacion(miOpinion.id);
+    mostrarToast("Opinión borrada");
+    cerrarFormOpinion();
+    await recargarOpiniones();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+}
+
+// Reportar una opinión (ventana que se crea sola la primera vez)
+function abrirReporteOpinion(id) {
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para reportar", "error");
+    try { sessionStorage.setItem("mf_volver", "tienda.html?id=" + tienda.id + "#opiniones"); } catch (e) {}
+    setTimeout(() => { location.href = "index.html#login"; }, 1200);
+    return;
+  }
+  if (!$("modal-rep-op")) {
+    document.body.insertAdjacentHTML("beforeend", `<div id="modal-rep-op" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="ro-titulo">
+      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[92vh] overflow-auto">
+        <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+        <h3 id="ro-titulo" class="text-xl font-black text-indigo-900 mb-1">🚩 Reportar opinión</h3>
+        <p class="text-sm text-slate-500 mb-4">Un moderador la revisará. Las opiniones negativas pero honestas no se ocultan.</p>
+        <form id="form-rep-op" class="space-y-3">
+          <select id="ro-motivo" class="w-full border border-slate-300 p-3 rounded-xl bg-white">${Object.entries(MOTIVOS_REPORTE_CALIFICACION).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select>
+          <textarea id="ro-detalle" rows="2" maxlength="300" placeholder="Detalles (opcional)" class="w-full border border-slate-300 p-3 rounded-xl"></textarea>
+          <button type="submit" id="ro-enviar" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl disabled:opacity-60">Enviar reporte</button>
+        </form>
+      </div></div>`);
+    $("form-rep-op").addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const b = $("ro-enviar"); b.disabled = true;
+      try {
+        await crearReporteCalificacion(Number($("modal-rep-op").dataset.id), $("ro-motivo").value, $("ro-detalle").value.trim());
+        cerrarModal("modal-rep-op");
+        mostrarToast("✅ Gracias, un moderador la revisará");
+      } catch (err) { mostrarToast(mensajeError(err), "error"); }
+      finally { b.disabled = false; }
+    });
+  }
+  $("modal-rep-op").dataset.id = id;
+  $("ro-motivo").value = "ofensivo"; $("ro-detalle").value = "";
+  abrirModal("modal-rep-op");
+}
+
+async function accionOpinion(e) {
+  const b = e.target.closest("[data-opacc]");
+  const art = e.target.closest("[data-op]");
+  if (!b || !art) return;
+  const id = Number(art.dataset.op);
+  const acc = b.dataset.opacc;
+  const form = art.querySelector("[data-resp-form]");
+  if (acc === "editar") abrirFormOpinion();
+  else if (acc === "responder") { form.classList.remove("hidden"); form.querySelector("textarea").focus(); }
+  else if (acc === "cancelar-resp") form.classList.add("hidden");
+  else if (acc === "reportar") abrirReporteOpinion(id);
+  else if (acc === "ocultar" || acc === "mostrar") {
+    b.disabled = true;
+    try { await ocultarCalificacion(id, acc === "ocultar"); mostrarToast(acc === "ocultar" ? "🙈 Opinión ocultada" : "👁️ Opinión visible otra vez"); await recargarOpiniones(); }
+    catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+  }
+}
+
+async function enviarRespuesta(e) {
+  const form = e.target.closest("[data-resp-form]");
+  if (!form) return;
+  e.preventDefault();
+  const id = Number(form.closest("[data-op]").dataset.op);
+  const btn = form.querySelector('button[type="submit"]'); btn.disabled = true;
+  try {
+    await responderCalificacion(id, form.querySelector("textarea").value.trim());
+    mostrarToast("✅ Respuesta publicada");
+    await recargarOpiniones();
+  } catch (err) { btn.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
+async function iniciarOpiniones() {
+  $("op-escribir").addEventListener("click", abrirFormOpinion);
+  $("op-cancelar").addEventListener("click", cerrarFormOpinion);
+  $("op-borrar").addEventListener("click", borrarMiOpinion);
+  $("op-form").addEventListener("submit", publicarOpinion);
+  $("op-picker").addEventListener("click", ev => { const s = ev.target.closest("[data-est]"); if (s) marcarEstrellas(Number(s.dataset.est)); });
+  $("op-picker").addEventListener("keydown", ev => {
+    if (ev.key === "ArrowRight" || ev.key === "ArrowUp") { ev.preventDefault(); marcarEstrellas(Math.min(5, estrellasElegidas + 1)); }
+    if (ev.key === "ArrowLeft" || ev.key === "ArrowDown") { ev.preventDefault(); marcarEstrellas(Math.max(1, estrellasElegidas - 1)); }
+  });
+  $("op-comentario").addEventListener("input", () => { $("op-cuenta").textContent = $("op-comentario").value.length; });
+  $("op-orden").addEventListener("change", () => { opVisibles = POR_PAGINA_OP; pintarListaOpiniones(); });
+  $("op-mas").addEventListener("click", () => { opVisibles += POR_PAGINA_OP; pintarListaOpiniones(); });
+  $("op-lista").addEventListener("click", accionOpinion);
+  $("op-lista").addEventListener("submit", enviarRespuesta);
+  await recargarOpiniones();
+  // Llegó desde «⭐ Calificar» (tienda.html?id=X#opinar): abre el formulario directamente
+  if (location.hash === "#opinar") {
+    history.replaceState(null, "", location.pathname + location.search + "#opiniones");
+    if (opinionesActivas && !esDuenoTienda()) abrirFormOpinion();
+    else $("opiniones").scrollIntoView();
+  } else if (location.hash === "#opiniones") $("opiniones").scrollIntoView();
+}

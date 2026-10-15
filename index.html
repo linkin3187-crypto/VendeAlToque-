@@ -8,13 +8,31 @@
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
 
+  <script>
+    // INTERRUPTOR DEL DISEÑO NUEVO (solo celular y tablet). Va aquí, antes de pintar nada, para que no «salte» la pantalla.
+    //   ?diseno=nuevo  → lo activa en este navegador (queda guardado)      ?diseno=actual → vuelve al diseño de siempre
+    //   Para activarlo para TODOS: cambia NUEVO_POR_DEFECTO a true. Para revertir: ponlo en false (o ver GUIA-DE-CAMBIOS.md).
+    (function () {
+      var NUEVO_POR_DEFECTO = false, h = document.documentElement;
+      try {
+        var q = new URLSearchParams(location.search).get("diseno");
+        if (q === "nuevo" || q === "actual") localStorage.setItem("mf_diseno", q);
+        var v = localStorage.getItem("mf_diseno");
+        if (v === "nuevo" || (v !== "actual" && NUEVO_POR_DEFECTO)) h.classList.add("dn");
+      } catch (e) { if (NUEVO_POR_DEFECTO) h.classList.add("dn"); }
+      var mapa = { clasificados: "clasificados", contenido: "clasificados", comercios: "comercios", "seccion-comercios": "comercios", foro: "foro", "seccion-foro": "foro" };
+      h.setAttribute("data-v", mapa[(location.hash || "").slice(1)] || "inicio");
+      h.setAttribute("data-lm", "lista");
+    })();
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -55,9 +73,9 @@
   </div>
 
   <!-- BUSCADOR + CATEGORÍAS -->
-  <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-8 pt-6 px-4">
+  <section id="hero" class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-8 pt-6 px-4">
     <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-5">
+      <div class="text-center mb-5" data-vista="inicio">
         <h2 class="text-3xl sm:text-5xl font-black leading-tight mb-2 tracking-tight">Compra, vende y <span class="text-yellow-300">encuentra comercios</span> cerca de ti</h2>
         <p class="text-white text-base sm:text-lg font-semibold">Clasificados de barrio + Directorio de comercios de tu ciudad</p>
         <p class="text-indigo-200 text-sm mt-1">Anuncia gratis, contacta por WhatsApp y ubica farmacias, panaderías, cajeros y más en el mapa • 100% gratis</p>
@@ -69,18 +87,18 @@
         <p class="text-indigo-200 text-xs mt-2">¿Tienes una tienda o negocio? Regístralo gratis y abre tu vitrina con productos.</p>
       </div>
 
-      <div class="relative mb-5">
+      <div class="relative mb-5" data-vista="clasificados">
         <input type="search" id="buscador" autocomplete="off" aria-label="Buscar anuncios" placeholder="¿Qué buscas hoy? (ej. apartamento, iPhone, carpintero...)" class="w-full pl-5 pr-5 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
       </div>
 
       <!-- Las categorías se dibujan desde CATEGORIAS (data.js) -->
-      <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
+      <div id="chips-categorias" data-vista="clasificados" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
     </div>
   </section>
 
 
   <!-- CARRUSEL DE BANNERS (texto propio, sin imágenes externas: se cambia aquí) -->
-  <section id="carrusel" class="max-w-7xl mx-auto px-4 pt-5" aria-roledescription="carrusel" aria-label="Destacados">
+  <section id="carrusel" data-vista="inicio" class="max-w-7xl mx-auto px-4 pt-5" aria-roledescription="carrusel" aria-label="Destacados">
     <div class="car-marco">
       <div id="car-pista" class="car-pista" tabindex="0">
       <article class="car-slide c1" role="group" aria-roledescription="diapositiva" aria-label="1 de 4">
@@ -126,8 +144,27 @@
     </div>
   </section>
 
+
+  <!-- DISEÑO NUEVO · Inicio: clasificados y comercios que van pasando (solo se ve con el interruptor y en celular) -->
+  <section id="inicio-recientes" data-vista="inicio" class="hidden max-w-7xl mx-auto pt-5" aria-label="Clasificados recientes">
+    <div class="flex items-baseline justify-between px-4 mb-2"><h2 class="text-lg font-black text-indigo-900">📢 Clasificados recientes</h2><button type="button" data-ir="clasificados" class="text-sm font-bold text-indigo-600">Ver todos ›</button></div>
+    <div id="inicio-recientes-pista" class="di-pista"></div>
+  </section>
+  <section id="inicio-comercios" data-vista="inicio" class="hidden max-w-7xl mx-auto pt-5" aria-label="Comercios">
+    <div class="flex items-baseline justify-between px-4 mb-2"><h2 id="inicio-comercios-titulo" class="text-lg font-black text-indigo-900">🏪 Comercios</h2><button type="button" data-ir="comercios" class="text-sm font-bold text-indigo-600">Ver todos ›</button></div>
+    <div id="inicio-comercios-pista" class="di-pista"></div>
+  </section>
+
+  <!-- DISEÑO NUEVO · Clasificados: interruptor Lista | Mapa -->
+  <div id="lm-caja" data-vista="clasificados" class="dn-solo max-w-7xl mx-auto px-4 pt-4">
+    <div class="di-seg" role="tablist" aria-label="Ver como">
+      <button type="button" role="tab" data-lm="lista" aria-selected="true">📋 Lista</button>
+      <button type="button" role="tab" data-lm="mapa" aria-selected="false">🗺️ Mapa</button>
+    </div>
+  </div>
+
   <!-- FILTROS AVANZADOS -->
-  <div class="max-w-7xl mx-auto px-4 pt-5">
+  <div data-vista="clasificados" class="max-w-7xl mx-auto px-4 pt-5">
     <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" class="flex items-center gap-2 text-sm font-semibold text-indigo-600">
@@ -202,10 +239,10 @@
   </div>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main id="contenido" class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <main id="contenido" data-vista="clasificados" class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
     <!-- MAPA (en escritorio se queda fijo al hacer scroll) -->
-    <section class="lg:col-span-5 lg:sticky lg:top-20 self-start">
+    <section id="sec-mapa" class="lg:col-span-5 lg:sticky lg:top-20 self-start">
       <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
         <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h2 class="text-lg font-bold">📍 Mapa del Barrio</h2>
@@ -231,7 +268,7 @@
     </section>
 
     <!-- LISTA -->
-    <section class="lg:col-span-7">
+    <section id="sec-lista" class="lg:col-span-7">
       <div class="flex items-center justify-between mb-5">
         <h2 class="text-lg font-bold">📢 Publicaciones</h2>
         <span id="contador-resultados" class="text-sm text-slate-500" aria-live="polite"></span>
@@ -270,7 +307,7 @@
   </main>
 
   <!-- COMERCIOS (después de los anuncios): cada tarjeta abre la vitrina del comercio -->
-  <section class="max-w-7xl mx-auto px-4 pb-4 hidden" id="seccion-comercios">
+  <section class="max-w-7xl mx-auto px-4 pb-4 hidden" id="seccion-comercios" data-vista="comercios">
     <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
         <h2 class="text-xl font-bold">🏪 Comercios <span id="comercios-contador" class="text-sm font-semibold text-slate-400"></span></h2>
@@ -294,7 +331,7 @@
   </section>
 
   <!-- FORO DE VENTAS -->
-  <section class="max-w-7xl mx-auto px-4 py-8" id="seccion-foro">
+  <section class="max-w-7xl mx-auto px-4 py-8" id="seccion-foro" data-vista="foro">
     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
@@ -322,6 +359,16 @@
       </p>
     </div>
   </footer>
+
+  <!-- DISEÑO NUEVO · barra inferior (solo celular, con el interruptor) -->
+  <nav id="nav-inferior" class="dn-solo" aria-label="Secciones">
+    <button type="button" data-ir="inicio" class="di-tab"><span>🏠</span>Inicio</button>
+    <button type="button" data-ir="clasificados" class="di-tab"><span>📢</span><i class="di-largo">Clasificados</i><i class="di-corto">Clasif.</i></button>
+    <button type="button" data-ir="comercios" class="di-tab"><span>🏪</span>Comercios</button>
+    <button type="button" data-ir="foro" class="di-tab"><span>💬</span>Foro</button>
+    <a href="favoritos.html" class="di-tab"><span>❤️</span>Favoritos</a>
+  </nav>
+  <button type="button" id="btn-publicar-flotante" class="dn-solo btn-parpadeo" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro" aria-label="Publicar gratis">＋ Publicar</button>
 
   <!-- ============ MODAL PUBLICAR (por pasos; pantalla completa en celular) ============ -->
   <div id="modal-publicar" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="publicar-titulo">
@@ -549,10 +596,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=19"></script>
-  <script src="data.js?v=19"></script>
-  <script src="foro.js?v=19"></script>
-  <script src="carrusel.js?v=19"></script>
-  <script src="app.js?v=19"></script>
+  <script src="utils.js?v=20"></script>
+  <script src="data.js?v=20"></script>
+  <script src="foro.js?v=20"></script>
+  <script src="carrusel.js?v=20"></script>
+  <script src="diseno.js?v=20"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>

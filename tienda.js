@@ -98,7 +98,8 @@ function renderizarTienda(c, ps) {
   const ll = $("t-llegar");
   ll.href = urlGoogleMaps(c.lat, c.lng);
   Object.assign(ll.dataset, { comoLlegar: "", lat: c.lat, lng: c.lng, nombre: c.nombre, ciudad: c.ciudad || "" });
-  $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id;
+  $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id + (c.ownerId ? "" : "&tipo=reclamar");
+  if (!c.ownerId) { $("t-es-tuyo").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
   $("t-reportar").addEventListener("click", () => abrirReporteComercio(c));
   $("t-compartir").addEventListener("click", async () => {
     const datos = { title: c.nombre, text: `${c.nombre} en MercaFree`, url: location.href };
@@ -131,6 +132,21 @@ function renderizarTienda(c, ps) {
   }
   pintarProductos();
   $("t-contenido").classList.remove("hidden");
+}
+
+// Burbuja flotante «¿Es tu negocio? Reclámalo» (solo comercios SIN dueño). Pequeña y se puede cerrar:
+// al cerrarla no vuelve a salir en esta sesión para ese comercio.
+function mostrarBurbujaReclamar(c) {
+  const clave = "mf_burbuja_" + c.id;
+  try { if (sessionStorage.getItem(clave)) return; } catch (e) {}
+  if ($("burbuja-reclamar")) return;
+  document.body.insertAdjacentHTML("beforeend", `<div id="burbuja-reclamar" role="complementary" aria-label="Reclamar este negocio">
+      <a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar">🔑 ¿Es tu negocio? Reclámalo gratis</a>
+      <button type="button" data-cerrar-burbuja aria-label="Cerrar aviso">✕</button></div>`);
+  document.querySelector("[data-cerrar-burbuja]").addEventListener("click", () => {
+    $("burbuja-reclamar").remove();
+    try { sessionStorage.setItem(clave, "1"); } catch (e) {}
+  });
 }
 
 function manejarClicks(e) {

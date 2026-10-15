@@ -57,18 +57,27 @@
         </div>
       </section>
 
+      <!-- PENDIENTES DE HOY: todo lo que espera una decisión tuya, en un solo sitio -->
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm" id="ac-pendientes">
+        <h2 class="text-lg font-black text-indigo-900 mb-1">📋 Pendientes</h2>
+        <p class="text-sm text-slate-500 mb-3">Lo que espera una decisión tuya. Toca una tarjeta para ir directo.</p>
+        <div id="ac-pend-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm"></div>
+      </section>
+
       <!-- 2. GESTIONAR -->
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h2 class="text-lg font-black text-indigo-900">2 · Verificar y completar datos</h2>
-          <div class="flex flex-wrap items-center gap-2 text-sm">
-            <button type="button" id="ac-nuevo" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg">➕ Agregar comercio</button>
-            <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white"></select>
-            <select id="ac-filtro-ver" class="border border-slate-300 rounded-lg p-1.5 bg-white">
-              <option value="">Todos</option><option value="no">Sin verificar</option><option value="tel">Por teléfono</option><option value="persona">En persona</option><option value="vencida">Verificación vencida (+12 meses)</option>
-            </select>
-          </div>
+          <button type="button" id="ac-nuevo" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg text-sm">➕ Agregar comercio</button>
         </div>
+        <div class="grid sm:grid-cols-3 gap-2 mb-3 text-sm">
+          <input type="search" id="ac-buscar-nombre" placeholder="🔎 Buscar por nombre o dirección" class="border border-slate-300 rounded-lg p-2 bg-white sm:col-span-1">
+          <select id="ac-filtro-ver" class="border border-slate-300 rounded-lg p-2 bg-white" aria-label="Estado">
+            <option value="no" selected>⏳ Por verificar</option><option value="tel">✔ Verificados por teléfono</option><option value="persona">✔ Verificados en persona</option><option value="vencida">⚠ Verificación vencida (+12 meses)</option><option value="oculto">🙈 Ocultos</option><option value="">Todos los estados</option>
+          </select>
+          <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-2 bg-white" aria-label="Municipio"></select>
+        </div>
+        <div id="ac-origenes" class="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Origen del comercio"></div>
         <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo. Para <b>cambiar el nombre</b> de un comercio importado, edita el campo <b>Nombre</b> y pulsa <b>Guardar</b>. ¿Un negocio de barrio que no salió del mapa o te lo recomendaron? Usa <b>➕ Agregar comercio</b>.</p>
         <p id="ac-solo-uno" class="hidden mb-3 text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2">Mostrando solo el comercio que elegiste. <button type="button" id="ac-ver-todos" class="underline font-semibold">Ver todos</button></p>
         <div id="ac-lista" class="space-y-3"></div>

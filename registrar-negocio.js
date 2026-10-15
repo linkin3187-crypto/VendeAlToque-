@@ -98,14 +98,16 @@ const ESTADOS_NEG = {
 
 async function pintarMias() {
   let lista = [];
-  try { lista = await cargarNegociosPendientes(null, true); } catch (e) { console.error(e); return; }
+  let misCom = [];
+  try { lista = await cargarNegociosPendientes(null, true); misCom = await cargarMisComercios(); } catch (e) { console.error(e); return; }
   $("rn-mis").classList.toggle("hidden", !lista.length);
   $("rn-mis-lista").innerHTML = lista.map(n => {
     const [txt, cls] = ESTADOS_NEG[n.estado] || [n.estado, "bg-slate-100"];
     return `<div class="border border-slate-200 rounded-xl p-3 text-sm">
       <div class="flex flex-wrap items-center gap-2"><b>${esc(n.nombre)}</b><span class="text-xs px-2 py-0.5 rounded-full font-semibold ${cls}">${txt}</span></div>
       ${n.estado === "rechazado" ? `<p class="text-xs text-slate-600 mt-1">Motivo: ${esc(n.motivo_rechazo || "")}</p>` : ""}
-      ${n.estado === "aprobado" ? '<a href="mi-tienda.html" class="text-xs text-indigo-600 underline">Ir a Mi tienda →</a>' : ""}
+      ${n.estado === "aprobado" ? `<p class="text-xs text-slate-600 mt-1">${(() => { const c = misCom.find(x => x.id === n.comercio_id); return c && c.nivel >= 2 ? "Tu negocio está publicado y verificado. Ya puedes abrir tu vitrina." : "Tu negocio ya aparece en el mapa. Falta verificarlo (te escribiremos); con el sello se activa tu vitrina pública."; })()}</p>
+        <a href="mi-tienda.html" class="text-xs text-indigo-600 underline">Ir a Mi tienda →</a>` : ""}
     </div>`;
   }).join("");
 }

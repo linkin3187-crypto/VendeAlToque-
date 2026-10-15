@@ -282,6 +282,22 @@ async function pintarNegocios() {
   } catch (e) { mostrarToast(mensajeError(e), "error"); }
 }
 
+// Aprobados sin verificar: que no se pierdan después de aprobarlos
+async function pintarAprobadosSinVerificar() {
+  try {
+    const aprobados = (await cargarNegociosPendientes("aprobado", false)).filter(n => n.comercio_id);
+    const niveles = await cargarNivelesComercios(aprobados.map(n => n.comercio_id));
+    const lista = aprobados.filter(n => (niveles[n.comercio_id] || 1) === 1);
+    $("aprob-caja").classList.toggle("hidden", !lista.length);
+    $("n-aprob").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("aprob-lista").innerHTML = lista.map(n => `<div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-wrap items-center gap-2 text-sm">
+      <b>${esc(n.nombre)}</b><span class="text-xs text-slate-500">${esc(etiquetaTipo(n.tipo))}</span>
+      <span class="text-xs text-slate-400">${esc(n.direccion)}</span>
+      <a href="admin-comercios.html?editar=${n.comercio_id}&verificar=1" class="ml-auto text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold no-underline">✅ Verificar ahora</a>
+    </div>`).join("");
+  } catch (e) { console.error(e); }
+}
+
 async function accionNegocio(e) {
   const chk = e.target.closest("[data-v]");
   const art = e.target.closest("[data-neg]");
@@ -308,6 +324,7 @@ async function accionNegocio(e) {
       } catch (err) { mostrarToast("Aprobado, pero falló la verificación: hazla desde Comercios. " + mensajeError(err), "error"); }
     } else mostrarToast(acc === "aprobar" ? "✅ Aprobado. Recuerda verificarlo por teléfono desde Comercios" : "Solicitud rechazada");
     await pintarNegocios();
+    pintarAprobadosSinVerificar();
   } catch (err) {
     art.querySelectorAll("button").forEach(x => { x.disabled = false; });
     art.querySelector('[data-nacc="verificar"]').disabled = art.querySelectorAll("[data-v]:checked").length < 2;
@@ -339,6 +356,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("neg-lista").addEventListener("click", accionNegocio);
   $("neg-lista").addEventListener("change", accionNegocio);
   pintarNegocios();
+  pintarAprobadosSinVerificar();
   pintarReportesProducto();
   pintarReportes();
   pintarSolicitudes();

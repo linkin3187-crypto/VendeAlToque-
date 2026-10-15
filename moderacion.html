@@ -42,20 +42,26 @@
       <div id="mod-lista" class="space-y-3"></div>
 
       <div class="flex items-center justify-between gap-3 mt-10 mb-3">
-        <h2 class="text-xl font-black text-indigo-900">🏪 Solicitudes de comercios <span id="n-solicitudes" class="text-sm font-semibold text-slate-500"></span></h2>
+        <h2 id="solicitudes" class="text-xl font-black text-indigo-900 scroll-mt-4">🏪 Solicitudes de comercios <span id="n-solicitudes" class="text-sm font-semibold text-slate-500"></span></h2>
         <a href="admin-comercios.html" class="text-sm text-indigo-600 underline">Editar comercios →</a>
       </div>
       <p class="text-xs text-slate-500 mb-3">Dueños que piden actualizar, retirar o reclamar su ficha. Contáctalos para confirmar que representan el negocio, haz el cambio en “Editar comercios” y marca la solicitud como atendida.</p>
       <div id="sol-lista" class="space-y-3"></div>
 
       <div class="mt-10 mb-3">
-        <h2 class="text-xl font-black text-indigo-900">➕ Negocios nuevos por revisar <span id="n-negocios" class="text-sm font-semibold text-slate-500"></span></h2>
+        <h2 id="negocios" class="text-xl font-black text-indigo-900 scroll-mt-4">➕ Negocios nuevos por revisar <span id="n-negocios" class="text-sm font-semibold text-slate-500"></span></h2>
       </div>
       <p class="text-xs text-slate-500 mb-3">Personas que registraron un negocio que no estaba en el directorio. Revisa la foto y las señales, confirma por WhatsApp o llamada y aprueba. Si lo aprobaste sin verificar, queda «Ubicado» y sin vitrina pública hasta que lo verifiques.</p>
       <div id="neg-lista" class="space-y-3"></div>
 
+      <div id="aprob-caja" class="hidden mt-6">
+        <h3 class="text-base font-black text-indigo-900 mb-1">✅ Aprobados que aún no están verificados <span id="n-aprob" class="text-sm font-semibold text-slate-500"></span></h3>
+        <p class="text-xs text-slate-500 mb-3">Ya aparecen en el mapa como «Ubicado», pero sin vitrina pública. Verifícalos cuando confirmes el negocio. También los encuentras en <a href="admin-comercios.html" class="underline text-indigo-600">Comercios → Por verificar → Registrados por su dueño</a>.</p>
+        <div id="aprob-lista" class="space-y-2"></div>
+      </div>
+
       <div class="mt-10 mb-3">
-        <h2 class="text-xl font-black text-indigo-900">🛍️ Reportes de productos <span id="n-rprod" class="text-sm font-semibold text-slate-500"></span></h2>
+        <h2 id="productos" class="text-xl font-black text-indigo-900 scroll-mt-4">🛍️ Reportes de productos <span id="n-rprod" class="text-sm font-semibold text-slate-500"></span></h2>
       </div>
       <p class="text-xs text-slate-500 mb-3">Productos de las vitrinas que alguien reportó. «Ocultar» lo saca de la tienda pública (el dueño lo ve marcado y no puede reactivarlo).</p>
       <div id="rprod-lista" class="space-y-3"></div>

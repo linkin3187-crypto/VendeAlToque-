@@ -513,7 +513,7 @@ function filaAComercio(r) {
   const m = municipios.find(x => x.id === r.municipio_id) || {};
   return {
     id: Number(r.id), osmId: r.osm_id, nombre: r.nombre, tipo: r.tipo,
-    municipioId: r.municipio_id, ciudad: m.nombre || "",
+    municipioId: r.municipio_id, ciudad: m.nombre || "", departamento: m.departamento || "",
     direccion: r.direccion || "", telefono: r.telefono || "", horario: r.horario || "",
     foto: r.foto_url || "", lat: parseFloat(r.lat), lng: parseFloat(r.lng),
     verificado: !!r.verificado, activo: !!r.activo,
@@ -541,6 +541,13 @@ async function cargarComerciosAdmin() {
 
 async function guardarComercioDB(id, cambios) {
   const { data, error } = await sb.from("comercios").update(cambios).eq("id", id).select().single();
+  if (error) throw error;
+  return filaAComercio(data);
+}
+
+// Solo moderadores: agrega a mano un comercio que no salió del importador (barrio, recomendación, solicitud)
+async function crearComercioDB(fila) {
+  const { data, error } = await sb.from("comercios").insert(fila).select().single();
   if (error) throw error;
   return filaAComercio(data);
 }

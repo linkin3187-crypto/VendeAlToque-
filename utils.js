@@ -407,6 +407,12 @@ document.addEventListener("click", e => {
   const el = e.target.closest && e.target.closest("[data-como-llegar]");
   if (!el) return;
   e.preventDefault();
+  // Anuncios (data-anuncio): exige cuenta → registro rápido (ver data.js · contactarAnuncio). Comercios: libre.
+  if (el.dataset.anuncio && typeof contactarAnuncio === "function") {
+    e.stopPropagation();
+    contactarAnuncio("llegar", { ...el.dataset });
+    return;
+  }
   abrirComoLlegar({
     lat: Number(el.dataset.lat), lng: Number(el.dataset.lng), nombre: el.dataset.nombre || "",
     aprox: el.dataset.aprox === "1", ciudad: el.dataset.ciudad || "", whatsapp: el.dataset.whatsapp || ""

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -467,12 +467,22 @@
 
         <!-- PASO 3: contacto -->
         <fieldset data-paso="3" class="space-y-4 hidden">
-          <div>
-            <label for="form-whatsapp" class="block text-xs font-bold text-slate-500 mb-1">WhatsApp (celular de Colombia) *</label>
-            <div class="flex">
-              <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-sm text-slate-600">+57</span>
-              <input type="tel" id="form-whatsapp" required inputmode="numeric" pattern="3[0-9]{9}" title="10 dígitos, empieza por 3. Ej: 3001234567" placeholder="3001234567" class="w-full border border-slate-300 p-3 rounded-r-xl">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+            <p class="text-sm font-bold text-slate-700">¿Cómo te contactan? <span class="font-normal text-slate-500">(pon al menos uno)</span></p>
+            <div>
+              <label for="form-whatsapp" class="block text-xs font-bold text-slate-500 mb-1">💬 WhatsApp (celular)</label>
+              <div class="flex">
+                <span class="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-sm text-slate-600">+57</span>
+                <input type="tel" id="form-whatsapp" inputmode="numeric" pattern="3[0-9]{9}" title="10 dígitos, empieza por 3. Ej: 3001234567" placeholder="3001234567" class="w-full border border-slate-300 p-3 rounded-r-xl bg-white">
+              </div>
             </div>
+            <div>
+              <label for="form-telefono" class="block text-xs font-bold text-slate-500 mb-1">📞 Teléfono para llamadas <span class="font-normal">(celular o fijo)</span></label>
+              <input type="tel" id="form-telefono" inputmode="numeric" pattern="(3[0-9]{9}|60[1-8][0-9]{7})" title="Celular de 10 dígitos (3001234567) o fijo con indicativo (6041234567)" placeholder="3001234567 o 6041234567" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
+              <button type="button" id="form-mismo-numero" class="mt-1 text-xs text-indigo-600 underline">Usar el mismo número del WhatsApp</button>
+            </div>
+            <p id="form-contacto-error" class="hidden text-xs text-red-600 font-semibold">Pon tu WhatsApp, tu teléfono o ambos para que puedan contactarte.</p>
+            <p class="text-[11px] text-slate-500">🔒 Tu número no se muestra en pantalla: solo lo reciben personas con cuenta en MercaFree cuando tocan el botón.</p>
           </div>
           <div>
             <label for="form-descripcion" class="block text-xs font-bold text-slate-500 mb-1">Descripción *</label>
@@ -519,7 +529,7 @@
         <button type="button" id="auth-switch-btn" class="text-indigo-600 font-semibold ml-1">Regístrate</button>
       </div>
       <p id="auth-terminos" class="hidden mt-3 text-[11px] text-slate-500 text-center">Al crear tu cuenta aceptas los <a href="terminos.html" target="_blank" class="underline text-indigo-600">Términos y condiciones</a> y la <a href="privacidad.html" target="_blank" class="underline text-indigo-600">Política de privacidad</a> (tratamiento de datos, Ley 1581).</p>
-      <p class="mt-4 text-[11px] text-slate-400 text-center">Necesitas una cuenta para publicar anuncios o escribir en el foro. Ver y contactar es gratis y sin cuenta.</p>
+      <p class="mt-4 text-[11px] text-slate-400 text-center">Ver anuncios y comercios es libre. Con tu cuenta gratis puedes publicar, contactar vendedores, guardar favoritos y calificar.</p>
     </div>
   </div>
 
@@ -595,11 +605,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=27"></script>
-  <script src="data.js?v=27"></script>
-  <script src="foro.js?v=27"></script>
-  <script src="carrusel.js?v=27"></script>
-  <script src="anuncios-comun.js?v=27"></script>
-  <script src="app.js?v=27"></script>
+  <script src="utils.js?v=28"></script>
+  <script src="data.js?v=28"></script>
+  <script src="foro.js?v=28"></script>
+  <script src="carrusel.js?v=28"></script>
+  <script src="anuncios-comun.js?v=28"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>

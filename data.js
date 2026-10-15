@@ -135,7 +135,9 @@ function filaAAnuncio(r) {
     barrio: r.barrio,
     lat: r.lat,
     lng: r.lng,
-    whatsapp: r.whatsapp,
+    // El número no llega con el anuncio (se pide con contacto_anuncio); solo si hay WhatsApp / teléfono
+    tieneWhatsapp: r.tiene_whatsapp != null ? !!r.tiene_whatsapp : !!r.whatsapp,
+    tieneTelefono: r.tiene_telefono != null ? !!r.tiene_telefono : !!r.telefono,
     precio: formatearPrecio(r.precio),
     desc: r.descripcion,
     fotos: r.fotos || [],
@@ -160,14 +162,22 @@ function normalizarAnuncio(a) {
   };
 }
 
+// Columnas PÚBLICAS de un anuncio. El WhatsApp y el teléfono NO se leen de la tabla: solo con
+// contacto_anuncio(id), que exige cuenta (ver supabase/13_contacto_anuncios.sql y 13b_proteger_contacto.sql).
+const COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono";
+// Si aún no se ejecutó el SQL 13 (no existen tiene_whatsapp/tiene_telefono), se usa la consulta anterior.
+const sinColumnasContacto = e => /tiene_whatsapp|tiene_telefono/.test((e && e.message) || "");
+
 async function cargarAnuncios() {
   // La regla RLS ya oculta a los demás los anuncios vencidos u ocultos, pero el
   // dueño y los moderadores SÍ los ven: por eso filtramos aquí también.
-  const { data, error } = await sb.from("anuncios").select("*")
+  const consulta = cols => sb.from("anuncios").select(cols)
     .eq("estado_publicacion", "activo")
     .gt("expira_en", new Date().toISOString())
     .order("creado_en", { ascending: false })
     .limit(1000);
+  let { data, error } = await consulta(COLS_ANUNCIO);
+  if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
   if (error) {
     console.error("anuncios:", error);
     errorCargaAnuncios = true;
@@ -241,7 +251,8 @@ async function guardarAnuncio(d, id) {
     precio: d.precio,                 // número o null
     municipio_id: muni.id,
     barrio: d.barrio,
-    whatsapp: d.whatsapp,             // "573001234567"
+    whatsapp: d.whatsapp || null,     // "573001234567" (opcional)
+    telefono: d.telefono || null,     // "3001234567" o fijo "6041234567" (opcional; al menos uno de los dos)
     fotos
   };
 
@@ -275,7 +286,8 @@ async function guardarAnuncio(d, id) {
   const consulta = id
     ? sb.from("anuncios").update(fila).eq("id", id)
     : sb.from("anuncios").insert(fila);
-  const { data, error } = await consulta.select().single();
+  let { data, error } = await consulta.select(COLS_ANUNCIO).single();
+  if (error && sinColumnasContacto(error)) ({ data, error } = await (id ? sb.from("anuncios").update(fila).eq("id", id) : sb.from("anuncios").insert(fila)).select().single());
   if (error) {
     // el anuncio no se guardó: borramos las fotos nuevas que acabamos de subir
     await borrarFotosStorage(fotos.filter(f => !(d.fotos || []).includes(f)));
@@ -303,6 +315,7 @@ async function guardarAnuncio(d, id) {
   }
   const resultado = filaAAnuncio(data);
   resultado.avisoUbicacion = avisoUbicacion;
+  contactosCache.delete(Number(data.id));   // el WhatsApp/teléfono pudo cambiar
   return resultado;
 }
 
@@ -352,11 +365,13 @@ async function alternarFavorito(anuncioId) {
 // Trae los anuncios (activos y vigentes) de una lista de ids, p. ej. para «Mis favoritos».
 async function cargarAnunciosPorIds(ids) {
   if (!ids.length) return [];
-  const { data, error } = await sb.from("anuncios").select("*")
+  const consulta = cols => sb.from("anuncios").select(cols)
     .in("id", ids)
     .eq("estado_publicacion", "activo")
     .gt("expira_en", new Date().toISOString())
     .order("creado_en", { ascending: false });
+  let { data, error } = await consulta(COLS_ANUNCIO);
+  if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
   if (error) throw error;
   return (data || []).map(filaAAnuncio);
 }
@@ -392,10 +407,11 @@ async function refrescarUsuario(sesion) {
   }
 }
 
-async function registrarUsuario(email, password, nombre) {
+async function registrarUsuario(email, password, nombre, volverA) {
   const { data, error } = await sb.auth.signUp({
     email, password,
-    options: { data: refGuardado() ? { nombre, ref: refGuardado() } : { nombre }, emailRedirectTo: location.origin + location.pathname }
+    // volverA: página a la que regresa el enlace del correo de confirmación (p. ej. el anuncio que quería contactar)
+    options: { data: refGuardado() ? { nombre, ref: refGuardado() } : { nombre }, emailRedirectTo: volverA || (location.origin + location.pathname) }
   });
   if (error) throw new Error(mensajeError(error));
   // Si el proyecto exige confirmar el correo, no hay sesión todavía.
@@ -912,7 +928,7 @@ async function cargarVerificaciones(comercioId) {
 // =====================================================================
 async function cargarReportes(estado) {
   let q = sb.from("reportes")
-    .select("id, motivo, detalle, estado, creado_en, reportante:perfiles!reportante_id(nombre), anuncio:anuncios(id, nombre, estado_publicacion, fotos, barrio, whatsapp, owner_id)")
+    .select("id, motivo, detalle, estado, creado_en, reportante:perfiles!reportante_id(nombre), anuncio:anuncios(id, nombre, estado_publicacion, fotos, barrio, owner_id)")
     .order("creado_en", { ascending: false }).limit(300);
   if (estado) q = q.eq("estado", estado);
   const { data, error } = await q;
@@ -1059,4 +1075,251 @@ function resumenCalifHTML(c) {
   const n = c.nCalif || 0;
   if (!n) return '<span class="text-slate-400 font-normal">☆☆☆☆☆ Sin opiniones aún</span>';
   return `<span class="text-amber-500" aria-hidden="true">${estrellasTexto(c.calif)}</span> <b class="text-slate-800">${String((c.calif || 0).toFixed(1)).replace(".", ",")}</b> <span class="text-slate-500 font-normal">(${n} ${n === 1 ? "opinión" : "opiniones"})</span>`;
+}
+
+// =====================================================================
+// CONTACTO DE ANUNCIOS CON REGISTRO RÁPIDO · Fase 2S (SQL 13)
+// Todos ven los anuncios, el mapa y «Compartir». Al tocar 💬 WhatsApp, 📞 Llamar o 🗺️ Cómo llegar
+// sin cuenta, aparece la ventana de registro rápido; al terminar vuelve al mismo anuncio y
+// muestra el botón para contactar. El número lo entrega la base de datos solo a personas con cuenta.
+// Botones: <button data-contacto="whatsapp|llamar" data-anuncio="ID" data-nombre="...">
+//          Cómo llegar: enlace con data-como-llegar + data-anuncio="ID" (ver utils.js).
+// =====================================================================
+const contactosCache = new Map();   // id → { whatsapp, telefono }
+
+async function obtenerContactoAnuncio(id) {
+  if (contactosCache.has(id)) return contactosCache.get(id);
+  const { data, error } = await sb.rpc("contacto_anuncio", { p_id: id });
+  if (error) throw new Error(mensajeError(error));
+  const fila = Array.isArray(data) ? data[0] : data;
+  const c = { whatsapp: (fila && fila.whatsapp) || "", telefono: (fila && fila.telefono) || "" };
+  contactosCache.set(id, c);
+  return c;
+}
+
+const ACCIONES_CONTACTO = {
+  whatsapp: { verbo: "escribirle por WhatsApp", boton: "💬 Abrir WhatsApp del vendedor", clase: "bg-green-500 hover:bg-green-600" },
+  llamar:   { verbo: "llamar al vendedor",      boton: "📞 Llamar al vendedor",          clase: "bg-indigo-600 hover:bg-indigo-700" },
+  llegar:   { verbo: "ver cómo llegar",          boton: "🗺️ Ver cómo llegar",             clase: "bg-blue-500 hover:bg-blue-600" }
+};
+
+// Ejecuta la acción con el contacto ya obtenido. `ventana`: pestaña abierta antes del await (para que
+// el navegador no la bloquee como ventana emergente).
+function ejecutarContacto(accion, c, ctx, ventana) {
+  if (accion === "whatsapp") {
+    if (!c.whatsapp) { if (ventana) ventana.close(); mostrarToast("Este vendedor no tiene WhatsApp: usa 📞 Llamar", "error"); return; }
+    const url = urlWhatsApp(c.whatsapp, ctx.nombre || "tu anuncio");
+    if (ventana) ventana.location.href = url;
+    else if (!window.open(url, "_blank", "noopener")) location.href = url;
+  } else if (accion === "llamar") {
+    if (ventana) ventana.close();
+    if (!c.telefono) { mostrarToast("Este vendedor no tiene teléfono: usa 💬 WhatsApp", "error"); return; }
+    location.href = "tel:" + c.telefono;
+  } else if (accion === "llegar") {
+    if (ventana) ventana.close();
+    abrirComoLlegar({ lat: Number(ctx.lat), lng: Number(ctx.lng), nombre: ctx.nombre || "", aprox: ctx.aprox === "1",
+                      ciudad: ctx.ciudad || "", whatsapp: c.whatsapp || "" });
+  }
+}
+
+// Punto de entrada de los botones de contacto de un anuncio
+async function contactarAnuncio(accion, ctx) {
+  const id = Number(ctx.anuncio);
+  if (!usuarioActual) { abrirRegistroRapido(accion, ctx); return; }
+  if (contactosCache.has(id)) { ejecutarContacto(accion, contactosCache.get(id), ctx); return; }
+  const ventana = accion === "whatsapp" ? window.open("about:blank", "_blank") : null;
+  try {
+    const c = await obtenerContactoAnuncio(id);
+    ejecutarContacto(accion, c, ctx, ventana);
+  } catch (err) {
+    if (ventana) ventana.close();
+    mostrarToast(err.message || "No se pudo obtener el contacto", "error");
+  }
+}
+
+// Clics en botones de contacto (fase de captura: también funciona dentro de los popups del mapa)
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-contacto][data-anuncio]");
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  contactarAnuncio(b.dataset.contacto, { ...b.dataset });
+}, true);
+
+// ---------- Ventana de registro rápido ----------
+let registroRapidoCtx = null;
+
+function crearRegistroRapido() {
+  if ($("modal-rapido")) return;
+  document.body.insertAdjacentHTML("beforeend", `<div id="modal-rapido" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[260]" role="dialog" aria-modal="true" aria-labelledby="rr-titulo">
+    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-2xl relative max-h-[94vh] overflow-auto modal-enter">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <div id="rr-paso-form">
+        <div class="text-center">
+          <div class="text-4xl" aria-hidden="true">🔓</div>
+          <h3 id="rr-titulo" class="text-xl font-black text-indigo-900 mt-1">Contacta gratis al vendedor</h3>
+          <p id="rr-sub" class="text-sm text-slate-600 mt-1"></p>
+          <div class="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] font-semibold text-green-700 mt-2">
+            <span>✅ 100% gratis</span><span>✅ 30 segundos</span><span>✅ Sin tarjeta</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-1 bg-slate-100 rounded-xl p-1 mt-4" role="tablist">
+          <button type="button" data-rr-modo="registro" role="tab" class="rr-tab py-2 rounded-lg text-sm font-bold">Crear cuenta</button>
+          <button type="button" data-rr-modo="login" role="tab" class="rr-tab py-2 rounded-lg text-sm font-bold">Ya tengo cuenta</button>
+        </div>
+        <form id="rr-form" class="space-y-3 mt-4" novalidate>
+          <div id="rr-campo-nombre">
+            <label for="rr-nombre" class="block text-xs font-bold text-slate-500 mb-1">Tu nombre</label>
+            <input id="rr-nombre" maxlength="40" autocomplete="given-name" placeholder="Ej.: Ana" class="w-full border border-slate-300 p-3 rounded-xl">
+          </div>
+          <div>
+            <label for="rr-email" class="block text-xs font-bold text-slate-500 mb-1">Correo</label>
+            <input id="rr-email" type="email" autocomplete="email" inputmode="email" placeholder="tu@correo.com" class="w-full border border-slate-300 p-3 rounded-xl">
+          </div>
+          <div>
+            <label for="rr-pass" class="block text-xs font-bold text-slate-500 mb-1">Contraseña <span class="font-normal">(mínimo 6)</span></label>
+            <div class="relative">
+              <input id="rr-pass" type="password" minlength="6" autocomplete="new-password" placeholder="••••••" class="w-full border border-slate-300 p-3 pr-12 rounded-xl">
+              <button type="button" id="rr-ver" aria-label="Mostrar contraseña" class="absolute right-2 top-1/2 -translate-y-1/2 text-lg px-2">👁️</button>
+            </div>
+          </div>
+          <p id="rr-error" class="hidden text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert"></p>
+          <button type="submit" id="rr-enviar" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl disabled:opacity-60"></button>
+          <button type="button" id="rr-olvido" class="hidden w-full text-xs text-slate-500 hover:text-indigo-600 underline">¿Olvidaste tu contraseña?</button>
+          <p id="rr-legal" class="text-[11px] text-slate-500 text-center">Al crear tu cuenta aceptas los <a href="terminos.html" target="_blank" class="underline text-indigo-600">Términos</a> y la <a href="privacidad.html" target="_blank" class="underline text-indigo-600">Política de privacidad</a> (Ley 1581).</p>
+        </form>
+        <p class="text-[11px] text-slate-400 text-center mt-3">🛡️ Pedimos cuenta para proteger a los vendedores de robots y estafas. Ver anuncios y compartirlos siempre es libre.</p>
+      </div>
+      <div id="rr-paso-listo" class="hidden text-center py-2">
+        <div class="text-5xl" aria-hidden="true">🎉</div>
+        <h3 class="text-xl font-black text-indigo-900 mt-2" id="rr-listo-titulo">¡Listo!</h3>
+        <p class="text-sm text-slate-600 mt-1">Ya puedes contactar al vendedor.</p>
+        <button type="button" id="rr-accion" class="w-full mt-4 text-white font-black py-3.5 rounded-xl"></button>
+        <p class="text-[11px] text-slate-500 mt-3">Consejo: acuerda la entrega en un lugar público y revisa el producto antes de pagar.</p>
+      </div>
+      <div id="rr-paso-correo" class="hidden text-center py-2">
+        <div class="text-5xl" aria-hidden="true">📧</div>
+        <h3 class="text-xl font-black text-indigo-900 mt-2">Revisa tu correo</h3>
+        <p class="text-sm text-slate-600 mt-1">Te enviamos un enlace a <b id="rr-correo-txt"></b>. Ábrelo y toca <b>«Confirmar»</b>: volverás a este anuncio y podrás contactar al vendedor.</p>
+        <p class="text-[11px] text-slate-500 mt-3">¿No llega? Revisa la carpeta de spam o «Promociones».</p>
+      </div>
+    </div></div>`);
+  let modo = "registro";
+  const pintarModo = m => {
+    modo = m;
+    document.querySelectorAll(".rr-tab").forEach(t => {
+      const activo = t.dataset.rrModo === m;
+      t.classList.toggle("bg-white", activo); t.classList.toggle("shadow", activo);
+      t.classList.toggle("text-indigo-700", activo); t.classList.toggle("text-slate-500", !activo);
+      t.setAttribute("aria-selected", activo ? "true" : "false");
+    });
+    $("rr-campo-nombre").classList.toggle("hidden", m !== "registro");
+    $("rr-legal").classList.toggle("hidden", m !== "registro");
+    $("rr-olvido").classList.toggle("hidden", m === "registro");
+    $("rr-pass").autocomplete = m === "registro" ? "new-password" : "current-password";
+    $("rr-enviar").textContent = m === "registro" ? "Crear cuenta y continuar" : "Entrar y continuar";
+    $("rr-error").classList.add("hidden");
+  };
+  $("modal-rapido").pintarModo = pintarModo;
+  document.querySelectorAll(".rr-tab").forEach(t => t.addEventListener("click", () => pintarModo(t.dataset.rrModo)));
+  $("rr-ver").addEventListener("click", () => {
+    const p = $("rr-pass"); p.type = p.type === "password" ? "text" : "password";
+    $("rr-ver").setAttribute("aria-label", p.type === "password" ? "Mostrar contraseña" : "Ocultar contraseña");
+  });
+  $("rr-olvido").addEventListener("click", async () => {
+    const email = $("rr-email").value.trim().toLowerCase();
+    if (!email) { errorRapido("Escribe tu correo y vuelve a tocar «¿Olvidaste tu contraseña?»"); return; }
+    try { await recuperarPassword(email); mostrarToast("📧 Te enviamos un enlace para cambiar la contraseña"); }
+    catch (err) { errorRapido(err.message); }
+  });
+  $("rr-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const nombre = $("rr-nombre").value.trim(), email = $("rr-email").value.trim().toLowerCase(), pass = $("rr-pass").value;
+    if (modo === "registro" && nombre.length < 2) { errorRapido("Escribe tu nombre"); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { errorRapido("Escribe un correo válido"); return; }
+    if (pass.length < 6) { errorRapido("La contraseña debe tener mínimo 6 caracteres"); return; }
+    const btn = $("rr-enviar"); btn.disabled = true;
+    try {
+      if (modo === "registro") {
+        const ctx = registroRapidoCtx || {};
+        const volver = urlContactoPendiente(ctx);
+        const { confirmar } = await registrarUsuario(email, pass, nombre, volver);
+        if (confirmar) {
+          $("rr-correo-txt").textContent = email;
+          mostrarPasoRapido("correo");
+          return;
+        }
+      } else {
+        await iniciarSesion(email, pass);
+      }
+      await alEntrarRapido();
+    } catch (err) {
+      errorRapido(err.message || "No se pudo continuar");
+    } finally { btn.disabled = false; }
+  });
+  $("rr-accion").addEventListener("click", () => {
+    const ctx = registroRapidoCtx || {};
+    const c = contactosCache.get(Number(ctx.anuncio));
+    cerrarModal("modal-rapido");
+    if (c) ejecutarContacto(ctx.accion, c, ctx);
+    else contactarAnuncio(ctx.accion, ctx);
+  });
+}
+
+function errorRapido(msg) { const p = $("rr-error"); p.textContent = msg; p.classList.remove("hidden"); }
+function mostrarPasoRapido(paso) {
+  ["form", "listo", "correo"].forEach(p => $("rr-paso-" + p).classList.toggle("hidden", p !== paso));
+}
+
+// Enlace al que vuelve la persona tras confirmar su correo: esta misma página + qué quería hacer
+function urlContactoPendiente(ctx) {
+  const u = new URL(location.href);
+  u.hash = "";
+  u.searchParams.set("contactar", ctx.accion || "whatsapp");
+  u.searchParams.set("anuncio", ctx.anuncio || "");
+  return u.toString();
+}
+
+function abrirRegistroRapido(accion, ctx) {
+  crearRegistroRapido();
+  registroRapidoCtx = { ...ctx, accion };
+  const a = ACCIONES_CONTACTO[accion] || ACCIONES_CONTACTO.whatsapp;
+  $("rr-sub").textContent = `Para ${a.verbo}${ctx.nombre ? " de «" + ctx.nombre + "»" : ""}, crea tu cuenta gratis o entra con la que ya tienes.`;
+  $("rr-form").reset();
+  $("rr-pass").type = "password";
+  $("modal-rapido").pintarModo("registro");
+  mostrarPasoRapido("form");
+  abrirModal("modal-rapido");
+  setTimeout(() => { try { $("rr-nombre").focus(); } catch (e) {} }, 50);
+}
+
+// Ya con sesión: trae el contacto y muestra el botón grande (un toque = abre WhatsApp/llamada sin bloqueos)
+async function alEntrarRapido() {
+  const ctx = registroRapidoCtx || {};
+  document.dispatchEvent(new CustomEvent("sesion:cambio"));
+  try { await obtenerContactoAnuncio(Number(ctx.anuncio)); }
+  catch (err) { cerrarModal("modal-rapido"); mostrarToast(err.message, "error"); return; }
+  const a = ACCIONES_CONTACTO[ctx.accion] || ACCIONES_CONTACTO.whatsapp;
+  $("rr-listo-titulo").textContent = "¡Listo" + (usuarioActual && usuarioActual.nombre ? ", " + usuarioActual.nombre.split(" ")[0] : "") + "!";
+  const b = $("rr-accion");
+  b.textContent = a.boton;
+  b.className = "w-full mt-4 text-white font-black py-3.5 rounded-xl " + a.clase;
+  mostrarPasoRapido("listo");
+}
+
+// Al volver del correo de confirmación (…?contactar=whatsapp&anuncio=ID): muestra el botón para continuar.
+// Cada página la llama cuando ya cargó la sesión.
+async function revisarContactoPendiente(buscarAnuncio) {
+  const p = new URLSearchParams(location.search);
+  const accion = p.get("contactar"), id = parseInt(p.get("anuncio"), 10);
+  if (!accion || !id || !ACCIONES_CONTACTO[accion]) return;
+  const u = new URL(location.href); u.searchParams.delete("contactar"); u.searchParams.delete("anuncio");
+  history.replaceState(null, "", u.pathname + u.search + u.hash);
+  if (!usuarioActual) return;
+  const a = (typeof buscarAnuncio === "function" ? buscarAnuncio(id) : null) || baseDatosAnuncios.find(x => x.id === id) || {};
+  crearRegistroRapido();
+  registroRapidoCtx = { accion, anuncio: String(id), nombre: a.nombre || "", lat: a.lat, lng: a.lng,
+                        aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "" };
+  abrirModal("modal-rapido");
+  await alEntrarRapido();
 }

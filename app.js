@@ -12,11 +12,8 @@ let capaMarcadores = null;                // grupo con clusters
 const marcadoresPorId = new Map();        // id de anuncio → marcador (para sincronizar lista y mapa)
 let capaComercios = null;                 // pines de comercios (farmacias, cajeros...)
 let marcadorUsuario = null;
-let ubicacionUsuario = null;              // {lat,lng}; solo si el usuario la autorizó
 let limitesZona = null;                   // bounds del botón "Buscar en esta zona"
 
-let categoriaActiva = "todos";
-let subcategoriaActiva = "";               // "" = todas las de la categoría
 let listaFiltrada = [];
 let paginaActual = 1;
 
@@ -404,24 +401,12 @@ function quitarZona() {
 // CATEGORÍAS (dibujadas desde CATEGORIAS de data.js)
 // =====================================================================
 function renderizarCategorias() {
-  $("chips-categorias").innerHTML = CATEGORIAS.map(c =>
-    `<button type="button" data-cat="${esc(c.id)}" class="categoria-btn px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">${c.icono} ${esc(c.nombre)}</button>`
-  ).join("");
+  $("chips-categorias").innerHTML = chipsCategoriasHTML();
 
   $("form-categoria").innerHTML = CATEGORIAS.filter(c => c.id !== "todos").map(c =>
     `<option value="${esc(c.id)}">${c.icono} ${esc(c.nombre)}</option>`
   ).join("");
   marcarCategoriaActiva();
-}
-
-// Subcategorías: chips bajo las categorías (solo si la categoría elegida tiene) y lista del formulario
-function pintarSubcategorias() {
-  const cont = $("chips-subcategorias");
-  const subs = SUBCATEGORIAS[categoriaActiva] || [];
-  cont.classList.toggle("hidden", !subs.length);
-  if (!subs.length) { cont.innerHTML = ""; return; }
-  const chip = (id, texto, activa) => `<button type="button" data-subcat="${esc(id)}" aria-pressed="${activa}" class="subcat-btn px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${activa ? "bg-yellow-300 text-indigo-900" : "bg-white/15 text-white hover:bg-white/25"}">${esc(texto)}</button>`;
-  cont.innerHTML = chip("", "Todas", subcategoriaActiva === "") + subs.map(([id, n]) => chip(id, n, subcategoriaActiva === id)).join("");
 }
 
 function actualizarSubcategoriasForm(valor) {
@@ -433,65 +418,9 @@ function actualizarSubcategoriasForm(valor) {
   if (valor) sel.value = valor;
 }
 
-function marcarCategoriaActiva() {
-  pintarSubcategorias();
-  document.querySelectorAll(".categoria-btn").forEach(btn => {
-    const activa = btn.dataset.cat === categoriaActiva;
-    btn.classList.toggle("bg-white", activa);
-    btn.classList.toggle("text-indigo-700", activa);
-    btn.classList.toggle("shadow-sm", activa);
-    btn.classList.toggle("bg-white/15", !activa);
-    btn.classList.toggle("hover:bg-white/25", !activa);
-    btn.setAttribute("aria-pressed", activa ? "true" : "false");
-  });
-}
-
 // =====================================================================
 // FILTROS
 // =====================================================================
-// ---------- Filtros dinámicos ----------
-// POR QUÉ: antes el filtro mostraba TODOS los municipios, aunque no tuvieran anuncios, y
-// el usuario elegía "Barbosa" para ver una lista vacía. Ahora solo aparecen los
-// departamentos y ciudades que SÍ tienen anuncios, con su cantidad: "Envigado (3)".
-function ubicacionesConAnuncios() {
-  const mapa = {};                                   // { depto: { ciudad: cantidad } }
-  baseDatosAnuncios.forEach(a => {
-    if (!a.departamento || !a.ciudad) return;
-    const d = (mapa[a.departamento] = mapa[a.departamento] || {});
-    d[a.ciudad] = (d[a.ciudad] || 0) + 1;
-  });
-  return mapa;
-}
-
-// Reconstruye las opciones de departamento (se llama al cargar y cuando cambian los anuncios).
-function refrescarOpcionesUbicacion() {
-  const ub = ubicacionesConAnuncios();
-  const selD = $("filtro-departamento");
-  const actual = selD.value;
-  selD.innerHTML = '<option value="">Todos</option>';
-  Object.keys(ub).sort().forEach(d => {
-    const total = Object.values(ub[d]).reduce((x, y) => x + y, 0);
-    const o = new Option(`${d} (${total})`, d);
-    selD.add(o);
-  });
-  selD.value = ub[actual] ? actual : "";            // si ese departamento ya no tiene anuncios, se limpia
-  const ciudadActual = $("filtro-ciudad").value;
-  llenarCiudadesFiltro();
-  if ([...$("filtro-ciudad").options].some(o => o.value === ciudadActual)) $("filtro-ciudad").value = ciudadActual;
-}
-
-function llenarCiudadesFiltro() {
-  const ub = ubicacionesConAnuncios();
-  const depto = $("filtro-departamento").value;
-  const sel = $("filtro-ciudad");
-  sel.innerHTML = '<option value="">Todas las ciudades</option>';
-  const ciudades = {};
-  (depto ? [depto] : Object.keys(ub)).forEach(d => {
-    Object.entries(ub[d] || {}).forEach(([c, n]) => { ciudades[c] = (ciudades[c] || 0) + n; });
-  });
-  Object.keys(ciudades).sort((x, y) => x.localeCompare(y, "es")).forEach(c => sel.add(new Option(`${c} (${ciudades[c]})`, c)));
-}
-
 function actualizarCiudadesFiltro() {
   llenarCiudadesFiltro();
   aplicarFiltros();
@@ -500,43 +429,7 @@ function actualizarCiudadesFiltro() {
 function aplicarFiltros({ ajustarMapa = true } = {}) {
   if (!capaMarcadores) return;
 
-  const texto = normalizar($("buscador").value.trim());
-  const pMin = parseInt($("filtro-precio-min").value, 10) || 0;
-  const pMax = parseInt($("filtro-precio-max").value, 10) || Infinity;
-  const hayFiltroPrecio = pMin > 0 || pMax !== Infinity;
-  const soloFoto = $("filtro-con-foto").checked;
-  const soloPrecio = $("filtro-con-precio").checked;
-  const estado = $("filtro-estado").value;
-  const departamento = $("filtro-departamento").value;
-  const ciudad = $("filtro-ciudad").value;
-  const radio = parseFloat($("filtro-radio").value) || 0;
-  const orden = $("ordenar-por").value;
-
-  let lista = baseDatosAnuncios.filter(a => {
-    if (categoriaActiva !== "todos" && a.categoria !== categoriaActiva) return false;
-    if (subcategoriaActiva && a.subcategoria !== subcategoriaActiva) return false;
-    if (texto) {
-      const pajar = normalizar([a.nombre, a.desc, a.barrio, a.ciudad].join(" "));
-      if (!pajar.includes(texto)) return false;
-    }
-    const precioNum = extraerPrecio(a.precio);
-    if (hayFiltroPrecio && !(precioNum !== null && precioNum >= pMin && precioNum <= pMax)) return false;
-    if (soloFoto && !a.imagen) return false;
-    if (soloPrecio && !precioNum) return false;
-    if (estado && a.estado !== estado) return false;
-    if (departamento && a.departamento !== departamento) return false;
-    if (ciudad && a.ciudad !== ciudad) return false;
-    if (radio && ubicacionUsuario && !(tieneCoords(a) && distanciaKm(ubicacionUsuario, a) <= radio)) return false;
-    if (limitesZona && !(tieneCoords(a) && limitesZona.contains([a.lat, a.lng]))) return false;
-    return true;
-  });
-
-  const dist = a => (ubicacionUsuario && tieneCoords(a)) ? distanciaKm(ubicacionUsuario, a) : Infinity;
-  if (orden === "recientes") lista.sort((a, b) => b.fecha - a.fecha);
-  else if (orden === "cercanos") lista.sort((a, b) => dist(a) - dist(b));
-  else if (orden === "precio-asc") lista.sort((a, b) => (extraerPrecio(a.precio) ?? Infinity) - (extraerPrecio(b.precio) ?? Infinity));
-  else if (orden === "precio-desc") lista.sort((a, b) => (extraerPrecio(b.precio) ?? 0) - (extraerPrecio(a.precio) ?? 0));
-  else if (orden === "nombre") lista.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  const lista = filtrarAnuncios(leerCriterios(), limitesZona);
 
   listaFiltrada = lista;
   paginaActual = 1;
@@ -564,48 +457,6 @@ function limpiarFiltros() {
 // =====================================================================
 // LISTA DE TARJETAS (con paginación)
 // =====================================================================
-function tarjetaHTML(a) {
-  const icono = iconosCategoria[a.categoria] || "📦";
-  const foto = urlSegura(a.imagen);
-  const km = (ubicacionUsuario && tieneCoords(a)) ? distanciaKm(ubicacionUsuario, a) : null;
-  const badgeEstado = a.estado === "nuevo"
-    ? '<span class="badge-nuevo text-xs font-semibold px-2 py-0.5 rounded-full">Nuevo</span>'
-    : a.estado === "usado"
-      ? '<span class="badge-usado text-xs font-semibold px-2 py-0.5 rounded-full">Usado</span>'
-      : "";
-  // Siempre dibujamos el icono de la categoría de fondo; la <img> va ENCIMA.
-  // Si la foto falla al cargar, se quita la <img> y queda el icono (sin código extra por tarjeta).
-  const guardado = favoritosIds.has(a.id);
-  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio relative bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-    <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${guardado ? "❤️" : "🤍"}</button>
-    <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
-      <span class="text-5xl">${icono}</span>
-      ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">${esc(a.precio)}</div>` : ""}
-      <span class="cinta-ver absolute bottom-0 inset-x-0 text-center text-xs font-bold text-white py-1.5">👆 Toca para ver el anuncio completo</span>
-    </a>
-    <div class="p-4 flex flex-col flex-1">
-      <div class="flex items-center gap-2 mb-1 flex-wrap">
-        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(a.ciudad || a.barrio || "")}</span>
-        ${nombreSubcategoria(a.categoria, a.subcategoria) ? `<span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(nombreSubcategoria(a.categoria, a.subcategoria))}</span>` : ""}
-        ${badgeEstado}
-        ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
-      </div>
-      <h3 class="font-bold text-slate-900 mb-1 line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
-      <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${esc(a.desc || "")}</p>
-      <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2.5 rounded-xl mb-2">Ver anuncio completo →</a>
-      <div class="flex gap-2">
-        <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
-        ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 rounded-xl" title="Ver en el mapa">📍 Mapa</button>` : ""}
-      </div>
-      ${EDITOR ? `<div class="flex gap-2 mt-2">
-        <button type="button" data-accion="editar" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
-        <button type="button" data-accion="eliminar-admin" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
-      </div>` : ""}
-    </div>
-  </article>`;
-}
-
 function renderizarLista() {
   const cont = $("contenedor-anuncios");
   const total = listaFiltrada.length;
@@ -623,6 +474,11 @@ function renderizarLista() {
   cont.innerHTML = visibles.map(tarjetaHTML).join("");
   // Si es una búsqueda/filtro nuevo (primera página), el carrusel vuelve al principio
   if (paginaActual === 1) cont.scrollTo({ left: 0, behavior: "instant" });
+
+  // «Ver todos los anuncios»: lleva los filtros actuales a anuncios.html
+  const qs = criteriosAQuery();
+  $("btn-ver-todos").href = $("link-ver-todos").href = "anuncios.html" + (qs ? "?" + qs : "");
+  $("btn-ver-todos").textContent = total ? `📋 Ver todos los anuncios (${total}) →` : "📋 Ver todos los anuncios →";
 
   const restantes = total - visibles.length;
   $("contenedor-mas").classList.toggle("hidden", restantes <= 0);
@@ -1400,4 +1256,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");
+  // Enlace "#publicar" (lo usa «Publicar gratis» de anuncios.html): abre el formulario o pide la cuenta
+  if (location.hash === "#publicar") { history.replaceState(null, "", location.pathname + location.search); $("btn-publicar-header").click(); }
 });

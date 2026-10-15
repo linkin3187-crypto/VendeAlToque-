@@ -300,6 +300,13 @@ function pintarComerciosFeed() {
   if (!cont) return;
   pintarFiltrosComercios();
   const lista = comerciosFiltrados();
+  // «Ver directorio completo»: lleva la búsqueda, categoría y ubicación elegidas en esta sección
+  const p = new URLSearchParams();
+  if (textoComercio.trim()) p.set("q", textoComercio.trim());
+  if (catComercio !== "todos") p.set("tipo", catComercio);
+  if (deptoComercio) p.set("depto", deptoComercio);
+  if (muniComercio) p.set("muni", muniComercio);
+  $("link-directorio").href = "comercios.html" + (p.toString() ? "?" + p : "");
   $("seccion-comercios").classList.toggle("hidden", !comercios.length);
   if (!comercios.length) return;
   if (!lista.length) { cont.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-6">No hay comercios con estos filtros de comercios.' + ((muniComercio || deptoComercio || textoComercio) ? ' <button type="button" id="btn-limpiar-comercios" class="text-indigo-600 font-semibold underline">Ver todos los comercios</button>' : '') + '</p>'; $("comercios-mas").classList.add("hidden"); $("comercios-contador").textContent = "(0)"; return; }

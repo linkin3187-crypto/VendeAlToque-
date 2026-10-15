@@ -80,3 +80,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Cerrar sesión:** botón `#btn-cerrar-sesion-header` en el encabezado; `actualizarUIAuth()` lo muestra solo con sesión.
 - **Mi tienda:** el enlace `#link-mi-tienda` usa las clases `btn-3d btn-3d-comercios` (mismo sitio).
 - **Revertir:** en GitHub, PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5. No hay SQL.
+
+## Fase 2K · Subcategorías, expansión de municipios y popup del pin
+
+**SQL:** `supabase/11_subcategorias_y_expansion.sql` (copiar → SQL Editor → Run → «Success», ANTES de fusionar el PR). Es repetible.
+
+- **Subcategorías:** columna `anuncios.subcategoria` (solo guarda un id corto, ej. `motos`). La lista vive en `SUBCATEGORIAS` (data.js): para agregar una opción nueva se añade una línea ahí, sin SQL. En el formulario es obligatoria si la categoría tiene subcategorías; en el inicio salen chips bajo las categorías para filtrar. Los anuncios viejos quedan sin subcategoría y se ven igual.
+- **Expansión:** el formulario lista los 33 departamentos y, en la ciudad, «➕ Mi municipio no está en la lista…». Al publicar se llama a la función `crear_municipio` (security definer): valida el nombre, ignora tildes/mayúsculas para no duplicar, exige ubicación dentro de Colombia, permite máx. 3 municipios nuevos por persona cada 24 h y lo deja **activo**. Para quitar uno falso: `update public.municipios set activo = false where id = <id>;`
+- **Popup del pin:** Leaflet cierra la ventanita de un pin cuando su capa se repinta (cambio de sesión, filtros, datos que llegan tarde). Ahora `renderizarMarcadores` y `pintarComercios` recuerdan el pin abierto y lo reabren, y al tocar un pin ya no se desplaza la página.
+- **Carrusel:** al llegar casi al final carga más anuncios solo; al buscar o filtrar vuelve al inicio.
+- **Revertir:** PR de esta fase → **Revert**. El SQL puede quedarse (la columna y la función no estorban); para quitarlos: `alter table public.anuncios drop column subcategoria; drop function public.crear_municipio(text,text,double precision,double precision);`

@@ -16,6 +16,7 @@ let ubicacionUsuario = null;              // {lat,lng}; solo si el usuario la au
 let limitesZona = null;                   // bounds del botón "Buscar en esta zona"
 
 let categoriaActiva = "todos";
+let subcategoriaActiva = "";               // "" = todas las de la categoría
 let listaFiltrada = [];
 let paginaActual = 1;
 
@@ -25,6 +26,7 @@ let pasoActual = 1;
 let fotosForm = [];                       // fotos del formulario (base64)
 let coordsForm = { ...CENTRO_DEFECTO };
 let ubicacionExactaCargada = null;   // punto REAL del anuncio que se edita (solo dueño); null al crear
+let pinConfirmado = false;   // true cuando el pin salió de una búsqueda exitosa (o la persona lo colocó)
 let pinManual = false;   // true cuando la persona colocó el pin a mano (no lo movemos solos)
 let geoTimer = null, geoSeq = 0;
 let mapaFormulario = null;
@@ -241,18 +243,29 @@ function pintarComerciosFeed() {
   if (faltan > 0) $("btn-mas-comercios").textContent = `Ver ${Math.min(POR_PAGINA_COMERCIOS, faltan)} comercios más (${faltan} restantes)`;
 }
 
+const marcadoresComercioPorId = new Map();
 function pintarComercios() {
   if (!capaComercios) return;
+  // Igual que con los anuncios: si un comercio tenía su ventanita abierta, se vuelve a abrir tras repintar.
+  let reabrirCom = null;
+  marcadoresComercioPorId.forEach((m, id) => { if (typeof m.isPopupOpen === "function" && m.isPopupOpen()) reabrirCom = id; });
+  marcadoresComercioPorId.clear();
   capaComercios.clearLayers();
   if (!$("chk-comercios").checked) return;
   comercios.forEach(c => {
     if (!tieneCoords(c)) return;
-    L.marker([c.lat, c.lng], { icon: iconoComercio(c.tipo), title: c.nombre, zIndexOffset: -500 })
+    const mc = L.marker([c.lat, c.lng], { icon: iconoComercio(c.tipo), title: c.nombre, zIndexOffset: -500 })
       .bindPopup(popupComercioHTML(c), { maxWidth: 240 }).addTo(capaComercios);
+    marcadoresComercioPorId.set(c.id, mc);
   });
+  if (reabrirCom !== null && marcadoresComercioPorId.has(reabrirCom)) marcadoresComercioPorId.get(reabrirCom).openPopup();
 }
 
 function renderizarMarcadores(ajustarVista) {
+  // Si había un pin con su ventanita abierta y solo se repinta (p. ej. cambió la sesión), la volvemos a abrir:
+  // Leaflet cierra el popup de cualquier marcador que se quita de la capa.
+  let reabrir = null;
+  if (!ajustarVista) marcadoresPorId.forEach((m, id) => { if (typeof m.isPopupOpen === "function" && m.isPopupOpen()) reabrir = id; });
   capaMarcadores.clearLayers();
   marcadoresPorId.clear();
   const nuevos = [];
@@ -266,6 +279,10 @@ function renderizarMarcadores(ajustarVista) {
     nuevos.push(m);
   });
   capaMarcadores.addLayers(nuevos); // addLayers (en lote) es mucho más rápido que addLayer uno a uno
+  if (reabrir !== null && marcadoresPorId.has(reabrir)) {
+    const m = marcadoresPorId.get(reabrir);
+    capaMarcadores.zoomToShowLayer(m, () => m.openPopup());
+  }
 
   // fitBounds: el mapa se ajusta solo para mostrar los resultados filtrados
   if (ajustarVista && nuevos.length) {
@@ -296,8 +313,8 @@ function resaltarTarjeta(id, desplazar) {
   // usuario del mapa. Solo hacemos scroll cuando mapa y lista van lado a lado.
   if (desplazar) {
     const pista = $("contenedor-anuncios");
+    // Solo movemos el carrusel hacia los lados; la página NO se desplaza, para no sacar a la persona del mapa ni cerrar el popup.
     pista.scrollTo({ left: tarjeta.offsetLeft - (pista.clientWidth - tarjeta.offsetWidth) / 2, behavior: "smooth" });
-    if (window.matchMedia("(min-width: 1024px)").matches) pista.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 }
 
@@ -327,7 +344,27 @@ function renderizarCategorias() {
   marcarCategoriaActiva();
 }
 
+// Subcategorías: chips bajo las categorías (solo si la categoría elegida tiene) y lista del formulario
+function pintarSubcategorias() {
+  const cont = $("chips-subcategorias");
+  const subs = SUBCATEGORIAS[categoriaActiva] || [];
+  cont.classList.toggle("hidden", !subs.length);
+  if (!subs.length) { cont.innerHTML = ""; return; }
+  const chip = (id, texto, activa) => `<button type="button" data-subcat="${esc(id)}" aria-pressed="${activa}" class="subcat-btn px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${activa ? "bg-yellow-300 text-indigo-900" : "bg-white/15 text-white hover:bg-white/25"}">${esc(texto)}</button>`;
+  cont.innerHTML = chip("", "Todas", subcategoriaActiva === "") + subs.map(([id, n]) => chip(id, n, subcategoriaActiva === id)).join("");
+}
+
+function actualizarSubcategoriasForm(valor) {
+  const subs = SUBCATEGORIAS[$("form-categoria").value] || [];
+  $("caja-subcategoria").classList.toggle("hidden", !subs.length);
+  const sel = $("form-subcategoria");
+  sel.required = subs.length > 0;
+  sel.innerHTML = subs.length ? '<option value="">Elige una subcategoría…</option>' + subs.map(([id, n]) => `<option value="${esc(id)}">${esc(n)}</option>`).join("") : "";
+  if (valor) sel.value = valor;
+}
+
 function marcarCategoriaActiva() {
+  pintarSubcategorias();
   document.querySelectorAll(".categoria-btn").forEach(btn => {
     const activa = btn.dataset.cat === categoriaActiva;
     btn.classList.toggle("bg-white", activa);
@@ -407,6 +444,7 @@ function aplicarFiltros({ ajustarMapa = true } = {}) {
 
   let lista = baseDatosAnuncios.filter(a => {
     if (categoriaActiva !== "todos" && a.categoria !== categoriaActiva) return false;
+    if (subcategoriaActiva && a.subcategoria !== subcategoriaActiva) return false;
     if (texto) {
       const pajar = normalizar([a.nombre, a.desc, a.barrio, a.ciudad].join(" "));
       if (!pajar.includes(texto)) return false;
@@ -448,6 +486,7 @@ function limpiarFiltros() {
   $("filtro-radio").value = "0";
   $("ordenar-por").value = "recientes";
   categoriaActiva = "todos";
+  subcategoriaActiva = "";
   limitesZona = null;
   $("btn-quitar-zona").classList.add("hidden");
   marcarCategoriaActiva();
@@ -480,6 +519,7 @@ function tarjetaHTML(a) {
     <div class="p-4 flex flex-col flex-1">
       <div class="flex items-center gap-2 mb-1 flex-wrap">
         <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(a.ciudad || a.barrio || "")}</span>
+        ${nombreSubcategoria(a.categoria, a.subcategoria) ? `<span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(nombreSubcategoria(a.categoria, a.subcategoria))}</span>` : ""}
         ${badgeEstado}
         ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
       </div>
@@ -513,6 +553,8 @@ function renderizarLista() {
   $("vacio-limpiar").classList.toggle("hidden", sinAnuncios);
 
   cont.innerHTML = visibles.map(tarjetaHTML).join("");
+  // Si es una búsqueda/filtro nuevo (primera página), el carrusel vuelve al principio
+  if (paginaActual === 1) cont.scrollTo({ left: 0, behavior: "instant" });
 
   const restantes = total - visibles.length;
   $("contenedor-mas").classList.toggle("hidden", restantes <= 0);
@@ -737,7 +779,7 @@ function validarPaso(n) {
 
 function resetFormulario() {
   $("formulario-registro").reset();
-  pinManual = false; geoSeq++; avisoGeo(null);
+  pinManual = false; pinConfirmado = false; geoSeq++; avisoGeo(null);
   ubicacionExactaCargada = null;
   $("form-aprox").disabled = false; $("form-aprox-nota").classList.add("hidden");
   fotosForm = [];
@@ -747,6 +789,7 @@ function resetFormulario() {
   $("publicar-titulo").textContent = "🚀 Publica tu anuncio";
   $("btn-submit-anuncio").textContent = "⚡ Publicar";
   actualizarCiudadesForm();
+  actualizarSubcategoriasForm();
 }
 
 // La ciudad es una LISTA CERRADA (tabla `municipios`): así "envigado" y "Envigado"
@@ -757,15 +800,26 @@ function actualizarCiudadesForm() {
   $("form-ciudad").innerHTML =
     '<option value="">Elige tu ciudad…</option>' +
     (DEPARTAMENTOS[depto] || []).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
-    '<option value="__otra">Mi ciudad no está en la lista…</option>';
+    '<option value="__otra">➕ Mi municipio no está en la lista…</option>';
+  mostrarCiudadNueva(false);
 }
+
+// Expansión: si el municipio no está, se escribe aquí y se crea (activo) al publicar.
+function mostrarCiudadNueva(si) {
+  $("caja-ciudad-nueva").classList.toggle("hidden", !si);
+  $("form-ciudad-nueva").required = si;
+  if (!si) $("form-ciudad-nueva").value = "";
+}
+// Nombre del municipio elegido en el formulario (el de la lista o el que se escribió)
+const ciudadForm = () => $("form-ciudad").value === "__otra" ? $("form-ciudad-nueva").value.trim() : $("form-ciudad").value;
 
 function alElegirCiudadForm(e) {
   if (e.target.value === "__otra") {
-    e.target.value = "";
-    abrirModal("modal-espera");
+    mostrarCiudadNueva(true);
+    $("form-ciudad-nueva").focus();
     return;
   }
+  mostrarCiudadNueva(false);
   // Al crear un anuncio, centramos el mapa del formulario en la ciudad elegida.
   const m = buscarMunicipio($("form-departamento").value, e.target.value);
   if (m && m.lat != null && m.lng != null && !modoEdicionId && mapaFormulario) {
@@ -855,7 +909,7 @@ function programarGeocodificar(ms) {
 }
 
 async function geocodificarFormulario(forzar) {
-  const ciudad = $("form-ciudad").value;
+  const ciudad = ciudadForm();
   const barrio = $("form-barrio").value.trim();
   const dir = $("form-direccion").value.trim();
   if (!ciudad) { if (forzar) mostrarToast("Primero elige la ciudad", "error"); return; }
@@ -880,7 +934,7 @@ async function geocodificarFormulario(forzar) {
       const hallado = await consultarNominatim(q, centro, ctrl.signal);
       if (miSeq !== geoSeq) return;            // llegó una búsqueda más nueva (o se cerró el formulario)
       if (hallado) {
-        pinManual = false;
+        pinManual = false; pinConfirmado = true;
         fijarCoordsForm(hallado);
         if (mapaFormulario) {
           marcadorFormulario.setLatLng([hallado.lat, hallado.lng]);
@@ -959,6 +1013,11 @@ async function registrarAnuncio(e) {
     abrirModal("modal-auth");
     return;
   }
+  if ($("form-ciudad").value === "__otra" && !(pinManual || pinConfirmado)) {
+    mostrarToast("Marca en el mapa dónde queda tu barrio (toca el mapa o usa «Buscar»): así ubicamos tu municipio", "error");
+    irAPaso(2);
+    return;
+  }
   const precio = extraerPrecio($("form-precio").value);
   if (precio !== null && precio > 99999999999) { mostrarToast("El precio es demasiado alto", "error"); irAPaso(1); return; }
 
@@ -973,9 +1032,11 @@ async function registrarAnuncio(e) {
     anuncio = await guardarAnuncio({
       nombre: $("form-nombre").value.trim(),
       categoria: $("form-categoria").value,
+      subcategoria: $("form-subcategoria").value,
       estado: $("form-estado").value,
       departamento: $("form-departamento").value,
-      ciudad: $("form-ciudad").value,
+      ciudad: $("form-ciudad").value === "__otra" ? "" : $("form-ciudad").value,
+      ciudadNueva: $("form-ciudad").value === "__otra" ? $("form-ciudad-nueva").value.trim() : "",
       barrio: $("form-barrio").value.trim(),
       lat: coordsForm.lat,
       lng: coordsForm.lng,
@@ -1003,6 +1064,7 @@ async function registrarAnuncio(e) {
   // Quita filtros de categoría/búsqueda para que el usuario VEA su anuncio
   $("buscador").value = "";
   categoriaActiva = "todos";
+  subcategoriaActiva = "";
   marcarCategoriaActiva();
   refrescarOpcionesUbicacion();
   aplicarFiltros();
@@ -1021,6 +1083,7 @@ async function editarAnuncio(id) {
   resetFormulario();
   $("form-nombre").value = a.nombre;
   $("form-categoria").value = a.categoria;
+  actualizarSubcategoriasForm(a.subcategoria);
   $("form-estado").value = a.estado || "usado";
   $("form-precio").value = extraerPrecio(a.precio) || "";
   $("form-departamento").value = a.departamento || Object.keys(DEPARTAMENTOS)[0];
@@ -1106,9 +1169,18 @@ function iniciarEventos() {
     const b = e.target.closest("[data-cat]");
     if (!b) return;
     categoriaActiva = b.dataset.cat;
+    subcategoriaActiva = "";                  // al cambiar de categoría se vuelve a «Todas»
     marcarCategoriaActiva();
     aplicarFiltros();
   });
+  $("chips-subcategorias").addEventListener("click", e => {
+    const b = e.target.closest("[data-subcat]");
+    if (!b) return;
+    subcategoriaActiva = b.dataset.subcat;
+    pintarSubcategorias();
+    aplicarFiltros();
+  });
+  $("form-categoria").addEventListener("change", () => { actualizarSubcategoriasForm(); if (marcadorFormulario) marcadorFormulario.setIcon(iconoMarcador($("form-categoria").value)); });
 
   const acciones = e => {
     const b = e.target.closest("[data-accion]");
@@ -1147,6 +1219,13 @@ function iniciarEventos() {
   // Flechas del carrusel de anuncios (en celular se desliza con el dedo)
   const pistaAnu = $("contenedor-anuncios");
   const pasoAnu = dir => pistaAnu.scrollBy({ left: dir * Math.max(240, pistaAnu.clientWidth * 0.8), behavior: "smooth" });
+  // Al llegar casi al final del carrusel se cargan más anuncios solos (el botón «Mostrar más» sigue como respaldo)
+  pistaAnu.addEventListener("scroll", () => {
+    if (pistaAnu.scrollLeft + pistaAnu.clientWidth >= pistaAnu.scrollWidth - 240 && paginaActual * POR_PAGINA < listaFiltrada.length) {
+      paginaActual++;
+      renderizarLista();
+    }
+  }, { passive: true });
   $("anu-ant").addEventListener("click", () => pasoAnu(-1));
   $("anu-sig").addEventListener("click", () => pasoAnu(1));
   $("form-nueva-password").addEventListener("submit", guardarNuevaPassword);
@@ -1159,6 +1238,7 @@ function iniciarEventos() {
   // Lista de espera ("Mi ciudad no está")
   $("form-espera").addEventListener("submit", enviarListaEspera);
   $("form-ciudad").addEventListener("change", alElegirCiudadForm);
+  $("form-ciudad-nueva").addEventListener("input", () => { if (!pinManual && $("form-ciudad-nueva").value.trim().length >= 4) programarGeocodificar(1100); });
 
   // Formulario
   $("formulario-registro").addEventListener("submit", registrarAnuncio);
@@ -1205,7 +1285,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarDatos();
 
   // El formulario de publicar ofrece TODOS los municipios; el filtro solo los que tienen anuncios.
-  Object.keys(DEPARTAMENTOS).forEach(d => $("form-departamento").add(new Option(d, d)));
+  TODOS_LOS_DEPARTAMENTOS.forEach(d => $("form-departamento").add(new Option(d, d)));
+  $("form-departamento").value = DEPARTAMENTOS.Antioquia ? "Antioquia" : TODOS_LOS_DEPARTAMENTOS[0];
   refrescarOpcionesUbicacion();
   actualizarCiudadesForm();
   actualizarUIAuth();

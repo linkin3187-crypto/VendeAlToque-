@@ -33,6 +33,28 @@ const CATEGORIAS = [
   { id: "otros",      nombre: "Otros",       icono: "📦", foro: true  }
 ];
 
+// Subcategorías (opcionales por categoría). Se guarda solo el `id` (texto corto) en anuncios.subcategoria.
+// Para agregar una: añádela aquí con un id en minúsculas (a-z, 0-9, _) de hasta 30 caracteres. No requiere SQL.
+const SUBCATEGORIAS = {
+  tienda:     [["abarrotes", "Abarrotes y víveres"], ["frutas_verduras", "Frutas y verduras"], ["carnes_lacteos", "Carnes y lácteos"], ["licores", "Licores"], ["drogueria", "Droguería y salud"], ["papeleria", "Papelería"], ["otros", "Otros"]],
+  comida:     [["restaurantes", "Restaurantes"], ["comidas_rapidas", "Comidas rápidas"], ["panaderia_postres", "Panadería y postres"], ["productos_caseros", "Productos caseros"], ["bebidas", "Bebidas"], ["otros", "Otros"]],
+  autos:      [["carros", "Carros"], ["motos", "Motos"], ["camionetas", "Camionetas y camperos"], ["repuestos", "Repuestos y accesorios"], ["bicicletas", "Bicicletas y patinetas"], ["otros", "Otros"]],
+  inmuebles:  [["apartamentos", "Apartamentos"], ["casas", "Casas"], ["lotes_fincas", "Lotes y fincas"], ["locales_oficinas", "Locales y oficinas"], ["habitaciones", "Habitaciones"], ["otros", "Otros"]],
+  tecnologia: [["celulares", "Celulares"], ["computadores", "Computadores y tablets"], ["tv_audio", "TV y audio"], ["consolas_juegos", "Consolas y videojuegos"], ["camaras", "Cámaras"], ["accesorios_tech", "Accesorios"], ["otros", "Otros"]],
+  servicios:  [["plomeria", "Plomería"], ["electricidad", "Electricidad"], ["mecanica", "Mecánica"], ["belleza", "Belleza y peluquería"], ["aseo_hogar", "Aseo y hogar"], ["construccion", "Construcción y arreglos"], ["mudanzas_transporte", "Mudanzas y transporte"], ["clases", "Clases y tutorías"], ["tecnicos", "Técnicos (electrodomésticos, PC)"], ["otros", "Otros"]],
+  ferreteria: [["herramientas", "Herramientas"], ["materiales", "Materiales de construcción"], ["pinturas", "Pinturas"], ["electricos_plomeria", "Eléctricos y plomería"], ["tornilleria", "Tornillería"], ["otros", "Otros"]],
+  hogar:      [["muebles", "Muebles"], ["electrodomesticos", "Electrodomésticos"], ["decoracion", "Decoración"], ["jardin", "Jardín"], ["cocina", "Cocina y menaje"], ["bebes", "Bebés y niños"], ["otros", "Otros"]],
+  mascotas:   [["perros", "Perros"], ["gatos", "Gatos"], ["alimentos_mascotas", "Alimentos"], ["accesorios_mascotas", "Accesorios"], ["veterinaria", "Veterinaria"], ["adopcion", "Adopción"], ["otros", "Otros"]],
+  empleos:    [["ofertas", "Ofertas de empleo"], ["busco_empleo", "Busco empleo"], ["medio_tiempo", "Medio tiempo"], ["freelance", "Independiente / por días"], ["otros", "Otros"]],
+  ropa:       [["hombre", "Hombre"], ["mujer", "Mujer"], ["ninos", "Niños"], ["calzado", "Calzado"], ["deportiva", "Deportiva"], ["accesorios_ropa", "Accesorios"], ["otros", "Otros"]]
+};
+const nombreSubcategoria = (cat, id) => { const s = (SUBCATEGORIAS[cat] || []).find(x => x[0] === id); return s ? s[1] : ""; };
+
+// Todos los departamentos de Colombia: así se puede publicar en cualquier municipio (ver crear_municipio en SQL 11).
+const TODOS_LOS_DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare",
+  "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño",
+  "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"];
+
 // Las categorías del foro se DERIVAN de la lista de arriba (no se repiten).
 const CATEGORIAS_FORO = CATEGORIAS
   .filter(c => c.foro)
@@ -60,6 +82,7 @@ function mensajeError(e) {
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
   if (/Límite de \d+ (anuncios|favoritos|productos)/i.test(m)) return m;
+  if (/Elige un departamento|Escribe el nombre del municipio|dentro de Colombia|municipios nuevos|no está disponible por ahora/i.test(m)) return m;
   if (/Solo puedes cambiar|Solo moderadores|No existe una cuenta|Esa persona no tiene perfil|Ya tienes \d+ solicitudes|Llegaste al máximo|Escribe el motivo|ya fue resuelta/i.test(m)) return m;
   if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya enviaste esto antes. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
@@ -81,6 +104,16 @@ async function cargarMunicipios() {
   });
 }
 
+// Crea el municipio (si no existe) y devuelve su fila. La base valida el nombre, evita duplicados y limita abusos.
+async function crearMunicipioDB(departamento, nombre, lat, lng) {
+  const { data, error } = await sb.rpc("crear_municipio", { p_departamento: departamento, p_nombre: nombre, p_lat: lat, p_lng: lng });
+  if (error) throw new Error(mensajeError(error));
+  await cargarMunicipios();                 // vuelve a leer la lista (ya incluye el nuevo)
+  const m = municipios.find(x => x.id === data);
+  if (!m) throw new Error("No se pudo crear el municipio. Inténtalo de nuevo");
+  return m;
+}
+
 function buscarMunicipio(departamento, ciudad) {
   return municipios.find(m => m.nombre === ciudad && (!departamento || m.departamento === departamento)) || null;
 }
@@ -95,6 +128,7 @@ function filaAAnuncio(r) {
     id: r.id,
     nombre: r.nombre,
     categoria: r.categoria,
+    subcategoria: r.subcategoria || "",
     estado: r.estado,
     departamento: m.departamento || "",
     ciudad: m.nombre || "",
@@ -191,7 +225,9 @@ async function borrarFotosStorage(urls) {
 // Lanza un Error con mensaje en español si algo falla.
 async function guardarAnuncio(d, id) {
   if (!usuarioActual) throw new Error("Inicia sesión para publicar");
-  const muni = buscarMunicipio(d.departamento, d.ciudad);
+  let muni = buscarMunicipio(d.departamento, d.ciudad);
+  // Expansión: si el municipio aún no existe, se crea (y queda activo) al publicar.
+  if (!muni && d.ciudadNueva) muni = await crearMunicipioDB(d.departamento, d.ciudadNueva, d.lat, d.lng);
   if (!muni) throw new Error("Elige tu ciudad de la lista");
 
   const previo = id ? baseDatosAnuncios.find(a => a.id === id) : null;
@@ -200,6 +236,7 @@ async function guardarAnuncio(d, id) {
     nombre: d.nombre,
     descripcion: d.desc,
     categoria: d.categoria,
+    subcategoria: d.subcategoria || null,
     estado: d.estado,
     precio: d.precio,                 // número o null
     municipio_id: muni.id,

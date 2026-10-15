@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todos los anuncios | MercaFree</title>
+  <meta name="description" content="Todos los clasificados de MercaFree: busca por ciudad, categoría, precio y cercanía. Contacta gratis por WhatsApp.">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=24" />
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+  <!-- ENCABEZADO: mismo estilo del inicio -->
+  <header id="encabezado" class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex flex-wrap justify-between items-center gap-x-3 gap-y-2">
+      <a href="index.html" class="text-2xl font-black tracking-tight shrink-0"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span></a>
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <a href="index.html" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm transition whitespace-nowrap">← Inicio y mapa</a>
+        <a href="favoritos.html" id="link-favoritos" class="hidden bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm transition" aria-label="Mis favoritos">❤️<span class="hidden sm:inline"> Favoritos</span></a>
+        <a href="index.html#publicar" id="btn-publicar-header" class="btn-parpadeo bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1 whitespace-nowrap">
+          <span class="text-lg leading-none">+</span> <span>Publicar gratis</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- BUSCADOR + CATEGORÍAS (iguales al inicio) -->
+  <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-6 pt-5 px-4">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-center">📢 Todos los anuncios</h1>
+      <p class="text-indigo-200 text-sm text-center mt-1 mb-4">Busca con calma: filtra por ciudad, categoría, precio o cercanía.</p>
+      <div class="relative mb-4">
+        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar anuncios" placeholder="¿Qué buscas hoy? (ej. apartamento, iPhone, carpintero...)" class="w-full pl-5 pr-5 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
+      </div>
+      <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
+      <div id="chips-subcategorias" class="hidden flex gap-2 overflow-x-auto pb-1 pt-1 custom-scrollbar" aria-label="Subcategorías"></div>
+    </div>
+  </section>
+
+  <!-- FILTROS (mismos id que el inicio: el código es compartido en anuncios-comun.js) -->
+  <div class="max-w-7xl mx-auto px-4 pt-5">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+      <!-- Siempre a la vista: dónde buscar, «Cerca de mí» y el orden -->
+      <div class="grid grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
+        <div>
+          <label for="filtro-departamento" class="block text-xs font-bold text-slate-500 mb-1">📍 Departamento</label>
+          <select id="filtro-departamento" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label for="filtro-ciudad" class="block text-xs font-bold text-slate-500 mb-1">🏘️ Municipio o ciudad</label>
+          <select id="filtro-ciudad" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Todas las ciudades</option>
+          </select>
+        </div>
+        <div class="col-span-2 lg:col-span-1">
+          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca w-full lg:w-auto whitespace-nowrap">📡 Cerca de mí</button>
+        </div>
+        <div class="col-span-2 lg:col-span-1 flex items-center gap-2">
+          <label for="ordenar-por" class="text-sm text-slate-500 whitespace-nowrap">Ordenar por:</label>
+          <select id="ordenar-por" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="recientes">Más recientes</option>
+            <option value="cercanos">Más cercanos a mí</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+      <p id="nota-cerca-anuncios" class="hidden text-xs text-slate-500 mt-2"></p>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">
+        <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" class="flex items-center gap-1.5 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full px-4 py-1.5">
+          ⚙️ Más filtros <span aria-hidden="true" id="flecha-filtros">▾</span>
+        </button>
+        <span class="text-xs text-slate-500">Precio, estado, distancia, solo con foto…</span>
+      </div>
+
+      <div id="panel-filtros" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="filtro-estado" class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
+          <select id="filtro-estado" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Todos</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="usado">Usado</option>
+          </select>
+        </div>
+        <div>
+          <label for="filtro-radio" class="block text-xs font-bold text-slate-500 mb-1">Distancia (desde mi ubicación)</label>
+          <select id="filtro-radio" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="0">Cualquiera</option>
+            <option value="1">Hasta 1 km</option>
+            <option value="3">Hasta 3 km</option>
+            <option value="5">Hasta 5 km</option>
+            <option value="10">Hasta 10 km</option>
+          </select>
+        </div>
+        <div>
+          <label for="filtro-precio-min" class="block text-xs font-bold text-slate-500 mb-1">Precio mínimo</label>
+          <input type="number" min="0" inputmode="numeric" id="filtro-precio-min" placeholder="50000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label for="filtro-precio-max" class="block text-xs font-bold text-slate-500 mb-1">Precio máximo</label>
+          <input type="number" min="0" inputmode="numeric" id="filtro-precio-max" placeholder="5000000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div class="flex flex-col justify-end gap-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="filtro-con-foto" class="w-4 h-4">
+            <span class="text-sm font-medium">Solo con foto</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="filtro-con-precio" class="w-4 h-4">
+            <span class="text-sm font-medium">Solo con precio</span>
+          </label>
+        </div>
+        <div class="flex items-end">
+          <button type="button" id="btn-limpiar-filtros" class="text-sm text-slate-500 hover:text-slate-800 underline">Limpiar todos los filtros</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main id="contenido" class="max-w-7xl mx-auto px-4 py-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <span id="contador-resultados" class="text-sm font-semibold text-slate-600" aria-live="polite"></span>
+      <button type="button" id="btn-compartir-busqueda" class="text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full px-4 py-1.5">🔗 Compartir esta búsqueda</button>
+    </div>
+
+    <div id="contenedor-anuncios" class="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="skeleton h-72 rounded-2xl"></div>
+      <div class="skeleton h-72 rounded-2xl"></div>
+      <div class="skeleton h-72 rounded-2xl hidden md:block"></div>
+      <div class="skeleton h-72 rounded-2xl hidden xl:block"></div>
+    </div>
+
+    <div id="contenedor-mas" class="hidden text-center mt-6">
+      <button type="button" id="btn-mas" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-6 py-2.5 rounded-xl text-sm shadow-sm"></button>
+    </div>
+    <div id="centinela-mas" aria-hidden="true" class="h-px"></div>
+
+    <div id="estado-vacio" class="hidden text-center py-16">
+      <div id="vacio-icono" class="text-5xl mb-4">🔍</div>
+      <h3 id="vacio-titulo" class="text-xl font-bold text-slate-700 mb-2">No encontramos resultados</h3>
+      <p id="vacio-texto" class="text-slate-500 text-sm mb-3">Prueba con otra búsqueda o quita filtros</p>
+      <button type="button" id="vacio-limpiar" data-accion-global="limpiar" class="text-indigo-600 font-semibold text-sm underline">Limpiar filtros</button>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 py-8">
+    MercaFree · <a href="terminos.html" class="underline">Términos</a> · <a href="privacidad.html" class="underline">Privacidad</a>
+  </footer>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=24"></script>
+  <script src="data.js?v=24"></script>
+  <script src="anuncios-comun.js?v=24"></script>
+  <script src="anuncios.js?v=24"></script>
+</body>
+</html>

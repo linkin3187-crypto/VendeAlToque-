@@ -112,3 +112,14 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Si no hay resultados aparece el botón «Ver todos los comercios» que limpia los filtros de comercios.
 - **Corregido:** en `comercios.html` («Comercios cerca de mí») la distancia se calculaba con los argumentos mal puestos y no ordenaba bien.
 - **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.
+
+## Fase 2N · Página «Todos los anuncios» (`anuncios.html`)
+
+**No hay SQL.** Archivos nuevos: `anuncios.html`, `anuncios.js`, `anuncios-comun.js`. Cambian `index.html` y `app.js`.
+
+- **En el inicio:** bajo el carrusel de publicaciones hay un botón **«📋 Ver todos los anuncios (N) →»** y, junto al título «📢 Publicaciones», un enlace **«Ver todos →»**. Los dos llevan los filtros que tengas puestos (ciudad, categoría, búsqueda…).
+- **La página nueva** (`anuncios.html`): cuadrícula (1 columna en celulares pequeños, 2 en celular, 3 en tablet, 4 en PC), los mismos filtros del inicio (buscador, categorías y subcategorías, departamento, municipio, 📡 Cerca de mí, Ordenar por, Más filtros), carga 24 anuncios y trae más solos al bajar.
+- **Filtros en el enlace:** por ejemplo `anuncios.html?ciudad=Envigado&cat=autos&pmax=20000000`. El botón **«🔗 Compartir esta búsqueda»** abre el menú de compartir del celular (o copia el enlace). No se guarda tu ubicación GPS en el enlace.
+- **Código compartido:** `anuncios-comun.js` tiene la tarjeta del anuncio, el filtrado, las listas de departamento/ciudad y las subcategorías. Lo usan el inicio y la página nueva: si cambias un filtro ahí, cambia en las dos.
+- **«+ Publicar gratis»** de la página nueva va a `index.html#publicar`, que abre el formulario (o el registro si no hay sesión).
+- **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.

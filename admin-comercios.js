@@ -243,6 +243,7 @@ function filaEditor(c) {
       <span class="text-xs ${(SELLOS[c.nivel] || SELLOS[1]).clase} px-2 py-0.5 rounded-full font-semibold">${c.nivel >= 2 ? "✔ " : ""}${esc((SELLOS[c.nivel] || SELLOS[1]).corto)}${c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</span>
       ${selloVencido(c) ? '<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-semibold">⚠ Vencida: repetir verificación</span>' : ""}
       ${c.activo ? "" : '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculto</span>'}
+      <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${ORIGENES[origenComercio(c)].icono} ${esc(ORIGENES[origenComercio(c)].corto)}</span>
       <button type="button" data-acc="verificar" class="ml-auto text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">✅ Verificar</button>
       <button type="button" data-acc="ubicacion" class=" text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
       <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
@@ -276,19 +277,73 @@ function filaEditor(c) {
 }
 
 let soloId = null;   // ?editar=<id>: muestra solo ese comercio (viene de «✏️ Editar» en el inicio)
+let origenAct = "todos", limiteLista = 40;
+
+// Estado de verificación de un comercio (el filtro principal)
+function pasaEstado(c, v) {
+  if (v === "no") return c.nivel === 1;
+  if (v === "tel") return c.nivel === 2;
+  if (v === "persona") return c.nivel === 3;
+  if (v === "vencida") return selloVencido(c);
+  if (v === "oculto") return !c.activo;
+  return true;
+}
 
 function pintarLista() {
-  const m = $("ac-filtro-muni").value, v = $("ac-filtro-ver").value;
   $("ac-solo-uno").classList.toggle("hidden", soloId === null);
-  const pasa = c => !v || (v === "no" && c.nivel === 1) || (v === "tel" && c.nivel === 2) || (v === "persona" && c.nivel === 3) || (v === "vencida" && selloVencido(c));
+  const m = $("ac-filtro-muni").value, v = $("ac-filtro-ver").value, q = normalizar($("ac-buscar-nombre").value.trim());
+  // Base: estado + municipio + texto. Los contadores de origen se calculan sobre esta base.
+  const base = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasaEstado(c, v)
+    && (!q || normalizar(c.nombre + " " + c.direccion).includes(q)));
+  const cuenta = { todos: base.length, osm: 0, equipo: 0, dueno: 0, reclamado: 0 };
+  base.forEach(c => { cuenta[origenComercio(c)]++; });
+  $("ac-origenes").innerHTML = [["todos", "Todos"]].concat(Object.entries(ORIGENES).map(([k, o]) => [k, o.icono + " " + o.corto]))
+    .map(([k, txt]) => `<button type="button" role="tab" data-origen="${k}" class="text-xs font-semibold px-3 py-1.5 rounded-full border ${origenAct === k ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"}">${txt} <b>${cuenta[k]}</b></button>`).join("");
   const lista = soloId !== null ? listaAdmin.filter(c => c.id === soloId)
-    : listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasa(c));
-  $("ac-lista").innerHTML = lista.length ? lista.map(filaEditor).join("")
-    : '<p class="text-sm text-slate-400 text-center py-8">Aún no hay comercios. Importa algunos arriba.</p>';
+    : base.filter(c => origenAct === "todos" || origenComercio(c) === origenAct);
+  const visibles = soloId !== null ? lista : lista.slice(0, limiteLista);
+  $("ac-lista").innerHTML = lista.length
+    ? (origenAct !== "todos" && soloId === null ? `<p class="text-xs text-slate-500">${esc(ORIGENES[origenAct].nombre)}</p>` : "") + visibles.map(filaEditor).join("")
+      + (lista.length > visibles.length ? `<div class="text-center"><button type="button" id="ac-mas" class="bg-white border border-slate-300 hover:border-indigo-400 font-semibold px-5 py-2 rounded-xl text-sm">Ver ${Math.min(40, lista.length - visibles.length)} más (${lista.length - visibles.length} restantes)</button></div>` : "")
+    : `<p class="text-sm text-slate-400 text-center py-8">${listaAdmin.length ? "No hay comercios con estos filtros 🎉" : "Aún no hay comercios. Importa algunos arriba o usa «Agregar comercio»."}</p>`;
+  pintarPendientes();
+}
+
+// ---------- Resumen de pendientes ----------
+let otrosPend = { negocios: null, solicitudes: null, reportes: null };
+
+function tarjetaPend(icono, n, texto, atributos, href) {
+  const cls = "text-left border rounded-xl p-3 " + (n > 0 ? "border-indigo-200 bg-indigo-50 hover:border-indigo-400" : "border-slate-200 bg-slate-50 text-slate-400");
+  const cuerpo = `<span class="text-xl">${icono}</span><span class="block text-2xl font-black ${n > 0 ? "text-indigo-900" : ""}">${n === null ? "…" : n}</span><span class="block text-xs font-semibold">${texto}</span>`;
+  return href ? `<a href="${href}" class="${cls} no-underline text-inherit">${cuerpo}</a>` : `<button type="button" ${atributos} class="${cls}">${cuerpo}</button>`;
+}
+
+function pintarPendientes() {
+  const sinVer = o => listaAdmin.filter(c => c.nivel === 1 && c.activo && origenComercio(c) === o).length;
+  $("ac-pend-grid").innerHTML = [
+    tarjetaPend("➕", otrosPend.negocios, "Negocios nuevos por aprobar", "", "moderacion.html#negocios"),
+    tarjetaPend("🙋", sinVer("dueno"), "Aprobados por ti, sin verificar", 'data-ir="dueno"'),
+    tarjetaPend("🔑", sinVer("reclamado"), "Reclamados, sin verificar", 'data-ir="reclamado"'),
+    tarjetaPend("🛠️", sinVer("equipo"), "Agregados por el equipo, sin verificar", 'data-ir="equipo"'),
+    tarjetaPend("📥", sinVer("osm"), "Importados, sin verificar", 'data-ir="osm"'),
+    tarjetaPend("📨", otrosPend.solicitudes, "Solicitudes de comercios", "", "moderacion.html#solicitudes"),
+    tarjetaPend("🛍️", otrosPend.reportes, "Productos reportados", "", "moderacion.html#productos"),
+    tarjetaPend("⚠️", listaAdmin.filter(selloVencido).length, "Verificaciones vencidas", 'data-ir-estado="vencida"')
+  ].join("");
+}
+
+async function cargarOtrosPendientes() {
+  const leer = async (k, f) => { try { otrosPend[k] = (await f()).length; } catch (e) { otrosPend[k] = null; } };
+  await Promise.all([
+    leer("negocios", () => cargarNegociosPendientes("pendiente", false)),
+    leer("solicitudes", () => cargarSolicitudesComercio("pendiente")),
+    leer("reportes", () => cargarReportesProducto("pendiente"))
+  ]);
+  pintarPendientes();
 }
 
 async function refrescarLista() {
-  try { listaAdmin = await cargarComerciosAdmin(); pintarLista(); }
+  try { listaAdmin = await cargarComerciosAdmin(); limiteLista = 40; pintarLista(); }
   catch (e) { mostrarToast(mensajeError(e), "error"); }
 }
 
@@ -670,7 +725,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("vi-gps").addEventListener("click", gpsVisita);
   $("vi-aprobar").addEventListener("click", () => enviarVerificacion("aprobada"));
   $("vi-rechazar").addEventListener("click", () => enviarVerificacion("rechazada"));
-  ["ac-filtro-muni", "ac-filtro-ver"].forEach(id => $(id).addEventListener("change", pintarLista));
+  ["ac-filtro-muni", "ac-filtro-ver"].forEach(id => $(id).addEventListener("change", () => { soloId = null; limiteLista = 40; pintarLista(); }));
+  $("ac-buscar-nombre").addEventListener("input", () => { soloId = null; limiteLista = 40; pintarLista(); });
+  $("ac-origenes").addEventListener("click", e => { const b = e.target.closest("[data-origen]"); if (b) { origenAct = b.dataset.origen; soloId = null; limiteLista = 40; pintarLista(); } });
+  $("ac-lista").addEventListener("click", e => { if (e.target.closest("#ac-mas")) { limiteLista += 40; pintarLista(); } });
+  $("ac-pend-grid").addEventListener("click", e => {
+    const b = e.target.closest("[data-ir], [data-ir-estado]");
+    if (!b) return;
+    soloId = null; limiteLista = 40; $("ac-buscar-nombre").value = ""; $("ac-filtro-muni").value = "";
+    if (b.dataset.irEstado) { $("ac-filtro-ver").value = b.dataset.irEstado; origenAct = "todos"; }
+    else { $("ac-filtro-ver").value = "no"; origenAct = b.dataset.ir; }
+    pintarLista(); $("ac-origenes").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $("ac-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("nu-tipo").innerHTML = TIPOS_COMERCIO.map(t => `<option value="${t.id}">${t.icono} ${esc(t.nombre)}</option>`).join("");
   $("nu-muni").innerHTML = opciones;
@@ -683,5 +749,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const qs = new URLSearchParams(location.search);
   if (qs.get("editar")) soloId = Number(qs.get("editar")) || null;
   await refrescarLista();
+  cargarOtrosPendientes();
+  if (qs.get("verificar") && soloId !== null) abrirVisita(soloId);
   if (qs.get("nuevo")) abrirNuevo();
 });

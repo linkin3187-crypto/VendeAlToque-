@@ -521,8 +521,31 @@ function filaAComercio(r) {
     verificadoEn: r.verificado_en || null,
     ownerId: r.owner_id || null, descripcion: r.descripcion || "", whatsapp: r.whatsapp || "",
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
-    nProductos: Number(r.n_productos) || 0
+    nProductos: Number(r.n_productos) || 0, fuente: r.fuente || ""
   };
+}
+
+// De dónde salió un comercio (para ordenar el trabajo del administrador)
+const ORIGENES = {
+  osm:       { icono: "📥", corto: "Importados",           nombre: "Importados de OpenStreetMap" },
+  equipo:    { icono: "🛠️", corto: "Agregados por el equipo", nombre: "Agregados por el equipo" },
+  dueno:     { icono: "🙋", corto: "Registrados por su dueño", nombre: "Registrados por su dueño y aprobados" },
+  reclamado: { icono: "🔑", corto: "Reclamados",           nombre: "Importados y reclamados por su dueño" }
+};
+function origenComercio(c) {
+  if (c.fuente === "Registro del dueño") return "dueno";
+  if (c.fuente === "Agregado por el equipo") return "equipo";
+  return c.ownerId ? "reclamado" : "osm";
+}
+
+// Niveles de sello de varios comercios (para saber cuáles aprobados siguen sin verificar)
+async function cargarNivelesComercios(ids) {
+  if (!ids.length) return {};
+  const { data, error } = await sb.from("comercios").select("id, nivel_verificacion").in("id", ids);
+  if (error) throw error;
+  const r = {};
+  (data || []).forEach(x => { r[x.id] = Number(x.nivel_verificacion) || 1; });
+  return r;
 }
 
 async function cargarComercios() {

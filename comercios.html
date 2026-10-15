@@ -6,7 +6,7 @@
   <title>Comercios verificados | MercaFree</title>
   <meta name="description" content="Farmacias, panaderías, supermercados y más de tu ciudad, verificados por el equipo de MercaFree.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -28,6 +28,7 @@
     <div class="mb-4">
       <label for="co-muni" class="text-xs font-bold text-slate-500 mr-1">Municipio</label>
       <select id="co-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white text-sm"></select>
+      <button type="button" id="co-cerca" aria-pressed="false" class="btn-cerca btn-cerca-chico ml-1">📡 Comercios cerca de mí</button>
       <span id="co-contador" class="text-sm text-slate-500 ml-2"></span>
     </div>
 
@@ -80,8 +81,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=22"></script>
-  <script src="data.js?v=22"></script>
-  <script src="comercios.js?v=22"></script>
+  <script src="utils.js?v=23"></script>
+  <script src="data.js?v=23"></script>
+  <script src="comercios.js?v=23"></script>
 </body>
 </html>

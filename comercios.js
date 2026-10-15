@@ -36,9 +36,16 @@ function tarjetaComercio(c) {
   </article>`;
 }
 
+let ubicacionCo = null;   // {lat,lng} solo si el usuario toca «Comercios cerca de mí»
+
 function pintar() {
   const muni = $("co-muni").value;
-  const lista = verificados.filter(c => (tipoActivo === "todos" || c.tipo === tipoActivo) && (!muni || String(c.municipioId) === muni));
+  let lista = verificados.filter(c => (tipoActivo === "todos" || c.tipo === tipoActivo) && (!muni || String(c.municipioId) === muni));
+  // Con «Cerca de mí» activo, los más cercanos primero (los que no tienen coordenadas, al final)
+  if (ubicacionCo) {
+    const d = c => tieneCoords(c) ? distanciaKm(ubicacionCo.lat, ubicacionCo.lng, c.lat, c.lng) : Infinity;
+    lista = lista.slice().sort((a, b) => d(a) - d(b));
+  }
   $("co-lista").innerHTML = lista.map(tarjetaComercio).join("");
   $("co-contador").textContent = lista.length ? lista.length + (lista.length === 1 ? " comercio" : " comercios") : "";
   $("co-vacio").classList.toggle("hidden", lista.length > 0);
@@ -96,6 +103,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     tipoActivo = b.dataset.tipo; pintar();
   });
   $("co-muni").addEventListener("change", pintar);
+  $("co-cerca").addEventListener("click", async () => {
+    const b = $("co-cerca");
+    if (b.getAttribute("aria-pressed") === "true") {
+      ubicacionCo = null; b.setAttribute("aria-pressed", "false"); pintar(); return;
+    }
+    b.disabled = true; b.textContent = "📡 Buscando tu ubicación…";
+    try {
+      ubicacionCo = await obtenerGPS();
+      b.setAttribute("aria-pressed", "true");
+      pintar();
+    } catch (err) {
+      alert(textoErrorGPS(err));
+    } finally {
+      b.disabled = false; b.textContent = "📡 Comercios cerca de mí";
+    }
+  });
   $("co-lista").addEventListener("click", e => {
     const b = e.target.closest("[data-solicitar]");
     if (b) abrirSolicitud(Number(b.dataset.solicitar));

@@ -90,3 +90,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Popup del pin:** Leaflet cierra la ventanita de un pin cuando su capa se repinta (cambio de sesión, filtros, datos que llegan tarde). Ahora `renderizarMarcadores` y `pintarComercios` recuerdan el pin abierto y lo reabren, y al tocar un pin ya no se desplaza la página.
 - **Carrusel:** al llegar casi al final carga más anuncios solo; al buscar o filtrar vuelve al inicio.
 - **Revertir:** PR de esta fase → **Revert**. El SQL puede quedarse (la columna y la función no estorban); para quitarlos: `alter table public.anuncios drop column subcategoria; drop function public.crear_municipio(text,text,double precision,double precision);`
+
+## Fase 2L · Filtros visibles, «Cerca de mí» y barra superior ordenada
+
+**No hay SQL.** Solo cambian `index.html`, `app.js`, `utils.js`, `styles.css`, `comercios.html` y `comercios.js`.
+
+- **Clasificados:** 📍 Departamento y 🏘️ Municipio/ciudad salen del panel avanzado y quedan siempre visibles, junto a «Ordenar por». Nuevo botón **📡 Cerca de mí** (`#btn-cerca-anuncios`, función `cercaDeMiAnuncios` en app.js): pide el GPS solo al tocarlo, ordena por cercanía y centra el mapa; al tocar otra vez se apaga. «⚙️ Más filtros ▾» ahora es un botón con una nota (*Precio, estado, distancia, solo con foto…*).
+- **Comercios:** **📡 Comercios cerca de mí** (`#btn-cerca-comercios`, `cercaDeMiComercios`) en la sección de comercios del inicio y en `comercios.html` (`#co-cerca`). El GPS compartido está en `utils.js` (`obtenerGPS`, `textoErrorGPS`).
+- **Barra superior:** con sesión, el botón de usuario pasa a «👤 Nombre ▾» y abre un menú (`#menu-cuenta`) con **Mis anuncios, Mi tienda y Cerrar sesión**. Se cierra con clic fuera o Escape. Ya no existe `#btn-cerrar-sesion-header`. Favoritos y «Publicar gratis» (parpadeante) siguen en la barra.
+- **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5. No hay nada que deshacer en Supabase.

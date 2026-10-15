@@ -94,6 +94,23 @@ function distanciaKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Pide la ubicación (GPS) y devuelve {lat,lng}. Solo se llama al TOCAR un botón «Cerca de mí» (nunca al cargar la página).
+function obtenerGPS() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error("no-soportado")); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  });
+}
+function textoErrorGPS(err) {
+  if (err && err.code === 1) return "Permiso de ubicación denegado. Actívalo en los ajustes del navegador.";
+  if (err && err.message === "no-soportado") return "Tu navegador no permite geolocalización.";
+  return "No se pudo obtener tu ubicación.";
+}
+
 function tieneCoords(a) {
   return Number.isFinite(a.lat) && Number.isFinite(a.lng);
 }

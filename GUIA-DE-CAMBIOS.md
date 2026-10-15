@@ -99,3 +99,16 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Comercios:** **📡 Comercios cerca de mí** (`#btn-cerca-comercios`, `cercaDeMiComercios`) en la sección de comercios del inicio y en `comercios.html` (`#co-cerca`). El GPS compartido está en `utils.js` (`obtenerGPS`, `textoErrorGPS`).
 - **Barra superior:** con sesión, el botón de usuario pasa a «👤 Nombre ▾» y abre un menú (`#menu-cuenta`) con **Mis anuncios, Mi tienda y Cerrar sesión**. Se cierra con clic fuera o Escape. Ya no existe `#btn-cerrar-sesion-header`. Favoritos y «Publicar gratis» (parpadeante) siguen en la barra.
 - **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5. No hay nada que deshacer en Supabase.
+
+## Fase 2M · Filtros independientes: clasificados y comercios
+
+**No hay SQL.** Cambian `index.html`, `app.js` y `comercios.js`.
+
+- **Causa del problema:** la sección de comercios del inicio reutilizaba el departamento, la ciudad y el buscador de clasificados. Si en clasificados quedaba elegida una ciudad sin comercios (p. ej. San Pedro de los Milagros), «Comercios cerca de mí» mostraba 0.
+- **Ahora cada sección tiene los suyos:**
+  - *Clasificados:* buscador del inicio, departamento, municipio/ciudad, «Ordenar por», «📡 Cerca de mí» y «Más filtros». Solo afectan a los anuncios y al mapa de anuncios.
+  - *Comercios:* 🔎 «Buscar comercio…» propio, departamento (aparece si hay comercios en más de uno), municipio, categorías y «📡 Comercios cerca de mí». Solo afectan a la lista de comercios.
+- **«Comercios cerca de mí»:** usa su propia ubicación (`ubicacionComercios`), quita el filtro de municipio/departamento de comercios para ver los más cercanos de toda la zona, y cada tarjeta muestra «📏 A 350 m de ti». No activa ni apaga el «Cerca de mí» de clasificados.
+- Si no hay resultados aparece el botón «Ver todos los comercios» que limpia los filtros de comercios.
+- **Corregido:** en `comercios.html` («Comercios cerca de mí») la distancia se calculaba con los argumentos mal puestos y no ordenaba bien.
+- **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.

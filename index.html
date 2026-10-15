@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=23" />
+  <link rel="stylesheet" href="styles.css?v=24" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -303,6 +303,8 @@
       </div>
       <p class="text-sm text-slate-500 mb-4">👆 <b>Toca un comercio</b> para ver su ficha completa, sus productos y promociones.</p>
       <div class="flex flex-wrap items-center gap-2 mb-2">
+        <input id="comercios-buscar" type="search" maxlength="60" placeholder="🔎 Buscar comercio…" aria-label="Buscar comercio" class="border border-slate-300 rounded-lg p-1.5 text-sm bg-white w-full sm:w-52">
+        <select id="comercios-depto" aria-label="Departamento de los comercios" class="hidden border border-slate-300 rounded-lg p-1.5 text-sm bg-white"></select>
         <label for="comercios-muni" id="comercios-muni-etq" class="hidden text-xs font-bold text-slate-500">🏘️ Municipio</label>
         <select id="comercios-muni" aria-label="Municipio" class="hidden border border-slate-300 rounded-lg p-1.5 text-sm bg-white"></select>
         <button type="button" id="btn-cerca-comercios" aria-pressed="false" class="btn-cerca btn-cerca-chico whitespace-nowrap">📡 Comercios cerca de mí</button>
@@ -585,10 +587,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=23"></script>
-  <script src="data.js?v=23"></script>
-  <script src="foro.js?v=23"></script>
-  <script src="carrusel.js?v=23"></script>
-  <script src="app.js?v=23"></script>
+  <script src="utils.js?v=24"></script>
+  <script src="data.js?v=24"></script>
+  <script src="foro.js?v=24"></script>
+  <script src="carrusel.js?v=24"></script>
+  <script src="app.js?v=24"></script>
 </body>
 </html>

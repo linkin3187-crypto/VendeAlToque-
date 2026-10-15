@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -72,6 +72,12 @@
       </div>
       <p class="text-xs text-slate-500 mb-3">Productos de las vitrinas que alguien reportó. «Ocultar» lo saca de la tienda pública (el dueño lo ve marcado y no puede reactivarlo).</p>
       <div id="rprod-lista" class="space-y-3"></div>
+
+      <div class="mt-10 mb-3">
+        <h2 id="opiniones" class="text-xl font-black text-indigo-900 scroll-mt-4">⭐ Opiniones reportadas <span id="n-rcal" class="text-sm font-semibold text-slate-500"></span></h2>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Opiniones de comercios que alguien reportó. Oculta solo las que tengan insultos, datos personales, spam o sean claramente falsas. <b>Una opinión negativa no se oculta por ser negativa.</b> Ocultar la saca del promedio; su autor la sigue viendo.</p>
+      <div id="rcal-lista" class="space-y-3"></div>
     </section>
   </main>
 
@@ -80,8 +86,8 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=25"></script>
-  <script src="data.js?v=25"></script>
-  <script src="moderacion.js?v=25"></script>
+  <script src="utils.js?v=26"></script>
+  <script src="data.js?v=26"></script>
+  <script src="moderacion.js?v=26"></script>
 </body>
 </html>

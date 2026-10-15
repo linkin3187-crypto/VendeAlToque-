@@ -9,9 +9,10 @@ let ubicacionCo = null;   // {lat,lng} solo si el usuario toca «Comercios cerca
 let listaCo = [];
 let paginaCo = 1;
 
-// ---------- Calificaciones (se activan en la fase 2P; aquí ya se filtra y ordena si existen) ----------
-const MIN_VOTOS_PROMEDIO = 3;   // con menos votos se muestra «Nuevo» para que 1 voto no lo ponga de primero
-const hayCalificaciones = () => comercios.some(c => (c.nCalif || 0) > 0);
+// ---------- Calificaciones (fase 2P · supabase/12_calificaciones.sql) ----------
+// El promedio se muestra SIEMPRE (transparencia, como Google). Solo para ORDENAR se usa un promedio
+// ponderado, para que 5,0 con 1 opinión no quede por encima de 4,8 con 40.
+const MIN_VOTOS_PROMEDIO = 3;
 function puntajeCalif(c) {
   // Promedio ponderado (bayesiano): 4,8 con 40 votos vale más que 5,0 con 1 voto
   const n = c.nCalif || 0;
@@ -20,10 +21,7 @@ function puntajeCalif(c) {
   return (PREVIO * MIN_VOTOS_PROMEDIO + (c.calif || 0) * n) / (MIN_VOTOS_PROMEDIO + n);
 }
 function califHTML(c) {
-  const n = c.nCalif || 0;
-  if (!n) return "";
-  if (n < MIN_VOTOS_PROMEDIO) return '<p class="text-xs font-semibold text-amber-700 mt-1">⭐ Nuevo · ' + n + (n === 1 ? " calificación" : " calificaciones") + "</p>";
-  return `<p class="text-xs font-bold text-amber-700 mt-1">⭐ ${String((c.calif || 0).toFixed(1)).replace(".", ",")} <span class="font-normal text-slate-500">(${n})</span></p>`;
+  return `<p class="text-xs mt-1">${resumenCalifHTML(c)}</p>`;
 }
 
 function textoDistanciaCo(km) {
@@ -60,6 +58,7 @@ function tarjetaComercio(c) {
         ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
         ${tieneCoords(c) ? `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>` : ""}
       </div>
+      <a href="tienda.html?id=${c.id}#opinar" class="relative z-10 mt-2 inline-flex w-fit items-center gap-1 text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg">⭐ Calificar</a>
       <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 relative z-10">
         <button type="button" data-solicitar="${c.id}" class="text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Actualizar o retirar</button>
         <button type="button" data-reportar-com="${c.id}" class="text-xs text-slate-500 hover:text-red-600 underline text-left">⚠️ Reportar este negocio</button>
@@ -86,7 +85,7 @@ function baseCo(f) {
     if (f.muni && String(c.municipioId) !== f.muni) return false;
     if (f.nivel === "1" && c.nivel !== 1) return false;
     if ((f.nivel === "2" || f.nivel === "3") && c.nivel < Number(f.nivel)) return false;
-    if (f.calif && !((c.nCalif || 0) >= MIN_VOTOS_PROMEDIO && (c.calif || 0) >= f.calif)) return false;
+    if (f.calif && !((c.nCalif || 0) > 0 && (c.calif || 0) >= f.calif)) return false;
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
     if (f.vitrina && !(c.nivel >= 2 && c.nProductos > 0)) return false;
     if (f.texto) {
@@ -287,12 +286,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await Promise.all([cargarComercios(), cargarSesion()]);
   pintarUbicacionesCo();
-  // Calificaciones: hasta que existan (fase 2P), el filtro y el orden por estrellas quedan desactivados con una nota
-  if (!hayCalificaciones()) {
-    $("co-calif").disabled = true;
-    $("co-calif-nota").classList.remove("hidden");
-    $("co-orden").querySelector('option[value="calificacion"]').disabled = true;
-  }
   const conRetraso = debounce(pintar, 250);
   $("co-buscar").addEventListener("input", conRetraso);
   $("co-depto").addEventListener("change", () => { llenarMunisCo(""); pintar(); });

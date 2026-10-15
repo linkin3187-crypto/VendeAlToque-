@@ -133,3 +133,19 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Calificación:** el filtro y el orden por estrellas ya están programados, pero aparecen desactivados con la nota «Muy pronto» hasta la fase 2P (SQL 12). `data.js` ya lee `calif_promedio` y `calif_total`; si esas columnas no existen valen 0.
 - **Enlace para compartir:** los filtros quedan en el enlace (ej. `comercios.html?tipo=farmacia&muni=4&abierto=1`) y el botón «🔗 Compartir esta búsqueda» lo envía. «Ver directorio completo →» del inicio lleva la categoría, búsqueda y ubicación elegidas en la sección de comercios.
 - **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.
+
+## Fase 2P · Calificaciones con estrellas y opiniones (estilo Google)
+
+**SQL:** `supabase/12_calificaciones.sql` — copiar → Supabase → SQL Editor → Run → debe terminar mostrando 2 filas (`calificaciones_comercio` y `reportes_calificacion`). **Ejecutarlo ANTES de fusionar el PR.** Es repetible.
+
+- **Dónde se califica:** en la ficha del comercio (`tienda.html`), sección **⭐ Opiniones**: promedio grande, estrellas, barras por estrella (5★…1★), botón **«✍️ Escribir una opinión»**, lista ordenable (recientes, mejor, peor). Cada tarjeta del directorio, del inicio y la ventanita del mapa tienen **«⭐ Calificar»** (abre la ficha con el formulario: `tienda.html?id=N#opinar`).
+- **Reglas (las impone la base de datos, no solo la página):**
+  - Leer: todos, sin cuenta. Escribir: con cuenta gratis. Sin cuenta, «Calificar» lleva al registro y, al entrar, vuelve sola a la ficha.
+  - 1 opinión por persona y comercio; se puede editar o borrar. Máximo 20 opiniones nuevas por persona al día.
+  - El dueño **no** puede calificar su negocio, pero **sí responder** en público cada opinión (función `responder_calificacion`).
+  - El nombre visible sale del perfil (nadie puede firmar con otro nombre).
+  - `comercios.calif_promedio` y `calif_total` se recalculan solos; nadie los edita a mano.
+  - Cualquiera con cuenta puede **reportar** una opinión. En `moderacion.html` → «⭐ Opiniones reportadas»: **Ocultar** (deja de contar en el promedio; el autor la sigue viendo con aviso), Revisado o Descartar. **Las negativas honestas no se ocultan.**
+- **Transparencia:** el promedio se muestra siempre (aunque haya 1 opinión). Solo al ordenar «Mejor calificados» se usa un promedio ponderado (4,8 con 40 opiniones va antes que 5,0 con 1).
+- **También:** en un comercio «Ubicado» (sin verificar) el público ya no ve «Solo tú ves esta tienda»; ve un aviso honesto de que aún no está verificado.
+- **Revertir:** PR de esta fase → **Revert**. El SQL puede quedarse (no estorba). Para quitarlo: `drop table public.reportes_calificacion; drop table public.calificaciones_comercio; drop function public.responder_calificacion(bigint, text); alter table public.comercios drop column calif_promedio, drop column calif_total;`

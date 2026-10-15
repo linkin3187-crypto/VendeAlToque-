@@ -156,7 +156,9 @@ document.addEventListener("click", e => {
   if (abrir) {
     // data-requiere-login: publicar, escribir en el foro, etc. exigen cuenta (lo exige también la base de datos)
     if (abrir.hasAttribute("data-requiere-login") && typeof usuarioActual !== "undefined" && !usuarioActual) {
-      mostrarToast("Inicia sesión para continuar", "error");
+      const registro = abrir.dataset.authModo === "registro";
+      mostrarToast(registro ? "Crea tu cuenta gratis para publicar" : "Inicia sesión para continuar", registro ? "ok" : "error");
+      document.dispatchEvent(new CustomEvent("auth:pedir", { detail: { modo: abrir.dataset.authModo || "login" } }));
       abrirModal("modal-auth");
       return;
     }

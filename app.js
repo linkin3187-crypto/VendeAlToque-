@@ -618,8 +618,15 @@ async function guardarNuevaPassword(e) {
   }
 }
 
+// Pide el formulario de cuenta ya en el modo que corresponde (el botón amarillo abre «Crear cuenta»)
+document.addEventListener("auth:pedir", e => {
+  if (e.detail && e.detail.modo === "registro" && modoAuth !== "registro") cambiarModoAuth();
+  else if (e.detail && e.detail.modo === "login" && modoAuth !== "login") cambiarModoAuth();
+});
+
 function actualizarUIAuth() {
   const btn = $("btn-auth");
+  $("btn-publicar-txt").textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis";
   if (usuarioActual) {
     btn.textContent = usuarioActual.nombre.split(" ")[0];
     btn.removeAttribute("data-abrir");            // con sesión, el botón lleva a "Mis anuncios"

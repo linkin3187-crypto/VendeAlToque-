@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=17" />
+  <link rel="stylesheet" href="styles.css?v=18" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -34,9 +34,9 @@
           Iniciar sesión
         </button>
         <a href="registrar-negocio.html" class="hidden md:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm transition whitespace-nowrap">🏪 Registrar negocio</a>
-        <button data-abrir="modal-publicar" data-requiere-login class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 sm:px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
+        <button id="btn-publicar-header" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro" class="btn-parpadeo bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 sm:px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
           <span class="text-lg leading-none">+</span>
-          <span>Publicar<span class="hidden sm:inline"> Gratis</span></span>
+          <span id="btn-publicar-txt">Regístrate y publica gratis</span>
         </button>
       </div>
     </div>
@@ -501,9 +501,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=17"></script>
-  <script src="data.js?v=17"></script>
-  <script src="foro.js?v=17"></script>
-  <script src="app.js?v=17"></script>
+  <script src="utils.js?v=18"></script>
+  <script src="data.js?v=18"></script>
+  <script src="foro.js?v=18"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>

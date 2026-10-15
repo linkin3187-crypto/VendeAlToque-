@@ -43,7 +43,7 @@ function pintar() {
   let lista = verificados.filter(c => (tipoActivo === "todos" || c.tipo === tipoActivo) && (!muni || String(c.municipioId) === muni));
   // Con «Cerca de mí» activo, los más cercanos primero (los que no tienen coordenadas, al final)
   if (ubicacionCo) {
-    const d = c => tieneCoords(c) ? distanciaKm(ubicacionCo.lat, ubicacionCo.lng, c.lat, c.lng) : Infinity;
+    const d = c => tieneCoords(c) ? distanciaKm(ubicacionCo, c) : Infinity;
     lista = lista.slice().sort((a, b) => d(a) - d(b));
   }
   $("co-lista").innerHTML = lista.map(tarjetaComercio).join("");

@@ -107,25 +107,26 @@ async function cercaDeMiAnuncios() {
   }
 }
 
-// «📡 Comercios cerca de mí»: igual, para la sección de comercios (se ordenan por cercanía)
+// «📡 Comercios cerca de mí»: independiente de los clasificados. Pide el GPS al tocar, quita el filtro de
+// municipio/departamento de comercios (para ver los más cercanos de toda la zona) y ordena por cercanía.
 async function cercaDeMiComercios() {
   const btn = $("btn-cerca-comercios");
   if (btn.getAttribute("aria-pressed") === "true") {
-    ubicacionUsuario = null;
+    ubicacionComercios = null;
     btn.setAttribute("aria-pressed", "false");
     comerciosVisibles = POR_PAGINA_COMERCIOS;
     pintarComerciosFeed();
-    aplicarFiltros({ ajustarMapa: false });
     return;
   }
   btn.disabled = true; btn.textContent = "📡 Buscando tu ubicación…";
   try {
-    await pedirUbicacion();
+    ubicacionComercios = await obtenerGPS();
+    muniComercio = ""; deptoComercio = "";
     btn.setAttribute("aria-pressed", "true");
     comerciosVisibles = POR_PAGINA_COMERCIOS;
     pintarComerciosFeed();
   } catch (err) {
-    mostrarToast(mensajeErrorUbicacion(err), "error");
+    mostrarToast(textoErrorGPS(err), "error");
   } finally {
     btn.disabled = false; btn.textContent = "📡 Comercios cerca de mí";
   }
@@ -196,16 +197,16 @@ function popupComercioHTML(c) {
 const POR_PAGINA_COMERCIOS = 12;
 let comerciosVisibles = POR_PAGINA_COMERCIOS;
 
-let catComercio = "todos", muniComercio = "";
+let catComercio = "todos", muniComercio = "", deptoComercio = "", textoComercio = "";
+let ubicacionComercios = null;   // {lat,lng}: solo si tocaste «Comercios cerca de mí» (independiente de los clasificados)
 
-// Base: lo que dicen el buscador, los filtros de ciudad del inicio y el municipio de esta sección
+// Base: SOLO los filtros propios de la sección de comercios (buscador, departamento y municipio de comercios).
+// No dependen de los filtros de clasificados ni del buscador del inicio.
 function comerciosBase() {
   if (!$("comercios-feed")) return [];
-  const texto = normalizar($("buscador").value.trim());
-  const departamento = $("filtro-departamento").value, ciudad = $("filtro-ciudad").value;
+  const texto = normalizar(textoComercio.trim());
   return comercios.filter(c => {
-    if (departamento && c.departamento !== departamento) return false;
-    if (ciudad && c.ciudad !== ciudad) return false;
+    if (deptoComercio && c.departamento !== deptoComercio) return false;
     if (muniComercio && String(c.municipioId) !== muniComercio) return false;
     if (texto) {
       const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
@@ -215,11 +216,17 @@ function comerciosBase() {
   });
 }
 
+function textoDistancia(km) {
+  return km < 1 ? Math.max(10, Math.round(km * 100) * 10) + " m" : km.toFixed(1).replace(".", ",") + " km";
+}
+function distanciaComercio(c) {
+  return (ubicacionComercios && tieneCoords(c)) ? distanciaKm(ubicacionComercios, c) : Infinity;
+}
+
 function comerciosFiltrados() {
-  const dist = c => (ubicacionUsuario && tieneCoords(c)) ? distanciaKm(ubicacionUsuario, c) : Infinity;
-  // Con tu ubicación: los más cercanos primero. Sin ella: verificados, con productos y por nombre.
+  // Con «Comercios cerca de mí»: los más cercanos primero. Sin él: verificados, con productos y por nombre.
   return comerciosBase().filter(c => catComercio === "todos" || c.tipo === catComercio)
-    .sort((x, y) => ubicacionUsuario ? dist(x) - dist(y)
+    .sort((x, y) => ubicacionComercios ? distanciaComercio(x) - distanciaComercio(y)
       : (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));
 }
 
@@ -232,12 +239,23 @@ function pintarFiltrosComercios() {
   const chip = (id, txt, n) => `<button type="button" data-cat-com="${id}" class="shrink-0 text-sm font-semibold px-3.5 py-1.5 rounded-full border whitespace-nowrap ${catComercio === id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"}">${txt} <span class="${catComercio === id ? "text-indigo-200" : "text-slate-400"}">${n}</span></button>`;
   $("comercios-cats").innerHTML = chip("todos", "Todos", base.length)
     + TIPOS_COMERCIO.filter(t => cuenta[t.id]).map(t => chip(t.id, `${t.icono} ${esc(t.nombre)}`, cuenta[t.id])).join("");
-  // Municipios con comercios (se arma con todos los comercios, no con la base, para poder cambiar de municipio)
+  // Departamentos con comercios (solo se muestra si hay más de uno)
+  const deptos = [...new Set(comercios.map(c => c.departamento).filter(Boolean))].sort((x, y) => x.localeCompare(y, "es"));
+  const selD = $("comercios-depto");
+  const firmaD = deptos.join("|");
+  if (selD.dataset.firma !== firmaD) {
+    selD.innerHTML = '<option value="">Todos los departamentos</option>' + deptos.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
+    selD.dataset.firma = firmaD;
+  }
+  selD.value = deptoComercio;
+  selD.classList.toggle("hidden", deptos.length < 2);
+  // Municipios con comercios (se arma con todos los comercios del departamento elegido, para poder cambiar de municipio)
   const munis = {};
-  comercios.forEach(c => { munis[c.municipioId] = c.ciudad; });
+  comercios.forEach(c => { if (!deptoComercio || c.departamento === deptoComercio) munis[c.municipioId] = c.ciudad; });
   const sel = $("comercios-muni");
   const ids = Object.keys(munis).sort((x, y) => munis[x].localeCompare(munis[y], "es"));
   const firma = ids.join(",");
+  if (muniComercio && !munis[muniComercio]) muniComercio = "";
   if (sel.dataset.firma !== firma) {
     sel.innerHTML = '<option value="">Todos los municipios</option>' + ids.map(id => `<option value="${id}">${esc(munis[id])}</option>`).join("");
     sel.dataset.firma = firma;
@@ -245,7 +263,7 @@ function pintarFiltrosComercios() {
   sel.value = muniComercio;
   sel.classList.toggle("hidden", ids.length < 2);
   $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
-  $("comercios-orden").textContent = ubicacionUsuario ? "📍 Ordenados por cercanía a ti"
+  $("comercios-orden").textContent = ubicacionComercios ? "📍 Ordenados por cercanía a ti (de toda la zona)"
     : "Verificados primero · toca «Comercios cerca de mí» para ordenarlos por cercanía";
 }
 
@@ -265,6 +283,7 @@ function tarjetaComercioFeed(c) {
     <div class="p-4 flex-1 flex flex-col">
       <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
       <p class="text-xs text-slate-500">${esc(t ? t.nombre : "Comercio")} · ${esc(c.ciudad)}</p>
+      ${ubicacionComercios && tieneCoords(c) ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistancia(distanciaComercio(c))} de ti</p>` : ""}
       ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
       ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
@@ -286,7 +305,7 @@ function pintarComerciosFeed() {
   const lista = comerciosFiltrados();
   $("seccion-comercios").classList.toggle("hidden", !comercios.length);
   if (!comercios.length) return;
-  if (!lista.length) { cont.innerHTML = '<p class="text-sm text-slate-400 col-span-full text-center py-6">No hay comercios con estos filtros.</p>'; $("comercios-mas").classList.add("hidden"); $("comercios-contador").textContent = "(0)"; return; }
+  if (!lista.length) { cont.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-6">No hay comercios con estos filtros de comercios.' + ((muniComercio || deptoComercio || textoComercio) ? ' <button type="button" id="btn-limpiar-comercios" class="text-indigo-600 font-semibold underline">Ver todos los comercios</button>' : '') + '</p>'; $("comercios-mas").classList.add("hidden"); $("comercios-contador").textContent = "(0)"; return; }
   $("comercios-contador").textContent = "(" + lista.length + ")";
   cont.innerHTML = lista.slice(0, comerciosVisibles).map(tarjetaComercioFeed).join("");
   const faltan = lista.length - comerciosVisibles;
@@ -523,8 +542,6 @@ function aplicarFiltros({ ajustarMapa = true } = {}) {
   paginaActual = 1;
   renderizarLista();
   renderizarMarcadores(ajustarMapa && !limitesZona);
-  comerciosVisibles = POR_PAGINA_COMERCIOS;
-  pintarComerciosFeed();
   if (usuarioActual) renderizarMisAnuncios();
 }
 
@@ -1372,6 +1389,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
   cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); });
   $("comercios-cats").addEventListener("click", e => { const b = e.target.closest("[data-cat-com]"); if (b) { catComercio = b.dataset.catCom; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); } });
+  $("comercios-buscar").addEventListener("input", e => { textoComercio = e.target.value; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
+  $("comercios-depto").addEventListener("change", e => { deptoComercio = e.target.value; muniComercio = ""; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
+  $("comercios-feed").addEventListener("click", e => {
+    if (!e.target.closest("#btn-limpiar-comercios")) return;
+    muniComercio = ""; deptoComercio = ""; textoComercio = ""; $("comercios-buscar").value = ""; catComercio = "todos"; pintarComerciosFeed();
+  });
   $("comercios-muni").addEventListener("change", e => { muniComercio = e.target.value; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
   $("btn-mas-comercios").addEventListener("click", () => { comerciosVisibles += POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
 

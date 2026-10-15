@@ -10,6 +10,34 @@
 let EDITOR = false;
 const $ = id => document.getElementById(id);
 
+// ---------- Código de origen (?ref=) ----------
+// Si alguien llega por un enlace o QR con ?ref=grupo-envigado-1, guardamos ese código en el
+// navegador (30 días, gana el primero) para anotarlo SOLO si esa persona crea una cuenta.
+// No se sigue a quien solo visita: no hay cookies de seguimiento ni analítica.
+const REF_VALIDO = /^[a-z0-9_-]{1,30}$/;
+function limpiarRef(v) { v = String(v || "").trim().toLowerCase(); return REF_VALIDO.test(v) ? v : ""; }
+// Convierte un texto libre («Grupo Envigado #1») en un código válido («grupo-envigado-1»)
+function slugRef(v) {
+  return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[-_]+|[-_]+$/g, "").slice(0, 30).replace(/[-_]+$/g, "");
+}
+function guardarRefDeLaURL() {
+  try {
+    const r = limpiarRef(new URLSearchParams(location.search).get("ref"));
+    if (!r) return;
+    const previo = JSON.parse(localStorage.getItem("mf_ref") || "null");
+    if (previo && previo.r && Date.now() - previo.t < 30 * 86400000) return;
+    localStorage.setItem("mf_ref", JSON.stringify({ r, t: Date.now() }));
+  } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+function refGuardado() {
+  try {
+    const p = JSON.parse(localStorage.getItem("mf_ref") || "null");
+    return p && limpiarRef(p.r) && Date.now() - p.t < 30 * 86400000 ? p.r : "";
+  } catch (e) { return ""; }
+}
+guardarRefDeLaURL();
+
 // ---------- Seguridad ----------
 // POR QUÉ: si alguien publica un título como  <img src=x onerror=alert(1)>  y lo
 // pegamos con innerHTML, el navegador EJECUTA ese código (ataque XSS).
@@ -183,7 +211,7 @@ function crearMapaBase(idElemento, centro, zoom, opciones) {
   const mapa = L.map(idElemento, Object.assign({ center: centro, zoom }, opciones || {}));
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: "© OpenStreetMap"
+    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a>'
   }).addTo(mapa);
   if (window.ResizeObserver) {
     new ResizeObserver(() => mapa.invalidateSize()).observe(mapa.getContainer());

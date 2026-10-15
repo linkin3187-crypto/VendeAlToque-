@@ -150,6 +150,9 @@ function renderizarAnuncio(a) {
   $("meta-desc").content = (a.desc || "").slice(0, 150);
 
   $("anuncio-titulo").textContent = a.nombre;
+  // El dueño (o un moderador) ve «Editar mi publicación»: abre el formulario de edición del inicio
+  const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
+  if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }
   $("anuncio-precio").textContent = a.precio || "Precio a convenir";
   $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ");
   $("anuncio-desc").textContent = a.desc || "Sin descripción";

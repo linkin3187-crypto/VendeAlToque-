@@ -149,3 +149,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Transparencia:** el promedio se muestra siempre (aunque haya 1 opinión). Solo al ordenar «Mejor calificados» se usa un promedio ponderado (4,8 con 40 opiniones va antes que 5,0 con 1).
 - **También:** en un comercio «Ubicado» (sin verificar) el público ya no ve «Solo tú ves esta tienda»; ve un aviso honesto de que aún no está verificado.
 - **Revertir:** PR de esta fase → **Revert**. El SQL puede quedarse (no estorba). Para quitarlo: `drop table public.reportes_calificacion; drop table public.calificaciones_comercio; drop function public.responder_calificacion(bigint, text); alter table public.comercios drop column calif_promedio, drop column calif_total;`
+
+## Fase 2R · «Reclamar comercio» y «Editar mi publicación»
+
+**No hay SQL.** Cambian `styles.css`, `comercios.js`, `tienda.js`, `app.js`, `anuncios-comun.js`, `anuncios.js`, `anuncio.html` y `anuncio.js`.
+
+- **🔑 Reclamar comercio:** en los comercios **sin dueño** (`owner_id` vacío) aparece una etiqueta amarilla pequeña que titila suave, «🔑 ¿Es tu negocio? Reclámalo», en la foto de la tarjeta (directorio e inicio) y en la ventanita del mapa. Abre el formulario de solicitud ya en «Soy el dueño: quiero administrar mi ficha» (`comercios.html?solicitar=ID&tipo=reclamar`). En la ficha del comercio sale como burbuja flotante abajo a la izquierda; se cierra con ✕ y no vuelve a salir en esa sesión. Los comercios con dueño no la muestran. Con «reducir movimiento» activado no titila. Clases: `.badge-reclamar`, `#burbuja-reclamar`.
+- **✏️ Editar mi publicación:** el dueño de un anuncio ve el botón amarillo en sus tarjetas (inicio y «Todos los anuncios») y arriba del título al abrir su anuncio. Abre el formulario de edición del inicio con `index.html?editar=ID`. Si otra persona usa ese enlace, ve «Solo el dueño puede editar esta publicación».
+- **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.

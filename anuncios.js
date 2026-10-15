@@ -166,6 +166,7 @@ function iniciarEventosTodos() {
     if (!b || !fila) return;
     const id = Number(fila.dataset.id);
     if (b.dataset.accion === "favorito") corazonTodos(id, b);
+    else if (b.dataset.accion === "editar") location.href = "index.html?editar=" + id;
     // El mapa y las herramientas de moderador están en la ficha del anuncio
     else location.href = "anuncio.html?id=" + id;
   });

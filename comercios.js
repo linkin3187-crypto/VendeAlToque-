@@ -41,6 +41,7 @@ function tarjetaComercio(c) {
       ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       <span class="absolute top-2 left-2 ${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
       ${abierto === true ? '<span class="absolute top-2 right-2 bg-white/95 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded-full">🟢 Abierto ahora</span>' : ""}
+      ${!c.ownerId ? `<button type="button" data-reclamar="${c.id}" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis para administrarla">🔑 ¿Es tu negocio? Reclámalo</button>` : ""}
     </div>
     <div class="p-4 flex-1 flex flex-col">
       <h2 class="font-bold text-lg leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h2>
@@ -250,7 +251,7 @@ async function compartirBusquedaCo() {
 // ---------- Solicitud del dueño ----------
 let comercioSolicitud = null;
 
-function abrirSolicitud(id) {
+function abrirSolicitud(id, tipo) {
   const c = comercios.find(x => x.id === id);
   if (!c) return;
   if (!usuarioActual) {
@@ -261,7 +262,7 @@ function abrirSolicitud(id) {
   comercioSolicitud = c;
   $("sol-comercio").textContent = c.nombre + " · " + c.ciudad;
   $("sol-nombre").value = usuarioActual.nombre || "";
-  $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = "actualizar";
+  $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = tipo === "reclamar" ? "reclamar" : "actualizar";
   abrirModal("modal-solicitud");
 }
 
@@ -316,6 +317,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("co-lista").addEventListener("click", e => {
     const b = e.target.closest("[data-solicitar]");
     if (b) abrirSolicitud(Number(b.dataset.solicitar));
+    const rc = e.target.closest("[data-reclamar]");
+    if (rc) abrirSolicitud(Number(rc.dataset.reclamar), "reclamar");
     const r = e.target.closest("[data-reportar-com]");
     if (r) { const c = comercios.find(x => x.id === Number(r.dataset.reportarCom)); if (c) abrirReporteComercio(c); }
   });
@@ -327,6 +330,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const pedido = parseInt(qs.get("solicitar"), 10);
   const aReportar = comercios.find(x => x.id === parseInt(qs.get("reportar"), 10));
   pintar();
-  if (pedido) abrirSolicitud(pedido);
+  if (pedido) abrirSolicitud(pedido, qs.get("tipo"));
   if (aReportar && !pedido) abrirReporteComercio(aReportar);
 });

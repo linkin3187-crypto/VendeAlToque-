@@ -188,6 +188,7 @@ function tarjetaHTML(a) {
   // Siempre dibujamos el icono de la categoría de fondo; la <img> va ENCIMA.
   // Si la foto falla al cargar, se quita la <img> y queda el icono (sin código extra por tarjeta).
   const guardado = favoritosIds.has(a.id);
+  const esMio = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
   return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio relative bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
     <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${guardado ? "❤️" : "🤍"}</button>
     <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
@@ -210,7 +211,8 @@ function tarjetaHTML(a) {
         <a href="${esc(urlWhatsApp(a.whatsapp, a.nombre))}" target="_blank" rel="noopener" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</a>
         ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 rounded-xl" title="Ver en el mapa">📍 Mapa</button>` : ""}
       </div>
-      ${EDITOR ? `<div class="flex gap-2 mt-2">
+      ${esMio ? '<button type="button" data-accion="editar" class="btn-editar-mio mt-2 w-full text-sm font-bold py-2 rounded-xl">✏️ Editar mi publicación</button>' : ""}
+      ${EDITOR && !esMio ? `<div class="flex gap-2 mt-2">
         <button type="button" data-accion="editar" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
         <button type="button" data-accion="eliminar-admin" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
       </div>` : ""}

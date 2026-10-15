@@ -188,7 +188,8 @@ function popupComercioHTML(c) {
     </div>
     ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="block mt-2 text-center bg-teal-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
     <a href="tienda.html?id=${c.id}#opinar" class="block mt-2 text-center bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">⭐ Calificar / ver opiniones</a>
-    <a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>
+    ${c.ownerId ? `<a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>`
+      : `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar mt-2" style="color:#1e1b4b!important">🔑 ¿Es tu negocio? Reclámalo gratis</a>`}
   </div>`;
 }
 
@@ -278,6 +279,7 @@ function tarjetaComercioFeed(c) {
       ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
       ${abierto === true ? '<span class="absolute top-2 right-2 bg-white/95 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded-full">🟢 Abierto ahora</span>' : ""}
+      ${!c.ownerId ? `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>` : ""}
     </div>
     <div class="p-4 flex-1 flex flex-col">
       <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
@@ -1267,6 +1269,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");
+  // Enlace "?editar=ID" (lo usan anuncio.html y anuncios.html): abre el formulario de edición de ese anuncio
+  const idEditar = parseInt(new URLSearchParams(location.search).get("editar"), 10);
+  if (idEditar) {
+    history.replaceState(null, "", location.pathname);
+    const a = baseDatosAnuncios.find(x => x.id === idEditar);
+    if (!usuarioActual) abrirModal("modal-auth");
+    else if (a && (a.owner === usuarioActual.id || EDITOR)) editarAnuncio(idEditar);
+    else mostrarToast("Solo el dueño puede editar esta publicación", "error");
+  }
   // Enlace "#publicar" (lo usa «Publicar gratis» de anuncios.html): abre el formulario o pide la cuenta
   if (location.hash === "#publicar") { history.replaceState(null, "", location.pathname + location.search); $("btn-publicar-header").click(); }
 });

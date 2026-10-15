@@ -230,7 +230,6 @@ function pintarComerciosFeed() {
   const cont = $("comercios-feed");
   if (!cont) return;
   pintarFiltrosComercios();
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
   const lista = comerciosFiltrados();
   $("seccion-comercios").classList.toggle("hidden", !comercios.length);
   if (!comercios.length) return;
@@ -993,7 +992,6 @@ async function registrarAnuncio(e) {
 
   if (previo) baseDatosAnuncios = baseDatosAnuncios.map(a => (a.id === previo.id ? anuncio : a));
   else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
   if (anuncio.avisoUbicacion) mostrarToast("Se guardó el anuncio, pero no pudimos guardar tu punto exacto. Ábrelo con «Editar» y guarda de nuevo.", "error");
@@ -1004,7 +1002,6 @@ async function registrarAnuncio(e) {
   marcarCategoriaActiva();
   refrescarOpcionesUbicacion();
   aplicarFiltros();
-  if (typeof pintarInicioNuevo === "function") pintarInicioNuevo();
   activarModoEditor();
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }

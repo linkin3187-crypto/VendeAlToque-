@@ -73,3 +73,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 4. `localStorage`: límites, errores y migraciones.
 5. Debounce.
 6. Caché del navegador y cache busting.
+
+## Fase 2J · Publicaciones en carrusel, «Cerrar sesión» visible y «Mi tienda» 3D
+
+- **Carrusel:** `#contenedor-anuncios` pasó de cuadrícula a fila con scroll horizontal (`.carrusel-anuncios` en `styles.css`, `scroll-snap`). Las tarjetas son las mismas (`tarjetaHTML`), solo con ancho fijo de 15.5rem. Flechas `‹ ›` en pantallas ≥640 px.
+- **Cerrar sesión:** botón `#btn-cerrar-sesion-header` en el encabezado; `actualizarUIAuth()` lo muestra solo con sesión.
+- **Mi tienda:** el enlace `#link-mi-tienda` usa las clases `btn-3d btn-3d-comercios` (mismo sitio).
+- **Revertir:** en GitHub, PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5. No hay SQL.

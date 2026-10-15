@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=21" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -33,6 +33,7 @@
         <button id="btn-auth" data-abrir="modal-auth" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-3 sm:px-4 py-2 rounded-full text-sm transition truncate max-w-[7.5rem] sm:max-w-none">
           Iniciar sesión
         </button>
+        <button id="btn-cerrar-sesion-header" type="button" class="hidden bg-red-500 hover:bg-red-600 text-white font-semibold px-3 py-2 rounded-full text-sm transition whitespace-nowrap" aria-label="Cerrar sesión">🚪<span class="hidden min-[380px]:inline"> Cerrar sesión</span></button>
         <a href="registrar-negocio.html" class="hidden md:inline-flex bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm transition whitespace-nowrap">🏪 Registrar negocio</a>
         <button id="btn-publicar-header" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro" class="btn-parpadeo bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 sm:px-5 py-2.5 rounded-full transition text-sm shadow-md flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
           <span class="text-lg leading-none">+</span>
@@ -243,18 +244,23 @@
             <h3 class="font-bold text-indigo-900">👤 Mis anuncios</h3>
             <button id="btn-cerrar-sesion" type="button" class="text-xs text-red-500 font-medium">Cerrar sesión</button>
           </div>
-          <a id="link-mi-tienda" href="mi-tienda.html" class="hidden mb-3 block text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-sm">🏪 Mi tienda: datos y productos</a>
+          <a id="link-mi-tienda" href="mi-tienda.html" class="btn-3d btn-3d-comercios hidden mb-4 w-full justify-center text-sm">🏪 Mi tienda: datos y productos</a>
           <div id="lista-mis-anuncios" class="space-y-2"></div>
         </div>
       </div>
 
       <!-- Esqueletos: se ven mientras llegan los anuncios desde Supabase y los reemplaza la lista real. -->
-      <div id="contenedor-anuncios" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div class="relative">
+        <button type="button" id="anu-ant" class="anu-flecha anu-flecha-ant" aria-label="Anuncios anteriores">‹</button>
+        <button type="button" id="anu-sig" class="anu-flecha anu-flecha-sig" aria-label="Más anuncios">›</button>
+      <div id="contenedor-anuncios" class="carrusel-anuncios" tabindex="0" aria-label="Publicaciones (desliza hacia los lados)">
         <div class="skeleton h-72 rounded-2xl"></div>
         <div class="skeleton h-72 rounded-2xl"></div>
         <div class="skeleton h-72 rounded-2xl hidden sm:block"></div>
         <div class="skeleton h-72 rounded-2xl hidden sm:block"></div>
       </div>
+      </div>
+      <p class="text-xs text-slate-400 text-center mt-1">👈 Desliza para ver más anuncios 👉</p>
 
       <div id="contenedor-mas" class="hidden text-center mt-6">
         <button type="button" id="btn-mas" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-6 py-2.5 rounded-xl text-sm shadow-sm"></button>
@@ -549,10 +555,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=19"></script>
-  <script src="data.js?v=19"></script>
-  <script src="foro.js?v=19"></script>
-  <script src="carrusel.js?v=19"></script>
-  <script src="app.js?v=19"></script>
+  <script src="utils.js?v=21"></script>
+  <script src="data.js?v=21"></script>
+  <script src="foro.js?v=21"></script>
+  <script src="carrusel.js?v=21"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

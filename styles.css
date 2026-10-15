@@ -231,3 +231,24 @@
 .anu-flecha-ant { left: -.4rem; } .anu-flecha-sig { right: -.4rem; }
 @media (min-width: 640px) { .anu-flecha { display: block; } }
 @media (prefers-reduced-motion: reduce) { .carrusel-anuncios { scroll-behavior: auto; } }
+
+/* ===== Fase 2L: botón «Cerca de mí» visible + barra superior ordenada ===== */
+.btn-cerca {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  background: #4f46e5; color: #fff; font-weight: 700; font-size: .875rem;
+  padding: .55rem .9rem; border-radius: .5rem; border: 0; cursor: pointer;
+  box-shadow: 0 2px 0 #3730a3; transition: background .15s, transform .1s;
+}
+.btn-cerca:hover { background: #4338ca; }
+.btn-cerca:active { transform: translateY(1px); box-shadow: 0 1px 0 #3730a3; }
+.btn-cerca:disabled { opacity: .7; cursor: wait; }
+.btn-cerca[aria-pressed="true"] { background: #16a34a; box-shadow: 0 2px 0 #15803d, 0 0 0 3px #fde047; }
+.btn-cerca-chico { font-size: .8rem; padding: .35rem .7rem; }
+
+/* Menú de la cuenta (👤 Nombre ▾) */
+#menu-cuenta { z-index: 60; }
+#encabezado.con-sesion #acciones-encabezado { gap: .5rem; }
+#btn-auth { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 400px) {
+  #encabezado.con-sesion #acciones-encabezado { justify-content: space-between; }
+}

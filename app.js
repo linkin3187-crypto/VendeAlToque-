@@ -81,6 +81,56 @@ function mostrarMarcadorUsuario() {
   }).bindPopup("<b>📍 Estás aquí</b>").addTo(mapa);
 }
 
+// «📡 Cerca de mí» (clasificados): pide el GPS al tocar, ordena por cercanía y centra el mapa. Tocar de nuevo lo apaga.
+async function cercaDeMiAnuncios() {
+  const btn = $("btn-cerca-anuncios");
+  if (btn.getAttribute("aria-pressed") === "true") {
+    btn.setAttribute("aria-pressed", "false");
+    $("nota-cerca-anuncios").classList.add("hidden");
+    if ($("ordenar-por").value === "cercanos") $("ordenar-por").value = "recientes";
+    aplicarFiltros({ ajustarMapa: false });
+    return;
+  }
+  btn.disabled = true; btn.textContent = "📡 Buscando tu ubicación…";
+  try {
+    await pedirUbicacion();
+    $("ordenar-por").value = "cercanos";
+    if (mapa) mapa.setView([ubicacionUsuario.lat, ubicacionUsuario.lng], 14);
+    btn.setAttribute("aria-pressed", "true");
+    $("nota-cerca-anuncios").textContent = "📍 Mostrando primero lo más cercano a ti. Toca de nuevo «Cerca de mí» para quitarlo.";
+    $("nota-cerca-anuncios").classList.remove("hidden");
+    aplicarFiltros({ ajustarMapa: false });
+  } catch (err) {
+    mostrarToast(mensajeErrorUbicacion(err), "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "📡 Cerca de mí";
+  }
+}
+
+// «📡 Comercios cerca de mí»: igual, para la sección de comercios (se ordenan por cercanía)
+async function cercaDeMiComercios() {
+  const btn = $("btn-cerca-comercios");
+  if (btn.getAttribute("aria-pressed") === "true") {
+    ubicacionUsuario = null;
+    btn.setAttribute("aria-pressed", "false");
+    comerciosVisibles = POR_PAGINA_COMERCIOS;
+    pintarComerciosFeed();
+    aplicarFiltros({ ajustarMapa: false });
+    return;
+  }
+  btn.disabled = true; btn.textContent = "📡 Buscando tu ubicación…";
+  try {
+    await pedirUbicacion();
+    btn.setAttribute("aria-pressed", "true");
+    comerciosVisibles = POR_PAGINA_COMERCIOS;
+    pintarComerciosFeed();
+  } catch (err) {
+    mostrarToast(mensajeErrorUbicacion(err), "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "📡 Comercios cerca de mí";
+  }
+}
+
 async function centrarEnMiUbicacion() {
   try {
     await pedirUbicacion();
@@ -194,8 +244,9 @@ function pintarFiltrosComercios() {
   }
   sel.value = muniComercio;
   sel.classList.toggle("hidden", ids.length < 2);
+  $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
   $("comercios-orden").textContent = ubicacionUsuario ? "📍 Ordenados por cercanía a ti"
-    : "Verificados primero · usa «Cerca de mí» para ordenarlos por cercanía";
+    : "Verificados primero · toca «Comercios cerca de mí» para ordenarlos por cercanía";
 }
 
 function tarjetaComercioFeed(c) {
@@ -668,23 +719,39 @@ document.addEventListener("auth:pedir", e => {
   else if (e.detail && e.detail.modo === "login" && modoAuth !== "login") cambiarModoAuth();
 });
 
+// Menú de la cuenta (👤 Nombre ▾): Mis anuncios, Mi tienda y Cerrar sesión
+function cerrarMenuCuenta() {
+  const m = $("menu-cuenta");
+  if (!m || m.classList.contains("hidden")) return;
+  m.classList.add("hidden");
+  $("btn-auth").setAttribute("aria-expanded", "false");
+}
+function alternarMenuCuenta() {
+  const abrir = $("menu-cuenta").classList.contains("hidden");
+  $("menu-cuenta").classList.toggle("hidden", !abrir);
+  $("btn-auth").setAttribute("aria-expanded", abrir ? "true" : "false");
+}
+
 function actualizarUIAuth() {
   const btn = $("btn-auth");
   $("btn-publicar-txt").textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis";
   document.querySelectorAll(".car-cta[data-auth-modo]").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
   if (usuarioActual) {
-    btn.textContent = usuarioActual.nombre.split(" ")[0];
-    btn.removeAttribute("data-abrir");            // con sesión, el botón lleva a "Mis anuncios"
+    btn.textContent = "👤 " + usuarioActual.nombre.split(" ")[0] + " ▾";
+    btn.title = usuarioActual.nombre;
+    btn.removeAttribute("data-abrir");            // con sesión, el botón abre el menú de la cuenta
+    $("menu-cuenta-nombre").textContent = usuarioActual.nombre + (usuarioActual.email ? " · " + usuarioActual.email : "");
+    $("encabezado").classList.add("con-sesion");
     $("seccion-mis-anuncios").classList.remove("hidden");
     $("link-favoritos").classList.remove("hidden");
-    $("btn-cerrar-sesion-header").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
     btn.textContent = "Iniciar sesión";
     btn.setAttribute("data-abrir", "modal-auth");
     $("seccion-mis-anuncios").classList.add("hidden");
     $("link-favoritos").classList.add("hidden");
-    $("btn-cerrar-sesion-header").classList.add("hidden");
+    $("encabezado").classList.remove("con-sesion");
+    cerrarMenuCuenta();
   }
 }
 
@@ -720,6 +787,7 @@ async function alternarCorazon(id, btn) {
 async function refrescarMiTienda() {
   const mis = usuarioActual ? await cargarMisComercios() : [];
   $("link-mi-tienda").classList.toggle("hidden", !mis.length);
+  $("menu-mi-tienda").classList.toggle("hidden", !mis.length);
 }
 
 async function refrescarCorazones() {
@@ -1158,6 +1226,7 @@ function iniciarEventos() {
 
   $("btn-filtros").addEventListener("click", () => {
     const abierto = $("panel-filtros").classList.toggle("hidden") === false;
+    $("flecha-filtros").textContent = abierto ? "▴" : "▾";
     $("btn-filtros").setAttribute("aria-expanded", abierto ? "true" : "false");
   });
   $("btn-limpiar-filtros").addEventListener("click", limpiarFiltros);
@@ -1215,7 +1284,12 @@ function iniciarEventos() {
   $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
   $("auth-olvido").addEventListener("click", olvidePassword);
   $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);
-  $("btn-cerrar-sesion-header").addEventListener("click", cerrarSesion);
+  $("btn-cerrar-sesion-menu").addEventListener("click", () => { cerrarMenuCuenta(); cerrarSesion(); });
+  $("menu-mis-anuncios").addEventListener("click", () => { cerrarMenuCuenta(); $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  document.addEventListener("click", e => { if (!e.target.closest("#menu-cuenta") && !e.target.closest("#btn-auth")) cerrarMenuCuenta(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarMenuCuenta(); });
+  $("btn-cerca-anuncios").addEventListener("click", cercaDeMiAnuncios);
+  $("btn-cerca-comercios").addEventListener("click", cercaDeMiComercios);
   // Flechas del carrusel de anuncios (en celular se desliza con el dedo)
   const pistaAnu = $("contenedor-anuncios");
   const pasoAnu = dir => pistaAnu.scrollBy({ left: dir * Math.max(240, pistaAnu.clientWidth * 0.8), behavior: "smooth" });
@@ -1230,7 +1304,7 @@ function iniciarEventos() {
   $("anu-sig").addEventListener("click", () => pasoAnu(1));
   $("form-nueva-password").addEventListener("submit", guardarNuevaPassword);
   $("btn-auth").addEventListener("click", () => {
-    if (usuarioActual) $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (usuarioActual) alternarMenuCuenta();
   });
   document.addEventListener("sesion:cambio", alCambiarSesion);          // sesión cambió en otra pestaña
   document.addEventListener("sesion:recuperar", () => abrirModal("modal-nueva-password")); // llegó por el enlace del correo

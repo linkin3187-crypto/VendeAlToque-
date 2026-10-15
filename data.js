@@ -565,7 +565,9 @@ function filaAComercio(r) {
     verificadoEn: r.verificado_en || null,
     ownerId: r.owner_id || null, descripcion: r.descripcion || "", whatsapp: r.whatsapp || "",
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
-    nProductos: Number(r.n_productos) || 0, fuente: r.fuente || ""
+    nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
+    // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
+    calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0
   };
 }
 

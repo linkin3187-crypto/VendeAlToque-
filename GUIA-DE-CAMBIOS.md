@@ -123,3 +123,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Código compartido:** `anuncios-comun.js` tiene la tarjeta del anuncio, el filtrado, las listas de departamento/ciudad y las subcategorías. Lo usan el inicio y la página nueva: si cambias un filtro ahí, cambia en las dos.
 - **«+ Publicar gratis»** de la página nueva va a `index.html#publicar`, que abre el formulario (o el registro si no hay sesión).
 - **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.
+
+## Fase 2O · Directorio completo de comercios (`comercios.html`)
+
+**No hay SQL.** Cambian `comercios.html`, `comercios.js`, `data.js`, `index.html` y `app.js`.
+
+- **Antes** el directorio mostraba solo los verificados. **Ahora** muestra todos los comercios activos con su sello honesto: «Ubicado» (dato de mapa, sin verificar), «Verificado por teléfono» o «Verificado en persona». Los ocultos no salen. Orden por defecto «Recomendados»: verificados primero, luego los que tienen vitrina, luego por nombre.
+- **Filtros:** 🔎 buscador; categorías con conteo (solo las que tienen comercios); 📍 departamento y 🏘️ municipio con conteo; 📡 Comercios cerca de mí (con la distancia en cada tarjeta); Ordenar por (Recomendados, Más cercanos, ⭐ Mejor calificados, Nombre). En **⚙️ Más filtros:** verificación (todos / solo verificados / solo en persona / solo sin verificar), ⭐ calificación, 🟢 Abierto ahora y 🛍️ Con vitrina.
+- **Calificación:** el filtro y el orden por estrellas ya están programados, pero aparecen desactivados con la nota «Muy pronto» hasta la fase 2P (SQL 12). `data.js` ya lee `calif_promedio` y `calif_total`; si esas columnas no existen valen 0.
+- **Enlace para compartir:** los filtros quedan en el enlace (ej. `comercios.html?tipo=farmacia&muni=4&abierto=1`) y el botón «🔗 Compartir esta búsqueda» lo envía. «Ver directorio completo →» del inicio lleva la categoría, búsqueda y ubicación elegidas en la sección de comercios.
+- **Revertir:** PR de esta fase → **Revert** → Merge → check verde → Ctrl+F5.

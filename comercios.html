@@ -3,39 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comercios verificados | MercaFree</title>
-  <meta name="description" content="Farmacias, panaderías, supermercados y más de tu ciudad, verificados por el equipo de MercaFree.">
+  <title>Directorio de comercios | MercaFree</title>
+  <meta name="description" content="Directorio de comercios de tu ciudad: farmacias, panaderías, supermercados y más, con sello de verificación, horario y cómo llegar.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
-    <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center">
       <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span></a>
       <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Anuncios y mapa</a>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-black text-indigo-900">🏪 Comercios verificados</h1>
-    <p class="text-sm text-slate-500 mt-1 mb-4">Negocios que el equipo de MercaFree visitó y confirmó. En el <a href="index.html" class="text-indigo-600 underline">mapa</a> verás además otros comercios aún sin verificar.</p>
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-black text-indigo-900">🏪 Directorio de comercios</h1>
+    <p class="text-sm text-slate-500 mt-1 mb-4">Todos los comercios de MercaFree. Cada uno lleva su sello honesto: <b class="text-amber-700">Ubicado</b> (dato de mapa, sin verificar), <b class="text-green-700">Verificado por teléfono</b> o <b class="text-green-700">Verificado en persona</b>.</p>
 
     <a href="registrar-negocio.html" class="flex flex-wrap items-center justify-between gap-2 bg-yellow-50 border border-yellow-300 hover:border-yellow-400 rounded-2xl px-4 py-3 mb-4 no-underline">
       <span class="text-sm text-slate-700"><b class="text-indigo-900">¿Tu negocio no aparece?</b> Regístralo gratis y abre tu vitrina.</span>
       <span class="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-xl">➕ Registrar mi negocio</span>
     </a>
-    <div class="flex flex-wrap gap-2 mb-3" id="co-tipos" role="tablist"></div>
-    <div class="mb-4">
-      <label for="co-muni" class="text-xs font-bold text-slate-500 mr-1">Municipio</label>
-      <select id="co-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white text-sm"></select>
-      <button type="button" id="co-cerca" aria-pressed="false" class="btn-cerca btn-cerca-chico ml-1">📡 Comercios cerca de mí</button>
-      <span id="co-contador" class="text-sm text-slate-500 ml-2"></span>
+
+    <!-- FILTROS DEL DIRECTORIO (se guardan en el enlace para compartir la búsqueda) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
+      <input id="co-buscar" type="search" maxlength="60" autocomplete="off" aria-label="Buscar comercio" placeholder="🔎 Buscar por nombre, dirección o tipo (ej. droguería, pan…)" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-base mb-3">
+      <div class="flex gap-2 overflow-x-auto pb-2 mb-2 custom-scrollbar" id="co-tipos" role="tablist" aria-label="Categorías"></div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
+        <div>
+          <label for="co-depto" class="block text-xs font-bold text-slate-500 mb-1">📍 Departamento</label>
+          <select id="co-depto" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"></select>
+        </div>
+        <div>
+          <label for="co-muni" class="block text-xs font-bold text-slate-500 mb-1">🏘️ Municipio o ciudad</label>
+          <select id="co-muni" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"></select>
+        </div>
+        <div class="col-span-2 lg:col-span-1">
+          <button type="button" id="co-cerca" aria-pressed="false" class="btn-cerca w-full lg:w-auto whitespace-nowrap">📡 Comercios cerca de mí</button>
+        </div>
+        <div class="col-span-2 lg:col-span-1 flex items-center gap-2">
+          <label for="co-orden" class="text-sm text-slate-500 whitespace-nowrap">Ordenar por:</label>
+          <select id="co-orden" class="flex-1 min-w-0 border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="recomendados">Recomendados</option>
+            <option value="cercanos">Más cercanos a mí</option>
+            <option value="calificacion">⭐ Mejor calificados</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+      <p id="co-nota-cerca" class="hidden text-xs text-slate-500 mt-2"></p>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">
+        <button id="co-btn-filtros" type="button" aria-expanded="false" aria-controls="co-panel" class="flex items-center gap-1.5 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full px-4 py-1.5">
+          ⚙️ Más filtros <span aria-hidden="true" id="co-flecha">▾</span>
+        </button>
+        <span class="text-xs text-slate-500">Verificación, abierto ahora, con vitrina, calificación…</span>
+      </div>
+      <div id="co-panel" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="co-nivel" class="block text-xs font-bold text-slate-500 mb-1">✔ Verificación</label>
+          <select id="co-nivel" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Todos (verificados y sin verificar)</option>
+            <option value="2">Solo verificados</option>
+            <option value="3">Solo verificados en persona</option>
+            <option value="1">Solo sin verificar (ubicados)</option>
+          </select>
+        </div>
+        <div>
+          <label for="co-calif" class="block text-xs font-bold text-slate-500 mb-1">⭐ Calificación</label>
+          <select id="co-calif" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="">Cualquiera</option>
+            <option value="4">4 ★ o más</option>
+            <option value="3">3 ★ o más</option>
+          </select>
+          <p id="co-calif-nota" class="hidden text-[11px] text-slate-400 mt-1">Muy pronto: califica con estrellas los comercios que conoces.</p>
+        </div>
+        <div class="flex flex-col justify-end gap-2">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="co-abierto" class="w-4 h-4"><span class="text-sm font-medium">🟢 Abierto ahora</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="co-vitrina" class="w-4 h-4"><span class="text-sm font-medium">🛍️ Con vitrina (productos)</span></label>
+        </div>
+        <div class="flex items-end">
+          <button type="button" id="co-limpiar" class="text-sm text-slate-500 hover:text-slate-800 underline">Limpiar todos los filtros</button>
+        </div>
+      </div>
     </div>
 
-    <div id="co-lista" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <span id="co-contador" class="text-sm font-semibold text-slate-600" aria-live="polite"></span>
+      <button type="button" id="co-compartir" class="text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full px-4 py-1.5">🔗 Compartir esta búsqueda</button>
+    </div>
+
+    <div id="co-lista" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div id="co-mas" class="hidden text-center mt-6">
+      <button type="button" id="co-btn-mas" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-6 py-2.5 rounded-xl text-sm shadow-sm"></button>
+    </div>
+    <div id="co-centinela" aria-hidden="true" class="h-px"></div>
     <div id="co-vacio" class="hidden text-center py-12 text-slate-500">
       <div class="text-4xl mb-2">🔎</div>
       <p id="co-vacio-txt" class="text-sm"></p>
+      <button type="button" id="co-vacio-limpiar" class="hidden mt-2 text-indigo-600 font-semibold text-sm underline">Ver todos los comercios</button>
     </div>
   </main>
 
@@ -81,8 +148,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=24"></script>
-  <script src="data.js?v=24"></script>
-  <script src="comercios.js?v=24"></script>
+  <script src="utils.js?v=25"></script>
+  <script src="data.js?v=25"></script>
+  <script src="comercios.js?v=25"></script>
 </body>
 </html>

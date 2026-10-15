@@ -215,6 +215,106 @@ async function accionReporteProducto(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Negocios nuevos por revisar (registrar-negocio.html) ----------
+const meterNegocios = {};   // señales ya cargadas por solicitud
+
+function etiquetaTipo(id) { const t = TIPOS_COMERCIO.find(x => x.id === id); return t ? `${t.icono} ${t.nombre}` : id; }
+
+function tarjetaNegocio(n) {
+  const mun = municipios.find(x => x.id === n.municipio_id);
+  const foto = urlSegura(n.foto_fachada_url);
+  const wa = n.whatsapp ? urlWhatsAppTexto(n.whatsapp, `Hola, te escribe MercaFree. Recibimos el registro de «${n.nombre}» (${n.direccion}). ¿Nos confirmas que eres el dueño o administrador del negocio?`) : "";
+  const tel = String(n.telefono || "").replace(/[^\d+]/g, "");
+  return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" data-neg="${n.id}">
+    <div class="flex gap-3">
+      ${foto ? `<a href="${esc(foto)}" target="_blank" rel="noopener" class="shrink-0"><img src="${esc(foto)}" alt="Fachada de ${esc(n.nombre)}" loading="lazy" class="w-24 h-24 object-cover rounded-xl border border-slate-200"></a>` : ""}
+      <div class="min-w-0">
+        <h3 class="font-bold leading-tight">${esc(n.nombre)}</h3>
+        <p class="text-xs text-slate-500">${esc(etiquetaTipo(n.tipo))} · ${esc(mun ? mun.nombre : "")}</p>
+        <p class="text-sm text-slate-600 mt-1">📍 ${esc(n.direccion)}</p>
+        ${n.horario ? `<p class="text-xs text-slate-500">🕒 ${esc(n.horario)}</p>` : ""}
+        <p class="text-xs text-slate-400 mt-0.5">Enviado por ${esc(n.solicitante ? n.solicitante.nombre : "—")} · ${esc(fechaCorta(n.creado_en))}</p>
+      </div>
+    </div>
+    ${n.descripcion ? `<p class="text-sm text-slate-600 mt-2">“${esc(n.descripcion)}”</p>` : ""}
+    <div data-senales class="mt-3 text-xs text-slate-400">Calculando señales de confianza…</div>
+    <div class="flex flex-wrap gap-2 mt-3">
+      ${wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold">💬 Escribir por WhatsApp</a>` : ""}
+      ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">📞 Llamar</a>` : ""}
+      <a href="${esc(urlGoogleMaps(n.lat, n.lng))}" target="_blank" rel="noopener" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+      <p class="font-bold text-slate-500">Si ya hablaste con el responsable:</p>
+      <label class="flex items-start gap-1.5"><input type="checkbox" data-v="nombre_dir" class="mt-0.5"> Confirmó el nombre y la dirección del negocio</label>
+      <label class="flex items-start gap-1.5"><input type="checkbox" data-v="telefono_negocio" class="mt-0.5"> El número de contacto es del negocio</label>
+    </div>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button type="button" data-nacc="verificar" disabled class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold disabled:opacity-40 disabled:cursor-not-allowed">✅ Aprobar y verificar por teléfono</button>
+      <button type="button" data-nacc="aprobar" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">Aprobar (sin verificar aún)</button>
+      <button type="button" data-nacc="rechazar" class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-semibold">✖ Rechazar</button>
+    </div>
+  </article>`;
+}
+
+function pintarSenales(art, n, s) {
+  const p = puntajeNegocio(n, s);
+  const color = p.total >= 80 ? "bg-green-100 text-green-800" : p.total >= 50 ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-700";
+  const cerca = (s.cerca || []).map(c => `${esc(c.nombre)} (${c.metros} m)`).join(", ");
+  art.querySelector("[data-senales]").innerHTML = `<div class="flex flex-wrap items-center gap-2 mb-1.5">
+      <span class="font-black px-2.5 py-1 rounded-full text-xs ${color}">Confianza ${p.total}/100</span>
+      <span class="text-[11px] text-slate-400">Orienta, no reemplaza la llamada</span></div>
+    <ul class="grid sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">${p.detalle.map(d => `<li class="${d.ok ? "text-green-700" : "text-red-600"}">${d.ok ? "✔" : "⚠"} ${esc(d.texto)}</li>`).join("")}</ul>
+    ${cerca ? `<p class="text-[11px] text-red-600 mt-1">Parecido cerca: ${cerca}</p>` : ""}`;
+}
+
+async function pintarNegocios() {
+  try {
+    if (!municipios.length) await cargarMunicipios();
+    const lista = await cargarNegociosPendientes("pendiente", false);
+    $("n-negocios").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("neg-lista").innerHTML = lista.length ? lista.map(tarjetaNegocio).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">No hay negocios nuevos por revisar.</p>';
+    lista.forEach(async n => {
+      const art = $("neg-lista").querySelector(`[data-neg="${n.id}"]`);
+      try { pintarSenales(art, n, await senalesNegocio(n.id)); }
+      catch (e) { art.querySelector("[data-senales]").textContent = "No se pudieron calcular las señales."; }
+    });
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+
+async function accionNegocio(e) {
+  const chk = e.target.closest("[data-v]");
+  const art = e.target.closest("[data-neg]");
+  if (!art) return;
+  if (chk) {   // «verificar por teléfono» solo se habilita con las dos comprobaciones
+    art.querySelector('[data-nacc="verificar"]').disabled = art.querySelectorAll("[data-v]:checked").length < 2;
+    return;
+  }
+  const b = e.target.closest("[data-nacc]");
+  if (!b) return;
+  const id = Number(art.dataset.neg), acc = b.dataset.nacc;
+  let motivo = null;
+  if (acc === "rechazar") {
+    motivo = prompt("Motivo del rechazo (lo verá la persona; mínimo 5 letras):", "No pudimos confirmar el negocio");
+    if (motivo === null) return;
+  }
+  art.querySelectorAll("button").forEach(x => { x.disabled = true; });
+  try {
+    const comercioId = await resolverNegocio(id, acc !== "rechazar", motivo);
+    if (acc === "verificar") {
+      try {
+        await crearVerificacion({ comercioId, metodo: "telefono", resultado: "aprobada", lista: { nombre_dir: true, telefono_negocio: true } });
+        mostrarToast("✅ Aprobado y verificado por teléfono");
+      } catch (err) { mostrarToast("Aprobado, pero falló la verificación: hazla desde Comercios. " + mensajeError(err), "error"); }
+    } else mostrarToast(acc === "aprobar" ? "✅ Aprobado. Recuerda verificarlo por teléfono desde Comercios" : "Solicitud rechazada");
+    await pintarNegocios();
+  } catch (err) {
+    art.querySelectorAll("button").forEach(x => { x.disabled = false; });
+    art.querySelector('[data-nacc="verificar"]').disabled = art.querySelectorAll("[data-v]:checked").length < 2;
+    mostrarToast(mensajeError(err), "error");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("mod-cargando").classList.add("hidden");
@@ -236,6 +336,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("mod-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("sol-lista").addEventListener("click", accionSolicitud);
   $("rprod-lista").addEventListener("click", accionReporteProducto);
+  $("neg-lista").addEventListener("click", accionNegocio);
+  $("neg-lista").addEventListener("change", accionNegocio);
+  pintarNegocios();
   pintarReportesProducto();
   pintarReportes();
   pintarSolicitudes();

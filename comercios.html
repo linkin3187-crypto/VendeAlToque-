@@ -6,7 +6,7 @@
   <title>Comercios verificados | MercaFree</title>
   <meta name="description" content="Farmacias, panaderías, supermercados y más de tu ciudad, verificados por el equipo de MercaFree.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -20,6 +20,10 @@
     <h1 class="text-2xl font-black text-indigo-900">🏪 Comercios verificados</h1>
     <p class="text-sm text-slate-500 mt-1 mb-4">Negocios que el equipo de MercaFree visitó y confirmó. En el <a href="index.html" class="text-indigo-600 underline">mapa</a> verás además otros comercios aún sin verificar.</p>
 
+    <a href="registrar-negocio.html" class="flex flex-wrap items-center justify-between gap-2 bg-yellow-50 border border-yellow-300 hover:border-yellow-400 rounded-2xl px-4 py-3 mb-4 no-underline">
+      <span class="text-sm text-slate-700"><b class="text-indigo-900">¿Tu negocio no aparece?</b> Regístralo gratis y abre tu vitrina.</span>
+      <span class="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-xl">➕ Registrar mi negocio</span>
+    </a>
     <div class="flex flex-wrap gap-2 mb-3" id="co-tipos" role="tablist"></div>
     <div class="mb-4">
       <label for="co-muni" class="text-xs font-bold text-slate-500 mr-1">Municipio</label>
@@ -76,8 +80,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=14"></script>
-  <script src="data.js?v=14"></script>
-  <script src="comercios.js?v=14"></script>
+  <script src="utils.js?v=15"></script>
+  <script src="data.js?v=15"></script>
+  <script src="comercios.js?v=15"></script>
 </body>
 </html>

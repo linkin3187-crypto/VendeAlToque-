@@ -125,7 +125,7 @@ function elegir(filas, muni, cuota, existentes) {
 
 function leerCuotas() {
   const c = {};
-  TIPOS_COMERCIO.forEach(t => { c[t.id] = Math.max(0, Math.min(10, parseInt($("cuota-" + t.id).value, 10) || 0)); });
+  TIPOS_IMPORTABLES.forEach(t => { c[t.id] = Math.max(0, Math.min(10, parseInt($("cuota-" + t.id).value, 10) || 0)); });
   return c;
 }
 
@@ -558,7 +558,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!esModerador()) { $("ac-sin-permiso").classList.remove("hidden"); return; }
   $("ac-panel").classList.remove("hidden");
 
-  $("ac-cuotas").innerHTML = TIPOS_COMERCIO.map(t => `<label class="text-xs font-bold text-slate-500">${t.icono} ${esc(t.nombre)}
+  $("ac-cuotas").innerHTML = TIPOS_IMPORTABLES.map(t => `<label class="text-xs font-bold text-slate-500">${t.icono} ${esc(t.nombre)}
     <input type="number" id="cuota-${t.id}" min="0" max="10" value="${CUOTA_DEFECTO[t.id]}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>`).join("");
   const opciones = municipios.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join("");
   $("ac-muni").innerHTML = '<option value="todos">Todos (10)</option>' + opciones;

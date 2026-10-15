@@ -60,7 +60,7 @@ function mensajeError(e) {
   if (/Password should be at least/i.test(m)) return "La contraseña debe tener al menos 6 caracteres";
   if (/rate limit|too many/i.test(m)) return "Demasiados intentos. Espera un momento e inténtalo de nuevo";
   if (/Límite de \d+ (anuncios|favoritos|productos)/i.test(m)) return m;
-  if (/Solo puedes cambiar|Solo moderadores|No existe una cuenta|Esa persona no tiene perfil/i.test(m)) return m;
+  if (/Solo puedes cambiar|Solo moderadores|No existe una cuenta|Esa persona no tiene perfil|Ya tienes \d+ solicitudes|Llegaste al máximo|Escribe el motivo|ya fue resuelta/i.test(m)) return m;
   if (/duplicate key|23505|unique constraint/i.test(m)) return "Ya enviaste esto antes. ¡Gracias, lo revisaremos!";
   if (/row-level security|violates row-level/i.test(m)) return "No tienes permiso para hacer esto. ¿Iniciaste sesión?";
   if (/Failed to fetch|NetworkError|network/i.test(m)) return "Sin conexión con el servidor. Revisa tu internet";
@@ -494,8 +494,16 @@ const TIPOS_COMERCIO = [
   { id: "comida_rapida", nombre: "Comida rápida",     icono: "🍔", osm: ['["amenity"="fast_food"]'] },
   { id: "panaderia",     nombre: "Panaderías",        icono: "🥖", osm: ['["shop"="bakery"]'] },
   { id: "supermercado",  nombre: "Supermercados",     icono: "🛒", osm: ['["shop"="supermarket"]'] },
-  { id: "banco",         nombre: "Bancos",            icono: "🏦", osm: ['["amenity"="bank"]'] }
+  { id: "banco",         nombre: "Bancos",            icono: "🏦", osm: ['["amenity"="bank"]'] },
+  // Tipos que solo entran por el registro de negocios (no se importan de OpenStreetMap)
+  { id: "tienda",        nombre: "Tiendas y misceláneas", icono: "🏪", osm: [] },
+  { id: "restaurante",   nombre: "Restaurantes y cafés",  icono: "🍽️", osm: [] },
+  { id: "belleza",       nombre: "Belleza y peluquerías", icono: "💈", osm: [] },
+  { id: "ferreteria",    nombre: "Ferreterías",           icono: "🔧", osm: [] },
+  { id: "ropa",          nombre: "Ropa y calzado",        icono: "👕", osm: [] },
+  { id: "otro",          nombre: "Otros negocios",        icono: "🛍️", osm: [] }
 ];
+const TIPOS_IMPORTABLES = TIPOS_COMERCIO.filter(t => t.osm.length);
 const iconosComercio = {};
 TIPOS_COMERCIO.forEach(t => { iconosComercio[t.id] = t.icono; });
 
@@ -651,6 +659,59 @@ async function ocultarProducto(id, oculto) {
 async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
   const { error } = await sb.rpc("asignar_dueno_comercio", { p_comercio: comercioId, p_usuario: usuarioId || null, p_email: email || null });
   if (error) throw error;
+}
+
+// ---------- Registro de negocios nuevos (Fase 2D.6) ----------
+// d: { nombre, tipo, municipioId, direccion, lat, lng, telefono, whatsapp, horario, descripcion, foto (data:), gpsCerca }
+async function crearNegocioPendiente(d) {
+  if (!usuarioActual) throw new Error("Inicia sesión para registrar tu negocio");
+  const foto = await subirFotoComercio(d.foto);
+  const { error } = await sb.from("negocios_pendientes").insert({
+    nombre: d.nombre.trim(), tipo: d.tipo, municipio_id: d.municipioId, direccion: d.direccion.trim(),
+    lat: +d.lat.toFixed(6), lng: +d.lng.toFixed(6), telefono: d.telefono || null, whatsapp: d.whatsapp || null,
+    horario: d.horario || null, descripcion: d.descripcion || null, foto_fachada_url: foto,
+    gps_cerca: !!d.gpsCerca, acepta_terminos: true
+  });
+  if (error) throw error;
+}
+
+// Mis solicitudes (la persona) o todas las pendientes (moderadores; con estado)
+async function cargarNegociosPendientes(estado, soloMias) {
+  let q = sb.from("negocios_pendientes")
+    .select("id, nombre, tipo, municipio_id, direccion, lat, lng, telefono, whatsapp, horario, descripcion, foto_fachada_url, gps_cerca, estado, motivo_rechazo, comercio_id, solicitante_id, creado_en, solicitante:perfiles!solicitante_id(nombre)")
+    .order("creado_en", { ascending: false }).limit(100);
+  if (estado) q = q.eq("estado", estado);
+  if (soloMias && usuarioActual) q = q.eq("solicitante_id", usuarioActual.id);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function senalesNegocio(id) {
+  const { data, error } = await sb.rpc("senales_negocio", { p_id: id });
+  if (error) throw error;
+  return data || {};
+}
+
+// Devuelve el id del comercio creado al aprobar
+async function resolverNegocio(id, aprobar, motivo) {
+  const { data, error } = await sb.rpc("resolver_negocio", { p_id: id, p_aprobar: aprobar, p_motivo: motivo || null });
+  if (error) throw error;
+  return data;
+}
+
+// Puntaje de confianza 0-100 para decidir rápido. NO reemplaza la verificación: solo ordena el trabajo del moderador.
+function puntajeNegocio(n, s) {
+  const pts = [];
+  const suma = (ok, p, bien, mal) => pts.push({ ok, p: ok ? p : 0, max: p, texto: ok ? bien : mal });
+  suma(!!s.correo_confirmado, 15, "Correo confirmado", "Correo sin confirmar");
+  suma((s.cuenta_dias || 0) >= 3, 10, `Cuenta de ${s.cuenta_dias} días`, "Cuenta recién creada");
+  suma(!!n.gps_cerca, 20, "Envió desde el local (GPS del celular)", "No estaba en el local al enviar");
+  suma(!!n.whatsapp, 15, "Dejó WhatsApp para confirmar", "Sin WhatsApp (solo teléfono)");
+  suma(!(s.cerca || []).length, 15, "No hay negocios parecidos cerca", "Hay un negocio a menos de 120 m");
+  suma(!s.whatsapp_repetido, 15, "WhatsApp no repetido", "Ese WhatsApp ya está en otro negocio");
+  suma(!(s.rechazadas_previas > 0), 10, "Sin rechazos previos", "Tiene solicitudes rechazadas antes");
+  return { total: pts.reduce((a, x) => a + x.p, 0), detalle: pts };
 }
 
 // ---------- Sello de verificación (Fase 2D.1) ----------

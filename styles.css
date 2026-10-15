@@ -139,6 +139,52 @@
 .btn-parpadeo:hover, .btn-parpadeo:focus-visible { animation: none; }
 @media (prefers-reduced-motion: reduce) { .btn-parpadeo { animation: none; } }
 
+/* ---------- Carrusel de banners del inicio ---------- */
+.car-marco { position: relative; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 28px rgba(30, 27, 75, .22); }
+.car-pista { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; outline-offset: -4px; }
+.car-pista::-webkit-scrollbar { display: none; }
+.car-slide { flex: 0 0 100%; scroll-snap-align: start; display: grid; grid-template-columns: 1.25fr .75fr; align-items: center; gap: .5rem;
+  min-height: 15.5rem; padding: 1.4rem 1.3rem 2.6rem 1.4rem; color: #fff; position: relative; overflow: hidden; }
+.c1 { background: linear-gradient(120deg, #3730a3, #6d28d9 70%, #a21caf); }
+.c2 { background: linear-gradient(120deg, #0f766e, #0d9488 60%, #65a30d); }
+.c3 { background: linear-gradient(120deg, #1e3a8a, #2563eb 65%, #0ea5e9); }
+.c4 { background: linear-gradient(120deg, #7c2d12, #c2410c 60%, #f59e0b); }
+.car-slide::before { content: ""; position: absolute; right: -4rem; top: -4rem; width: 16rem; height: 16rem; border-radius: 50%; background: rgba(255,255,255,.10); }
+.car-slide::after { content: ""; position: absolute; left: -3rem; bottom: -5rem; width: 12rem; height: 12rem; border-radius: 50%; background: rgba(255,255,255,.07); }
+.car-texto { position: relative; z-index: 1; }
+.car-etiqueta { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fde047; }
+.car-titulo { font-size: 1.55rem; line-height: 1.1; font-weight: 900; margin: .25rem 0 .45rem; }
+.car-sub { font-size: .86rem; line-height: 1.35; color: rgba(255,255,255,.92); max-width: 30rem; margin-bottom: .9rem; }
+.car-cta { display: inline-block; background: #facc15; color: #1e1b4b; font-weight: 800; font-size: .88rem; padding: .6rem 1.1rem; border-radius: 999px; border: 0; cursor: pointer; text-decoration: none; box-shadow: 0 4px 0 #a16207; transition: transform .08s, box-shadow .08s; }
+.car-cta:hover { filter: brightness(1.06); }
+.car-cta:active { transform: translateY(3px); box-shadow: 0 1px 0 #a16207; }
+/* Arte con perspectiva: tarjeta de vidrio inclinada en 3D que flota despacio */
+.car-arte { position: relative; z-index: 1; display: flex; justify-content: center; perspective: 700px; }
+.car-tarjeta { position: relative; width: 7.2rem; height: 7.2rem; border-radius: 1.3rem; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.10)); border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 18px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.5);
+  transform: rotateY(-18deg) rotateX(8deg) rotateZ(3deg); animation: car-flota 5s ease-in-out infinite; }
+.car-e1 { font-size: 3.6rem; line-height: 1; filter: drop-shadow(0 6px 8px rgba(0,0,0,.3)); }
+.car-e2 { position: absolute; right: -.7rem; bottom: -.8rem; font-size: 2rem; transform: translateZ(40px); filter: drop-shadow(0 6px 6px rgba(0,0,0,.35)); }
+@keyframes car-flota {
+  0%, 100% { transform: rotateY(-18deg) rotateX(8deg) rotateZ(3deg) translateY(0); }
+  50%      { transform: rotateY(-8deg) rotateX(4deg) rotateZ(1deg) translateY(-8px); }
+}
+.car-flecha { display: none; position: absolute; top: 50%; transform: translateY(-50%); width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(255,255,255,.88); color: #3730a3; font-size: 1.6rem; line-height: 1; font-weight: 800; box-shadow: 0 3px 8px rgba(0,0,0,.25); z-index: 2; }
+.car-flecha:hover { background: #fff; }
+.car-ant { left: .7rem; } .car-sig { right: .7rem; }
+.car-puntos { position: absolute; left: 0; right: 0; bottom: .6rem; display: flex; justify-content: center; gap: .45rem; z-index: 2; }
+.car-punto { width: .6rem; height: .6rem; padding: 0; border-radius: 999px; border: 0; background: rgba(255,255,255,.5); cursor: pointer; transition: width .2s, background .2s; }
+.car-punto[aria-selected="true"] { width: 1.6rem; background: #fde047; }
+@media (min-width: 640px) {
+  .car-slide { min-height: 17rem; padding: 2rem 4rem 3rem 3rem; }
+  .car-titulo { font-size: 2.3rem; } .car-sub { font-size: 1rem; }
+  .car-tarjeta { width: 10rem; height: 10rem; } .car-e1 { font-size: 5rem; } .car-e2 { font-size: 2.8rem; }
+  .car-flecha { display: block; }
+}
+@media (prefers-reduced-motion: reduce) { .car-tarjeta { animation: none; } .car-pista { scroll-behavior: auto; } }
+
 /* Botones "3D": relieve inferior que se hunde al presionar */
 .btn-3d {
   display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; cursor: pointer;

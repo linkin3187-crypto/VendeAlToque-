@@ -61,14 +61,16 @@
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h2 class="text-lg font-black text-indigo-900">2 · Verificar y completar datos</h2>
-          <div class="flex flex-wrap gap-2 text-sm">
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <button type="button" id="ac-nuevo" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg">➕ Agregar comercio</button>
             <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-1.5 bg-white"></select>
             <select id="ac-filtro-ver" class="border border-slate-300 rounded-lg p-1.5 bg-white">
               <option value="">Todos</option><option value="no">Sin verificar</option><option value="tel">Por teléfono</option><option value="persona">En persona</option><option value="vencida">Verificación vencida (+12 meses)</option>
             </select>
           </div>
         </div>
-        <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo.</p>
+        <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo. Para <b>cambiar el nombre</b> de un comercio importado, edita el campo <b>Nombre</b> y pulsa <b>Guardar</b>. ¿Un negocio de barrio que no salió del mapa o te lo recomendaron? Usa <b>➕ Agregar comercio</b>.</p>
+        <p id="ac-solo-uno" class="hidden mb-3 text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2">Mostrando solo el comercio que elegiste. <button type="button" id="ac-ver-todos" class="underline font-semibold">Ver todos</button></p>
         <div id="ac-lista" class="space-y-3"></div>
       </section>
     </div>
@@ -96,6 +98,51 @@
       <div class="flex gap-2 mt-4">
         <button type="button" data-cerrar class="flex-1 border border-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl">Cancelar</button>
         <button type="button" id="ub-guardar" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-60">💾 Guardar ubicación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agregar un comercio a mano -->
+  <div id="modal-nuevo" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="nu-titulo">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 shadow-2xl relative max-h-[94vh] overflow-auto">
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="nu-titulo" class="text-lg font-black text-indigo-900 pr-8">➕ Agregar comercio</h3>
+      <p class="text-xs text-slate-500 mb-3">Para negocios de barrio que no salieron del mapa o que llegaron por solicitud o recomendación. Entra como <b>sin verificar</b> (nivel «Ubicado»); luego lo verificas con ✅.</p>
+      <div class="space-y-2.5">
+        <label class="block text-xs font-bold text-slate-500">Nombre *
+          <input id="nu-nombre" maxlength="100" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block text-xs font-bold text-slate-500">Tipo *
+            <select id="nu-tipo" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+          <label class="block text-xs font-bold text-slate-500">Ciudad *
+            <select id="nu-muni" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+        </div>
+        <div class="flex gap-2">
+          <input id="nu-dir" maxlength="160" placeholder="Dirección: Cra 43A # 10-20" class="flex-1 min-w-0 border border-slate-300 p-2 rounded-lg text-sm">
+          <button type="button" id="nu-buscar" class="shrink-0 text-sm bg-indigo-600 text-white font-bold px-3 rounded-lg">🔍 Buscar</button>
+        </div>
+        <div id="map-nuevo"></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="nu-gps" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">Usar mi ubicación GPS</button>
+          <span id="nu-coords" class="text-xs text-slate-400">Toca el mapa o arrastra el pin hasta la puerta del local</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block text-xs font-bold text-slate-500">Teléfono
+            <input id="nu-tel" maxlength="40" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label class="block text-xs font-bold text-slate-500">WhatsApp (10 dígitos)
+            <input id="nu-wa" inputmode="numeric" maxlength="14" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
+        </div>
+        <label class="block text-xs font-bold text-slate-500">Horario
+          <input id="nu-hor" maxlength="120" placeholder="Lun-Sáb 8am-8pm" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
+        <label class="block text-xs font-bold text-slate-500">Descripción (máx. 300)
+          <textarea id="nu-desc" maxlength="300" rows="2" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></textarea></label>
+        <label class="block text-xs font-bold text-slate-500">Foto del local (opcional)
+          <input type="file" id="nu-foto" accept="image/*" class="mt-1 block w-full text-xs font-normal"></label>
+      </div>
+      <p id="nu-error" class="hidden text-sm text-red-600 font-semibold mt-2"></p>
+      <div class="flex gap-2 mt-4">
+        <button type="button" data-cerrar class="flex-1 border border-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl">Cancelar</button>
+        <button type="button" id="nu-guardar" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-60">💾 Crear comercio</button>
       </div>
     </div>
   </div>

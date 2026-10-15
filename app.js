@@ -140,6 +140,72 @@ function popupComercioHTML(c) {
   </div>`;
 }
 
+// ---------- Comercios en el feed (después de los anuncios) ----------
+const POR_PAGINA_COMERCIOS = 12;
+let comerciosVisibles = POR_PAGINA_COMERCIOS;
+
+function comerciosFiltrados() {
+  if (!$("comercios-feed")) return [];
+  const texto = normalizar($("buscador").value.trim());
+  const departamento = $("filtro-departamento").value, ciudad = $("filtro-ciudad").value;
+  const lista = comercios.filter(c => {
+    if (departamento && c.departamento !== departamento) return false;
+    if (ciudad && c.ciudad !== ciudad) return false;
+    if (texto) {
+      const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+      if (!normalizar([c.nombre, c.direccion, c.ciudad, t ? t.nombre : ""].join(" ")).includes(texto)) return false;
+    }
+    return true;
+  });
+  const dist = c => (ubicacionUsuario && tieneCoords(c)) ? distanciaKm(ubicacionUsuario, c) : Infinity;
+  // Con tu ubicación: los más cercanos primero. Sin ella: verificados, con productos y por nombre.
+  return lista.sort((x, y) => ubicacionUsuario ? dist(x) - dist(y)
+    : (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));
+}
+
+function tarjetaComercioFeed(c) {
+  const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+  const foto = urlSegura(c.foto);
+  const sello = SELLOS[c.nivel] || SELLOS[1];
+  const abierto = estaAbierto(c.horario);
+  const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
+  return `<article class="tarjeta-comercio relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
+    <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
+      <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
+      ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
+      <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
+      ${abierto === true ? '<span class="absolute top-2 right-2 bg-white/95 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded-full">🟢 Abierto ahora</span>' : ""}
+    </div>
+    <div class="p-4 flex-1 flex flex-col">
+      <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
+      <p class="text-xs text-slate-500">${esc(t ? t.nombre : "Comercio")} · ${esc(c.ciudad)}</p>
+      ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
+      ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
+      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
+      ${c.nivel >= 2 && c.nProductos > 0 ? `<p class="text-xs font-bold text-teal-700 mt-1.5">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
+      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${c.nivel >= 2 && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
+      <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
+        ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg">📞 Llamar</a>` : ""}
+        <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>
+        ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold px-3 py-1.5 rounded-lg">✏️ Editar</a>` : ""}
+      </div>
+    </div>
+  </article>`;
+}
+
+function pintarComerciosFeed() {
+  const cont = $("comercios-feed");
+  if (!cont) return;
+  const lista = comerciosFiltrados();
+  $("seccion-comercios").classList.toggle("hidden", !lista.length);
+  if (!lista.length) return;
+  $("comercios-contador").textContent = "(" + lista.length + ")";
+  cont.innerHTML = lista.slice(0, comerciosVisibles).map(tarjetaComercioFeed).join("");
+  const faltan = lista.length - comerciosVisibles;
+  $("comercios-mas").classList.toggle("hidden", faltan <= 0);
+  if (faltan > 0) $("btn-mas-comercios").textContent = `Ver ${Math.min(POR_PAGINA_COMERCIOS, faltan)} comercios más (${faltan} restantes)`;
+}
+
 function pintarComercios() {
   if (!capaComercios) return;
   capaComercios.clearLayers();
@@ -331,6 +397,8 @@ function aplicarFiltros({ ajustarMapa = true } = {}) {
   paginaActual = 1;
   renderizarLista();
   renderizarMarcadores(ajustarMapa && !limitesZona);
+  comerciosVisibles = POR_PAGINA_COMERCIOS;
+  pintarComerciosFeed();
   if (usuarioActual) renderizarMisAnuncios();
 }
 
@@ -949,6 +1017,7 @@ async function eliminarAnuncio(id, esAdmin) {
 function activarModoEditor() {
   $("ebar").classList.toggle("hidden", !EDITOR);
   if (EDITOR) $("ecount").textContent = " · " + baseDatosAnuncios.length + " anuncios activos";
+  pintarComerciosFeed();   // el botón «Editar» de cada comercio solo lo ven los moderadores
 }
 
 // =====================================================================
@@ -1093,7 +1162,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   aplicarFiltros();
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
-  cargarComercios().then(pintarComercios);
+  cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); });
+  $("btn-mas-comercios").addEventListener("click", () => { comerciosVisibles += POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");

@@ -275,10 +275,14 @@ function filaEditor(c) {
   </article>`;
 }
 
+let soloId = null;   // ?editar=<id>: muestra solo ese comercio (viene de «✏️ Editar» en el inicio)
+
 function pintarLista() {
   const m = $("ac-filtro-muni").value, v = $("ac-filtro-ver").value;
+  $("ac-solo-uno").classList.toggle("hidden", soloId === null);
   const pasa = c => !v || (v === "no" && c.nivel === 1) || (v === "tel" && c.nivel === 2) || (v === "persona" && c.nivel === 3) || (v === "vencida" && selloVencido(c));
-  const lista = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasa(c));
+  const lista = soloId !== null ? listaAdmin.filter(c => c.id === soloId)
+    : listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasa(c));
   $("ac-lista").innerHTML = lista.length ? lista.map(filaEditor).join("")
     : '<p class="text-sm text-slate-400 text-center py-8">Aún no hay comercios. Importa algunos arriba.</p>';
 }
@@ -286,6 +290,89 @@ function pintarLista() {
 async function refrescarLista() {
   try { listaAdmin = await cargarComerciosAdmin(); pintarLista(); }
   catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+
+// ---------- Agregar un comercio a mano ----------
+let mapaNu = null, marcadorNu = null, coordsNu = null;
+
+function fijarCoordsNu(lat, lng, mover) {
+  coordsNu = { lat, lng };
+  if (mover && marcadorNu) marcadorNu.setLatLng([lat, lng]);
+  $("nu-coords").textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
+}
+
+function centroNu() {
+  const m = municipios.find(x => x.id === Number($("nu-muni").value));
+  return m && m.lat != null ? [m.lat, m.lng] : [6.2442, -75.5812];
+}
+
+function abrirNuevo() {
+  coordsNu = null; $("nu-error").classList.add("hidden");
+  ["nu-nombre", "nu-dir", "nu-tel", "nu-wa", "nu-hor", "nu-desc"].forEach(id => { $(id).value = ""; });
+  $("nu-foto").value = "";
+  $("nu-coords").textContent = "Toca el mapa o arrastra el pin hasta la puerta del local";
+  abrirModal("modal-nuevo");
+  const centro = centroNu();
+  if (!mapaNu) {
+    mapaNu = crearMapaBase("map-nuevo", centro, 16);
+    marcadorNu = L.marker(centro, { draggable: true }).addTo(mapaNu);
+    marcadorNu.on("dragend", () => { const p = marcadorNu.getLatLng(); fijarCoordsNu(p.lat, p.lng, false); });
+    mapaNu.on("click", e => fijarCoordsNu(e.latlng.lat, e.latlng.lng, true));
+  } else { mapaNu.setView(centro, 16); marcadorNu.setLatLng(centro); }
+  setTimeout(() => mapaNu.invalidateSize(), 60);
+}
+
+async function buscarDireccionNu() {
+  const dir = $("nu-dir").value.trim();
+  if (dir.length < 4) { mostrarToast("Escribe primero la dirección", "error"); return; }
+  const m = municipios.find(x => x.id === Number($("nu-muni").value));
+  const b = $("nu-buscar"); b.disabled = true;
+  try {
+    const r = await consultarNominatim(`${dir}, ${m ? m.nombre : ""}, Colombia`, m && m.lat != null ? { lat: m.lat, lng: m.lng } : null);
+    if (r) { fijarCoordsNu(r.lat, r.lng, true); mapaNu.setView([r.lat, r.lng], 18); mostrarToast("Revisa que el pin quede sobre la puerta"); }
+    else mostrarToast("No encontramos esa dirección. Ubica el pin a mano", "error");
+  } catch (e) { mostrarToast("No pudimos buscar ahora. Ubica el pin a mano", "error"); }
+  finally { b.disabled = false; }
+}
+
+function gpsNu() {
+  if (!navigator.geolocation) { mostrarToast("Tu navegador no permite usar el GPS", "error"); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    fijarCoordsNu(pos.coords.latitude, pos.coords.longitude, true);
+    mapaNu.setView([pos.coords.latitude, pos.coords.longitude], 18);
+  }, () => mostrarToast("No pudimos obtener tu ubicación. Mueve el pin a mano.", "error"),
+  { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+}
+
+async function guardarNuevo() {
+  const err = m => { $("nu-error").textContent = m; $("nu-error").classList.toggle("hidden", !m); return !m; };
+  const nombre = $("nu-nombre").value.trim();
+  const wa = $("nu-wa").value.replace(/\D/g, "");
+  if (nombre.length < 2) { err("Escribe el nombre del comercio"); return; }
+  if (!coordsNu) { err("Marca el pin en el mapa (toca el mapa, busca la dirección o usa el GPS)"); return; }
+  if (wa && wa.length !== 10) { err("El WhatsApp debe tener 10 dígitos"); return; }
+  err("");
+  const muniId = Number($("nu-muni").value);
+  const parecido = listaAdmin.find(c => c.municipioId === muniId && normalizar(c.nombre) === normalizar(nombre) && distanciaKm(c, coordsNu) < 0.15);
+  if (parecido && !confirm(`Ya existe «${parecido.nombre}» a menos de 150 m. ¿Crear otro de todas formas?`)) return;
+  const b = $("nu-guardar"); b.disabled = true;
+  try {
+    const fila = {
+      nombre, tipo: $("nu-tipo").value, municipio_id: muniId,
+      direccion: $("nu-dir").value.trim() || null, telefono: $("nu-tel").value.trim() || null,
+      whatsapp: wa ? "57" + wa : null, horario: $("nu-hor").value.trim() || null,
+      descripcion: $("nu-desc").value.trim() || null,
+      lat: +coordsNu.lat.toFixed(6), lng: +coordsNu.lng.toFixed(6), activo: true, fuente: "Agregado por el equipo"
+    };
+    const archivo = $("nu-foto").files[0];
+    if (archivo) fila.foto_url = await subirFotoComercio(await comprimir(archivo));
+    const c = await crearComercioDB(fila);
+    cerrarModal("modal-nuevo");
+    mostrarToast("✅ Comercio creado. Verifícalo cuando lo confirmes");
+    soloId = c.id;           // lo dejamos a la vista para verificarlo de una vez
+    await refrescarLista();
+  } catch (e) { console.error(e); err(mensajeError(e)); }
+  finally { b.disabled = false; }
 }
 
 // ---------- Corregir la ubicación de un comercio ----------
@@ -585,5 +672,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("vi-rechazar").addEventListener("click", () => enviarVerificacion("rechazada"));
   ["ac-filtro-muni", "ac-filtro-ver"].forEach(id => $(id).addEventListener("change", pintarLista));
   $("ac-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
+  $("nu-tipo").innerHTML = TIPOS_COMERCIO.map(t => `<option value="${t.id}">${t.icono} ${esc(t.nombre)}</option>`).join("");
+  $("nu-muni").innerHTML = opciones;
+  $("ac-nuevo").addEventListener("click", abrirNuevo);
+  $("nu-buscar").addEventListener("click", buscarDireccionNu);
+  $("nu-gps").addEventListener("click", gpsNu);
+  $("nu-guardar").addEventListener("click", guardarNuevo);
+  $("nu-muni").addEventListener("change", () => { if (!coordsNu && mapaNu) { mapaNu.setView(centroNu(), 16); marcadorNu.setLatLng(centroNu()); } });
+  $("ac-ver-todos").addEventListener("click", () => { soloId = null; pintarLista(); });
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("editar")) soloId = Number(qs.get("editar")) || null;
   await refrescarLista();
+  if (qs.get("nuevo")) abrirNuevo();
 });

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Registra tu negocio gratis en MercaFree: aparece en el mapa y el directorio y, cuando lo verificamos, abre tu vitrina con productos.">
+  <title>Registrar mi negocio | MercaFree</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <link rel="stylesheet" href="styles.css?v=15">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span> <span class="text-sm font-semibold text-indigo-200">· Registrar negocio</span></a>
+      <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Inicio</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    <div id="rn-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+
+    <!-- Paso 0: primero crear cuenta / iniciar sesión -->
+    <div id="rn-sin-sesion" class="hidden max-w-md mx-auto text-center py-10">
+      <div class="text-5xl mb-3">🏪</div>
+      <h1 class="text-2xl font-black text-indigo-900 mb-2">Registra tu negocio gratis</h1>
+      <p class="text-sm text-slate-600 mb-5">Primero crea tu cuenta (o inicia sesión). Es lo que nos permite entregarte el control de tu tienda y avisarte cuando la aprobemos.</p>
+      <ol class="text-left text-sm text-slate-700 bg-white border border-slate-200 rounded-2xl p-4 mb-5 space-y-1.5">
+        <li><b>1.</b> Crea tu cuenta o inicia sesión.</li>
+        <li><b>2.</b> Llena el formulario (3 pasos cortos, desde el celular).</li>
+        <li><b>3.</b> Confirmamos tu negocio por WhatsApp o llamada.</li>
+        <li><b>4.</b> Aparece en el mapa y, verificado, abres tu vitrina con productos.</li>
+      </ol>
+      <button type="button" id="rn-login" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl">Crear cuenta o iniciar sesión</button>
+    </div>
+
+    <div id="rn-panel" class="hidden space-y-6">
+      <section id="rn-mis" class="hidden bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="font-black text-indigo-900 mb-3">Mis solicitudes</h2>
+        <div id="rn-mis-lista" class="space-y-2"></div>
+      </section>
+
+      <section id="rn-form-caja" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h1 class="text-xl font-black text-indigo-900">🏪 Registrar mi negocio</h1>
+        <p class="text-sm text-slate-500 mt-1">Gratis. Tardas unos 3 minutos y un moderador lo revisa (normalmente en 1–2 días).</p>
+
+        <ol id="rn-pasos" class="flex gap-2 my-4 text-xs font-bold">
+          <li data-p="1" class="flex-1 text-center py-1.5 rounded-lg">1 · Tu negocio</li>
+          <li data-p="2" class="flex-1 text-center py-1.5 rounded-lg">2 · Ubicación</li>
+          <li data-p="3" class="flex-1 text-center py-1.5 rounded-lg">3 · Confirmación</li>
+        </ol>
+
+        <form id="form-registro" novalidate class="space-y-4">
+          <!-- Señuelo anti-robots: las personas no lo ven -->
+          <div class="absolute -left-[9999px]" aria-hidden="true"><label>No llenar <input id="rn-web" name="web" tabindex="-1" autocomplete="off"></label></div>
+
+          <div data-paso="1" class="space-y-3">
+            <label class="block text-xs font-bold text-slate-500">Nombre del negocio *
+              <input id="rn-nombre" maxlength="100" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Miscelánea El Parche"></label>
+            <label class="block text-xs font-bold text-slate-500">Tipo de negocio *
+              <select id="rn-tipo" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <label class="block text-xs font-bold text-slate-500">Ciudad *
+              <select id="rn-muni" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="block text-xs font-bold text-slate-500">WhatsApp del negocio (10 dígitos)
+                <input id="rn-wa" inputmode="numeric" maxlength="14" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="300 123 4567"></label>
+              <label class="block text-xs font-bold text-slate-500">Teléfono fijo (opcional)
+                <input id="rn-tel" maxlength="40" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="604 123 4567"></label>
+            </div>
+            <p class="text-[11px] text-slate-500 -mt-1">💬 Con el WhatsApp te confirmamos rápido (nos escribe un moderador). Necesitas al menos uno de los dos.</p>
+            <label class="block text-xs font-bold text-slate-500">Horario (opcional)
+              <input id="rn-hor" maxlength="120" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Lun-Sáb 8am-8pm"></label>
+            <label class="block text-xs font-bold text-slate-500">¿Qué vendes? (opcional, máx. 300)
+              <textarea id="rn-desc" maxlength="300" rows="2" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Víveres, aseo, recargas y domicilios en el barrio"></textarea></label>
+          </div>
+
+          <div data-paso="2" class="hidden space-y-3">
+            <label class="block text-xs font-bold text-slate-500">Dirección *
+              <input id="rn-dir" maxlength="160" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Cra 43A # 36 Sur-10"></label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="rn-gps" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-3 py-2 rounded-lg">📍 Estoy en mi negocio</button>
+              <button type="button" id="rn-buscar" class="bg-white border border-slate-300 hover:border-slate-400 text-sm font-semibold px-3 py-2 rounded-lg">🔎 Buscar la dirección</button>
+            </div>
+            <div id="rn-mapa" class="w-full h-64 rounded-xl border border-slate-200 bg-slate-100"></div>
+            <p id="rn-mapa-aviso" class="text-xs text-slate-500">Arrastra el pin hasta la <b>puerta de tu negocio</b> (o toca el mapa). Si estás ahí ahora, pulsa «Estoy en mi negocio»: ayuda a que te aprobemos más rápido.</p>
+          </div>
+
+          <div data-paso="3" class="hidden space-y-3">
+            <label class="block text-xs font-bold text-slate-500">📷 Foto de la fachada *
+              <span class="block font-normal text-slate-500 mt-0.5">Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.</span>
+              <input type="file" id="rn-foto" accept="image/*" capture="environment" class="mt-1 block w-full text-xs font-normal"></label>
+            <img id="rn-foto-prev" alt="Vista previa de la fachada" class="hidden w-full max-h-56 object-cover rounded-xl border border-slate-200">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
+              <b>¿Cómo confirmamos que eres tú?</b> Un moderador revisa la foto y las señales de seguridad, y te escribe al WhatsApp o te llama para confirmar el nombre y la dirección. No pedimos cédula ni documentos por aquí.
+            </div>
+            <label class="flex items-start gap-2 text-sm">
+              <input type="checkbox" id="rn-acepto" class="mt-1">
+              <span>Soy el dueño o administrador de este negocio, acepto los <a href="terminos.html" target="_blank" class="underline text-indigo-600">Términos</a> y la <a href="privacidad.html" target="_blank" class="underline text-indigo-600">Política de privacidad</a>, y autorizo publicar los datos de este formulario (nombre, ubicación, contacto y foto) en MercaFree.</span>
+            </label>
+          </div>
+
+          <p id="rn-error" class="hidden text-sm text-red-600 font-semibold"></p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="rn-atras" class="hidden border border-slate-300 hover:border-slate-400 font-semibold px-4 py-2.5 rounded-xl">← Atrás</button>
+            <button type="button" id="rn-sig" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl">Siguiente →</button>
+            <button type="submit" id="rn-enviar" class="hidden flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-60">✅ Enviar para revisión</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="rn-exito" class="hidden bg-white border border-green-200 rounded-2xl p-6 shadow-sm text-center">
+        <div class="text-5xl mb-2">🎉</div>
+        <h2 class="text-xl font-black text-green-800 mb-1">¡Recibimos tu solicitud!</h2>
+        <p class="text-sm text-slate-600 mb-4">Un moderador la revisa y te escribe por WhatsApp o te llama para confirmar. Cuando la aprobemos, tu negocio aparece en el mapa y en <b>Mi tienda</b> podrás cargar tus productos.</p>
+        <a href="index.html" class="inline-block bg-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl">Volver al inicio</a>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=15"></script>
+  <script src="data.js?v=15"></script>
+  <script src="registrar-negocio.js?v=15"></script>
+</body>
+</html>

@@ -471,9 +471,19 @@ async function cerrarSesion() {
   mostrarToast("Sesión cerrada");
 }
 
+// Si la persona venía de «Registrar mi negocio» (o similar), la devolvemos allí al entrar
+function volverSiCorresponde() {
+  try {
+    const volver = sessionStorage.getItem("mf_volver");
+    if (volver && usuarioActual && /^[a-z-]+\.html$/.test(volver)) { sessionStorage.removeItem("mf_volver"); location.href = volver; return true; }
+  } catch (e) {}
+  return false;
+}
+
 // Se llama cada vez que alguien entra o sale: repinta todo lo que depende de la sesión.
 function alCambiarSesion() {
   actualizarUIAuth();
+  if (volverSiCorresponde()) return;
   refrescarCorazones();
   refrescarMiTienda();
   activarModoEditor();
@@ -1077,6 +1087,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   refrescarOpcionesUbicacion();
   actualizarCiudadesForm();
   actualizarUIAuth();
+  if (volverSiCorresponde()) return;
   refrescarMiTienda();
   await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
   aplicarFiltros();

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" href="styles.css?v=22" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -76,6 +76,8 @@
 
       <!-- Las categorías se dibujan desde CATEGORIAS (data.js) -->
       <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
+      <!-- Subcategorías de la categoría elegida (se dibujan desde SUBCATEGORIAS en data.js) -->
+      <div id="chips-subcategorias" class="hidden flex gap-2 overflow-x-auto pb-1 pt-1 custom-scrollbar" aria-label="Subcategorías"></div>
     </div>
   </section>
 
@@ -375,6 +377,10 @@
               </select>
             </div>
           </div>
+          <div id="caja-subcategoria" class="hidden">
+            <label for="form-subcategoria" class="block text-xs font-bold text-slate-500 mb-1">Subcategoría *</label>
+            <select id="form-subcategoria" class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
+          </div>
           <div>
             <label for="form-precio" class="block text-xs font-bold text-slate-500 mb-1">Precio (COP, opcional)</label>
             <input type="text" id="form-precio" inputmode="numeric" placeholder="1200000" class="w-full border border-slate-300 p-3 rounded-xl">
@@ -392,6 +398,11 @@
               <label for="form-ciudad" class="block text-xs font-bold text-slate-500 mb-1">Ciudad *</label>
               <select id="form-ciudad" required class="w-full border border-slate-300 p-3 rounded-xl bg-white"></select>
             </div>
+          </div>
+          <div id="caja-ciudad-nueva" class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+            <label for="form-ciudad-nueva" class="block text-xs font-bold text-indigo-900 mb-1">Escribe tu municipio *</label>
+            <input type="text" id="form-ciudad-nueva" maxlength="40" autocomplete="off" placeholder="Ej. San Pedro de los Milagros" class="w-full border border-slate-300 p-3 rounded-xl bg-white">
+            <p class="text-xs text-indigo-800 mt-1.5">🌱 Se activará automáticamente al publicar y otras personas de allí podrán verlo. Marca bien el pin en el mapa: sirve para centrar el municipio.</p>
           </div>
           <div>
             <label for="form-barrio" class="block text-xs font-bold text-slate-500 mb-1">Barrio *</label>
@@ -555,10 +566,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=21"></script>
-  <script src="data.js?v=21"></script>
-  <script src="foro.js?v=21"></script>
-  <script src="carrusel.js?v=21"></script>
-  <script src="app.js?v=21"></script>
+  <script src="utils.js?v=22"></script>
+  <script src="data.js?v=22"></script>
+  <script src="foro.js?v=22"></script>
+  <script src="carrusel.js?v=22"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

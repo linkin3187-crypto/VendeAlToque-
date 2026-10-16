@@ -246,7 +246,17 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 ## Fase 2W.2 · «🔄 Ver todas las publicaciones» sin volver al inicio
 
-**No hay SQL.** Cambian `anuncios-comun.js` y `styles.css`. Caché `?v=35`.
+**No hay SQL.** Cambian `buscar.html`, `buscar.js`, `buscador.js`, `anuncios-comun.js` y `styles.css`. Caché `?v=36`.
+
+**En «Buscar en todo» (`buscar.html`):**
+- **✕ dentro del buscador**: borra la búsqueda y muestra **todo** ahí mismo (publicaciones, comercios y vitrinas), sin volver al inicio.
+- **Categorías**: tocar un chip (ej. «📱 Tecnología anuncios») filtra en la misma página; se pone amarillo con ✕. Tocarlo otra vez, o la ✕ de la etiqueta, lo quita. Sin búsqueda, los chips muestran las categorías que tienen algo publicado.
+- **Ubicación**: 📍 Departamento, 🏘️ Ciudad y **📡 Cerca de mí** (ordena todo por cercanía). Se conservan al borrar la búsqueda o la categoría.
+- **🔄 Ver todo**: quita búsqueda y categoría; deja la ubicación.
+- **Enter / 🔍** busca de nuevo sin recargar la página. El enlace se actualiza para compartir (`buscar.html?q=…&cat=a:tecnologia&ciudad=…`).
+- **Más precisión en publicaciones**: si hay anuncios que dicen lo buscado, solo salen esos («iphone» ya no trae un televisor por ser tecnología). Si ninguno lo dice, entran los de la categoría relacionada («postres» → Comida).
+
+**En «Todos los anuncios» y el inicio:**
 
 - En «Todos los anuncios» (y en el inicio), además de los filtros activos, ahora salen como etiquetas con ✕ **lo que se busca** («🔍 «iphone»»), **la categoría** («📱 Tecnología») y **la subcategoría**. Ejemplo: llegas desde «Buscar en todo» a `anuncios.html?cat=tecnologia` y tocas la ✕ de «Tecnología» para ver todas las categorías.
 - Botón **«🔄 Ver todas las publicaciones»**: quita de una vez la búsqueda, la categoría, la subcategoría y los filtros de ⚙️ (estado, distancia, precio, con foto, con precio). **Conserva** departamento, ciudad, «Cerca de mí» y el orden. Solo aparece cuando hay algo que quitar.

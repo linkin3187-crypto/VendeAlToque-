@@ -415,3 +415,89 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
   font-weight: 900; font-size: 1.15rem; color: #fff; background: linear-gradient(135deg, #6366f1, #a855f7);
 }
 .vendedor-avatar.grande { width: 72px; height: 72px; font-size: 1.9rem; }
+
+/* ===== Fase 2Y · Barra inferior tipo app (solo celular y tablet) ===== */
+.nav-inferior {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
+  background: rgba(255, 255, 255, .97); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid #e2e8f0; box-shadow: 0 -6px 20px rgba(30, 27, 75, .08);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+.ni-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px;
+  font-size: 11px; font-weight: 600; color: #64748b; text-decoration: none; background: none; border: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ni-tab svg { transition: transform .15s ease; }
+.ni-tab:active svg { transform: scale(.9); }
+.ni-tab[aria-current="page"] { color: #4f46e5; }
+.ni-tab[aria-current="page"] svg { fill: #e0e7ff; }
+.ni-centro { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; color: #4338ca; }
+.ni-mas {
+  width: 56px; height: 56px; margin-top: -26px; border-radius: 999px; border: 4px solid #fff; cursor: pointer;
+  background: linear-gradient(135deg, #fde047, #f59e0b); color: #1e1b4b; font-size: 30px; font-weight: 900; line-height: 1;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, .5); display: flex; align-items: center; justify-content: center;
+  transition: transform .15s ease;
+}
+.ni-mas:active { transform: scale(.92); }
+.ni-mas:focus-visible, .ni-tab:focus-visible { outline: 3px solid #818cf8; outline-offset: 2px; }
+/* Menú que sube desde abajo */
+.ni-hoja { position: fixed; inset: 0; z-index: 95; }
+.ni-hoja.hidden { display: none; }
+.ni-fondo { position: absolute; inset: 0; background: rgba(15, 23, 42, .5); }
+.ni-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow: auto;
+  animation: ni-sube .2s ease-out; box-shadow: 0 -10px 30px rgba(15, 23, 42, .2);
+}
+@keyframes ni-sube { from { transform: translateY(100%); } to { transform: none; } }
+.ni-agarre { width: 44px; height: 5px; border-radius: 999px; background: #cbd5e1; margin: 2px auto 10px; }
+.ni-titulo { font-weight: 900; color: #312e81; font-size: 17px; margin: 0 4px 8px; }
+.ni-opcion {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 10px; border-radius: 14px;
+  color: #0f172a; text-decoration: none; background: none; border: 0; cursor: pointer; font-size: 15px;
+}
+.ni-opcion:hover, .ni-opcion:focus-visible { background: #eef2ff; outline: none; }
+.ni-opcion small { display: block; font-size: 12px; color: #64748b; font-weight: 400; }
+.ni-op-ico { width: 42px; height: 42px; border-radius: 12px; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ni-cerrar { display: block; width: 100%; margin-top: 8px; padding: 12px; border-radius: 14px; background: #f1f5f9; border: 0; font-weight: 700; color: #334155; cursor: pointer; }
+/* Espacio para que la barra no tape el final de la página; con el teclado abierto se esconde */
+@media (max-width: 1023px) {
+  body.con-nav { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  body.ni-teclado .nav-inferior { display: none; }
+}
+@media (min-width: 1024px) { .nav-inferior, .ni-hoja { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ni-panel { animation: none; } }
+
+/* ===== Fase 2Y · Encabezado fijo con buscador (inicio) ===== */
+.enc-grid {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "marca acciones" "busca busca";
+  align-items: center; gap: 8px 10px; padding: 10px 0 12px; transition: padding .2s ease;
+}
+.enc-marca { grid-area: marca; min-width: 0; }
+.enc-acciones { grid-area: acciones; min-width: 0; }
+.enc-busca { grid-area: busca; position: relative; }
+.enc-busca input { padding-top: .8rem; padding-bottom: .8rem; }
+.enc-busca .btn-buscar { width: 40px; height: 40px; border-radius: 12px; }
+.enc-busca .btn-buscar ~ .sugerencias-busq, .enc-busca .sugerencias-busq { z-index: 1200; }
+@media (min-width: 1024px) {
+  .enc-grid { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "marca busca acciones"; gap: 16px; }
+}
+.encabezado-app.encogido .enc-grid { padding: 6px 0 8px; }
+.encabezado-app.encogido .enc-marca h1 { font-size: 1.25rem; }
+.enc-marca h1 { transition: font-size .2s ease; }
+.enc-solo-pc { display: none; }
+@media (min-width: 1024px) { .enc-solo-pc { display: inline-flex; } }
+.acceso-chip {
+  flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px;
+  border-radius: 999px; font-size: 13px; font-weight: 700; color: #fff; text-decoration: none;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28);
+}
+.acceso-chip:hover { background: rgba(255, 255, 255, .24); }
+@media (max-width: 379px) {   /* celulares angostos: que quepan marca, «Entrar» y «Regístrate» */
+  .enc-gratis { display: none; }
+  .enc-logo { font-size: 1.3rem; }
+  #acciones-encabezado #btn-auth { padding-left: .6rem; padding-right: .6rem; }
+  #acciones-encabezado #btn-publicar-header { padding-left: .7rem; padding-right: .7rem; }
+}

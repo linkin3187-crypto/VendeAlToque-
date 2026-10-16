@@ -622,6 +622,9 @@ function alternarMenuCuenta() {
 function actualizarUIAuth() {
   const btn = $("btn-auth");
   $("btn-publicar-txt").textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis";
+  // Fase 2Y: en celular el texto corto; con cuenta deja de titilar (ya está adentro)
+  $("btn-publicar-corto").innerHTML = usuarioActual ? "Publicar" : 'Regístrate<span class="enc-gratis"> gratis</span>';
+  $("btn-publicar-header").classList.toggle("btn-parpadeo", !usuarioActual);
   document.querySelectorAll(".car-cta[data-auth-modo]").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
   if (usuarioActual) {
     btn.textContent = "👤 " + usuarioActual.nombre.split(" ")[0] + " ▾";
@@ -634,7 +637,7 @@ function actualizarUIAuth() {
     $("link-favoritos").classList.remove("hidden");
     renderizarMisAnuncios();
   } else {
-    btn.textContent = "Iniciar sesión";
+    btn.innerHTML = '<span class="sm:hidden">Entrar</span><span class="hidden sm:inline">Iniciar sesión</span>';   // corto en celular
     btn.setAttribute("data-abrir", "modal-auth");
     $("seccion-mis-anuncios").classList.add("hidden");
     $("link-favoritos").classList.add("hidden");
@@ -1223,6 +1226,11 @@ function iniciarEventos() {
   $("btn-auth").addEventListener("click", () => {
     if (usuarioActual) alternarMenuCuenta();
   });
+  // Encabezado fijo: al bajar se encoge un poco (más espacio para el contenido)
+  const enc = $("encabezado");
+  const alDesplazar = () => enc.classList.toggle("encogido", window.scrollY > 40);
+  window.addEventListener("scroll", alDesplazar, { passive: true });
+  alDesplazar();
   document.addEventListener("sesion:cambio", alCambiarSesion);          // sesión cambió en otra pestaña
   document.addEventListener("sesion:recuperar", () => abrirModal("modal-nueva-password")); // llegó por el enlace del correo
 
@@ -1317,5 +1325,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     else mostrarToast("Solo el dueño puede editar esta publicación", "error");
   }
   // Enlace "#publicar" (lo usa «Publicar gratis» de anuncios.html): abre el formulario o pide la cuenta
+  // Desde la barra inferior en otras páginas: «📋 Mis anuncios» → index.html#mis-anuncios
+  if (location.hash === "#mis-anuncios" && usuarioActual) {
+    history.replaceState(null, "", location.pathname + location.search);
+    setTimeout(() => $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+  }
   if (location.hash === "#publicar") { history.replaceState(null, "", location.pathname + location.search); $("btn-publicar-header").click(); }
 });

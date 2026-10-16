@@ -198,3 +198,8 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 ## Fase 2T.1 · Botón «Llamar» más visible
 
 **No hay SQL.** El botón de llamar pasa de morado con 📞 (se perdía) a **teléfono blanco sobre azul cielo** (`.btn-llamar` en `styles.css`, ícono `ICONO_TEL` en `utils.js`), en tarjetas, mapa, anuncio y barra del celular. **Revertir:** PR → Revert.
+
+## Fase 2U · Mapa de ubicación en la ficha del comercio
+
+**No hay SQL.** En `tienda.html` (ficha del comercio) aparece la sección **«📍 Ubicación»** debajo de los botones de contacto: mapa con el pin del comercio, la dirección y «🗺️ Cómo llegar →». Proporción fija (`.mapa-comercio` en `styles.css`): 16:9 en celular (≈200 px de alto) y franja panorámica en PC (máx. 320 px), así la vitrina de productos se ve justo debajo. En celular el mapa no se arrastra con un dedo (no «atrapa» el desplazamiento); se usan los botones + / −. Tocar el pin abre «Cómo llegar». Si el comercio no tiene coordenadas, la sección no aparece. Código: `pintarMapaComercio()` en `tienda.js`.
+**Revertir:** PR → Revert.

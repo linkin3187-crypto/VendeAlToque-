@@ -82,6 +82,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | **2R Reclamar comercio + Editar mi publicación** ✅ *(hecho, sin SQL: etiqueta «🔑 ¿Es tu negocio? Reclámalo» que titila en comercios sin dueño (tarjetas, mapa y burbuja flotante cerrable en la ficha); botón «✏️ Editar mi publicación» para el dueño en tarjetas y en el anuncio)* | ✅ |
 | **2S Contacto con registro rápido + 📞 Llamar en anuncios** ✅ *(hecho, **SQL 13 + 13b**: los botones WhatsApp/Llamar/Cómo llegar abren la ventana de registro rápido si no hay cuenta y, al terminar, el botón para contactar; el número solo lo entrega `contacto_anuncio` con cuenta (60/día); teléfono opcional al publicar (al menos uno); comercios libres)* | ✅ |
 | **2T Entrar con Google** ✅ *(hecho, **SQL 14**: «Continuar con Google» en iniciar sesión y en el registro rápido (vuelve al anuncio con el contacto listo); nombre desde Google; el código ?ref= también se guarda para cuentas de Google. Requiere configurar Google Cloud + Supabase, ver GUIA)* | ✅ |
+| **2U Mapa en la ficha del comercio** ✅ *(hecho, sin SQL: «📍 Ubicación» con pin, dirección y «Cómo llegar», proporción fija para que la vitrina se vea debajo)* | ✅ |
 | **2Q Calificación de vendedores (anuncios)** ⏳ *(después: solo cuando el vendedor marque «vendido a…», para evitar reseñas falsas)* | ⏳ |
 
 **Niveles de sello (cada uno dice exactamente qué significa y la fecha):**

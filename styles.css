@@ -381,3 +381,10 @@ body:has(#t-barra:not(.hidden)) #burbuja-reclamar { bottom: 5.25rem; }
   .btn-mas-filtros { padding: 0 .55rem; }
   .filtro-sel { padding: .5rem .35rem; font-size: .8rem; }
 }
+
+/* Fase 2W.2 · «🔄 Ver todas las publicaciones» (junto a los filtros activos) */
+.chip-ver-todo {
+  display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .75rem; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; color: #fff; background: #4f46e5; border: 1px solid #4f46e5; cursor: pointer;
+}
+.chip-ver-todo:hover { background: #4338ca; }

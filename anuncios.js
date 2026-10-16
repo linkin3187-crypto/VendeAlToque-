@@ -29,6 +29,7 @@ function aplicarTodos() {
   listaTodos = filtrarAnuncios(leerCriterios());
   paginaTodos = 1;
   pintarTodos();
+  pintarChipsActivos();
   const qs = criteriosAQuery();
   history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
 }
@@ -44,7 +45,6 @@ function limpiarTodos() {
   categoriaActiva = "todos";
   subcategoriaActiva = "";
   $("btn-cerca-anuncios").setAttribute("aria-pressed", "false");
-  $("nota-cerca-anuncios").classList.add("hidden");
   marcarCategoriaActiva();
   llenarCiudadesFiltro();
   aplicarTodos();
@@ -60,7 +60,6 @@ async function cercaDeMiTodos() {
   const btn = $("btn-cerca-anuncios");
   if (btn.getAttribute("aria-pressed") === "true") {
     btn.setAttribute("aria-pressed", "false");
-    $("nota-cerca-anuncios").classList.add("hidden");
     if ($("ordenar-por").value === "cercanos") $("ordenar-por").value = "recientes";
     aplicarTodos();
     return;
@@ -70,8 +69,6 @@ async function cercaDeMiTodos() {
     await pedirGPSTodos();
     $("ordenar-por").value = "cercanos";
     btn.setAttribute("aria-pressed", "true");
-    $("nota-cerca-anuncios").textContent = "📍 Mostrando primero lo más cercano a ti. Toca de nuevo «Cerca de mí» para quitarlo.";
-    $("nota-cerca-anuncios").classList.remove("hidden");
     aplicarTodos();
   } catch (err) {
     mostrarToast(textoErrorGPS(err), "error");

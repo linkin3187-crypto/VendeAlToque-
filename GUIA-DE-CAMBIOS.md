@@ -231,3 +231,15 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Aprende contigo:** cada búsqueda en «Buscar en todo» se guarda (solo el texto y cuántos resultados hubo, nunca quién). En **Moderación → 🔍 Lo que la gente busca y no encuentra** ves las búsquedas sin resultados; eliges la categoría y tocas **🧠 Enseñar**: la palabra se agrega a esa categoría y desde ese momento encuentra esos comercios. «✔ Ya está» la marca resuelta (ej. si agregaste el comercio) y 🗑️ borra spam. Abajo, «📈 Lo más buscado» sirve para decidir qué comercios invitar primero.
 - Todo corre en el navegador: no usa servicios externos ni IA de pago.
 - **Revertir:** PR → **Revert**. La tabla `busquedas` puede quedarse (o `drop table public.busquedas; drop function public.registrar_busqueda(text, integer);`).
+
+## Fase 2W.1 · Inicio más compacto: publicaciones antes del mapa
+
+**No hay SQL.** Cambian `index.html`, `anuncios.html`, `anuncios-comun.js`, `app.js`, `anuncios.js` y `styles.css`. Caché `?v=34`.
+
+- **Filtros compactos** (inicio y «Todos los anuncios»), con los mismos controles de antes:
+  - Celular: fila 1 = 📍 Departamento · 🏘️ Ciudad; fila 2 = 📡 Cerca de mí · ↕️ Orden · ⚙️ Filtros. En computador todo va en una sola fila.
+  - Los títulos de cada lista quedan dentro de la primera opción («📍 Departamento», «🏘️ Ciudad», «↕️ Recientes»). Para lectores de pantalla siguen existiendo las etiquetas ocultas (`sr-only`).
+- **Filtros activos con ✕** (`#chips-activos`, función `pintarChipsActivos()` en `anuncios-comun.js`): «📍 Cerca de mí», estado, distancia, precio, con foto y con precio se ven aunque el panel ⚙️ esté cerrado; tocar ✕ quita ese filtro. Reemplaza la nota «Mostrando primero lo más cercano…».
+- **Orden de la página:** en el HTML la lista de publicaciones va antes que el mapa. En celular: filtros → 📢 Publicaciones → 🗺️ Mapa → Comercios. En computador: publicaciones a la izquierda y mapa fijo a la derecha.
+- **Mapa en celular/tablet:** 240 px de alto (antes 320) con botón **«⤢ Ampliar»** (70 % de la pantalla) / «⤡ Reducir».
+- **Revertir:** PR → **Revert**.

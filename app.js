@@ -83,7 +83,6 @@ async function cercaDeMiAnuncios() {
   const btn = $("btn-cerca-anuncios");
   if (btn.getAttribute("aria-pressed") === "true") {
     btn.setAttribute("aria-pressed", "false");
-    $("nota-cerca-anuncios").classList.add("hidden");
     if ($("ordenar-por").value === "cercanos") $("ordenar-por").value = "recientes";
     aplicarFiltros({ ajustarMapa: false });
     return;
@@ -94,8 +93,6 @@ async function cercaDeMiAnuncios() {
     $("ordenar-por").value = "cercanos";
     if (mapa) mapa.setView([ubicacionUsuario.lat, ubicacionUsuario.lng], 14);
     btn.setAttribute("aria-pressed", "true");
-    $("nota-cerca-anuncios").textContent = "📍 Mostrando primero lo más cercano a ti. Toca de nuevo «Cerca de mí» para quitarlo.";
-    $("nota-cerca-anuncios").classList.remove("hidden");
     aplicarFiltros({ ajustarMapa: false });
   } catch (err) {
     mostrarToast(mensajeErrorUbicacion(err), "error");
@@ -452,6 +449,7 @@ function aplicarFiltros({ ajustarMapa = true } = {}) {
   renderizarLista();
   renderizarMarcadores(ajustarMapa && !limitesZona);
   if (usuarioActual) renderizarMisAnuncios();
+  pintarChipsActivos();
 }
 
 function limpiarFiltros() {
@@ -1176,6 +1174,14 @@ function iniciarEventos() {
   });
 
   $("btn-mi-ubicacion").addEventListener("click", centrarEnMiUbicacion);
+  // «⤢ Ampliar» (solo celular): el mapa pasa de bajito a casi toda la pantalla y viceversa
+  $("btn-ampliar-mapa").addEventListener("click", () => {
+    const grande = $("map").classList.toggle("map-grande");
+    $("btn-ampliar-mapa").setAttribute("aria-pressed", String(grande));
+    $("btn-ampliar-mapa").textContent = grande ? "⤡ Reducir" : "⤢ Ampliar";
+    if (mapa) setTimeout(() => mapa.invalidateSize(), 50);
+    $("seccion-mapa").scrollIntoView({ block: "start", behavior: "smooth" });
+  });
   $("btn-zona").addEventListener("click", buscarEnZona);
   $("chk-comercios").addEventListener("change", pintarComercios);
   $("btn-quitar-zona").addEventListener("click", quitarZona);

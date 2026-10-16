@@ -243,3 +243,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Orden de la página:** en el HTML la lista de publicaciones va antes que el mapa. En celular: filtros → 📢 Publicaciones → 🗺️ Mapa → Comercios. En computador: publicaciones a la izquierda y mapa fijo a la derecha.
 - **Mapa en celular/tablet:** 240 px de alto (antes 320) con botón **«⤢ Ampliar»** (70 % de la pantalla) / «⤡ Reducir».
 - **Revertir:** PR → **Revert**.
+
+## Fase 2W.2 · «🔄 Ver todas las publicaciones» sin volver al inicio
+
+**No hay SQL.** Cambian `anuncios-comun.js` y `styles.css`. Caché `?v=35`.
+
+- En «Todos los anuncios» (y en el inicio), además de los filtros activos, ahora salen como etiquetas con ✕ **lo que se busca** («🔍 «iphone»»), **la categoría** («📱 Tecnología») y **la subcategoría**. Ejemplo: llegas desde «Buscar en todo» a `anuncios.html?cat=tecnologia` y tocas la ✕ de «Tecnología» para ver todas las categorías.
+- Botón **«🔄 Ver todas las publicaciones»**: quita de una vez la búsqueda, la categoría, la subcategoría y los filtros de ⚙️ (estado, distancia, precio, con foto, con precio). **Conserva** departamento, ciudad, «Cerca de mí» y el orden. Solo aparece cuando hay algo que quitar.
+- Código: `pintarChipsActivos()`, `verTodasLasPublicaciones()` y `refiltrarAnuncios()` en `anuncios-comun.js`.
+- **Revertir:** PR → **Revert**.

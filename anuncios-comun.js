@@ -137,6 +137,15 @@ function pintarChipsActivos() {
   const c = leerCriterios();
   const fmt = n => "$" + Number(n).toLocaleString("es-CO");
   const chips = [];
+  // Lo que se busca (fase 2W.2): texto, categoría y subcategoría también se pueden quitar desde aquí
+  const q = $("buscador").value.trim();
+  if (q) chips.push(["q", "🔍 «" + (q.length > 24 ? q.slice(0, 24) + "…" : q) + "»"]);
+  if (c.categoria !== "todos") {
+    const cat = CATEGORIAS.find(x => x.id === c.categoria);
+    if (cat) chips.push(["cat", cat.icono + " " + cat.nombre]);
+  }
+  if (c.subcategoria) chips.push(["sub", nombreSubcategoria(c.categoria, c.subcategoria)]);
+  const hayBusqueda = chips.length > 0;
   if ($("btn-cerca-anuncios").getAttribute("aria-pressed") === "true") chips.push(["cerca", "📍 Cerca de mí"]);
   if (c.estado) chips.push(["estado", c.estado === "nuevo" ? "✨ Nuevo" : "♻️ Usado"]);
   if (c.radio) chips.push(["radio", "📏 Hasta " + c.radio + " km"]);
@@ -144,8 +153,28 @@ function pintarChipsActivos() {
   if (c.pMax !== Infinity) chips.push(["pmax", "Hasta " + fmt(c.pMax)]);
   if (c.soloFoto) chips.push(["foto", "📷 Con foto"]);
   if (c.soloPrecio) chips.push(["precio", "💲 Con precio"]);
-  caja.innerHTML = chips.map(([k, t]) => `<button type="button" data-quitar="${k}" class="chip-activo" aria-label="Quitar filtro ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join("");
+  // «🔄 Ver todas»: aparece si hay algo que limite QUÉ se ve (no la ubicación ni «Cerca de mí»)
+  const limitaContenido = hayBusqueda || c.estado || c.radio || c.pMin || c.pMax !== Infinity || c.soloFoto || c.soloPrecio;
+  caja.innerHTML = chips.map(([k, t]) => `<button type="button" data-quitar="${k}" class="chip-activo" aria-label="Quitar filtro ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join("")
+    + (limitaContenido ? '<button type="button" data-quitar="todo" class="chip-ver-todo" title="Quita la búsqueda, la categoría y los demás filtros. Deja tu ubicación y «Cerca de mí»">🔄 Ver todas las publicaciones</button>' : "");
   caja.classList.toggle("hidden", !chips.length);
+}
+
+// Vuelve a filtrar con la función de cada página (inicio: aplicarFiltros · «Todos los anuncios»: aplicarTodos)
+function refiltrarAnuncios() {
+  if (typeof aplicarTodos === "function") aplicarTodos(); else aplicarFiltros();
+}
+
+// «🔄 Ver todas las publicaciones»: borra búsqueda, categoría y filtros de «⚙️ Filtros»,
+// pero CONSERVA departamento, ciudad, «Cerca de mí» y el orden.
+function verTodasLasPublicaciones() {
+  $("buscador").value = "";
+  categoriaActiva = "todos"; subcategoriaActiva = "";
+  $("filtro-estado").value = ""; $("filtro-radio").value = "0";
+  $("filtro-precio-min").value = ""; $("filtro-precio-max").value = "";
+  $("filtro-con-foto").checked = false; $("filtro-con-precio").checked = false;
+  marcarCategoriaActiva();
+  refiltrarAnuncios();
 }
 
 function quitarChipActivo(e) {
@@ -153,6 +182,10 @@ function quitarChipActivo(e) {
   if (!b) return;
   const avisar = (id, ev) => $(id).dispatchEvent(new Event(ev, { bubbles: true }));
   switch (b.dataset.quitar) {
+    case "todo": verTodasLasPublicaciones(); return;
+    case "q": $("buscador").value = ""; refiltrarAnuncios(); return;
+    case "cat": categoriaActiva = "todos"; subcategoriaActiva = ""; marcarCategoriaActiva(); refiltrarAnuncios(); return;
+    case "sub": subcategoriaActiva = ""; pintarSubcategorias(); refiltrarAnuncios(); return;
     case "cerca": $("btn-cerca-anuncios").click(); return;   // tocar de nuevo lo apaga (misma lógica de siempre)
     case "estado": $("filtro-estado").value = ""; avisar("filtro-estado", "change"); break;
     case "radio": $("filtro-radio").value = "0"; avisar("filtro-radio", "change"); break;

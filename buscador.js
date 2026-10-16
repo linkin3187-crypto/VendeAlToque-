@@ -277,9 +277,54 @@ function conectarBuscadorGlobal(fuentes, opciones = {}) {
   const input = document.getElementById("buscador");
   if (!input) return;
   const s = activarSugerencias(input, fuentes, opciones);
+  animarLetrero(input);   // «¿Qué buscas hoy? restaurantes…» (fase 2Y)
   const btn = document.getElementById("btn-buscar");
   if (btn) btn.addEventListener("click", () => {
     if (input.value.trim()) s.buscar();
     else { input.focus(); mostrarToast("Escribe qué buscas: un producto, un comercio o un servicio"); }
   });
+}
+
+// ---------- Letrero que va cambiando dentro del buscador (fase 2Y) ----------
+// «¿Qué buscas hoy? restaurantes|» … se escribe y se borra solo. Las palabras salen de las categorías
+// (las de comercios se editan en el panel, así crecen solas). Se detiene al tocar el buscador, si ya hay
+// texto o si la persona pidió «reducir movimiento» (entonces queda un ejemplo fijo).
+const PALABRAS_LETRERO_BASE = ["restaurantes", "comida rápida", "farmacias", "supermercados", "usados", "un carpintero", "panaderías", "celulares", "arriendos", "postres"];
+function palabrasLetrero() {
+  const extra = [];
+  (typeof TIPOS_COMERCIO !== "undefined" ? TIPOS_COMERCIO : []).forEach(t => {
+    if (t.activo !== false && t.id !== "otro" && t.nombre) extra.push(t.nombre.split(" y ")[0].toLowerCase());
+  });
+  (typeof CATEGORIAS !== "undefined" ? CATEGORIAS : []).forEach(c => { if (c.id !== "todos" && c.id !== "otros") extra.push(c.nombre.toLowerCase()); });
+  const vistas = new Set();
+  return PALABRAS_LETRERO_BASE.concat(extra.sort(() => Math.random() - 0.5)).filter(p => !vistas.has(p) && vistas.add(p)).slice(0, 18);
+}
+
+function animarLetrero(input, prefijo = "¿Qué buscas hoy? ") {
+  if (!input) return;
+  const fijo = prefijo + "restaurantes, farmacias, usados…";
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { input.placeholder = fijo; return; }
+  let palabras = PALABRAS_LETRERO_BASE.slice(), i = 0, letras = 0, borrando = false, t = null;
+  const pausado = () => document.activeElement === input || input.value || document.hidden;
+  function paso() {
+    if (pausado()) { input.placeholder = fijo; t = setTimeout(paso, 600); return; }
+    const p = palabras[i % palabras.length];
+    if (!borrando) {
+      letras++;
+      input.placeholder = prefijo + p.slice(0, letras);
+      if (letras >= p.length) { borrando = true; t = setTimeout(paso, 1500); return; }
+      t = setTimeout(paso, 75);
+    } else {
+      letras--;
+      input.placeholder = prefijo + p.slice(0, Math.max(0, letras));
+      if (letras <= 0) {
+        borrando = false; i++;
+        if (i % palabras.length === 0) palabras = palabrasLetrero();   // en cada vuelta toma las categorías ya cargadas
+        t = setTimeout(paso, 300); return;
+      }
+      t = setTimeout(paso, 35);
+    }
+  }
+  setTimeout(() => { palabras = palabrasLetrero(); paso(); }, 800);
+  return () => clearTimeout(t);
 }

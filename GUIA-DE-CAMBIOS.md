@@ -293,3 +293,23 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Privacidad:** la tabla `perfiles` sigue cerrada. La función `perfil_publico(id)` entrega solo el nombre visible, la fecha, el número de anuncios y su comercio; **nunca** correo, teléfono, apellido ni rol. Solo responde para personas con anuncios activos o un comercio, para que no sirva para averiguar quién tiene cuenta.
 - **Nombre visible:** por defecto, solo el **primer nombre** («Ana María Gómez» → «Ana»). Cada quien puede poner un **apodo o el nombre de su tienda** desde **menú de la cuenta → 👤 Mi perfil público** (2 a 40 letras; vacío = primer nombre).
 - **Revertir:** PR → **Revert**. La columna `nombre_publico` puede quedarse.
+
+## Fase 2Y · Navegación tipo app (encabezado fijo con buscador + barra inferior)
+
+**No hay SQL.** Archivo nuevo: `navegacion.js`. Cambian `index.html`, `app.js`, `buscador.js`, `styles.css` y las páginas con barra inferior (`anuncios.html`, `comercios.html`, `buscar.html`, `favoritos.html`, `vendedor.html`, `recomendar.html`). Caché `?v=39`.
+
+**Encabezado del inicio (fijo arriba al bajar):**
+- Fila 1: marca + botones. **Sin cuenta:** «Entrar» (en computador «Iniciar sesión») + **«Regístrate gratis»** amarillo titilando (en computador «Regístrate y publica gratis»). **Con cuenta:** «👤 Nombre ▾» (menú) + «+ Publicar» (sin titilar).
+- Fila 2: el **buscador inteligente** (mismas sugerencias, 🔍 y «Buscar en todo»). En computador todo va en una sola fila: marca · buscador · botones.
+- Al bajar se encoge un poco para dejar más espacio.
+- **Letrero animado:** «¿Qué buscas hoy? restaurantes… comida rápida… farmacias… supermercados… usados…». Las palabras salen de las categorías (las de comercios se editan en el panel, así que crecen solas). Se detiene al tocar el buscador; con «reducir movimiento» queda un ejemplo fijo. Función `animarLetrero()` en `buscador.js` (también en «Todos los anuncios» y «Buscar en todo»).
+
+**Debajo, en pequeño:** «Compra, vende y encuentra comercios cerca de ti · Clasificados de barrio + Directorio de comercios de tu ciudad · Anuncia gratis, contacta por WhatsApp…». Los 3 botones grandes pasan a ser accesos pequeños (Ver clasificados · Directorio · Registrar mi negocio · Recomendar un comercio) y siguen las categorías.
+
+**Barra inferior (solo celular y tablet, `navegacion.js`):** 🏠 Inicio · 🏪 Comercios · **( ＋ )** · ❤️ Favoritos · 👤 Yo/Entrar.
+- **＋** sube un menú: 📢 Publicar un anuncio · 🤝 Recomendar un comercio · 🏪 Registrar mi negocio · 🛍️ Mi tienda (con cuenta).
+- **👤 Yo** (con cuenta): Mis anuncios · Mi perfil público · Mis favoritos · Mi tienda · Cerrar sesión. Sin cuenta dice **«Entrar»** y abre el inicio de sesión.
+- Marca la página actual en morado; se esconde con el teclado abierto; deja espacio abajo para que no tape nada; respeta la «rayita» de los iPhone.
+- **No aparece** en la ficha de un anuncio (tiene su barra de WhatsApp/Llamar), en la tienda (barra de pedido) ni en las páginas de administración. En computador no se muestra.
+- Para ponerla en otra página: `<body data-nav="nombre">` y `<script src="navegacion.js">` después de `data.js`.
+- **Revertir:** PR → **Revert**.

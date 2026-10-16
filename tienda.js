@@ -98,6 +98,7 @@ function renderizarTienda(c, ps) {
   const ll = $("t-llegar");
   ll.href = urlGoogleMaps(c.lat, c.lng);
   Object.assign(ll.dataset, { comoLlegar: "", lat: c.lat, lng: c.lng, nombre: c.nombre, ciudad: c.ciudad || "" });
+  pintarMapaComercio(c, t);
   $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id + (c.ownerId ? "" : "&tipo=reclamar");
   if (!c.ownerId) { $("t-es-tuyo").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
   $("t-reportar").addEventListener("click", () => abrirReporteComercio(c));
@@ -132,6 +133,23 @@ function renderizarTienda(c, ps) {
   }
   pintarProductos();
   $("t-contenido").classList.remove("hidden");
+}
+
+// Mapa de ubicación del comercio: compacto, con proporción fija (ver .mapa-comercio en styles.css).
+// En el celular no se arrastra con un dedo (así no «atrapa» el desplazamiento de la página): se usan los botones + / −.
+function pintarMapaComercio(c, t) {
+  if (!tieneCoords(c) || typeof L === "undefined") return;
+  $("t-mapa-caja").classList.remove("hidden");
+  $("t-mapa-dir").textContent = [c.direccion, c.ciudad].filter(Boolean).join(" · ");
+  const movil = !!(L.Browser && L.Browser.mobile);
+  try {
+    const mapa = crearMapaBase("t-mapa", [c.lat, c.lng], 17, { scrollWheelZoom: false, dragging: !movil, tap: false });
+    const icono = L.divIcon({ className: "marcador-cat", html: `<div class="pin-comercio pin-comercio-grande"><span>${esc(t ? t.icono : "🏪")}</span></div>`,
+                             iconSize: [40, 40], iconAnchor: [20, 40] });
+    L.marker([c.lat, c.lng], { icon: icono, title: c.nombre, keyboard: false }).addTo(mapa)
+      .on("click", () => $("t-llegar").click());
+  } catch (e) { console.warn("mapa:", e); $("t-mapa-caja").classList.add("hidden"); return; }
+  $("t-mapa-llegar").addEventListener("click", () => $("t-llegar").click());
 }
 
 // Burbuja flotante «¿Es tu negocio? Reclámalo» (solo comercios SIN dueño). Pequeña y se puede cerrar:

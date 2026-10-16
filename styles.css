@@ -297,3 +297,10 @@ body:has(#t-barra:not(.hidden)) #burbuja-reclamar { bottom: 5.25rem; }
 .btn-llamar.hidden { display: none; }
 @media (min-width: 768px) { .btn-llamar.md\:block { display: flex; } }
 .icono-tel { width: 1.15em; height: 1.15em; flex-shrink: 0; }
+
+/* ===== Fase 2U: mapa en la ficha del comercio (proporción fija, deja ver la vitrina) ===== */
+.mapa-comercio { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 280px; border-radius: 1rem; overflow: hidden; border: 1px solid #e2e8f0; background: #e2e8f0; z-index: 0; }
+.mapa-comercio > #t-mapa { position: absolute; inset: 0; }
+@media (min-width: 768px) { .mapa-comercio { aspect-ratio: 21 / 8; max-height: 320px; } }
+.pin-comercio-grande { width: 40px !important; height: 40px !important; }
+.pin-comercio-grande span { font-size: 20px !important; }

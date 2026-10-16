@@ -139,6 +139,19 @@ function renderizarSimilares(a) {
   $("lista-similares").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
 }
 
+// «Publicado por …» (fase 2C.5). Si aún no se ejecutó el SQL 18, la caja simplemente no aparece.
+async function pintarVendedor(ownerId) {
+  try {
+    const v = await cargarPerfilPublico(ownerId);
+    if (!v) return;
+    $("vendedor-caja").href = "vendedor.html?id=" + encodeURIComponent(v.id);
+    $("vendedor-avatar").textContent = (v.nombre || "?").trim().charAt(0).toUpperCase();
+    $("vendedor-nombre").textContent = v.nombre;
+    $("vendedor-sub").textContent = `Miembro desde ${fechaMiembro(v.desde)} · ${v.activos} ${v.activos === 1 ? "anuncio" : "anuncios"}` + (v.comercioNombre ? ` · 🏪 ${v.comercioNombre}` : "");
+    $("vendedor-caja").classList.remove("hidden");
+  } catch (e) { /* sin perfil público: no se muestra */ }
+}
+
 function renderizarAnuncio(a) {
   anuncioActual = a;
   const cat = CATEGORIAS.find(c => c.id === a.categoria) || { icono: "📦", nombre: a.categoria };
@@ -150,6 +163,7 @@ function renderizarAnuncio(a) {
   $("meta-desc").content = (a.desc || "").slice(0, 150);
 
   $("anuncio-titulo").textContent = a.nombre;
+  if (a.owner) pintarVendedor(a.owner);
   // El dueño (o un moderador) ve «Editar mi publicación»: abre el formulario de edición del inicio
   const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
   if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }

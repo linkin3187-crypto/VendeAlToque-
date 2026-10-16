@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=37" />
+  <link rel="stylesheet" href="styles.css?v=38" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
@@ -67,6 +67,16 @@
           <p id="ayuda-llegar" class="hidden text-sm text-blue-900 bg-blue-50 border-2 border-blue-200 rounded-xl p-3 leading-snug">
             🗺️ <b>¿Para qué sirve «Cómo llegar»?</b> Toca ese botón azul y verás todas las formas de ir: <b>metro y buses, a pie, bicicleta, carro o Uber</b>. También te ayuda a <b>acordar un punto de encuentro seguro</b> con el vendedor.
           </p>
+          <!-- Quién vende (fase 2C.5): nombre visible, miembro desde y enlace a todos sus anuncios -->
+          <a id="vendedor-caja" href="#" class="hidden vendedor-caja flex items-center gap-3 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-3 no-underline">
+            <span id="vendedor-avatar" class="vendedor-avatar" aria-hidden="true"></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-xs text-slate-400">Publicado por</span>
+              <b id="vendedor-nombre" class="block text-slate-900 truncate"></b>
+              <span id="vendedor-sub" class="block text-xs text-slate-500"></span>
+            </span>
+            <span class="text-xs font-bold text-indigo-600 whitespace-nowrap">Ver sus anuncios →</span>
+          </a>
           <p class="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-lg p-3">
             🛡️ Consejo: reúnete en un lugar público y revisa el producto antes de pagar. MercaFree no procesa pagos.
           </p>
@@ -140,8 +150,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=37"></script>
-  <script src="data.js?v=37"></script>
-  <script src="anuncio.js?v=37"></script>
+  <script src="utils.js?v=38"></script>
+  <script src="data.js?v=38"></script>
+  <script src="anuncio.js?v=38"></script>
 </body>
 </html>

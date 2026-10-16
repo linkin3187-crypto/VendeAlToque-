@@ -408,3 +408,10 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 @media (min-width: 1024px) { .btn-ver-todo-busq { flex: none; } }
 .b-chip.b-chip-on { background: #fde047; color: #1e1b4b; }
 .b-chip.b-chip-on small { color: #4338ca; }
+
+/* ===== Fase 2C.5 · Perfil público del vendedor ===== */
+.vendedor-avatar {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1.15rem; color: #fff; background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+.vendedor-avatar.grande { width: 72px; height: 72px; font-size: 1.9rem; }

@@ -628,6 +628,7 @@ function actualizarUIAuth() {
     btn.title = usuarioActual.nombre;
     btn.removeAttribute("data-abrir");            // con sesión, el botón abre el menú de la cuenta
     $("menu-cuenta-nombre").textContent = usuarioActual.nombre + (usuarioActual.email ? " · " + usuarioActual.email : "");
+    $("menu-mi-perfil").href = "vendedor.html?id=" + encodeURIComponent(usuarioActual.id);   // fase 2C.5
     $("encabezado").classList.add("con-sesion");
     $("seccion-mis-anuncios").classList.remove("hidden");
     $("link-favoritos").classList.remove("hidden");

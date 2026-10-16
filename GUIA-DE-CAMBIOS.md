@@ -280,3 +280,16 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
   - En Comercios hay un contador nuevo «🤝 Recomendados» y el filtro de origen «Recomendados».
 - **Categorías nuevas:** 🍻 Bares y discotecas, 🌭 Puestos de comida (editables en Comercios → 🏷️ Categorías).
 - **Revertir:** PR → **Revert**. La tabla puede quedarse.
+
+## Fase 2C.5 · Perfil público del vendedor
+
+**SQL:** `supabase/18_perfil_vendedor.sql` — **ANTES** de fusionar. Debe terminar mostrando 1 fila: `perfil_publico | nombre_publico`. Es repetible.
+
+**Archivos nuevos:** `vendedor.html` + `vendedor.js`. **Cambian:** `anuncio.html`/`anuncio.js` (caja «Publicado por»), `index.html`/`app.js` (menú «👤 Mi perfil público»), `data.js`, `styles.css`. Caché `?v=38`.
+
+**Cómo funciona:**
+- **En cada anuncio** aparece la caja **«Publicado por José · Miembro desde septiembre de 2026 · 3 anuncios»** (y su tienda, si tiene) con «Ver sus anuncios →».
+- **Perfil del vendedor** (`vendedor.html?id=…`): nombre visible, «miembro desde», cuántos anuncios activos tiene, enlace a su tienda si es dueño de un comercio, botón «🔗 Compartir perfil», y **todos sus anuncios** con buscador y categorías. Los botones de contacto funcionan igual que siempre (piden cuenta).
+- **Privacidad:** la tabla `perfiles` sigue cerrada. La función `perfil_publico(id)` entrega solo el nombre visible, la fecha, el número de anuncios y su comercio; **nunca** correo, teléfono, apellido ni rol. Solo responde para personas con anuncios activos o un comercio, para que no sirva para averiguar quién tiene cuenta.
+- **Nombre visible:** por defecto, solo el **primer nombre** («Ana María Gómez» → «Ana»). Cada quien puede poner un **apodo o el nombre de su tienda** desde **menú de la cuenta → 👤 Mi perfil público** (2 a 40 letras; vacío = primer nombre).
+- **Revertir:** PR → **Revert**. La columna `nombre_publico` puede quedarse.

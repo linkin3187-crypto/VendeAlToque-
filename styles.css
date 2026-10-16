@@ -289,3 +289,11 @@
 #burbuja-reclamar button[data-cerrar-burbuja] { color: #c7d2fe; font-size: 1.1rem; line-height: 1; padding: .2rem .45rem; background: none; border: 0; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .badge-reclamar { animation: none; } }
 body:has(#t-barra:not(.hidden)) #burbuja-reclamar { bottom: 5.25rem; }
+
+/* ===== Botón «Llamar»: teléfono blanco sobre azul cielo (se distingue del verde de WhatsApp) ===== */
+.btn-llamar { background: #0284c7; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; }
+.btn-llamar:hover { background: #0369a1; }
+.btn-llamar:active { background: #075985; }
+.btn-llamar.hidden { display: none; }
+@media (min-width: 768px) { .btn-llamar.md\:block { display: flex; } }
+.icono-tel { width: 1.15em; height: 1.15em; flex-shrink: 0; }

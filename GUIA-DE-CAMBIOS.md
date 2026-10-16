@@ -194,3 +194,7 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 **Cómo funciona:** en la ventana de «Iniciar sesión» y en el registro rápido aparece **«Continuar con Google»** arriba. Desde un anuncio, vuelve al mismo anuncio con el botón para contactar listo. El nombre se toma de Google. El código `?ref=` (QR de tiendas, grupos) se guarda una sola vez justo después de entrar.
 
 **Revertir:** PR → **Revert**. Para apagar Google sin tocar código: Supabase → Providers → Google → desactivar.
+
+## Fase 2T.1 · Botón «Llamar» más visible
+
+**No hay SQL.** El botón de llamar pasa de morado con 📞 (se perdía) a **teléfono blanco sobre azul cielo** (`.btn-llamar` en `styles.css`, ícono `ICONO_TEL` en `utils.js`), en tarjetas, mapa, anuncio y barra del celular. **Revertir:** PR → Revert.

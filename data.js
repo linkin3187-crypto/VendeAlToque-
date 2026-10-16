@@ -1130,7 +1130,7 @@ async function obtenerContactoAnuncio(id) {
 
 const ACCIONES_CONTACTO = {
   whatsapp: { verbo: "escribirle por WhatsApp", boton: "💬 Abrir WhatsApp del vendedor", clase: "bg-green-500 hover:bg-green-600" },
-  llamar:   { verbo: "llamar al vendedor",      boton: "📞 Llamar al vendedor",          clase: "bg-indigo-600 hover:bg-indigo-700" },
+  llamar:   { verbo: "llamar al vendedor",      boton: "📞 Llamar al vendedor",          clase: "bg-sky-600 hover:bg-sky-700" },
   llegar:   { verbo: "ver cómo llegar",          boton: "🗺️ Ver cómo llegar",             clase: "bg-blue-500 hover:bg-blue-600" }
 };
 

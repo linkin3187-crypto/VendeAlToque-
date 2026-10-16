@@ -182,9 +182,9 @@ function botonesContactoHTML(a, chico) {
   const wa = a.tieneWhatsapp !== false;          // anuncios viejos (sin el dato) se asumen con WhatsApp
   const tel = !!a.tieneTelefono;
   if (chico) return (wa ? `<button type="button" data-contacto="whatsapp" ${base} class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md">WhatsApp</button>` : "")
-    + (tel ? `<button type="button" data-contacto="llamar" ${base} class="bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded-md">📞 Llamar</button>` : "");
+    + (tel ? `<button type="button" data-contacto="llamar" ${base} class="btn-llamar text-xs px-2.5 py-1.5 rounded-md">${ICONO_TEL} Llamar</button>` : "");
   return (wa ? `<button type="button" data-contacto="whatsapp" ${base} class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2.5 rounded-xl text-center">WhatsApp</button>` : "")
-    + (tel ? `<button type="button" data-contacto="llamar" ${base} aria-label="Llamar al vendedor" title="Llamar" class="${wa ? "px-3" : "flex-1"} bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-xl">${wa ? "📞" : "📞 Llamar"}</button>` : "");
+    + (tel ? `<button type="button" data-contacto="llamar" ${base} aria-label="Llamar al vendedor" title="Llamar" class="btn-llamar ${wa ? "px-3.5" : "flex-1"} text-sm font-semibold py-2.5 rounded-xl">${wa ? ICONO_TEL : ICONO_TEL + " Llamar"}</button>` : "");
 }
 
 // ---------- Tarjeta de anuncio (igual en el inicio y en «Todos los anuncios») ----------

@@ -176,7 +176,7 @@ function renderizarAnuncio(a) {
   if (!tieneWa) { $("btn-whatsapp").style.display = "none"; $("barra-whatsapp").style.display = "none"; }
   if (tieneTel) {
     $("btn-llamar").style.display = ""; $("barra-llamar").style.display = "";
-    if (!tieneWa) { $("barra-llamar").textContent = "📞 Llamar al vendedor"; $("barra-llamar").classList.add("flex-1"); }
+    if (!tieneWa) { $("barra-llamar").innerHTML = ICONO_TEL + " Llamar al vendedor"; $("barra-llamar").classList.add("flex-1"); }
   }
   $("btn-compartir").addEventListener("click", compartir);
   $("barra-compartir").addEventListener("click", compartir);

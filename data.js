@@ -773,6 +773,39 @@ async function cargarProductosPublicos() {
   return (data || []).map(filaAProducto);
 }
 
+// ---------- Perfil público del vendedor (fase 2C.5, supabase/18_perfil_vendedor.sql) ----------
+// Solo: id, nombre visible (apodo o primer nombre), miembro desde, anuncios activos y su comercio.
+async function cargarPerfilPublico(id) {
+  const { data, error } = await sb.rpc("perfil_publico", { p_id: id });
+  if (error) throw error;
+  const r = Array.isArray(data) ? data[0] : data;
+  return r ? { id: r.id, nombre: r.nombre, desde: r.miembro_desde, activos: Number(r.anuncios_activos) || 0,
+               comercioId: r.comercio_id ? Number(r.comercio_id) : null, comercioNombre: r.comercio_nombre || "" } : null;
+}
+// Anuncios activos de un vendedor
+async function cargarAnunciosDeVendedor(id) {
+  const consulta = cols => sb.from("anuncios").select(cols).eq("owner_id", id)
+    .eq("estado_publicacion", "activo").gt("expira_en", new Date().toISOString())
+    .order("creado_en", { ascending: false }).limit(200);
+  let { data, error } = await consulta(COLS_ANUNCIO);
+  if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
+  if (error) throw error;
+  return (data || []).map(filaAAnuncio);
+}
+// Mi nombre público (cómo me ven los compradores). Vacío = mi primer nombre.
+async function cargarMiNombrePublico() {
+  const { data, error } = await sb.from("perfiles").select("nombre_publico").eq("id", usuarioActual.id).maybeSingle();
+  if (error) throw error;
+  return (data && data.nombre_publico) || "";
+}
+async function guardarNombrePublico(texto) {
+  const v = String(texto || "").trim();
+  if (v && (v.length < 2 || v.length > 40)) throw new Error("Usa entre 2 y 40 letras");
+  const { error } = await sb.from("perfiles").update({ nombre_publico: v || null }).eq("id", usuarioActual.id);
+  if (error) throw error;
+}
+const fechaMiembro = iso => new Date(iso).toLocaleDateString("es-CO", { month: "long", year: "numeric" });
+
 // ---------- Recomendaciones de comercios (fase 2X, supabase/17_recomendaciones.sql) ----------
 // d: { nombre, tipo, municipioId, direccion, lat, lng, foto (data: opcional), comentario }
 async function crearRecomendacion(d) {

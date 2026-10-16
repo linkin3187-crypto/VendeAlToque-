@@ -65,7 +65,7 @@ function renderizarTienda(c, ps) {
   document.title = `${c.nombre} | MercaFree`;
   $("t-nombre").textContent = c.nombre;
   $("t-icono").textContent = t ? t.icono : "🏪";
-  $("t-sub").textContent = [t ? t.nombre.replace(/s$/, "") : "Comercio", c.ciudad].filter(Boolean).join(" · ");
+  $("t-sub").textContent = [nombreCategorias(c), c.ciudad].filter(Boolean).join(" · ");
   const sello = SELLOS[c.nivel] || SELLOS[1];
   $("t-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + sello.clase;
   $("t-sello").textContent = (c.nivel >= 2 ? "✔ " : "") + sello.corto + (c.verificadoEn ? " · " + fechaSello(c) : "");

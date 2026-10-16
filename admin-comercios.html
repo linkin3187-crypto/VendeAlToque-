@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=31">
+  <link rel="stylesheet" href="styles.css?v=32">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -82,6 +82,24 @@
         <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo. Para <b>cambiar el nombre</b> de un comercio importado, edita el campo <b>Nombre</b> y pulsa <b>Guardar</b>. ¿Un negocio de barrio que no salió del mapa o te lo recomendaron? Usa <b>➕ Agregar comercio</b>.</p>
         <p id="ac-solo-uno" class="hidden mb-3 text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2">Mostrando solo el comercio que elegiste. <button type="button" id="ac-ver-todos" class="underline font-semibold">Ver todos</button></p>
         <div id="ac-lista" class="space-y-3"></div>
+      </section>
+
+      <!-- CATEGORÍAS (Fase 2V · supabase/15_categorias_comercio.sql): sin SQL, desde aquí -->
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm" id="ac-categorias">
+        <details>
+          <summary class="cursor-pointer text-lg font-black text-indigo-900">🏷️ Categorías de comercio <span id="cat-n" class="text-sm font-semibold text-slate-500"></span></summary>
+          <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra o desactiva categorías. Las <b>palabras clave</b> (separadas por coma) ayudan al buscador a entender lo que la gente escribe: por ejemplo, en «Pastelerías»: <i>postres, torta, ponqué, cupcake</i>. Una categoría desactivada no aparece al elegir, pero los comercios que ya la tienen la conservan.</p>
+          <div class="border border-indigo-100 bg-indigo-50 rounded-xl p-3 mb-4">
+            <p class="text-sm font-bold text-indigo-900 mb-2">➕ Nueva categoría</p>
+            <div class="grid grid-cols-[4rem_1fr] sm:grid-cols-[4rem_1fr_2fr_auto] gap-2 items-end">
+              <label class="text-xs font-bold text-slate-500">Ícono<input id="cat-nuevo-icono" maxlength="8" value="🏪" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-center text-lg"></label>
+              <label class="text-xs font-bold text-slate-500">Nombre<input id="cat-nuevo-nombre" maxlength="40" placeholder="Ej.: Empanadas" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <label class="text-xs font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<input id="cat-nuevo-palabras" maxlength="1500" placeholder="empanada, pastel de pollo, papa rellena" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <button type="button" id="cat-crear" class="col-span-2 sm:col-span-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
+            </div>
+          </div>
+          <div id="cat-lista" class="space-y-2"></div>
+        </details>
       </section>
     </div>
   </main>
@@ -191,8 +209,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=31"></script>
-  <script src="data.js?v=31"></script>
-  <script src="admin-comercios.js?v=31"></script>
+  <script src="utils.js?v=32"></script>
+  <script src="data.js?v=32"></script>
+  <script src="admin-comercios.js?v=32"></script>
 </body>
 </html>

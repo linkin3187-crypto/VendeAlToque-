@@ -23,6 +23,11 @@ function pintarCabecera() {
 }
 
 function pintarDatos() {
+  $("mt-tipo").innerHTML = opcionesCategoria(actual.tipo);
+  $("mt-extra1").innerHTML = opcionesCategoria((actual.tiposExtra || [])[0] || "", "— Ninguna —");
+  $("mt-extra2").innerHTML = opcionesCategoria((actual.tiposExtra || [])[1] || "", "— Ninguna —");
+  $("mt-sol-actualizar").href = "comercios.html?solicitar=" + actual.id + "&tipo=actualizar";
+  $("mt-sol-retirar").href = "comercios.html?solicitar=" + actual.id + "&tipo=retirar";
   $("mt-desc").value = actual.descripcion;
   $("mt-wa").value = actual.whatsapp.replace(/^57/, "");
   $("mt-tel").value = actual.telefono;
@@ -49,6 +54,11 @@ async function guardarNegocio(e) {
       horario: nul($("mt-hor").value), recoge: $("mt-recoge").checked, domicilio: $("mt-dom").checked,
       domicilio_info: $("mt-dom").checked ? nul($("mt-dom-info").value) : null
     };
+    // Categorías: solo se envían si existe la tabla nueva (SQL 15); si no, el resto se guarda igual
+    if (TIPOS_COMERCIO.some(t => t.palabras)) {
+      cambios.tipo = $("mt-tipo").value;
+      cambios.tipos_extra = [...new Set([$("mt-extra1").value, $("mt-extra2").value].filter(v => v && v !== cambios.tipo))];
+    }
     const archivo = $("mt-foto").files[0];
     if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
     actual = await guardarMiComercio(actual.id, cambios);

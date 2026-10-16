@@ -203,3 +203,17 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **No hay SQL.** En `tienda.html` (ficha del comercio) aparece la sección **«📍 Ubicación»** debajo de los botones de contacto: mapa con el pin del comercio, la dirección y «🗺️ Cómo llegar →». Proporción fija (`.mapa-comercio` en `styles.css`): 16:9 en celular (≈200 px de alto) y franja panorámica en PC (máx. 320 px), así la vitrina de productos se ve justo debajo. En celular el mapa no se arrastra con un dedo (no «atrapa» el desplazamiento); se usan los botones + / −. Tocar el pin abre «Cómo llegar». Si el comercio no tiene coordenadas, la sección no aparece. Código: `pintarMapaComercio()` en `tienda.js`.
 **Revertir:** PR → Revert.
+
+## Fase 2V · Categorías de comercio administrables
+
+**SQL:** `supabase/15_categorias_comercio.sql` — **ANTES** de fusionar. Debe terminar mostrando 1 fila con `categorias` = 33 (o más). Es repetible y no pisa categorías que ya hayas editado.
+
+- **Tabla `categorias_comercio`:** la lista vive en la base. 33 categorías iniciales (las 12 de antes + pastelería, cafetería, heladería, carnicería, frutas y verduras, licorera, naturista, sastrería, cerrajería, celulares y tecnología, papelería, veterinaria, óptica, salud y odontología, talleres, motos, lavandería, gimnasio, floristería, hospedaje, hogar y muebles). Cada una tiene **palabras clave** (las usará el buscador inteligente de la 2W).
+- **Administrar sin SQL:** `admin-comercios.html` → **«🏷️ Categorías de comercio»**: crear (ícono, nombre, palabras clave), renombrar, ordenar y activar/desactivar. Una categoría desactivada no se ofrece al elegir, pero los comercios que la tienen la conservan. Una categoría en uso no se puede borrar (la base lo impide).
+- **Categorías secundarias:** cada comercio tiene 1 principal y hasta 2 secundarias (`comercios.tipos_extra`). Un comercio aparece al filtrar por cualquiera de ellas y la tarjeta dice «Panadería · Cafetería · Envigado».
+- **Quién cambia qué:**
+  - *Moderador (modo editor):* todo, incluida la categoría principal y las secundarias.
+  - *Dueño (Mi tienda):* descripción, WhatsApp, teléfono, horario, foto, entrega **y sus categorías**. Para **nombre, dirección o retirar** hay dos botones visibles al final de «Datos de tu negocio» que abren la solicitud ya llena (`comercios.html?solicitar=ID&tipo=actualizar|retirar`).
+  - *Registro de negocio nuevo:* elige la categoría principal (solo las activas).
+- Si el SQL 15 aún no se ejecutó, la página usa la lista anterior de 12 y todo sigue funcionando.
+- **Revertir:** PR → **Revert**. La tabla puede quedarse. Para volver a la lista fija: `alter table public.comercios drop constraint comercios_tipo_fk; alter table public.negocios_pendientes drop constraint negocios_pendientes_tipo_fk;`

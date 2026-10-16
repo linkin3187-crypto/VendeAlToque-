@@ -45,7 +45,7 @@ function tarjetaComercio(c) {
     </div>
     <div class="p-4 flex-1 flex flex-col">
       <h2 class="font-bold text-lg leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h2>
-      <p class="text-xs text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</p>
+      <p class="text-xs text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
       ${km !== null ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistanciaCo(km)} de ti</p>` : ""}
       ${califHTML(c)}
       ${c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
@@ -134,7 +134,7 @@ function llenarMunisCo(muniAct) {
 
 function pintarTiposCo(base) {
   const cuenta = {};
-  base.forEach(c => { cuenta[c.tipo] = (cuenta[c.tipo] || 0) + 1; });
+  base.forEach(c => { [c.tipo].concat(c.tiposExtra || []).forEach(id => { cuenta[id] = (cuenta[id] || 0) + 1; }); });
   if (tipoActivo !== "todos" && !TIPOS_COMERCIO.some(t => t.id === tipoActivo)) tipoActivo = "todos";
   const chip = (id, txt, n) => `<button type="button" role="tab" data-tipo="${id}" aria-selected="${tipoActivo === id}" class="co-chip shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-semibold border ${tipoActivo === id ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-300 bg-white text-slate-600"}">${txt} <span class="${tipoActivo === id ? "text-indigo-200" : "text-slate-400"}">${n}</span></button>`;
   $("co-tipos").innerHTML = chip("todos", "Todos", base.length)
@@ -185,7 +185,7 @@ function pintar() {
   const f = leerFiltrosCo();
   const base = baseCo(f);
   pintarTiposCo(base);
-  listaCo = ordenarCo(base.filter(c => tipoActivo === "todos" || c.tipo === tipoActivo), f.orden);
+  listaCo = ordenarCo(base.filter(c => tipoActivo === "todos" || comercioEsTipo(c, tipoActivo)), f.orden);
   paginaCo = 1;
   pintarListaCo();
   $("co-contador").textContent = listaCo.length + (listaCo.length === 1 ? " comercio" : " comercios");
@@ -262,7 +262,7 @@ function abrirSolicitud(id, tipo) {
   comercioSolicitud = c;
   $("sol-comercio").textContent = c.nombre + " · " + c.ciudad;
   $("sol-nombre").value = usuarioActual.nombre || "";
-  $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = tipo === "reclamar" ? "reclamar" : "actualizar";
+  $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = ["reclamar", "retirar"].includes(tipo) ? tipo : "actualizar";
   abrirModal("modal-solicitud");
 }
 

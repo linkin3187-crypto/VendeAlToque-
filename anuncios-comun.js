@@ -104,8 +104,9 @@ function filtrarAnuncios(c, limites) {
     if (c.categoria !== "todos" && a.categoria !== c.categoria) return false;
     if (c.subcategoria && a.subcategoria !== c.subcategoria) return false;
     if (c.texto) {
-      const pajar = normalizar([a.nombre, a.desc, a.barrio, a.ciudad].join(" "));
-      if (!pajar.includes(c.texto)) return false;
+      // Buscador inteligente (buscador.js): sin tildes, plurales y errores de escritura
+      if (typeof anuncioCoincide === "function") { if (!anuncioCoincide(a, c.texto)) return false; }
+      else if (!normalizar([a.nombre, a.desc, a.barrio, a.ciudad].join(" ")).includes(c.texto)) return false;
     }
     const precioNum = extraerPrecio(a.precio);
     if (c.hayFiltroPrecio && !(precioNum !== null && precioNum >= c.pMin && precioNum <= c.pMax)) return false;

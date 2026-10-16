@@ -90,8 +90,12 @@ function baseCo(f) {
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
     if (f.vitrina && !(c.nivel >= 2 && c.nProductos > 0)) return false;
     if (f.texto) {
-      const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-      if (!normalizar([c.nombre, c.direccion, c.ciudad, c.descripcion, t ? t.nombre : ""].join(" ")).includes(f.texto)) return false;
+      // Buscador inteligente (buscador.js): «postres» también encuentra pastelerías y panaderías
+      if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, f.texto)) return false; }
+      else {
+        const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+        if (!normalizar([c.nombre, c.direccion, c.ciudad, c.descripcion, t ? t.nombre : ""].join(" ")).includes(f.texto)) return false;
+      }
     }
     return true;
   });

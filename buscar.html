@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscar | MercaFree</title>
+  <meta name="description" content="Busca en todo MercaFree: anuncios clasificados, comercios de tu ciudad y productos de sus vitrinas.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=33">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span></a>
+      <div class="flex items-center gap-3 text-sm">
+        <a href="anuncios.html" class="text-indigo-100 hover:text-white">📢 Anuncios</a>
+        <a href="comercios.html" class="text-indigo-100 hover:text-white">🏪 Comercios</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- BUSCADOR (el mismo de la portada: Enter o 🔍 buscan de nuevo) -->
+  <section class="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white pb-6 pt-5 px-4">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-center mb-4">🔍 Buscar en todo MercaFree</h1>
+      <div class="relative">
+        <input type="search" id="buscador" maxlength="80" autocomplete="off" aria-label="Buscar en MercaFree" placeholder="¿Qué buscas? (ej. postres, droguería, iPhone…)" class="w-full pl-5 pr-16 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
+        <button type="button" id="btn-buscar" class="btn-buscar" aria-label="Buscar" title="Buscar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        </button>
+      </div>
+      <!-- Categorías que la búsqueda sugiere («postres» → Pastelerías, Panaderías, Comida…) -->
+      <div id="b-intenciones" class="hidden mt-4">
+        <p class="text-xs text-indigo-200 mb-1.5">También te puede servir:</p>
+        <div id="b-chips" class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar"></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-6xl mx-auto px-4 py-5">
+    <!-- Resumen + saltos a cada sección -->
+    <div id="b-resumen" class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <p id="b-titulo" class="text-sm text-slate-600" aria-live="polite">Cargando…</p>
+      <div class="flex items-center gap-2">
+        <label for="b-ciudad" class="text-xs font-bold text-slate-500">📍</label>
+        <select id="b-ciudad" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white" aria-label="Filtrar por ciudad"><option value="">Todas las ciudades</option></select>
+      </div>
+    </div>
+    <nav id="b-pestanas" class="hidden flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar" aria-label="Secciones de resultados"></nav>
+
+    <section id="b-anuncios" class="b-seccion hidden mb-8 scroll-mt-4">
+      <div class="flex items-baseline justify-between gap-2 mb-3">
+        <h2 class="text-lg font-black text-indigo-900">📢 Publicaciones <span class="b-n text-slate-400 font-bold"></span></h2>
+        <a class="b-ver-todo text-sm font-bold text-indigo-600 hover:underline" href="anuncios.html">Ver en anuncios →</a>
+      </div>
+      <div class="b-lista grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      <button type="button" class="b-mas hidden mt-3 w-full sm:w-auto bg-white border border-slate-300 hover:border-indigo-400 text-indigo-700 font-bold text-sm px-5 py-2.5 rounded-xl"></button>
+    </section>
+
+    <section id="b-comercios" class="b-seccion hidden mb-8 scroll-mt-4">
+      <div class="flex items-baseline justify-between gap-2 mb-3">
+        <h2 class="text-lg font-black text-indigo-900">🏪 Comercios <span class="b-n text-slate-400 font-bold"></span></h2>
+        <a class="b-ver-todo text-sm font-bold text-indigo-600 hover:underline" href="comercios.html">Ver en el directorio →</a>
+      </div>
+      <div class="b-lista grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      <button type="button" class="b-mas hidden mt-3 w-full sm:w-auto bg-white border border-slate-300 hover:border-indigo-400 text-indigo-700 font-bold text-sm px-5 py-2.5 rounded-xl"></button>
+    </section>
+
+    <section id="b-productos" class="b-seccion hidden mb-8 scroll-mt-4">
+      <div class="flex items-baseline justify-between gap-2 mb-3">
+        <h2 class="text-lg font-black text-indigo-900">🛍️ En vitrinas <span class="b-n text-slate-400 font-bold"></span></h2>
+        <span class="hidden sm:inline text-xs text-slate-400">Productos que publican los comercios</span>
+      </div>
+      <div class="b-lista grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      <button type="button" class="b-mas hidden mt-3 w-full sm:w-auto bg-white border border-slate-300 hover:border-indigo-400 text-indigo-700 font-bold text-sm px-5 py-2.5 rounded-xl"></button>
+    </section>
+
+    <!-- Sin resultados: ayudar a la persona a seguir -->
+    <section id="b-vacio" class="hidden bg-white border border-slate-200 rounded-2xl p-6 text-center">
+      <p class="text-4xl mb-2">🤔</p>
+      <h2 class="text-lg font-black text-indigo-900">No encontramos «<span id="b-vacio-q"></span>»</h2>
+      <p class="text-sm text-slate-500 mt-1">Prueba con otra palabra (ej. «pan» en vez de «panadería artesanal») o quita el filtro de ciudad.</p>
+      <div class="flex flex-wrap justify-center gap-2 mt-4">
+        <a href="index.html#publicar" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold text-sm px-4 py-2.5 rounded-xl">➕ ¿Lo vendes? Publícalo gratis</a>
+        <a href="registrar-negocio.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl">🏪 ¿Tienes un negocio? Regístralo</a>
+      </div>
+      <p class="text-xs text-slate-400 mt-3">Guardamos (sin tus datos) lo que nadie encuentra para agregar más comercios y palabras.</p>
+    </section>
+  </main>
+
+  <footer class="text-center py-8 text-sm text-slate-400">
+    <a href="index.html" class="hover:text-indigo-600">MercaFree</a> ·
+    <a href="terminos.html" class="hover:text-indigo-600 underline">Términos</a> ·
+    <a href="privacidad.html" class="hover:text-indigo-600 underline">Privacidad</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=33"></script>
+  <script src="data.js?v=33"></script>
+  <script src="buscador.js?v=33"></script>
+  <script src="buscar.js?v=33"></script>
+</body>
+</html>

@@ -95,6 +95,7 @@ function mensajeError(e) {
 // MUNICIPIOS (lista cerrada: evita "envigado" vs "Envigado")
 // =====================================================================
 async function cargarMunicipios() {
+  cargarCategoriasComercio();   // en paralelo: todas las páginas pasan por aquí
   const { data, error } = await sb.from("municipios").select("id, departamento, nombre, lat, lng").order("nombre");
   if (error) { console.error("municipios:", error); mostrarToast(mensajeError(error), "error"); return; }
   municipios = data || [];
@@ -596,7 +597,50 @@ const TIPOS_COMERCIO = [
 ];
 const TIPOS_IMPORTABLES = TIPOS_COMERCIO.filter(t => t.osm.length);
 const iconosComercio = {};
-TIPOS_COMERCIO.forEach(t => { iconosComercio[t.id] = t.icono; });
+TIPOS_COMERCIO.forEach(t => { iconosComercio[t.id] = t.icono; t.activo = true; t.palabras = ""; });
+
+// Categorías administrables (Fase 2V · supabase/15_categorias_comercio.sql). La lista de arriba es el
+// respaldo si aún no existe la tabla. Se reemplaza EN EL MISMO arreglo (las páginas ya lo tienen referenciado).
+let categoriasCargadas = null;
+function cargarCategoriasComercio() {
+  if (categoriasCargadas) return categoriasCargadas;
+  categoriasCargadas = (async () => {
+    try {
+      const { data, error } = await sb.from("categorias_comercio").select("id, nombre, icono, palabras, orden, activo").order("orden").order("nombre");
+      if (error || !data || !data.length) return TIPOS_COMERCIO;
+      const osm = {};
+      TIPOS_COMERCIO.forEach(t => { osm[t.id] = t.osm; });
+      TIPOS_COMERCIO.length = 0;
+      data.forEach(r => TIPOS_COMERCIO.push({ id: r.id, nombre: r.nombre, icono: r.icono || "🏪", palabras: r.palabras || "",
+                                               orden: r.orden, activo: r.activo !== false, osm: osm[r.id] || [] }));
+      Object.keys(iconosComercio).forEach(k => delete iconosComercio[k]);
+      TIPOS_COMERCIO.forEach(t => { iconosComercio[t.id] = t.icono; });
+    } catch (e) { console.warn("categorías:", e); }
+    return TIPOS_COMERCIO;
+  })();
+  return categoriasCargadas;
+}
+const categoriasActivas = () => TIPOS_COMERCIO.filter(t => t.activo !== false);
+// ¿El comercio es de esta categoría? (principal o secundaria)
+const comercioEsTipo = (c, id) => c.tipo === id || (c.tiposExtra || []).includes(id);
+// Las categorías de un comercio, principal primero
+// «Panadería · Cafetería» (singular aproximado de cada categoría del comercio)
+const nombreCategorias = c => { const l = categoriasDe(c); return l.length ? l.map(t => t.nombre.split(" y ")[0].replace(/s$/, "")).join(" · ") : "Comercio"; };
+const categoriasDe = c => [c.tipo].concat(c.tiposExtra || []).map(id => TIPOS_COMERCIO.find(t => t.id === id)).filter(Boolean);
+// <option>s para elegir categoría (solo activas, más la actual aunque esté desactivada)
+function opcionesCategoria(actual, conVacia) {
+  const lista = TIPOS_COMERCIO.filter(t => t.activo !== false || t.id === actual);
+  return (conVacia ? `<option value="">${esc(conVacia)}</option>` : "")
+    + lista.map(t => `<option value="${esc(t.id)}" ${t.id === actual ? "selected" : ""}>${t.icono} ${esc(t.nombre)}</option>`).join("");
+}
+
+// Moderadores: crear o editar una categoría
+async function guardarCategoriaDB(fila) {
+  const { error } = await sb.from("categorias_comercio").upsert(fila, { onConflict: "id" });
+  if (error) throw error;
+  categoriasCargadas = null;
+  await cargarCategoriasComercio();
+}
 
 let comercios = [];   // lista pública de comercios activos
 
@@ -613,6 +657,7 @@ function filaAComercio(r) {
     ownerId: r.owner_id || null, descripcion: r.descripcion || "", whatsapp: r.whatsapp || "",
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
     nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
+    tiposExtra: Array.isArray(r.tipos_extra) ? r.tipos_extra : [],
     // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
     calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0
   };
@@ -642,6 +687,7 @@ async function cargarNivelesComercios(ids) {
 }
 
 async function cargarComercios() {
+  await cargarCategoriasComercio();
   const { data, error } = await sb.from("comercios").select("*").eq("activo", true).limit(2000);
   if (error) { console.error("comercios:", error); comercios = []; return comercios; }
   comercios = (data || []).map(filaAComercio);
@@ -650,6 +696,7 @@ async function cargarComercios() {
 
 // Solo moderadores/admin: lista TODOS (incluye ocultos) para el editor.
 async function cargarComerciosAdmin() {
+  await cargarCategoriasComercio();
   const { data, error } = await sb.from("comercios").select("*").order("municipio_id").order("tipo").order("nombre").limit(2000);
   if (error) throw error;
   return (data || []).map(filaAComercio);
@@ -701,6 +748,7 @@ function filaAProducto(r) {
 
 // Un comercio por id (el público solo ve los activos; el dueño y los moderadores ven el suyo aunque esté oculto)
 async function cargarComercioPorId(id) {
+  await cargarCategoriasComercio();
   const { data, error } = await sb.from("comercios").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data ? filaAComercio(data) : null;
@@ -715,6 +763,7 @@ async function cargarProductos(comercioId) {
 
 // Comercios de los que soy dueño (para «Mi tienda»)
 async function cargarMisComercios() {
+  await cargarCategoriasComercio();
   if (!usuarioActual) return [];
   const { data, error } = await sb.from("comercios").select("*").eq("owner_id", usuarioActual.id).order("nombre");
   if (error) { console.error("mis comercios:", error); return []; }

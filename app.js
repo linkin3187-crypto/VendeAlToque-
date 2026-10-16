@@ -177,7 +177,7 @@ function popupComercioHTML(c) {
   return `<div class="popup-anuncio">
     ${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-20 object-cover rounded-lg mb-2">` : ""}
     <strong class="block">${esc(c.nombre)}</strong>
-    <small class="text-slate-500">${esc(t ? t.nombre.replace(/s$/, "") : "Comercio")} · ${esc(c.ciudad)}</small>
+    <small class="text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</small>
     ${c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
     ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
     <div class="text-[11px] mt-1">${resumenCalifHTML(c)}</div>
@@ -225,7 +225,7 @@ function distanciaComercio(c) {
 
 function comerciosFiltrados() {
   // Con «Comercios cerca de mí»: los más cercanos primero. Sin él: verificados, con productos y por nombre.
-  return comerciosBase().filter(c => catComercio === "todos" || c.tipo === catComercio)
+  return comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio))
     .sort((x, y) => ubicacionComercios ? distanciaComercio(x) - distanciaComercio(y)
       : (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));
 }
@@ -234,7 +234,7 @@ function comerciosFiltrados() {
 function pintarFiltrosComercios() {
   const base = comerciosBase();
   const cuenta = {};
-  base.forEach(c => { cuenta[c.tipo] = (cuenta[c.tipo] || 0) + 1; });
+  base.forEach(c => { [c.tipo].concat(c.tiposExtra || []).forEach(id => { cuenta[id] = (cuenta[id] || 0) + 1; }); });
   if (catComercio !== "todos" && !cuenta[catComercio]) catComercio = "todos";
   const chip = (id, txt, n) => `<button type="button" data-cat-com="${id}" class="shrink-0 text-sm font-semibold px-3.5 py-1.5 rounded-full border whitespace-nowrap ${catComercio === id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"}">${txt} <span class="${catComercio === id ? "text-indigo-200" : "text-slate-400"}">${n}</span></button>`;
   $("comercios-cats").innerHTML = chip("todos", "Todos", base.length)
@@ -283,7 +283,7 @@ function tarjetaComercioFeed(c) {
     </div>
     <div class="p-4 flex-1 flex flex-col">
       <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
-      <p class="text-xs text-slate-500">${esc(t ? t.nombre : "Comercio")} · ${esc(c.ciudad)}</p>
+      <p class="text-xs text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
       ${ubicacionComercios && tieneCoords(c) ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistancia(distanciaComercio(c))} de ti</p>` : ""}
       <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
       ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}

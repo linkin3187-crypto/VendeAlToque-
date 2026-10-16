@@ -152,7 +152,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   $("rn-panel").classList.remove("hidden");
-  $("rn-tipo").innerHTML = TIPOS_COMERCIO.map(t => `<option value="${t.id}">${t.icono} ${esc(t.nombre)}</option>`).join("");
+  await cargarCategoriasComercio();
+  $("rn-tipo").innerHTML = opcionesCategoria("tienda");
   $("rn-tipo").value = "tienda";
   $("rn-muni").innerHTML = municipios.map(m => `<option value="${m.id}">${esc(m.nombre)} (${esc(m.departamento)})</option>`).join("");
   $("rn-muni").addEventListener("change", () => { if (!pinFijado && mapa) mapa.setView(centroMunicipio(), 16), pin.setLatLng(centroMunicipio()); });

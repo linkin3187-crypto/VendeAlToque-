@@ -255,6 +255,12 @@ function filaEditor(c) {
       ${campo("direccion", "Dirección", c.direccion, "Cra 43A # 10-20")}
       ${campo("telefono", "Teléfono", c.telefono, "604 123 4567")}
       ${campo("horario", "Horario", c.horario, "Lun-Sáb 8:00-20:00")}
+      <label class="text-xs font-bold text-slate-500">🏷️ Categoría principal
+        <select data-k="tipo" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria(c.tipo)}</select></label>
+      <label class="text-xs font-bold text-slate-500">Secundaria 1 (opcional)
+        <select data-extra class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria((c.tiposExtra || [])[0] || "", "— Ninguna —")}</select></label>
+      <label class="text-xs font-bold text-slate-500">Secundaria 2 (opcional)
+        <select data-extra class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria((c.tiposExtra || [])[1] || "", "— Ninguna —")}</select></label>
       <label class="text-xs font-bold text-slate-500 sm:col-span-2">Foto del local
         <div class="flex items-center gap-2 mt-0.5">
           ${c.foto ? `<img src="${esc(urlSegura(c.foto))}" alt="" class="w-10 h-10 rounded object-cover">` : ""}
@@ -346,7 +352,7 @@ async function cargarOtrosPendientes() {
 }
 
 async function refrescarLista() {
-  try { listaAdmin = await cargarComerciosAdmin(); limiteLista = 40; pintarLista(); }
+  try { listaAdmin = await cargarComerciosAdmin(); limiteLista = 40; pintarLista(); if ($("cat-lista")) pintarCategorias(); }
   catch (e) { mostrarToast(mensajeError(e), "error"); }
 }
 
@@ -679,9 +685,11 @@ async function accionEditor(e) {
       const texto = k => { const v = val(k).value.trim(); return v || null; };
       const nombre = texto("nombre");
       if (!nombre || nombre.length < 2) throw new Error("El nombre es obligatorio");
+      const tipo = val("tipo").value;
       const cambios = {
         nombre, direccion: texto("direccion"), telefono: texto("telefono"), horario: texto("horario"),
-        activo: val("activo").checked
+        activo: val("activo").checked, tipo,
+        tipos_extra: [...new Set([...fila.querySelectorAll("[data-extra]")].map(s => s.value).filter(v => v && v !== tipo))]
       };
       const archivo = fila.querySelector("[data-foto]").files[0];
       if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
@@ -694,6 +702,59 @@ async function accionEditor(e) {
     b.disabled = false;
     mostrarToast(mensajeError(err), "error");
   }
+}
+
+// ---------- Categorías de comercio (solo moderadores) ----------
+function filaCategoria(t) {
+  const usos = listaAdmin.filter(c => comercioEsTipo(c, t.id)).length;
+  return `<div class="border border-slate-200 rounded-xl p-2.5 ${t.activo === false ? "opacity-60" : ""}" data-cat="${esc(t.id)}">
+    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_2fr_4.5rem_auto] gap-2 items-end">
+      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(t.icono)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+      <label class="text-[11px] font-bold text-slate-500">Nombre <span class="font-normal text-slate-400">(${esc(t.id)} · ${usos} comercio${usos === 1 ? "" : "s"})</span><input data-c="nombre" maxlength="40" value="${esc(t.nombre)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<textarea data-c="palabras" rows="1" maxlength="1500" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(t.palabras || "")}</textarea></label>
+      <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(t.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <div class="flex items-center gap-2 col-span-2 sm:col-span-1">
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" data-c="activo" ${t.activo === false ? "" : "checked"}> Activa</label>
+        <button type="button" data-cat-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Guardar</button>
+      </div>
+    </div>
+  </div>`;
+}
+function pintarCategorias() {
+  $("cat-n").textContent = "(" + TIPOS_COMERCIO.length + ")";
+  $("cat-lista").innerHTML = TIPOS_COMERCIO.map(filaCategoria).join("");
+}
+async function accionCategoria(e) {
+  const b = e.target.closest("[data-cat-guardar]");
+  if (!b) return;
+  const f = b.closest("[data-cat]");
+  const v = k => f.querySelector(`[data-c="${k}"]`);
+  const nombre = v("nombre").value.trim();
+  if (nombre.length < 2) { mostrarToast("Escribe el nombre de la categoría", "error"); return; }
+  b.disabled = true;
+  try {
+    await guardarCategoriaDB({ id: f.dataset.cat, nombre, icono: v("icono").value.trim() || "🏪",
+      palabras: v("palabras").value.trim(), orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked });
+    mostrarToast("✅ Categoría guardada");
+    pintarCategorias(); pintarLista();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; }
+}
+async function crearCategoria() {
+  const nombre = $("cat-nuevo-nombre").value.trim();
+  const id = slugRef(nombre).replace(/-/g, "_");
+  if (nombre.length < 2 || id.length < 2) { mostrarToast("Escribe el nombre de la nueva categoría", "error"); return; }
+  if (TIPOS_COMERCIO.some(t => t.id === id)) { mostrarToast("Ya existe una categoría con ese nombre", "error"); return; }
+  const b = $("cat-crear"); b.disabled = true;
+  try {
+    await guardarCategoriaDB({ id, nombre, icono: $("cat-nuevo-icono").value.trim() || "🏪", palabras: $("cat-nuevo-palabras").value.trim(),
+      orden: 500, activo: true });
+    $("cat-nuevo-nombre").value = ""; $("cat-nuevo-palabras").value = "";
+    mostrarToast("✅ Categoría creada: ya aparece al registrar y editar comercios");
+    pintarCategorias(); pintarLista();
+    $("nu-tipo").innerHTML = opcionesCategoria($("nu-tipo").value);
+  } catch (err) {
+    mostrarToast(/categorias_comercio|does not exist/i.test(err.message || "") ? "Primero ejecuta supabase/15_categorias_comercio.sql" : mensajeError(err), "error");
+  } finally { b.disabled = false; }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -741,7 +802,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     pintarLista(); $("ac-origenes").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("ac-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
-  $("nu-tipo").innerHTML = TIPOS_COMERCIO.map(t => `<option value="${t.id}">${t.icono} ${esc(t.nombre)}</option>`).join("");
+  await cargarCategoriasComercio();
+  $("nu-tipo").innerHTML = opcionesCategoria("tienda");
+  pintarCategorias();
+  $("cat-lista").addEventListener("click", accionCategoria);
+  $("cat-crear").addEventListener("click", crearCategoria);
   $("nu-muni").innerHTML = opciones;
   $("ac-nuevo").addEventListener("click", abrirNuevo);
   $("nu-buscar").addEventListener("click", buscarDireccionNu);

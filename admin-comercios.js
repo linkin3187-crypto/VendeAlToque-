@@ -302,7 +302,7 @@ function pintarLista() {
   // Base: estado + municipio + texto. Los contadores de origen se calculan sobre esta base.
   const base = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasaEstado(c, v)
     && (!q || normalizar(c.nombre + " " + c.direccion).includes(q)));
-  const cuenta = { todos: base.length, osm: 0, equipo: 0, dueno: 0, reclamado: 0 };
+  const cuenta = { todos: base.length, osm: 0, equipo: 0, dueno: 0, reclamado: 0, comunidad: 0 };
   base.forEach(c => { cuenta[origenComercio(c)]++; });
   $("ac-origenes").innerHTML = [["todos", "Todos"]].concat(Object.entries(ORIGENES).map(([k, o]) => [k, o.icono + " " + o.corto]))
     .map(([k, txt]) => `<button type="button" role="tab" data-origen="${k}" class="text-xs font-semibold px-3 py-1.5 rounded-full border ${origenAct === k ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"}">${txt} <b>${cuenta[k]}</b></button>`).join("");
@@ -317,7 +317,7 @@ function pintarLista() {
 }
 
 // ---------- Resumen de pendientes ----------
-let otrosPend = { negocios: null, solicitudes: null, reportes: null, comercios: null };
+let otrosPend = { negocios: null, solicitudes: null, reportes: null, comercios: null, recomendados: null };
 
 function tarjetaPend(icono, n, texto, atributos, href) {
   const cls = "text-left border rounded-xl p-3 " + (n > 0 ? "border-indigo-200 bg-indigo-50 hover:border-indigo-400" : "border-slate-200 bg-slate-50 text-slate-400");
@@ -329,9 +329,11 @@ function pintarPendientes() {
   const sinVer = o => listaAdmin.filter(c => c.nivel === 1 && c.activo && origenComercio(c) === o).length;
   $("ac-pend-grid").innerHTML = [
     tarjetaPend("➕", otrosPend.negocios, "Negocios nuevos por aprobar", "", "moderacion.html#negocios"),
+    tarjetaPend("🤝", otrosPend.recomendados, "Recomendados por la gente, por revisar", "", "moderacion.html#recomendados"),
     tarjetaPend("🙋", sinVer("dueno"), "Aprobados por ti, sin verificar", 'data-ir="dueno"'),
     tarjetaPend("🔑", sinVer("reclamado"), "Reclamados, sin verificar", 'data-ir="reclamado"'),
     tarjetaPend("🛠️", sinVer("equipo"), "Agregados por el equipo, sin verificar", 'data-ir="equipo"'),
+    tarjetaPend("🤝", sinVer("comunidad"), "Recomendados ya creados, sin verificar", 'data-ir="comunidad"'),
     tarjetaPend("📥", sinVer("osm"), "Importados, sin verificar", 'data-ir="osm"'),
     tarjetaPend("📨", otrosPend.solicitudes, "Solicitudes de comercios", "", "moderacion.html#solicitudes"),
     tarjetaPend("⚠️", otrosPend.comercios, "Comercios reportados", "", "moderacion.html#reportes-comercios"),
@@ -346,7 +348,8 @@ async function cargarOtrosPendientes() {
     leer("negocios", () => cargarNegociosPendientes("pendiente", false)),
     leer("solicitudes", () => cargarSolicitudesComercio("pendiente")),
     leer("reportes", () => cargarReportesProducto("pendiente")),
-    leer("comercios", () => cargarReportesComercio("pendiente"))
+    leer("comercios", () => cargarReportesComercio("pendiente")),
+    leer("recomendados", () => cargarRecomendaciones("pendiente"))
   ]);
   pintarPendientes();
 }
@@ -371,7 +374,8 @@ function centroNu() {
 }
 
 function abrirNuevo() {
-  coordsNu = null; $("nu-error").classList.add("hidden");
+  coordsNu = null; recomendacionNu = null; $("nu-error").classList.add("hidden");
+  if ($("nu-rec-aviso")) $("nu-rec-aviso").classList.add("hidden");
   ["nu-nombre", "nu-dir", "nu-tel", "nu-wa", "nu-hor", "nu-desc"].forEach(id => { $(id).value = ""; });
   $("nu-foto").value = "";
   $("nu-coords").textContent = "Toca el mapa o arrastra el pin hasta la puerta del local";
@@ -408,6 +412,26 @@ function gpsNu() {
   { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
 }
 
+// ---------- Crear desde una recomendación (fase 2X): admin-comercios.html?recomendacion=ID ----------
+let recomendacionNu = null;   // la recomendación que se está convirtiendo en comercio
+async function abrirDesdeRecomendacion(id) {
+  try {
+    const r = await cargarRecomendacion(id);
+    if (!r) { mostrarToast("No encontramos esa recomendación", "error"); return; }
+    if (r.estado !== "pendiente") { mostrarToast("Esa recomendación ya fue revisada", "error"); return; }
+    $("nu-muni").value = String(r.municipio_id);
+    abrirNuevo();
+    recomendacionNu = r;
+    $("nu-nombre").value = r.nombre || "";
+    if (TIPOS_COMERCIO.some(t => t.id === r.tipo)) $("nu-tipo").value = r.tipo;
+    $("nu-dir").value = r.direccion || "";
+    $("nu-desc").value = r.comentario ? r.comentario.slice(0, 300) : "";
+    if (r.lat != null && r.lng != null) { fijarCoordsNu(Number(r.lat), Number(r.lng), true); setTimeout(() => mapaNu.setView([Number(r.lat), Number(r.lng)], 18), 80); }
+    $("nu-rec-aviso").classList.remove("hidden");
+    $("nu-rec-aviso").innerHTML = `🤝 <b>Recomendado por la comunidad.</b> Revisa los datos, ubica bien el pin y guarda. ${r.foto_url ? `Si no subes otra foto se usa la que enviaron: <a href="${esc(urlSegura(r.foto_url))}" target="_blank" rel="noopener" class="underline">ver foto</a>.` : ""}`;
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+
 async function guardarNuevo() {
   const err = m => { $("nu-error").textContent = m; $("nu-error").classList.toggle("hidden", !m); return !m; };
   const nombre = $("nu-nombre").value.trim();
@@ -426,11 +450,18 @@ async function guardarNuevo() {
       direccion: $("nu-dir").value.trim() || null, telefono: $("nu-tel").value.trim() || null,
       whatsapp: wa ? "57" + wa : null, horario: $("nu-hor").value.trim() || null,
       descripcion: $("nu-desc").value.trim() || null,
-      lat: +coordsNu.lat.toFixed(6), lng: +coordsNu.lng.toFixed(6), activo: true, fuente: "Agregado por el equipo"
+      lat: +coordsNu.lat.toFixed(6), lng: +coordsNu.lng.toFixed(6), activo: true,
+      fuente: recomendacionNu ? "Recomendado por la comunidad" : "Agregado por el equipo"
     };
     const archivo = $("nu-foto").files[0];
     if (archivo) fila.foto_url = await subirFotoComercio(await comprimir(archivo));
+    else if (recomendacionNu && recomendacionNu.foto_url) fila.foto_url = recomendacionNu.foto_url;
     const c = await crearComercioDB(fila);
+    if (recomendacionNu) {
+      try { await resolverRecomendacion(recomendacionNu.id, "creado", c.id); }
+      catch (e) { console.warn("recomendación:", e); }
+      recomendacionNu = null;
+    }
     cerrarModal("modal-nuevo");
     mostrarToast("✅ Comercio creado. Verifícalo cuando lo confirmes");
     soloId = c.id;           // lo dejamos a la vista para verificarlo de una vez
@@ -820,4 +851,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   cargarOtrosPendientes();
   if (qs.get("verificar") && soloId !== null) abrirVisita(soloId);
   if (qs.get("nuevo")) abrirNuevo();
+  if (qs.get("recomendacion")) abrirDesdeRecomendacion(Number(qs.get("recomendacion")));
 });

@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=36">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -136,6 +136,7 @@
       <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
       <h3 id="nu-titulo" class="text-lg font-black text-indigo-900 pr-8">➕ Agregar comercio</h3>
       <p class="text-xs text-slate-500 mb-3">Para negocios de barrio que no salieron del mapa o que llegaron por solicitud o recomendación. Entra como <b>sin verificar</b> (nivel «Ubicado»); luego lo verificas con ✅.</p>
+      <p id="nu-rec-aviso" class="hidden text-xs bg-pink-50 border border-pink-200 text-pink-900 rounded-lg px-3 py-2 mb-3"></p>
       <div class="space-y-2.5">
         <label class="block text-xs font-bold text-slate-500">Nombre *
           <input id="nu-nombre" maxlength="100" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
@@ -209,8 +210,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=36"></script>
-  <script src="data.js?v=36"></script>
-  <script src="admin-comercios.js?v=36"></script>
+  <script src="utils.js?v=37"></script>
+  <script src="data.js?v=37"></script>
+  <script src="admin-comercios.js?v=37"></script>
 </body>
 </html>

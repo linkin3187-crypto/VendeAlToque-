@@ -668,11 +668,13 @@ const ORIGENES = {
   osm:       { icono: "📥", corto: "Importados",           nombre: "Importados de OpenStreetMap" },
   equipo:    { icono: "🛠️", corto: "Agregados por el equipo", nombre: "Agregados por el equipo" },
   dueno:     { icono: "🙋", corto: "Registrados por su dueño", nombre: "Registrados por su dueño y aprobados" },
-  reclamado: { icono: "🔑", corto: "Reclamados",           nombre: "Importados y reclamados por su dueño" }
+  reclamado: { icono: "🔑", corto: "Reclamados",           nombre: "Importados y reclamados por su dueño" },
+  comunidad: { icono: "🤝", corto: "Recomendados",         nombre: "Recomendados por la comunidad (fase 2X)" }
 };
 function origenComercio(c) {
   if (c.fuente === "Registro del dueño") return "dueno";
   if (c.fuente === "Agregado por el equipo") return "equipo";
+  if (c.fuente === "Recomendado por la comunidad") return c.ownerId ? "reclamado" : "comunidad";
   return c.ownerId ? "reclamado" : "osm";
 }
 
@@ -769,6 +771,46 @@ async function cargarProductosPublicos() {
     .eq("disponible", true).eq("oculto", false).limit(2000);
   if (error) { console.warn("productos:", error); return []; }
   return (data || []).map(filaAProducto);
+}
+
+// ---------- Recomendaciones de comercios (fase 2X, supabase/17_recomendaciones.sql) ----------
+// d: { nombre, tipo, municipioId, direccion, lat, lng, foto (data: opcional), comentario }
+async function crearRecomendacion(d) {
+  if (!usuarioActual) throw new Error("Inicia sesión para recomendar un comercio");
+  const foto = d.foto ? await subirFotoComercio(d.foto) : null;
+  const { error } = await sb.from("recomendaciones_comercio").insert({
+    nombre: d.nombre.trim(), tipo: d.tipo, municipio_id: d.municipioId,
+    direccion: (d.direccion || "").trim() || null,
+    lat: d.lat != null ? +d.lat.toFixed(6) : null, lng: d.lng != null ? +d.lng.toFixed(6) : null,
+    foto_url: foto, comentario: (d.comentario || "").trim() || null
+  });
+  if (error) throw error;
+}
+async function cargarMisRecomendaciones() {
+  const { data, error } = await sb.from("recomendaciones_comercio")
+    .select("id, nombre, tipo, municipio_id, estado, comercio_id, creado_en")
+    .eq("usuario_id", usuarioActual.id).order("creado_en", { ascending: false }).limit(30);
+  if (error) throw error;
+  return data || [];
+}
+// Moderadores: las pendientes (con el nombre de quien recomienda)
+async function cargarRecomendaciones(estado) {
+  const { data, error } = await sb.from("recomendaciones_comercio")
+    .select("*, autor:perfiles!usuario_id(nombre)").eq("estado", estado || "pendiente")
+    .order("creado_en", { ascending: true }).limit(100);
+  if (error) throw error;
+  return data || [];
+}
+async function cargarRecomendacion(id) {
+  const { data, error } = await sb.from("recomendaciones_comercio").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+async function resolverRecomendacion(id, estado, comercioId) {
+  const fila = { estado };
+  if (comercioId) fila.comercio_id = comercioId;
+  const { error } = await sb.from("recomendaciones_comercio").update(fila).eq("id", id);
+  if (error) throw error;
 }
 
 // ---------- Búsquedas (fase 2W, solo moderadores: supabase/16_busquedas.sql) ----------

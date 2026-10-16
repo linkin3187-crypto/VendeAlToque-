@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Recomienda los comercios que visitas: tiendas, restaurantes, bares, puestos de comida y más. Ayuda a que tu barrio aparezca en el mapa.">
+  <title>Recomendar un comercio | MercaFree</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=37">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span> <span class="text-sm font-semibold text-indigo-200">· Recomendar</span></a>
+      <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Inicio</a>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6">
+    <div id="rc-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+
+    <!-- Sin cuenta: explicamos por qué la pedimos -->
+    <div id="rc-sin-sesion" class="hidden max-w-md mx-auto text-center py-10">
+      <div class="text-5xl mb-3">🤝</div>
+      <h1 class="text-2xl font-black text-indigo-900 mb-2">Recomienda los comercios que visitas</h1>
+      <p class="text-sm text-slate-600 mb-5">Tiendas, restaurantes, bares, puestos de comida y más. Pedimos una cuenta gratis para evitar recomendaciones falsas y poder avisarte cuando lo agreguemos.</p>
+      <button type="button" id="rc-login" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl">Crear cuenta o iniciar sesión</button>
+    </div>
+
+    <div id="rc-panel" class="hidden space-y-6">
+      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h1 class="text-xl font-black text-indigo-900">🤝 Recomendar un comercio</h1>
+        <p class="text-sm text-slate-500 mt-1">¿Visitaste un negocio que no está en el mapa? Cuéntanos y lo revisamos para agregarlo. Tardas 1 minuto. <b>No tienes que ser el dueño.</b></p>
+        <p class="text-xs text-slate-400 mt-1">¿Es tu negocio? Mejor <a href="registrar-negocio.html" class="underline text-indigo-600">regístralo tú</a>: así manejas tu vitrina.</p>
+
+        <form id="form-recomendar" novalidate class="space-y-3 mt-4">
+          <!-- Señuelo anti-robots: las personas no lo ven -->
+          <div class="absolute -left-[9999px]" aria-hidden="true"><label>No llenar <input id="rc-web" name="web" tabindex="-1" autocomplete="off"></label></div>
+
+          <label class="block text-xs font-bold text-slate-500">Nombre del comercio *
+            <input id="rc-nombre" maxlength="100" required class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Chuzos Don Pepe, Tienda La Esquina…"></label>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="block text-xs font-bold text-slate-500">¿Qué es? *
+              <select id="rc-tipo" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white"></select></label>
+            <label class="block text-xs font-bold text-slate-500">Municipio *
+              <select id="rc-muni" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white"></select></label>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <p class="text-xs font-bold text-slate-500">¿Dónde queda? * <span class="font-normal">(usa una de las dos)</span></p>
+            <button type="button" id="rc-gps" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-2.5 rounded-lg">📍 Estoy aquí, en el comercio</button>
+            <p id="rc-gps-ok" class="hidden text-xs font-semibold text-emerald-700" aria-live="polite"></p>
+            <label class="block text-xs font-bold text-slate-500">Dirección o referencia
+              <input id="rc-dir" maxlength="160" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white" placeholder="Ej. Calle 50 # 40-12, frente al parque"></label>
+          </div>
+
+          <label class="block text-xs font-bold text-slate-500">Foto de la fachada <span class="font-normal">(opcional, ayuda mucho)</span>
+            <input id="rc-foto" type="file" accept="image/*" capture="environment" class="mt-1 block w-full text-sm font-normal"></label>
+          <img id="rc-foto-prev" alt="Vista previa de la foto" class="hidden w-40 h-28 object-cover rounded-lg border border-slate-200">
+
+          <label class="block text-xs font-bold text-slate-500">¿Por qué lo recomiendas? <span class="font-normal">(opcional)</span>
+            <textarea id="rc-coment" maxlength="300" rows="2" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Las mejores empanadas del barrio, abre hasta tarde"></textarea></label>
+
+          <p id="rc-error" class="hidden text-sm text-red-600 font-semibold" role="alert"></p>
+          <button type="submit" id="rc-enviar" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl disabled:opacity-60">🤝 Enviar recomendación</button>
+          <p class="text-[11px] text-slate-400 text-center">Un moderador la revisa antes de publicarla. No compartimos tu nombre con el comercio. <a href="privacidad.html" class="underline">Privacidad</a></p>
+        </form>
+      </section>
+
+      <section id="rc-mis" class="hidden bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="font-black text-indigo-900 mb-3">Tus recomendaciones</h2>
+        <div id="rc-mis-lista" class="space-y-2"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="text-center py-8 text-sm text-slate-400">
+    <a href="index.html" class="hover:text-indigo-600">MercaFree</a> ·
+    <a href="terminos.html" class="hover:text-indigo-600 underline">Términos</a> ·
+    <a href="privacidad.html" class="hover:text-indigo-600 underline">Privacidad</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=37"></script>
+  <script src="data.js?v=37"></script>
+  <script src="recomendar.js?v=37"></script>
+</body>
+</html>

@@ -329,6 +329,58 @@ async function accionReporteCalificacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Comercios recomendados por la gente (fase 2X, supabase/17_recomendaciones.sql) ----------
+function tarjetaRecomendacion(r) {
+  const t = TIPOS_COMERCIO.find(x => x.id === r.tipo);
+  const m = municipios.find(x => x.id === r.municipio_id);
+  const foto = urlSegura(r.foto_url);
+  const conPunto = r.lat != null && r.lng != null;
+  // ¿Ya existe algo parecido? Mismo nombre en el municipio, o cualquier comercio a menos de 60 m
+  const parecidos = comercios.filter(c => c.municipioId === r.municipio_id && (normalizar(c.nombre) === normalizar(r.nombre)
+    || (conPunto && tieneCoords(c) && distanciaKm(c, { lat: Number(r.lat), lng: Number(r.lng) }) < 0.06))).slice(0, 3);
+  return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex gap-3" data-recom="${r.id}">
+    ${foto ? `<a href="${esc(foto)}" target="_blank" rel="noopener" class="shrink-0"><img src="${esc(foto)}" alt="Fachada" class="w-20 h-20 object-cover rounded-lg border border-slate-200"></a>` : `<div class="shrink-0 w-20 h-20 rounded-lg bg-slate-100 flex items-center justify-center text-3xl">${esc(t ? t.icono : "🏪")}</div>`}
+    <div class="min-w-0 flex-1">
+      <p class="font-black text-slate-900">${esc(r.nombre)}</p>
+      <p class="text-xs text-slate-500">${esc(t ? t.icono + " " + t.nombre : r.tipo)} · ${esc(m ? m.nombre + ", " + m.departamento : "")}</p>
+      ${r.direccion ? `<p class="text-sm text-slate-700 mt-1">📍 ${esc(r.direccion)}</p>` : ""}
+      ${conPunto ? `<a href="${esc(urlGoogleMaps(Number(r.lat), Number(r.lng)))}" target="_blank" rel="noopener" class="text-xs text-indigo-600 underline">🗺️ Ver el punto GPS en el mapa</a>` : ""}
+      ${r.comentario ? `<p class="text-sm text-slate-600 italic mt-1">«${esc(r.comentario)}»</p>` : ""}
+      <p class="text-[11px] text-slate-400 mt-1">Recomendado por ${esc((r.autor && r.autor.nombre) || "alguien")} · ${esc(fechaCorta(r.creado_en))}</p>
+      ${parecidos.length ? `<p class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-2 py-1 mt-2">⚠️ Puede que ya exista: ${parecidos.map(c => `<a href="tienda.html?id=${c.id}" target="_blank" rel="noopener" class="underline">${esc(c.nombre)}</a>`).join(", ")}</p>` : ""}
+      <div class="flex flex-wrap gap-2 mt-3">
+        <a href="admin-comercios.html?recomendacion=${r.id}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">➕ Crear comercio</a>
+        <button type="button" data-racc="descartado" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg">Descartar</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+async function pintarRecomendaciones() {
+  try {
+    if (!comercios.length) await cargarComercios();
+    const lista = await cargarRecomendaciones("pendiente");
+    $("n-recom").textContent = lista.length ? "(" + lista.length + ")" : "";
+    $("recom-lista").innerHTML = lista.length ? lista.map(tarjetaRecomendacion).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">No hay recomendaciones pendientes.</p>';
+  } catch (e) {
+    $("recom-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/17_recomendaciones.sql.</p>';
+  }
+}
+
+async function accionRecomendacion(e) {
+  const b = e.target.closest("[data-racc]");
+  const t = e.target.closest("[data-recom]");
+  if (!b || !t) return;
+  if (!confirm("¿Descartar esta recomendación? (ya existe, no es real o está repetida)")) return;
+  b.disabled = true;
+  try {
+    await resolverRecomendacion(Number(t.dataset.recom), b.dataset.racc);
+    mostrarToast("✔ Descartada");
+    await pintarRecomendaciones();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 // ---------- Lo que la gente busca y no encuentra (fase 2W, supabase/16_busquedas.sql) ----------
 function filaBusqueda(b) {
   return `<article class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-wrap items-center gap-2" data-busq="${esc(b.termino)}">
@@ -530,6 +582,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
+  $("recom-lista").addEventListener("click", accionRecomendacion);
+  $("recom-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
+  pintarRecomendaciones();
   $("busq-lista").addEventListener("click", accionBusqueda);
   pintarBusquedas();
   pintarReportes();

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=32" />
+  <link rel="stylesheet" href="styles.css?v=33" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -79,7 +79,10 @@
       </div>
 
       <div class="relative mb-5">
-        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar anuncios" placeholder="¿Qué buscas hoy? (ej. apartamento, iPhone, carpintero...)" class="w-full pl-5 pr-5 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
+        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar en MercaFree" placeholder="¿Qué buscas hoy? (ej. postres, iPhone, carpintero...)" class="w-full pl-5 pr-16 py-4 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-xl text-base">
+        <button type="button" id="btn-buscar" class="btn-buscar" aria-label="Buscar en anuncios, comercios y vitrinas" title="Buscar en todo">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        </button>
       </div>
 
       <!-- Las categorías se dibujan desde CATEGORIAS (data.js) -->
@@ -605,11 +608,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=32"></script>
-  <script src="data.js?v=32"></script>
-  <script src="foro.js?v=32"></script>
-  <script src="carrusel.js?v=32"></script>
-  <script src="anuncios-comun.js?v=32"></script>
-  <script src="app.js?v=32"></script>
+  <script src="utils.js?v=33"></script>
+  <script src="data.js?v=33"></script>
+  <script src="foro.js?v=33"></script>
+  <script src="carrusel.js?v=33"></script>
+  <script src="buscador.js?v=33"></script>
+  <script src="anuncios-comun.js?v=33"></script>
+  <script src="app.js?v=33"></script>
 </body>
 </html>

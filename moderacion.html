@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -78,6 +78,16 @@
       </div>
       <p class="text-xs text-slate-500 mb-3">Opiniones de comercios que alguien reportó. Oculta solo las que tengan insultos, datos personales, spam o sean claramente falsas. <b>Una opinión negativa no se oculta por ser negativa.</b> Ocultar la saca del promedio; su autor la sigue viendo.</p>
       <div id="rcal-lista" class="space-y-3"></div>
+
+      <div class="mt-10 mb-3">
+        <h2 id="busquedas" class="text-xl font-black text-indigo-900 scroll-mt-4">🔍 Lo que la gente busca y no encuentra <span id="n-busq" class="text-sm font-semibold text-slate-500"></span></h2>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Textos que alguien buscó en «Buscar en todo» y no tuvieron resultados (no se guarda quién). Así el buscador <b>aprende</b>: elige la categoría de comercio que corresponde y toca <b>🧠 Enseñar</b>; esa palabra se agrega a las palabras clave de la categoría y desde ese momento la búsqueda encuentra esos comercios. Si es un comercio que falta, agrégalo en <a href="admin-comercios.html" class="underline text-indigo-600">Comercios</a>.</p>
+      <div id="busq-lista" class="space-y-2"></div>
+      <details id="busq-top-caja" class="hidden mt-4 bg-white border border-slate-200 rounded-2xl p-4">
+        <summary class="font-bold text-sm text-indigo-900 cursor-pointer">📈 Lo más buscado (con resultados)</summary>
+        <ol id="busq-top" class="mt-2 text-sm text-slate-600 list-decimal pl-5 space-y-0.5"></ol>
+      </details>
     </section>
   </main>
 
@@ -86,8 +96,8 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=32"></script>
-  <script src="data.js?v=32"></script>
-  <script src="moderacion.js?v=32"></script>
+  <script src="utils.js?v=33"></script>
+  <script src="data.js?v=33"></script>
+  <script src="moderacion.js?v=33"></script>
 </body>
 </html>

@@ -329,6 +329,60 @@ async function accionReporteCalificacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Lo que la gente busca y no encuentra (fase 2W, supabase/16_busquedas.sql) ----------
+function filaBusqueda(b) {
+  return `<article class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-wrap items-center gap-2" data-busq="${esc(b.termino)}">
+    <div class="min-w-0 basis-full sm:basis-0 sm:flex-1">
+      <p class="font-bold text-slate-900">«${esc(b.termino)}»
+        <a href="buscar.html?q=${encodeURIComponent(b.termino)}" target="_blank" rel="noopener" class="text-xs font-semibold text-indigo-600 underline ml-1">probar</a></p>
+      <p class="text-xs text-slate-500">${b.veces_sin_result} ${b.veces_sin_result === 1 ? "vez" : "veces"} sin resultados · buscada ${b.veces} en total · última: ${esc(fechaCorta(b.ultima_vez))}</p>
+    </div>
+    <select data-busq-cat aria-label="Categoría a la que corresponde" class="basis-full sm:basis-auto min-w-0 border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white sm:max-w-[13rem]">${opcionesCategoria("", "Elige la categoría…")}</select>
+    <button type="button" data-bacc="ensenar" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">🧠 Enseñar</button>
+    <button type="button" data-bacc="resuelta" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg" title="Ya se resolvió (ej. agregaste el comercio)">✔ Ya está</button>
+    <button type="button" data-bacc="borrar" class="text-sm text-slate-400 hover:text-red-600 px-2" title="Borrar (spam o sin sentido)" aria-label="Borrar">🗑️</button>
+  </article>`;
+}
+
+async function pintarBusquedas() {
+  try {
+    await cargarCategoriasComercio();
+    const todas = await cargarBusquedas();
+    const sin = todas.filter(b => b.veces_sin_result > 0 && b.ultimos_resultados === 0);
+    $("n-busq").textContent = sin.length ? "(" + sin.length + ")" : "";
+    $("busq-lista").innerHTML = sin.length ? sin.slice(0, 60).map(filaBusqueda).join("")
+      : '<p class="text-sm text-slate-400 text-center py-6">Nada pendiente: todo lo que se busca tiene resultados. 🎉</p>';
+    const top = todas.filter(b => b.ultimos_resultados > 0).sort((a, b) => b.veces - a.veces).slice(0, 15);
+    $("busq-top").innerHTML = top.map(b => `<li><b>${esc(b.termino)}</b> · ${b.veces} ${b.veces === 1 ? "vez" : "veces"}</li>`).join("");
+    $("busq-top-caja").classList.toggle("hidden", !top.length);
+  } catch (e) {
+    $("busq-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/16_busquedas.sql.</p>';
+  }
+}
+
+async function accionBusqueda(e) {
+  const b = e.target.closest("[data-bacc]");
+  const fila = e.target.closest("[data-busq]");
+  if (!b || !fila) return;
+  const termino = fila.dataset.busq;
+  try {
+    if (b.dataset.bacc === "ensenar") {
+      const cat = fila.querySelector("[data-busq-cat]").value;
+      if (!cat) { mostrarToast("Primero elige la categoría a la que corresponde", "error"); return; }
+      b.disabled = true;
+      await ensenarPalabraCategoria(cat, termino);
+      const t = TIPOS_COMERCIO.find(x => x.id === cat);
+      mostrarToast(`🧠 Aprendido: «${termino}» ahora encuentra ${t ? t.nombre : cat}`);
+    } else if (b.dataset.bacc === "resuelta") {
+      b.disabled = true; await marcarBusquedaResuelta(termino); mostrarToast("✔ Marcada como resuelta");
+    } else if (b.dataset.bacc === "borrar") {
+      if (!confirm(`¿Borrar «${termino}» de la lista?`)) return;
+      b.disabled = true; await borrarBusqueda(termino); mostrarToast("🗑️ Borrada");
+    }
+    await pintarBusquedas();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 // ---------- Negocios nuevos por revisar (registrar-negocio.html) ----------
 const meterNegocios = {};   // señales ya cargadas por solicitud
 
@@ -476,6 +530,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
+  $("busq-lista").addEventListener("click", accionBusqueda);
+  pintarBusquedas();
   pintarReportes();
   pintarSolicitudes();
 });

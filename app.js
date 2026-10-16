@@ -209,8 +209,11 @@ function comerciosBase() {
     if (deptoComercio && c.departamento !== deptoComercio) return false;
     if (muniComercio && String(c.municipioId) !== muniComercio) return false;
     if (texto) {
-      const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-      if (!normalizar([c.nombre, c.direccion, c.ciudad, t ? t.nombre : ""].join(" ")).includes(texto)) return false;
+      if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, texto)) return false; }
+      else {
+        const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+        if (!normalizar([c.nombre, c.direccion, c.ciudad, t ? t.nombre : ""].join(" ")).includes(texto)) return false;
+      }
     }
     return true;
   });
@@ -1266,6 +1269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderizarCategorias();
   iniciarMapa();
   iniciarEventos();
+  conectarBuscadorGlobal(() => ({ anuncios: baseDatosAnuncios, comercios }));
 
   // 2) Datos reales desde Supabase
   await cargarDatos();

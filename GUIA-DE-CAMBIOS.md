@@ -217,3 +217,17 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
   - *Registro de negocio nuevo:* elige la categoría principal (solo las activas).
 - Si el SQL 15 aún no se ejecutó, la página usa la lista anterior de 12 y todo sigue funcionando.
 - **Revertir:** PR → **Revert**. La tabla puede quedarse. Para volver a la lista fija: `alter table public.comercios drop constraint comercios_tipo_fk; alter table public.negocios_pendientes drop constraint negocios_pendientes_tipo_fk;`
+
+## Fase 2W · Buscador inteligente («Buscar en todo»)
+
+**SQL:** `supabase/16_busquedas.sql` — se puede ejecutar antes o después de fusionar (sin él la página funciona igual, solo que no guarda las búsquedas). Debe terminar mostrando 1 fila: `registrar_busqueda | true`.
+
+**Archivos nuevos:** `buscador.js` (el «cerebro» del buscador), `buscar.html` + `buscar.js` (página de resultados). **Cambian:** `index.html`, `anuncios.html`, `comercios.html` (cargan `buscador.js`), `anuncios-comun.js`, `comercios.js`, `app.js` (filtros más inteligentes), `tienda.html`/`tienda.js` (resalta el producto buscado), `moderacion.html`/`moderacion.js` (panel nuevo), `data.js` (productos públicos y búsquedas), `styles.css`.
+
+**Cómo funciona:**
+- **Botón 🔍** amarillo dentro del buscador del inicio y de «Todos los anuncios». Al escribir salen **sugerencias**: categorías de comercio (🍰 Pastelerías · 3 comercios), categorías de anuncios y comercios por nombre, y al final «🔍 Ver todos los resultados». **Enter** o 🔍 abren `buscar.html?q=…`. El texto sigue filtrando la lista de la página como antes.
+- **Página «Buscar en todo»:** chips de categorías sugeridas, saltos a cada sección y tres secciones ordenadas por relevancia: **📢 Publicaciones**, **🏪 Comercios** y **🛍️ En vitrinas** (productos de comercios verificados; al tocar uno abre la tienda y lo resalta). Filtro por ciudad. El enlace se puede compartir (`buscar.html?q=postres&ciudad=Envigado`).
+- **Qué entiende:** sin tildes ni mayúsculas, plurales («postre» = «postres»), palabras a medio escribir («post…»), errores de una o dos letras («pateleria», «drogeria») e **intenciones**: usa las *palabras clave* de cada categoría de comercio (las editas en Comercios → 🏷️ Categorías) y las de anuncios (`PALABRAS_ANUNCIOS` en `buscador.js`). El directorio de comercios (`comercios.html?q=postres`) también entiende intenciones.
+- **Aprende contigo:** cada búsqueda en «Buscar en todo» se guarda (solo el texto y cuántos resultados hubo, nunca quién). En **Moderación → 🔍 Lo que la gente busca y no encuentra** ves las búsquedas sin resultados; eliges la categoría y tocas **🧠 Enseñar**: la palabra se agrega a esa categoría y desde ese momento encuentra esos comercios. «✔ Ya está» la marca resuelta (ej. si agregaste el comercio) y 🗑️ borra spam. Abajo, «📈 Lo más buscado» sirve para decidir qué comercios invitar primero.
+- Todo corre en el navegador: no usa servicios externos ni IA de pago.
+- **Revertir:** PR → **Revert**. La tabla `busquedas` puede quedarse (o `drop table public.busquedas; drop function public.registrar_busqueda(text, integer);`).

@@ -761,6 +761,45 @@ async function cargarProductos(comercioId) {
   return (data || []).map(filaAProducto);
 }
 
+// Productos de vitrina de TODOS los comercios (para el buscador). La regla RLS ya deja ver solo los
+// productos visibles de comercios activos con vitrina; aquí además se quitan los agotados.
+async function cargarProductosPublicos() {
+  const { data, error } = await sb.from("productos_comercio")
+    .select("id, comercio_id, nombre, descripcion, precio, foto_url, disponible, oculto, actualizado_en")
+    .eq("disponible", true).eq("oculto", false).limit(2000);
+  if (error) { console.warn("productos:", error); return []; }
+  return (data || []).map(filaAProducto);
+}
+
+// ---------- Búsquedas (fase 2W, solo moderadores: supabase/16_busquedas.sql) ----------
+async function cargarBusquedas() {
+  const { data, error } = await sb.from("busquedas").select("*").eq("resuelta", false)
+    .order("veces_sin_result", { ascending: false }).order("ultima_vez", { ascending: false }).limit(300);
+  if (error) throw error;
+  return data || [];
+}
+async function marcarBusquedaResuelta(termino) {
+  const { error } = await sb.from("busquedas").update({ resuelta: true }).eq("termino", termino);
+  if (error) throw error;
+}
+async function borrarBusqueda(termino) {
+  const { error } = await sb.from("busquedas").delete().eq("termino", termino);
+  if (error) throw error;
+}
+// «Enseñar»: agrega la palabra buscada a las palabras clave de una categoría de comercio
+async function ensenarPalabraCategoria(catId, palabra) {
+  await cargarCategoriasComercio();
+  const t = TIPOS_COMERCIO.find(x => x.id === catId);
+  if (!t) throw new Error("Esa categoría no existe");
+  const actuales = String(t.palabras || "").split(",").map(x => x.trim()).filter(Boolean);
+  if (!actuales.some(x => normalizar(x) === normalizar(palabra))) actuales.push(palabra.trim());
+  const palabras = actuales.join(", ").slice(0, 1500);
+  const { error } = await sb.from("categorias_comercio").update({ palabras }).eq("id", catId);
+  if (error) throw error;
+  t.palabras = palabras;
+  await marcarBusquedaResuelta(palabra);
+}
+
 // Comercios de los que soy dueño (para «Mi tienda»)
 async function cargarMisComercios() {
   await cargarCategoriasComercio();

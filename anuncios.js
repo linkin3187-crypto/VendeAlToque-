@@ -185,6 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("chips-categorias").innerHTML = chipsCategoriasHTML();
   marcarCategoriaActiva();
   iniciarEventosTodos();
+  conectarBuscadorGlobal(() => ({ anuncios: baseDatosAnuncios, comercios: [] }));
   await cargarDatos();
   refrescarOpcionesUbicacion();
   aplicarQueryAUI(location.search);   // filtros que vienen en el enlace (p. ej. desde el inicio)

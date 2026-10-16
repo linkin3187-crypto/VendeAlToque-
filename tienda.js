@@ -42,6 +42,19 @@ function pintarProductos() {
   $("t-lista").innerHTML = productos.map(tarjetaProducto).join("");
   $("t-sin-productos").classList.toggle("hidden", productos.length > 0);
   pintarBarra();
+  resaltarProductoBuscado();
+}
+
+// Llegó desde el buscador (tienda.html?id=X&p=ID#productos): muestra y resalta ese producto una vez
+let productoResaltado = false;
+function resaltarProductoBuscado() {
+  const pid = new URLSearchParams(location.search).get("p");
+  if (productoResaltado || !pid) return;
+  const el = document.querySelector(`#t-lista [data-prod="${CSS.escape(pid)}"]`);
+  if (!el) return;
+  productoResaltado = true;
+  el.classList.add("prod-resaltado");
+  el.scrollIntoView({ block: "center" });
 }
 
 function itemsPedido() {

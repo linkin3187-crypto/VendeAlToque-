@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=33" />
+  <link rel="stylesheet" href="styles.css?v=34" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -44,45 +44,39 @@
 
   <!-- FILTROS (mismos id que el inicio: el código es compartido en anuncios-comun.js) -->
   <div class="max-w-7xl mx-auto px-4 pt-5">
-    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-      <!-- Siempre a la vista: dónde buscar, «Cerca de mí» y el orden -->
-      <div class="grid grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
-        <div>
-          <label for="filtro-departamento" class="block text-xs font-bold text-slate-500 mb-1">📍 Departamento</label>
-          <select id="filtro-departamento" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="">Todos</option>
+    <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+      <!-- Compactos (fase 2W.1): fila 1 = dónde · fila 2 = cerca, orden y más filtros · luego los filtros activos con ✕.
+           En computador todo cabe en una sola fila. Los id no cambian: el código es el mismo. -->
+      <div class="flex flex-col lg:flex-row gap-2">
+        <div class="grid grid-cols-2 gap-2 lg:flex-[3]">
+          <label for="filtro-departamento" class="sr-only">Departamento</label>
+          <select id="filtro-departamento" class="filtro-sel" title="Departamento">
+            <option value="">📍 Departamento</option>
+          </select>
+          <label for="filtro-ciudad" class="sr-only">Municipio o ciudad</label>
+          <select id="filtro-ciudad" class="filtro-sel" title="Municipio o ciudad">
+            <option value="">🏘️ Ciudad</option>
           </select>
         </div>
-        <div>
-          <label for="filtro-ciudad" class="block text-xs font-bold text-slate-500 mb-1">🏘️ Municipio o ciudad</label>
-          <select id="filtro-ciudad" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="">Todas las ciudades</option>
+        <div class="flex gap-2 lg:flex-[3]">
+          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca btn-cerca-pill whitespace-nowrap">📡 Cerca de mí</button>
+          <label for="ordenar-por" class="sr-only">Ordenar por</label>
+          <select id="ordenar-por" class="filtro-sel flex-1 min-w-0" title="Ordenar por">
+            <option value="recientes">↕️ Recientes</option>
+            <option value="cercanos">↕️ Cercanos a mí</option>
+            <option value="precio-asc">↕️ Menor precio</option>
+            <option value="precio-desc">↕️ Mayor precio</option>
+            <option value="nombre">↕️ Nombre A-Z</option>
           </select>
-        </div>
-        <div class="col-span-2 lg:col-span-1">
-          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca w-full lg:w-auto whitespace-nowrap">📡 Cerca de mí</button>
-        </div>
-        <div class="col-span-2 lg:col-span-1 flex items-center gap-2">
-          <label for="ordenar-por" class="text-sm text-slate-500 whitespace-nowrap">Ordenar por:</label>
-          <select id="ordenar-por" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="recientes">Más recientes</option>
-            <option value="cercanos">Más cercanos a mí</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
-            <option value="nombre">Nombre A-Z</option>
-          </select>
+          <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" title="Más filtros: precio, estado, distancia, solo con foto…" class="btn-mas-filtros">
+            ⚙️<span class="hidden min-[400px]:inline"> Filtros</span> <span aria-hidden="true" id="flecha-filtros">▾</span>
+          </button>
         </div>
       </div>
-      <p id="nota-cerca-anuncios" class="hidden text-xs text-slate-500 mt-2"></p>
+      <!-- Filtros activos: se ven aunque «Filtros» esté cerrado y se quitan con ✕ (anuncios-comun.js → pintarChipsActivos) -->
+      <div id="chips-activos" class="hidden flex flex-wrap gap-1.5 mt-2" aria-label="Filtros activos"></div>
 
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">
-        <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" class="flex items-center gap-1.5 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full px-4 py-1.5">
-          ⚙️ Más filtros <span aria-hidden="true" id="flecha-filtros">▾</span>
-        </button>
-        <span class="text-xs text-slate-500">Precio, estado, distancia, solo con foto…</span>
-      </div>
-
-      <div id="panel-filtros" class="hidden mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="panel-filtros" class="hidden mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label for="filtro-estado" class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
           <select id="filtro-estado" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
@@ -158,10 +152,10 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=33"></script>
-  <script src="data.js?v=33"></script>
-  <script src="buscador.js?v=33"></script>
-  <script src="anuncios-comun.js?v=33"></script>
-  <script src="anuncios.js?v=33"></script>
+  <script src="utils.js?v=34"></script>
+  <script src="data.js?v=34"></script>
+  <script src="buscador.js?v=34"></script>
+  <script src="anuncios-comun.js?v=34"></script>
+  <script src="anuncios.js?v=34"></script>
 </body>
 </html>

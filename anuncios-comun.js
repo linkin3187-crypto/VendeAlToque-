@@ -56,7 +56,7 @@ function refrescarOpcionesUbicacion() {
   const ub = ubicacionesConAnuncios();
   const selD = $("filtro-departamento");
   const actual = selD.value;
-  selD.innerHTML = '<option value="">Todos</option>';
+  selD.innerHTML = '<option value="">📍 Departamento</option>';
   Object.keys(ub).sort().forEach(d => {
     const total = Object.values(ub[d]).reduce((x, y) => x + y, 0);
     const o = new Option(`${d} (${total})`, d);
@@ -72,7 +72,7 @@ function llenarCiudadesFiltro() {
   const ub = ubicacionesConAnuncios();
   const depto = $("filtro-departamento").value;
   const sel = $("filtro-ciudad");
-  sel.innerHTML = '<option value="">Todas las ciudades</option>';
+  sel.innerHTML = '<option value="">🏘️ Ciudad</option>';
   const ciudades = {};
   (depto ? [depto] : Object.keys(ub)).forEach(d => {
     Object.entries(ub[d] || {}).forEach(([c, n]) => { ciudades[c] = (ciudades[c] || 0) + n; });
@@ -127,6 +127,42 @@ function filtrarAnuncios(c, limites) {
   else if (c.orden === "nombre") lista.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
   return lista;
 }
+
+// ---------- Filtros activos como etiquetas con ✕ (fase 2W.1) ----------
+// Se ven aunque el panel «Filtros» esté cerrado. Quitar uno = devolver el control a su valor inicial y
+// avisar con el mismo evento que usa la página («change»/«input»), así no se duplica la lógica de filtrar.
+function pintarChipsActivos() {
+  const caja = $("chips-activos");
+  if (!caja) return;
+  const c = leerCriterios();
+  const fmt = n => "$" + Number(n).toLocaleString("es-CO");
+  const chips = [];
+  if ($("btn-cerca-anuncios").getAttribute("aria-pressed") === "true") chips.push(["cerca", "📍 Cerca de mí"]);
+  if (c.estado) chips.push(["estado", c.estado === "nuevo" ? "✨ Nuevo" : "♻️ Usado"]);
+  if (c.radio) chips.push(["radio", "📏 Hasta " + c.radio + " km"]);
+  if (c.pMin) chips.push(["pmin", "Desde " + fmt(c.pMin)]);
+  if (c.pMax !== Infinity) chips.push(["pmax", "Hasta " + fmt(c.pMax)]);
+  if (c.soloFoto) chips.push(["foto", "📷 Con foto"]);
+  if (c.soloPrecio) chips.push(["precio", "💲 Con precio"]);
+  caja.innerHTML = chips.map(([k, t]) => `<button type="button" data-quitar="${k}" class="chip-activo" aria-label="Quitar filtro ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join("");
+  caja.classList.toggle("hidden", !chips.length);
+}
+
+function quitarChipActivo(e) {
+  const b = e.target.closest("[data-quitar]");
+  if (!b) return;
+  const avisar = (id, ev) => $(id).dispatchEvent(new Event(ev, { bubbles: true }));
+  switch (b.dataset.quitar) {
+    case "cerca": $("btn-cerca-anuncios").click(); return;   // tocar de nuevo lo apaga (misma lógica de siempre)
+    case "estado": $("filtro-estado").value = ""; avisar("filtro-estado", "change"); break;
+    case "radio": $("filtro-radio").value = "0"; avisar("filtro-radio", "change"); break;
+    case "pmin": $("filtro-precio-min").value = ""; avisar("filtro-precio-min", "input"); break;
+    case "pmax": $("filtro-precio-max").value = ""; avisar("filtro-precio-max", "input"); break;
+    case "foto": $("filtro-con-foto").checked = false; avisar("filtro-con-foto", "change"); break;
+    case "precio": $("filtro-con-precio").checked = false; avisar("filtro-con-precio", "change"); break;
+  }
+}
+document.addEventListener("DOMContentLoaded", () => { const c = $("chips-activos"); if (c) c.addEventListener("click", quitarChipActivo); });
 
 // ---------- Filtros en el enlace (para compartir una búsqueda: anuncios.html?ciudad=Envigado&cat=vehiculos) ----------
 // No se guarda la ubicación GPS ni «más cercanos»: quien abra el enlace está en otro lugar.

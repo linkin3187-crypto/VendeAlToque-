@@ -262,3 +262,21 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Botón **«🔄 Ver todas las publicaciones»**: quita de una vez la búsqueda, la categoría, la subcategoría y los filtros de ⚙️ (estado, distancia, precio, con foto, con precio). **Conserva** departamento, ciudad, «Cerca de mí» y el orden. Solo aparece cuando hay algo que quitar.
 - Código: `pintarChipsActivos()`, `verTodasLasPublicaciones()` y `refiltrarAnuncios()` en `anuncios-comun.js`.
 - **Revertir:** PR → **Revert**.
+
+## Fase 2X · Recomienda un comercio
+
+**SQL:** `supabase/17_recomendaciones.sql` — **ANTES** de fusionar. Debe terminar mostrando 1 fila: `categorias_nuevas = 2 | tabla_con_rls = true`. Es repetible.
+
+**Archivos nuevos:** `recomendar.html` + `recomendar.js`. **Cambian:** `index.html` (diapositiva nueva), `comercios.html` y `buscar.html` (invitación a recomendar), `moderacion.html`/`moderacion.js` (sección nueva), `admin-comercios.html`/`admin-comercios.js` (crear desde una recomendación), `data.js`, `styles.css`. Caché `?v=37`.
+
+**Cómo funciona:**
+- **Quién:** cualquier persona con cuenta (no tiene que ser el dueño). Sin cuenta, la página pide entrar y luego vuelve sola. Límite: 10 por día y 15 en revisión por persona.
+- **Formulario (1 minuto):** nombre, ¿qué es? (categoría), municipio, **«📍 Estoy aquí, en el comercio»** (guarda el GPS y elige el municipio más cercano) o la dirección/referencia, foto de la fachada (opcional) y por qué lo recomienda. Si ya hay un comercio con ese nombre en el municipio, pregunta antes de enviar.
+- **Tus recomendaciones:** debajo del formulario, cada una con su estado: ⏳ En revisión, ✅ Agregado al mapa (con enlace) o «No se agregó».
+- **Dónde se invita:** diapositiva rosada del carrusel del inicio («Recomienda los comercios que visitas»), barra en el directorio de comercios y botón en «Buscar en todo» cuando no hay resultados.
+- **Moderación → 🤝 Comercios recomendados por la gente:** foto, categoría, municipio, dirección, enlace al punto GPS, comentario y quién lo recomendó. Avisa «⚠️ Puede que ya exista» si hay un comercio con el mismo nombre en el municipio o a menos de 60 m.
+  - **➕ Crear comercio:** abre «Agregar comercio» ya lleno (`admin-comercios.html?recomendacion=ID`); revisas, ubicas bien el pin y guardas. Queda como «Ubicado» (sin verificar), con fuente «Recomendado por la comunidad», y la recomendación pasa a «creado». Si no subes otra foto, usa la de la recomendación.
+  - **Descartar:** si ya existe, no es real o está repetida.
+  - En Comercios hay un contador nuevo «🤝 Recomendados» y el filtro de origen «Recomendados».
+- **Categorías nuevas:** 🍻 Bares y discotecas, 🌭 Puestos de comida (editables en Comercios → 🏷️ Categorías).
+- **Revertir:** PR → **Revert**. La tabla puede quedarse.

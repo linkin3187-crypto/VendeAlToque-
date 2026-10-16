@@ -149,6 +149,7 @@
 .c2 { background: linear-gradient(120deg, #0f766e, #0d9488 60%, #65a30d); }
 .c3 { background: linear-gradient(120deg, #1e3a8a, #2563eb 65%, #0ea5e9); }
 .c4 { background: linear-gradient(120deg, #7c2d12, #c2410c 60%, #f59e0b); }
+.c5 { background: linear-gradient(120deg, #9d174d, #db2777 60%, #f97316); }   /* 2X: Recomienda un comercio */
 .car-slide::before { content: ""; position: absolute; right: -4rem; top: -4rem; width: 16rem; height: 16rem; border-radius: 50%; background: rgba(255,255,255,.10); }
 .car-slide::after { content: ""; position: absolute; left: -3rem; bottom: -5rem; width: 12rem; height: 12rem; border-radius: 50%; background: rgba(255,255,255,.07); }
 .car-texto { position: relative; z-index: 1; }

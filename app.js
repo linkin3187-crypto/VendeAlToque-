@@ -1179,6 +1179,15 @@ function iniciarEventos() {
 
   // Auth
   $("form-auth").addEventListener("submit", manejarAuth);
+  // «Continuar con Google» (el botón está en data.js para que sea igual en todas las ventanas)
+  $("form-auth").insertAdjacentHTML("beforebegin", `<div id="auth-google">${BOTON_GOOGLE_HTML}</div>`);
+  $("auth-google").addEventListener("click", async e => {
+    const b = e.target.closest("[data-google]");
+    if (!b) return;
+    b.disabled = true;
+    try { await entrarConGoogle(location.origin + location.pathname); }   // vuelve al inicio (y de ahí a donde iba, si había algo pendiente)
+    catch (err) { mostrarToast(err.message, "error"); b.disabled = false; }
+  });
   $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
   $("auth-olvido").addEventListener("click", olvidePassword);
   $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);

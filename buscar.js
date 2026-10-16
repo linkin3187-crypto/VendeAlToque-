@@ -1,15 +1,24 @@
-// ===== MercaFree · Página de resultados «Buscar en todo» (Fase 2W) =====
-// buscar.html?q=postres[&ciudad=Envigado]
-// Junta en una sola página: categorías sugeridas, publicaciones (anuncios), comercios y productos de vitrina.
+// ===== MercaFree · Página de resultados «Buscar en todo» (Fase 2W / 2W.2) =====
+// buscar.html?q=postres[&depto=Antioquia][&ciudad=Envigado][&cat=a:tecnologia | c:pasteleria]
+// Junta en una sola página: categorías, publicaciones (anuncios), comercios y productos de vitrina.
 // La relevancia la calcula buscador.js (sin tildes, plurales, errores de escritura e intenciones).
+// 2W.2: aquí mismo se puede borrar la búsqueda (✕), quitar la categoría y «🔄 Ver todo» sin volver al inicio;
+// la ubicación (departamento, ciudad, «Cerca de mí») se conserva.
 
 const POR_SECCION = { anuncios: 8, comercios: 6, productos: 8 };
 let fuentesBusq = { anuncios: [], comercios: [], productos: [] };
 let resultadoBusq = null;
 const visibles = { ...POR_SECCION };
 
-const qActual = () => (new URLSearchParams(location.search).get("q") || "").trim().slice(0, 80);
+const paramsIniciales = new URLSearchParams(location.search);
+let qBusq = (paramsIniciales.get("q") || "").trim().slice(0, 80);
+let catSel = null;                 // { tipo: "a" (anuncios) | "c" (comercios), id }
+let ubicBusq = null;               // {lat,lng} si se tocó «Cerca de mí»
+(() => { const m = /^([ac]):([a-z0-9_]{1,30})$/.exec(paramsIniciales.get("cat") || ""); if (m) catSel = { tipo: m[1], id: m[2] }; })();
+
+const qActual = () => qBusq;
 const ciudadActual = () => $("b-ciudad").value;
+const deptoActual = () => $("b-depto").value;
 
 // ---------- Tarjetas compactas ----------
 function tarjetaAnuncioBusq(a) {
@@ -80,75 +89,193 @@ function pintarSeccion(clave, lista, tarjeta, verTodo) {
   if (vt && verTodo) vt.href = verTodo;
 }
 
+const nombreCatSel = () => {
+  if (!catSel) return "";
+  const l = catSel.tipo === "a" ? CATEGORIAS : TIPOS_COMERCIO;
+  const c = l.find(x => x.id === catSel.id);
+  return c ? `${c.icono} ${c.nombre}` : catSel.id;
+};
+
+// Sin búsqueda: todo, lo más nuevo y lo más confiable primero
+function todoSinBuscar(f) {
+  return {
+    catsComercio: [], catsAnuncio: [],
+    anuncios: f.anuncios.slice().sort((a, b) => b.fecha - a.fecha),
+    comercios: f.comercios.slice().sort((a, b) => (b.nivel - a.nivel) || ((b.calif || 0) - (a.calif || 0)) || a.nombre.localeCompare(b.nombre, "es")),
+    productos: f.productos.slice()
+  };
+}
+
 function pintarResultados() {
   const q = qActual();
   $("buscador").value = q;
+  $("b-limpiar").classList.toggle("hidden", !$("buscador").value);
   document.title = (q ? q + " · " : "") + "Buscar | MercaFree";
-  if (!q) {
-    $("b-titulo").textContent = "Escribe arriba qué buscas: un producto, un comercio o un servicio.";
-    ["anuncios", "comercios", "productos"].forEach(k => $("b-" + k).classList.add("hidden"));
-    $("b-vacio").classList.add("hidden"); $("b-pestanas").classList.add("hidden"); $("b-intenciones").classList.add("hidden");
-    return;
+
+  const ciudad = ciudadActual(), depto = deptoActual();
+  const enZona = x => (!depto || x.departamento === depto) && (!ciudad || x.ciudad === ciudad);
+  const comerciosZona = fuentesBusq.comercios.filter(enZona);
+  const idsCom = new Set(comerciosZona.map(c => c.id));
+  const base = { anuncios: fuentesBusq.anuncios.filter(enZona), comercios: comerciosZona, productos: fuentesBusq.productos.filter(p => idsCom.has(p.comercioId)) };
+  const r = q ? buscarTodo(q, base) : todoSinBuscar(base);
+
+  // Categoría elegida aquí mismo: filtra la sección que corresponde y oculta las otras
+  if (catSel && catSel.tipo === "a") { r.anuncios = r.anuncios.filter(a => a.categoria === catSel.id); r.comercios = []; r.productos = []; }
+  if (catSel && catSel.tipo === "c") {
+    r.anuncios = [];
+    r.comercios = r.comercios.filter(c => comercioEsTipo(c, catSel.id));
+    if (!q && !r.comercios.length) r.comercios = base.comercios.filter(c => comercioEsTipo(c, catSel.id));
+    const ids = new Set(r.comercios.map(c => c.id));
+    r.productos = r.productos.filter(p => ids.has(p.comercioId));
   }
-  const ciudad = ciudadActual();
-  const enCiudad = x => !ciudad || x.ciudad === ciudad;
-  const comerciosCiudad = fuentesBusq.comercios.filter(enCiudad);
-  const idsCom = new Set(comerciosCiudad.map(c => c.id));
-  const r = buscarTodo(q, {
-    anuncios: fuentesBusq.anuncios.filter(enCiudad),
-    comercios: comerciosCiudad,
-    productos: fuentesBusq.productos.filter(p => idsCom.has(p.comercioId))
-  });
+  // «Cerca de mí»: lo más cercano primero en cada sección
+  if (ubicBusq) {
+    const km = x => tieneCoords(x) ? distanciaKm(ubicBusq, x) : Infinity;
+    const porId = {}; fuentesBusq.comercios.forEach(c => { porId[c.id] = c; });
+    r.anuncios.sort((a, b) => km(a) - km(b));
+    r.comercios.sort((a, b) => km(a) - km(b));
+    r.productos.sort((a, b) => km(porId[a.comercioId] || {}) - km(porId[b.comercioId] || {}));
+  }
+  r.total = r.anuncios.length + r.comercios.length + r.productos.length;
   resultadoBusq = r;
 
-  // Chips de intención: a la categoría con los filtros del directorio o de anuncios
-  const sufijoCiudad = ciudad ? "&ciudad=" + encodeURIComponent(ciudad) : "";
-  const muni = ciudad ? (comerciosCiudad[0] || {}).municipioId : null;
-  const chips = r.catsComercio.map(c => `<a class="b-chip" href="comercios.html?tipo=${encodeURIComponent(c.id)}${muni ? "&muni=" + muni : ""}">${esc(c.icono)} ${esc(c.nombre)}</a>`)
-    .concat(r.catsAnuncio.map(c => `<a class="b-chip b-chip-anuncio" href="anuncios.html?cat=${encodeURIComponent(c.id)}${sufijoCiudad}">${esc(c.icono)} ${esc(c.nombre)} <small>anuncios</small></a>`));
+  // Chips de categorías: con búsqueda = las que sugiere; sin búsqueda = las que tienen algo publicado.
+  // Tocar una filtra AQUÍ (se pone amarilla con ✕); tocarla otra vez la quita.
+  let catsA = r.catsAnuncio, catsC = r.catsComercio;
+  if (!q) {
+    const cuentaA = {}; base.anuncios.forEach(a => { cuentaA[a.categoria] = (cuentaA[a.categoria] || 0) + 1; });
+    const cuentaC = {}; base.comercios.forEach(c => { [c.tipo].concat(c.tiposExtra || []).forEach(id => { cuentaC[id] = (cuentaC[id] || 0) + 1; }); });
+    catsA = CATEGORIAS.filter(c => cuentaA[c.id]).sort((a, b) => cuentaA[b.id] - cuentaA[a.id]).slice(0, 6);
+    catsC = TIPOS_COMERCIO.filter(t => cuentaC[t.id]).sort((a, b) => cuentaC[b.id] - cuentaC[a.id]).slice(0, 6);
+  }
+  const on = (tipo, id) => catSel && catSel.tipo === tipo && catSel.id === id;
+  // La categoría elegida siempre se ve (aunque la búsqueda nueva no la sugiera), para poder quitarla
+  if (catSel && catSel.tipo === "a" && !catsA.some(c => c.id === catSel.id)) { const c = CATEGORIAS.find(x => x.id === catSel.id); if (c) catsA = [c].concat(catsA); }
+  if (catSel && catSel.tipo === "c" && !catsC.some(c => c.id === catSel.id)) { const c = TIPOS_COMERCIO.find(x => x.id === catSel.id); if (c) catsC = [c].concat(catsC); }
+  const chip = (tipo, c, extra) => `<button type="button" data-bcat="${tipo}:${esc(c.id)}" aria-pressed="${on(tipo, c.id)}" class="b-chip ${tipo === "a" ? "b-chip-anuncio" : ""} ${on(tipo, c.id) ? "b-chip-on" : ""}">${esc(c.icono)} ${esc(c.nombre)}${extra}${on(tipo, c.id) ? ' <span aria-hidden="true">✕</span>' : ""}</button>`;
+  const chips = catsC.map(c => chip("c", c, "")).concat(catsA.map(c => chip("a", c, " <small>anuncios</small>")));
   $("b-chips").innerHTML = chips.join("");
+  $("b-chips-titulo").textContent = q ? "También te puede servir (toca para filtrar aquí):" : "Filtra por categoría:";
   $("b-intenciones").classList.toggle("hidden", !chips.length);
 
+  // Lo que estás filtrando (con ✕) y «🔄 Ver todo»
+  const activos = [];
+  if (q) activos.push(["q", "🔍 «" + (q.length > 24 ? q.slice(0, 24) + "…" : q) + "»"]);
+  if (catSel) activos.push(["cat", nombreCatSel()]);
+  if (ubicBusq) activos.push(["cerca", "📍 Cerca de mí"]);
+  $("b-activos").innerHTML = activos.map(([k, t]) => `<button type="button" data-bquitar="${k}" class="chip-activo" aria-label="Quitar ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join("");
+  $("b-activos").classList.toggle("hidden", !activos.length);
+  $("b-ver-todo").classList.toggle("hidden", !q && !catSel);
+
   const qs = encodeURIComponent(q);
-  pintarSeccion("anuncios", r.anuncios, tarjetaAnuncioBusq, `anuncios.html?q=${qs}${sufijoCiudad}`);
-  pintarSeccion("comercios", r.comercios, tarjetaComercioBusq, `comercios.html?q=${qs}${muni ? "&muni=" + muni : ""}`);
+  const sufZona = (depto ? "&depto=" + encodeURIComponent(depto) : "") + (ciudad ? "&ciudad=" + encodeURIComponent(ciudad) : "");
+  const muni = ciudad ? (comerciosZona[0] || {}).municipioId : null;
+  pintarSeccion("anuncios", r.anuncios, tarjetaAnuncioBusq, "anuncios.html?" + (q ? "q=" + qs : "") + (catSel && catSel.tipo === "a" ? "&cat=" + catSel.id : "") + sufZona);
+  pintarSeccion("comercios", r.comercios, tarjetaComercioBusq, "comercios.html?" + (q ? "q=" + qs : "") + (catSel && catSel.tipo === "c" ? "&tipo=" + catSel.id : "") + (muni ? "&muni=" + muni : ""));
   pintarSeccion("productos", r.productos, tarjetaProductoBusq);
 
   const n = r.total;
-  $("b-titulo").innerHTML = n
-    ? `<b>${n}</b> ${n === 1 ? "resultado" : "resultados"} para «<b>${esc(q)}</b>»${ciudad ? " en " + esc(ciudad) : ""}`
-    : `Sin resultados para «<b>${esc(q)}</b>»${ciudad ? " en " + esc(ciudad) : ""}`;
+  const donde = ciudad ? " en " + esc(ciudad) : depto ? " en " + esc(depto) : "";
+  const filtro = catSel ? " · " + esc(nombreCatSel()) : "";
+  $("b-titulo").innerHTML = q
+    ? (n ? `<b>${n}</b> ${n === 1 ? "resultado" : "resultados"} para «<b>${esc(q)}</b>»${donde}${filtro}` : `Sin resultados para «<b>${esc(q)}</b>»${donde}${filtro}`)
+    : `Mostrando <b>todo</b>${donde}${filtro}: <b>${n}</b> ${n === 1 ? "resultado" : "resultados"}`;
   const pest = [["anuncios", "📢 Publicaciones", r.anuncios.length], ["comercios", "🏪 Comercios", r.comercios.length], ["productos", "🛍️ Vitrinas", r.productos.length]]
     .filter(x => x[2]).map(([k, t, c]) => `<a href="#b-${k}" class="b-pestana">${t} <b>${c}</b></a>`);
   $("b-pestanas").innerHTML = pest.join("");
   $("b-pestanas").classList.toggle("hidden", pest.length < 2);
   $("b-vacio").classList.toggle("hidden", n > 0);
-  $("b-vacio-q").textContent = q;
+  $("b-vacio-q").textContent = q || nombreCatSel() || "eso";
 }
 
-function llenarCiudades() {
+// ---------- Ubicación ----------
+function llenarDeptos() {
   const cuenta = {};
-  fuentesBusq.anuncios.concat(fuentesBusq.comercios).forEach(x => { if (x.ciudad) cuenta[x.ciudad] = (cuenta[x.ciudad] || 0) + 1; });
-  const sel = $("b-ciudad");
-  Object.keys(cuenta).sort((a, b) => a.localeCompare(b, "es")).forEach(c => sel.add(new Option(c, c)));
-  const pedida = new URLSearchParams(location.search).get("ciudad");
-  if (pedida && cuenta[pedida]) sel.value = pedida;
+  fuentesBusq.anuncios.concat(fuentesBusq.comercios).forEach(x => { if (x.departamento) cuenta[x.departamento] = (cuenta[x.departamento] || 0) + 1; });
+  const sel = $("b-depto");
+  Object.keys(cuenta).sort((a, b) => a.localeCompare(b, "es")).forEach(d => sel.add(new Option(`${d} (${cuenta[d]})`, d)));
+  const pedido = paramsIniciales.get("depto");
+  if (pedido && cuenta[pedido]) sel.value = pedido;
+}
+function llenarCiudades() {
+  const depto = deptoActual();
+  const cuenta = {};
+  fuentesBusq.anuncios.concat(fuentesBusq.comercios).forEach(x => { if (x.ciudad && (!depto || x.departamento === depto)) cuenta[x.ciudad] = (cuenta[x.ciudad] || 0) + 1; });
+  const sel = $("b-ciudad"), antes = sel.value;
+  sel.innerHTML = '<option value="">🏘️ Ciudad</option>';
+  Object.keys(cuenta).sort((a, b) => a.localeCompare(b, "es")).forEach(c => sel.add(new Option(`${c} (${cuenta[c]})`, c)));
+  if (cuenta[antes]) sel.value = antes;
 }
 
 function actualizarEnlace() {
   const p = new URLSearchParams();
   if (qActual()) p.set("q", qActual());
+  if (catSel) p.set("cat", catSel.tipo + ":" + catSel.id);
+  if (deptoActual()) p.set("depto", deptoActual());
   if (ciudadActual()) p.set("ciudad", ciudadActual());
   history.replaceState(null, "", "buscar.html" + (p.toString() ? "?" + p : ""));
 }
 
+// Cada cambio: vuelve a mostrar desde arriba, deja el enlace al día y pinta
+function refrescar() {
+  Object.assign(visibles, POR_SECCION);
+  actualizarEnlace();
+  pintarResultados();
+}
+
+// Buscar aquí mismo (Enter, 🔍 o una sugerencia): la búsqueda nueva quita la categoría anterior
+function buscarAqui(q) {
+  qBusq = String(q || "").trim().slice(0, 80);
+  catSel = null;
+  refrescar();
+  if (qBusq && resultadoBusq) registrarBusqueda(qBusq, resultadoBusq.total);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// «🔄 Ver todo»: sin búsqueda ni categoría; la ubicación y «Cerca de mí» se quedan
+function verTodoBusq() { qBusq = ""; catSel = null; refrescar(); $("buscador").focus(); }
+
+async function cercaBusq() {
+  const b = $("b-cerca");
+  if (ubicBusq) { ubicBusq = null; b.setAttribute("aria-pressed", "false"); refrescar(); return; }
+  b.disabled = true; b.textContent = "📡 Buscando…";
+  try {
+    ubicBusq = await obtenerGPS();
+    b.setAttribute("aria-pressed", "true");
+    refrescar();
+  } catch (e) { mostrarToast(textoErrorGPS(e), "error"); }
+  finally { b.disabled = false; b.textContent = "📡 Cerca de mí"; }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
-  conectarBuscadorGlobal(() => fuentesBusq);
+  conectarBuscadorGlobal(() => fuentesBusq, { alBuscar: buscarAqui });
   $("buscador").value = qActual();
+  $("buscador").addEventListener("input", () => {
+    $("b-limpiar").classList.toggle("hidden", !$("buscador").value);
+    if (!$("buscador").value && qBusq) verTodoBusq();          // borró todo el texto (o la ✕ del teclado): ver todo
+  });
+  $("b-limpiar").addEventListener("click", verTodoBusq);
+  $("b-ver-todo").addEventListener("click", verTodoBusq);
+  $("b-cerca").addEventListener("click", cercaBusq);
+  $("b-chips").addEventListener("click", e => {
+    const b = e.target.closest("[data-bcat]");
+    if (!b) return;
+    const [tipo, id] = b.dataset.bcat.split(":");
+    catSel = (catSel && catSel.tipo === tipo && catSel.id === id) ? null : { tipo, id };
+    refrescar();
+  });
+  $("b-activos").addEventListener("click", e => {
+    const b = e.target.closest("[data-bquitar]");
+    if (!b) return;
+    if (b.dataset.bquitar === "q") { qBusq = ""; refrescar(); }
+    else if (b.dataset.bquitar === "cat") { catSel = null; refrescar(); }
+    else if (b.dataset.bquitar === "cerca") cercaBusq();
+  });
   ["anuncios", "comercios", "productos"].forEach(k => {
     $("b-" + k).querySelector(".b-mas").addEventListener("click", () => { visibles[k] += 24; pintarResultados(); });
   });
-  $("b-ciudad").addEventListener("change", () => { Object.assign(visibles, POR_SECCION); actualizarEnlace(); pintarResultados(); });
+  $("b-depto").addEventListener("change", () => { llenarCiudades(); refrescar(); });
+  $("b-ciudad").addEventListener("change", refrescar);
 
   try {
     await cargarMunicipios();
@@ -160,7 +287,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error(e);
     mostrarToast("No pudimos cargar todo. Revisa tu conexión.", "error");
   }
+  llenarDeptos();
   llenarCiudades();
+  const pedida = paramsIniciales.get("ciudad");
+  if (pedida && [...$("b-ciudad").options].some(o => o.value === pedida)) $("b-ciudad").value = pedida;
   pintarResultados();
   if (qActual() && resultadoBusq) registrarBusqueda(qActual(), resultadoBusq.total);
 });

@@ -388,3 +388,22 @@ body:has(#t-barra:not(.hidden)) #burbuja-reclamar { bottom: 5.25rem; }
   font-size: .78rem; font-weight: 700; color: #fff; background: #4f46e5; border: 1px solid #4f46e5; cursor: pointer;
 }
 .chip-ver-todo:hover { background: #4338ca; }
+
+/* Fase 2W.2 · «Buscar en todo»: ✕ dentro del buscador y «🔄 Ver todo» */
+.btn-limpiar-busq {
+  position: absolute; right: 60px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 999px; border: 0; cursor: pointer;
+  background: #e2e8f0; color: #334155; font-weight: 800; font-size: 15px; line-height: 1;
+}
+.btn-limpiar-busq:hover { background: #cbd5e1; }
+.btn-limpiar-busq.hidden { display: none; }
+input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamos nuestra ✕, más grande y clara */
+.btn-ver-todo-busq {
+  height: 2.5rem; flex: 1; padding: 0 .9rem; border-radius: 999px; font-size: .875rem; font-weight: 700;
+  color: #fff; background: #4f46e5; border: 0; cursor: pointer; white-space: nowrap;
+}
+.btn-ver-todo-busq:hover { background: #4338ca; }
+.btn-ver-todo-busq.hidden { display: none; }
+@media (min-width: 1024px) { .btn-ver-todo-busq { flex: none; } }
+.b-chip.b-chip-on { background: #fde047; color: #1e1b4b; }
+.b-chip.b-chip-on small { color: #4338ca; }

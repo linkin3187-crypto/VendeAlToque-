@@ -152,9 +152,14 @@ function buscarTodo(q, fuentes) {
   const intA = {}; a.catsAnuncio.forEach(c => { intA[c.id] = c.puntaje; });
   const con = (lista, fn) => (lista || []).map(x => ({ x, p: fn(x) })).filter(r => r.p > 0).sort((r1, r2) => r2.p - r1.p).map(r => r.x);
 
+  // Publicaciones: si hay anuncios que DICEN lo buscado, solo esos («iphone» no trae un televisor solo por ser
+  // tecnología). Si ninguno lo dice, entran los de la categoría que responde («postres» → anuncios de Comida).
+  const textoAnuncio = x => puntajeTexto([x.nombre, x.nombre, x.desc, x.barrio, x.ciudad, nombreSubcategoria(x.categoria, x.subcategoria)].join(" "), tokens, frase);
+  const hayTextuales = (fuentes.anuncios || []).some(x => textoAnuncio(x) > 0);
   const anuncios = con(fuentes.anuncios, x => {
-    const texto = puntajeTexto([x.nombre, x.nombre, x.desc, x.barrio, x.ciudad, nombreSubcategoria(x.categoria, x.subcategoria)].join(" "), tokens, frase);
-    return texto * 2 + (intA[x.categoria] || 0) * (texto ? 1 : 0.6);
+    const texto = textoAnuncio(x);
+    if (hayTextuales) return texto ? texto * 2 + (intA[x.categoria] || 0) : 0;
+    return (intA[x.categoria] || 0) * 0.6;
   });
   const nombreCat = id => { const t = TIPOS_COMERCIO.find(z => z.id === id); return t ? t.nombre : ""; };
   const comercios = con(fuentes.comercios, x => {
@@ -217,17 +222,19 @@ function registrarBusqueda(q, resultados) {
 
 // ---------- Sugerencias al escribir (lista desplegable bajo un buscador) ----------
 // input: el <input>; fuentes(): devuelve { anuncios, comercios, productos } actuales.
-function activarSugerencias(input, fuentes) {
+function activarSugerencias(input, fuentes, opciones = {}) {
   const caja = document.createElement("div");
   caja.className = "sugerencias-busq hidden";
   caja.setAttribute("role", "listbox");
   input.parentElement.appendChild(caja);
   input.setAttribute("aria-autocomplete", "list");
   let activo = -1;
-  const ir = q => { location.href = "buscar.html?q=" + encodeURIComponent(q.trim()); };
+  // En «Buscar en todo» se busca ahí mismo (sin recargar); en las demás páginas se va a buscar.html
+  const ir = q => { caja.classList.add("hidden"); input.blur(); if (opciones.alBuscar) opciones.alBuscar(q.trim()); else location.href = "buscar.html?q=" + encodeURIComponent(q.trim()); };
   const pintar = () => {
     const q = input.value.trim();
-    if (q.length < 2) { caja.classList.add("hidden"); return; }
+    // Sin foco (ya se buscó con Enter o 🔍) no se vuelve a abrir la lista
+    if (q.length < 2 || document.activeElement !== input) { caja.classList.add("hidden"); return; }
     const r = buscarTodo(q, fuentes());
     const filas = [];
     r.catsComercio.slice(0, 3).forEach(c => {
@@ -266,10 +273,10 @@ function activarSugerencias(input, fuentes) {
 
 // Conecta el buscador de arriba (#buscador) con el botón 🔍 (#btn-buscar) y las sugerencias.
 // El texto sigue filtrando la lista de la página como siempre; Enter o 🔍 llevan a «buscar.html» (todo junto).
-function conectarBuscadorGlobal(fuentes) {
+function conectarBuscadorGlobal(fuentes, opciones = {}) {
   const input = document.getElementById("buscador");
   if (!input) return;
-  const s = activarSugerencias(input, fuentes);
+  const s = activarSugerencias(input, fuentes, opciones);
   const btn = document.getElementById("btn-buscar");
   if (btn) btn.addEventListener("click", () => {
     if (input.value.trim()) s.buscar();

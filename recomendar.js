@@ -117,12 +117,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const nombre = new URLSearchParams(location.search).get("nombre");
   if (nombre) $("rc-nombre").value = nombre.slice(0, 100);
   $("rc-gps").addEventListener("click", usarGpsRc);
-  $("rc-foto").addEventListener("change", async ev => {
+  ["rc-foto", "rc-foto-cam"].forEach(id => $(id).addEventListener("change", async ev => {
     const f = ev.target.files[0];
-    if (!f) { fotoRc = null; $("rc-foto-prev").classList.add("hidden"); return; }
+    if (!f) return;   // canceló: se conserva la foto que ya tenía
     try { fotoRc = await comprimir(f); $("rc-foto-prev").src = fotoRc; $("rc-foto-prev").classList.remove("hidden"); }
     catch (err) { fotoRc = null; mostrarToast("No se pudo leer la imagen", "error"); }
-  });
+  }));
   $("form-recomendar").addEventListener("submit", enviarRc);
   pintarMisRc();
 });

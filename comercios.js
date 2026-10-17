@@ -49,7 +49,7 @@ function tarjetaComercio(c) {
       ${km !== null ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistanciaCo(km)} de ti</p>` : ""}
       ${califHTML(c)}
       ${c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
-      ${c.nivel < 2 ? '<p class="text-[11px] text-slate-400 mt-0.5">Dato de mapa: aún no lo hemos confirmado</p>' : ""}
+      ${c.nivel < 2 ? '<p class="text-[11px] text-amber-700 mt-0.5">⚠️ Aún sin verificar que exista aquí: confirma antes de ir</p>' : ""}
       ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}

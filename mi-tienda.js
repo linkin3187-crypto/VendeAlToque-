@@ -17,8 +17,10 @@ function pintarCabecera() {
   const e = $("mt-estado");
   const publica = actual.activo && actual.nivel >= 2;
   e.className = "text-sm rounded-lg px-3 py-2 mt-2 " + (publica ? "bg-green-50 text-green-900 border border-green-200" : "bg-amber-50 text-amber-900 border border-amber-200");
-  e.textContent = publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
-    : "⏳ Tu tienda aún no es pública: se publica cuando MercaFree verifique tu negocio. Mientras tanto puedes preparar tus productos.";
+  // Fase 2Z.9: «Ubicado» SÍ aparece en el mapa y el directorio (igual que los importados); lo que espera la verificación son los productos
+  e.innerHTML = publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
+    : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
+    : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando MercaFree confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
   $("mt-ver").href = "tienda.html?id=" + actual.id;
 }
 

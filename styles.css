@@ -576,3 +576,22 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .acceso-arrastrable:first-child [data-mover="-1"], .acceso-arrastrable:last-child [data-mover="1"] { visibility: hidden; }
 .emoji-opcion { font-size: 26px; line-height: 1; padding: 6px 0; border-radius: 10px; }
 .emoji-opcion:hover, .emoji-opcion:focus-visible { background: #eef2ff; }
+
+/* ===== Fase 2Z.4 · Movimiento sutil de los cuadros (mismo estilo que el ícono del carrusel) =====
+   El ícono flota e inclina despacio en 3D; cada cuadro va a su propio ritmo para que no se muevan en bloque.
+   Las imágenes propias hacen un acercamiento muy leve. Se apaga si la persona pidió «reducir movimiento». */
+.acceso-cuadro { perspective: 300px; }
+.acceso-ico { animation: acc-flota 4.6s ease-in-out infinite; will-change: transform; }
+@keyframes acc-flota {
+  0%, 100% { transform: rotate(-6deg) rotateY(-14deg) translateY(0); }
+  50%      { transform: rotate(-2deg) rotateY(6deg) translateY(-4px); }
+}
+.acceso-cuadro.con-imagen img { animation: acc-imagen 7s ease-in-out infinite; }
+@keyframes acc-imagen { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06) translateY(-2px); } }
+.acceso:nth-child(4n+2) .acceso-ico, .acceso:nth-child(4n+2) .acceso-cuadro img { animation-delay: -1.2s; }
+.acceso:nth-child(4n+3) .acceso-ico, .acceso:nth-child(4n+3) .acceso-cuadro img { animation-delay: -2.4s; }
+.acceso:nth-child(4n+4) .acceso-ico, .acceso:nth-child(4n+4) .acceso-cuadro img { animation-delay: -3.5s; }
+.acceso:nth-child(3n+1) .acceso-ico { animation-duration: 5.2s; }
+.acceso:hover .acceso-ico { animation-play-state: paused; }
+.acceso-elegido .acceso-ico, .acceso-fantasma .acceso-ico { animation: none; }
+@media (prefers-reduced-motion: reduce) { .acceso-ico, .acceso-cuadro.con-imagen img { animation: none; } }

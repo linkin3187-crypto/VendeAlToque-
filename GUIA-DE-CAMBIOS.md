@@ -360,3 +360,18 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 **Imágenes:** se comprimen en el navegador (carrusel de fondo hasta 1600 px, al lado 700 px, cuadros 300 px) y se suben a Storage (máx. 1 MB).
 
 **Revertir:** PR → **Revert**. Las tablas pueden quedarse.
+
+## Fase 2Z.3 · Selector de íconos y ordenar los cuadros arrastrando
+
+**SQL:** ninguno. **Cambian:** `editar-inicio.html`, `editar-inicio.js`, `styles.css`. Caché `?v=43` en todas las páginas. Nueva librería: SortableJS 1.15.2 desde cdnjs (solo en `editar-inicio.html`).
+
+**Por qué antes no salía el ícono:** el campo «Ícono» espera un **emoji** (un dibujito como 🚗), no una palabra. Si escribías «auto» quedaban las letras.
+
+**1. Botón «Elegir 😀»** al lado de cada ícono (cuadros de acceso y los dos íconos de cada diapositiva del carrusel): abre una ventana con ~170 íconos más los de todas tus categorías. Escribes una palabra en español (auto, comida, farmacia, celular, perro, ropa…) y tocas el que quieras: queda puesto y la miniatura cambia. Luego **Guardar**.
+
+**2. Ícono automático:** al elegir en «Lleva a» una categoría o un comercio, el cuadro toma su ícono, **solo si no habías elegido uno** (si el ícono es ⭐ o lo había puesto el sistema).
+
+**3. Ordenar:** en la franja morada de vista previa, **arrastra** un cuadro a su nuevo lugar (computador: clic y arrastrar; celular: mantener presionado medio segundo y arrastrar). También hay botones **◀ ▶** debajo de cada cuadro. El orden se **guarda solo** (10, 20, 30…) y sale un aviso verde; no se pierde lo que estés editando. La vista previa muestra lo **guardado**: un ícono nuevo aparece ahí después de tocar Guardar.
+
+**Revertir:** PR → **Revert**.
+

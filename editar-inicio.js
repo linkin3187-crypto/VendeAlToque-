@@ -52,6 +52,15 @@ function leerDestino(cont) {
   return v("otra");
 }
 
+// Al elegir una categoría o un comercio como destino, el cuadro toma su ícono (se puede cambiar después)
+function iconoDelDestino(d) {
+  const a = analizarDestino(d);
+  if (a.tipo === "ccat") { const t = TIPOS_COMERCIO.find(x => x.id === a.valor); return t && t.icono; }
+  if (a.tipo === "acat") { const c = CATEGORIAS.find(x => x.id === a.valor); return c && c.icono; }
+  if (a.tipo === "comercio") { const c = comercios.find(x => String(x.id) === String(a.valor)); return c && iconosComercio[c.tipo]; }
+  return ({ publicar: "📢", recomendar: "🤝", registrar: "🏪", directorio: "🗺️", anuncios: "📢", busqueda: "🔍", contenido: "⬇️" })[a.tipo] || null;
+}
+
 function refrescarDestino(cont) {
   const tipo = cont.querySelector('[data-d="tipo"]').value;
   ["ccat", "acat", "comercio", "busqueda", "otra"].forEach(k => cont.querySelector(`[data-d="${k}"]`).classList.toggle("hidden", k !== tipo));
@@ -80,7 +89,10 @@ function filaBanner(b) {
       ${campo("El botón lleva a", selectorDestinoHTML(b.destino))}
       ${campo("Colores", `<select data-c="paleta" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${opcPal}</select>
         <span data-colores class="${pal === "personal" ? "" : "hidden"} mt-1 flex items-center gap-2 text-[11px] font-normal">De <input type="color" data-c="color1" value="${esColorHex(b.color1) ? b.color1 : "#4338ca"}"> a <input type="color" data-c="color2" value="${esColorHex(b.color2) ? b.color2 : "#db2777"}"></span>`)}
-      <div class="grid grid-cols-2 gap-2">${campo("Ícono grande", inp("icono1", b.icono1 || "⭐", 8))}${campo("Ícono pequeño", inp("icono2", b.icono2, 8))}</div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="text-[11px] font-bold text-slate-500">Ícono grande<div class="mt-0.5 flex items-center"><input data-c="icono1" data-emoji maxlength="8" aria-label="Ícono grande" value="${esc(b.icono1 || "⭐")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
+        <div class="text-[11px] font-bold text-slate-500">Ícono pequeño<div class="mt-0.5 flex items-center"><input data-c="icono2" data-emoji maxlength="8" aria-label="Ícono pequeño" value="${esc(b.icono2 || "")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
+      </div>
       ${campo("Imagen (opcional)", `<input type="file" data-c="archivo" accept="image/png,image/webp,image/jpeg" class="mt-1 block w-full text-xs font-normal">
         <span class="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-normal">
           <label class="flex items-center gap-1"><input type="radio" name="modo-${b.id || "n" + Math.random().toString(36).slice(2)}" data-c="modo" value="lado" ${b.imagen_modo !== "fondo" ? "checked" : ""}> Al lado</label>
@@ -205,7 +217,7 @@ function filaAcceso(x) {
       </div>
       <div class="grid gap-1.5">
         <label class="text-[11px] font-bold text-slate-500">Título<input data-c="titulo" maxlength="24" value="${esc(x.titulo || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
-        <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(x.icono || "⭐")}" class="mt-0.5 w-20 border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+        <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(x.icono || "⭐")}" class="w-16 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
       </div>
       <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Color<select data-c="color" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${COLORES_ACCESO.map(c => `<option value="${c}" ${c === x.color ? "selected" : ""}>${c}</option>`).join("")}</select>
         <span class="block mt-2">Imagen (opcional)</span><input type="file" data-c="archivo" accept="image/png,image/webp,image/jpeg" class="mt-0.5 block w-full text-[11px] font-normal">
@@ -226,8 +238,103 @@ function vistaAccesos() {
   $("acc-vista").classList.toggle("hidden", !visibles.length);
   $("acc-vista").innerHTML = visibles.map(x => {
     const img = urlSegura(x.imagen_url || "");
-    return `<span class="acceso"><span class="acceso-cuadro acc-${COLORES_ACCESO.includes(x.color) ? x.color : "morado"} ${img ? "con-imagen" : ""}">${img ? `<img src="${esc(img)}" alt="">` : `<span class="acceso-ico">${esc(x.icono)}</span>`}</span><span class="acceso-txt">${esc(x.titulo)}</span></span>`;
+    return `<span class="acceso acceso-arrastrable" data-orden-id="${x.id}" title="Arrastra para cambiar el orden"><span class="acceso-cuadro acc-${COLORES_ACCESO.includes(x.color) ? x.color : "morado"} ${img ? "con-imagen" : ""}">${img ? `<img src="${esc(img)}" alt="" draggable="false">` : `<span class="acceso-ico">${esc(x.icono)}</span>`}</span><span class="acceso-txt">${esc(x.titulo)}</span>
+      <span class="acceso-mover"><button type="button" data-mover="-1" aria-label="Mover ${esc(x.titulo)} a la izquierda">◀</button><button type="button" data-mover="1" aria-label="Mover ${esc(x.titulo)} a la derecha">▶</button></span></span>`;
   }).join("");
+  activarArrastre();
+}
+
+// ---------- Ordenar los cuadros arrastrando (fase 2Z.3) ----------
+// En computador: clic y arrastrar. En celular: mantener presionado un momento y arrastrar. También ◀ ▶.
+let arrastreActivo = null;
+function activarArrastre() {
+  if (arrastreActivo) { arrastreActivo.destroy(); arrastreActivo = null; }
+  if (typeof Sortable === "undefined") return;          // sin la librería quedan los botones ◀ ▶
+  arrastreActivo = Sortable.create($("acc-vista"), {
+    animation: 180, delay: 220, delayOnTouchOnly: true, ghostClass: "acceso-fantasma", chosenClass: "acceso-elegido",
+    filter: "button", preventOnFilter: false,
+    onEnd: () => guardarOrdenAccesos([...$("acc-vista").querySelectorAll("[data-orden-id]")].map(el => Number(el.dataset.ordenId)))
+  });
+}
+// Guarda el nuevo orden: los visibles en el orden de la vista previa y luego los ocultos (orden 10, 20, 30…)
+async function guardarOrdenAccesos(idsVisibles) {
+  const ocultos = accesosAdmin.filter(a => !idsVisibles.includes(a.id)).map(a => a.id);
+  const ids = idsVisibles.concat(ocultos);
+  const cambios = ids.map((id, i) => ({ id, orden: (i + 1) * 10 })).filter(c => (accesosAdmin.find(a => a.id === c.id) || {}).orden !== c.orden);
+  if (!cambios.length) return;
+  try {
+    for (const c of cambios) {
+      const { error } = await sb.from("accesos_inicio").update({ orden: c.orden }).eq("id", c.id);
+      if (error) throw error;
+    }
+    // Sin recargar la lista (no se pierde lo que estés editando): se actualiza el número de orden y se reacomodan las filas
+    cambios.forEach(c => { const x = accesosAdmin.find(a => a.id === c.id); if (x) x.orden = c.orden; });
+    accesosAdmin.sort((a, b) => a.orden - b.orden);
+    ids.forEach(id => {
+      const fila = $("acc-lista").querySelector(`[data-acc="${id}"]`);
+      if (!fila) return;
+      fila.querySelector('[data-c="orden"]').value = accesosAdmin.find(a => a.id === id).orden;
+      $("acc-lista").insertBefore(fila, $("acc-lista").querySelector('[data-acc=""]'));
+    });
+    mostrarToast("✅ Orden guardado: así se ven en el inicio");
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+  vistaAccesos();
+}
+function moverAcceso(e) {
+  const b = e.target.closest("[data-mover]");
+  if (!b) return;
+  const el = b.closest("[data-orden-id]");
+  const ids = [...$("acc-vista").querySelectorAll("[data-orden-id]")].map(x => Number(x.dataset.ordenId));
+  const i = ids.indexOf(Number(el.dataset.ordenId)), j = i + Number(b.dataset.mover);
+  if (j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  guardarOrdenAccesos(ids);
+}
+
+// ---------- Selector de íconos (fase 2Z.3): buscar por palabra («auto» → 🚗) ----------
+const EMOJIS = [
+  ["🚗", "auto carro coche vehiculo"], ["🏍️", "moto motocicleta"], ["🛵", "scooter moto domicilio"], ["🚲", "bicicleta bici"], ["🚕", "taxi"], ["🚚", "camion trasteo mudanza acarreo"], ["🛞", "llanta rueda"], ["⛽", "gasolina estacion bomba"], ["🔧", "taller mecanico herramienta llave"],
+  ["🏪", "tienda negocio comercio barrio"], ["🛒", "mercado supermercado compras carrito"], ["🛍️", "compras vitrina bolsa"], ["🏬", "centro comercial almacen"], ["🏦", "banco"], ["🏧", "cajero plata dinero"], ["💵", "dinero efectivo plata precio"], ["💳", "tarjeta pago"], ["🏷️", "oferta precio etiqueta descuento"], ["🎁", "regalo promo"],
+  ["💊", "farmacia drogueria medicina pastillas"], ["🩺", "salud medico doctor"], ["🦷", "dentista odontologia"], ["👓", "optica gafas"], ["💉", "vacuna inyeccion"], ["🧴", "cuidado personal crema"], ["💄", "belleza maquillaje"], ["💇", "peluqueria corte cabello"], ["💅", "unas manicure"], ["💈", "barberia"],
+  ["🍔", "hamburguesa comida rapida"], ["🍕", "pizza"], ["🌭", "perro caliente salchicha puesto"], ["🍟", "papas fritas"], ["🌮", "taco"], ["🥟", "empanada"], ["🫓", "arepa"], ["🍗", "pollo asado"], ["🥩", "carne carniceria"], ["🍖", "asado"], ["🍲", "sopa almuerzo restaurante"], ["🍽️", "restaurante comida plato"], ["🍳", "desayuno huevo"],
+  ["🥖", "pan panaderia"], ["🍰", "postre torta pasteleria"], ["🎂", "torta cumpleaños"], ["🧁", "cupcake ponque"], ["🍩", "dona"], ["🍦", "helado heladeria"], ["🍫", "chocolate dulces"], ["🍬", "dulce mecato"], ["☕", "cafe cafeteria tinto"], ["🧃", "jugo"], ["🥤", "gaseosa bebida"], ["🍺", "cerveza"], ["🍻", "bar cerveza rumba"], ["🍷", "vino licor"], ["🍸", "coctel bar"], ["🥃", "licor trago"],
+  ["🍎", "fruta manzana fruver"], ["🥕", "verdura zanahoria fruver"], ["🥑", "aguacate"], ["🍌", "banano platano"], ["🍅", "tomate"], ["🥬", "lechuga verdura"], ["🧀", "queso lacteos"], ["🥛", "leche lacteos"], ["🥚", "huevos"], ["🌽", "mazorca maiz"],
+  ["📱", "celular telefono tecnologia"], ["💻", "computador portatil laptop"], ["🖥️", "computador pantalla"], ["📺", "televisor tv"], ["🎧", "audifonos"], ["📷", "camara foto"], ["🎮", "videojuego consola juego"], ["🔌", "electrodomestico enchufe"], ["🔋", "bateria"], ["🖨️", "impresora papeleria"],
+  ["🏠", "casa hogar inicio"], ["🏡", "casa inmueble arriendo"], ["🏢", "apartamento edificio oficina"], ["🔑", "llave arriendo cerrajero"], ["🛋️", "mueble sofa hogar"], ["🛏️", "cama colchon"], ["🪑", "silla mueble"], ["🧹", "aseo limpieza"], ["🧺", "lavanderia ropa"], ["🪴", "planta jardin"], ["🌻", "flores floristeria"],
+  ["🛠️", "oficios herramientas arreglos"], ["🔨", "martillo ferreteria construccion"], ["🔩", "ferreteria tornillo"], ["🪚", "carpinteria sierra"], ["🧱", "construccion ladrillo"], ["🎨", "pintura arte"], ["⚡", "electricista luz"], ["🚰", "plomero agua"], ["🧰", "caja herramientas tecnico"],
+  ["👕", "ropa camiseta"], ["👗", "vestido ropa mujer"], ["👖", "jean pantalon"], ["👟", "tenis zapatos calzado"], ["👠", "tacones zapatos"], ["👜", "bolso cartera"], ["🧵", "costura sastreria"], ["⌚", "reloj"], ["💍", "joyeria anillo"],
+  ["🐕", "perro mascota"], ["🐈", "gato mascota"], ["🦴", "mascotas veterinaria"], ["🐾", "mascotas huellas"], ["🐄", "vaca ganado campo"], ["🐔", "gallina campo"], ["🌱", "agro campo semillas"], ["🚜", "tractor finca agro"],
+  ["👶", "bebe ninos"], ["🧸", "juguete oso ninos"], ["⚽", "futbol deporte balon"], ["🏋️", "gimnasio pesas"], ["🎸", "guitarra musica"], ["🎹", "piano teclado musica"], ["🎤", "microfono karaoke"], ["📚", "libros educacion"], ["✏️", "papeleria utiles"], ["🎓", "clases estudio"], ["🎉", "fiesta evento"], ["🎈", "globos fiesta"], ["🏨", "hotel hospedaje"], ["⛺", "camping"],
+  ["💼", "empleo trabajo"], ["📢", "publicar anuncio"], ["🤝", "recomendar acuerdo"], ["📍", "ubicacion mapa"], ["🗺️", "mapa directorio"], ["🔍", "buscar"], ["⭐", "estrella destacado"], ["🔥", "oferta caliente"], ["✨", "nuevo brillo"], ["❤️", "favorito"], ["✅", "verificado"], ["🆕", "nuevo"], ["💯", "calidad"], ["🛡️", "seguridad confianza"], ["📦", "otros paquete envio"]
+];
+function emojisConCategorias() {
+  const extra = TIPOS_COMERCIO.map(t => [t.icono, normalizar(t.nombre + " " + [].concat(t.palabras || []).join(" ")).replace(/[^a-z0-9ñ ]+/g, " ")])
+    .concat(CATEGORIAS.filter(c => c.id !== "todos").map(c => [c.icono, normalizar(c.nombre + " " + [].concat(c.palabras || []).join(" ")).replace(/[^a-z0-9ñ ]+/g, " ")]));
+  const mapa = new Map();
+  EMOJIS.concat(extra).forEach(([e, k]) => { if (e) mapa.set(e, ((mapa.get(e) || "") + " " + k).trim()); });
+  return [...mapa.entries()];
+}
+let inputEmoji = null;
+function abrirSelectorEmoji(btn) {
+  inputEmoji = btn.parentElement.querySelector("[data-emoji]");
+  $("emoji-buscar").value = "";
+  pintarEmojis("");
+  $("emoji-pop").classList.remove("hidden");
+  $("emoji-buscar").focus();
+}
+function pintarEmojis(q) {
+  const n = normalizar(q.trim());
+  const lista = emojisConCategorias().filter(([e, k]) => !n || k.split(" ").some(p => p.startsWith(n)) || normalizar(k).includes(n));
+  $("emoji-grid").innerHTML = lista.length
+    ? lista.map(([e, k]) => `<button type="button" data-emoji-valor="${esc(e)}" title="${esc(k)}" class="emoji-opcion">${esc(e)}</button>`).join("")
+    : '<p class="col-span-full text-sm text-slate-400 text-center py-4">Sin resultados. Prueba otra palabra, o escribe el emoji con el teclado del celular.</p>';
+}
+function elegirEmoji(e) {
+  const b = e.target.closest("[data-emoji-valor]");
+  if (!b || !inputEmoji) return;
+  inputEmoji.value = b.dataset.emojiValor;
+  inputEmoji.dispatchEvent(new Event("input", { bubbles: true }));
+  $("emoji-pop").classList.add("hidden");
 }
 function miniAcceso(f) {
   const v = k => f.querySelector(`[data-c="${k}"]`).value;
@@ -359,6 +466,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("acc-lista").addEventListener("change", async e => {
     const f = e.target.closest("[data-acc]");
     if (!f) return;
+    if (e.target.closest("[data-dest]") && !imagenesPendientes.get(f)) {
+      // Solo si el ícono no lo eligió la persona (vacío, ⭐ o el que se puso solo antes)
+      const campo = f.querySelector('[data-c="icono"]'), ic = iconoDelDestino(leerDestino(f.querySelector("[data-dest]")));
+      if (ic && (!campo.value.trim() || campo.value === "⭐" || campo.value === f.dataset.icoAuto)) { campo.value = ic; f.dataset.icoAuto = ic; miniAcceso(f); }
+    }
     if (e.target.matches('[data-c="archivo"]')) await elegirImagen(e, 400, 300);
     miniAcceso(f);
   });
@@ -366,6 +478,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("acc-lista").insertAdjacentHTML("beforeend", filaAcceso({ titulo: "", icono: "⭐", color: "morado", destino: "", orden: 500, activo: true }));
     const f = $("acc-lista").lastElementChild; miniAcceso(f); f.querySelector('[data-c="titulo"]').focus();
   });
+
+  // Orden con ◀ ▶ y selector de íconos
+  $("acc-vista").addEventListener("click", moverAcceso);
+  document.addEventListener("click", e => { const b = e.target.closest("[data-elegir-emoji]"); if (b) abrirSelectorEmoji(b); });
+  $("emoji-buscar").addEventListener("input", e => pintarEmojis(e.target.value));
+  $("emoji-grid").addEventListener("click", elegirEmoji);
+  $("emoji-pop").addEventListener("click", e => { if (e.target.closest("[data-emoji-cerrar]")) $("emoji-pop").classList.add("hidden"); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("emoji-pop").classList.add("hidden"); });
 
   // Entrenar
   pintarCatsEntrenar();

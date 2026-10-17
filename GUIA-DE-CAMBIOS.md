@@ -398,3 +398,24 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2Z.6 · Categorías nuevas y buscador entrenado
+
+**SQL:** `supabase/22_categorias_nuevas.sql` — se puede ejecutar antes o después de fusionar. Debe terminar mostrando 1 fila: `comercios_nuevos = 3 | vehiculos = Vehículos | motos_activa = false | subs_vehiculos = 8 | anuncios_en_motos = 0`. Es repetible: no crea duplicados, no repite palabras y **suma** (no borra) lo que ya editaste en los paneles.
+
+**Cambia:** `data.js` (el respaldo sin base de datos también dice «Vehículos»). Caché `?v=46`.
+
+| Dónde | Cambio |
+|---|---|
+| Comercios | **Nuevas:** Minimercados 🧺 · Inmobiliarias 🏢 · Concesionarios y compraventas 🚘 |
+| Comercios | «Tiendas y misceláneas» → **Tiendas de barrio y misceláneas** |
+| Comercios | Más palabras clave: Licoreras (licorería, estanco, guaro…), Tiendas, Frutas y verduras, **Supermercados** (grandes superficies, Éxito, Olímpica, D1, Ara, mayoristas, plaza de mercado…), Motos |
+| Comercios | Clínicas y hospitales: ícono 🏥 |
+| Anuncios | «Autos» → **Vehículos** 🚗 con: Carros · Motos · Camionetas y camperos · Camiones y buses · Repuestos de carro · Repuestos y accesorios de moto · Bicicletas y patinetas · Otros |
+| Anuncios | La categoría «Motos» se **une** a Vehículos: sus anuncios pasan con su subcategoría y «Motos» queda desactivada (no se borra) |
+| Anuncios | Inmuebles: + Apartaestudios, Bodegas y palabras (arriendo, apto, estrato, inmobiliaria…) |
+| Anuncios | Tiendas: + tienda de barrio, minimercado, fruver, licorería… |
+
+**Subcategorías en comercios:** decidido no hacerlas por ahora (opción A). Un comercio puede marcar hasta 3 categorías (ej. Tienda de barrio + Frutas y verduras + Licoreras).
+
+**Revertir:** PR → **Revert** (el SQL no hace falta deshacerlo; si quieres, reactiva «Motos» en Moderación).
+

@@ -564,3 +564,15 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .car-con-fondo::before, .car-con-fondo::after { display: none; }
 .acceso-cuadro.con-imagen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 .acceso-cuadro.con-imagen::before, .acceso-cuadro.con-imagen::after { display: none; }
+
+/* ===== Fase 2Z.3 · Ordenar cuadros arrastrando + selector de íconos ===== */
+#acc-vista .acceso-arrastrable { cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-x; }
+#acc-vista .acceso-arrastrable:active { cursor: grabbing; }
+.acceso-fantasma { opacity: .35; }
+.acceso-elegido .acceso-cuadro { outline: 3px dashed #fde047; outline-offset: 2px; }
+.acceso-mover { display: flex; gap: 4px; margin-top: 2px; }
+.acceso-mover button { width: 26px; height: 22px; border-radius: 6px; background: rgba(255,255,255,.18); color: #fff; font-size: 11px; line-height: 1; }
+.acceso-mover button:hover, .acceso-mover button:focus-visible { background: rgba(255,255,255,.35); }
+.acceso-arrastrable:first-child [data-mover="-1"], .acceso-arrastrable:last-child [data-mover="1"] { visibility: hidden; }
+.emoji-opcion { font-size: 26px; line-height: 1; padding: 6px 0; border-radius: 10px; }
+.emoji-opcion:hover, .emoji-opcion:focus-visible { background: #eef2ff; }

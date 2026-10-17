@@ -90,8 +90,8 @@ function filaBanner(b) {
       ${campo("Colores", `<select data-c="paleta" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${opcPal}</select>
         <span data-colores class="${pal === "personal" ? "" : "hidden"} mt-1 flex items-center gap-2 text-[11px] font-normal">De <input type="color" data-c="color1" value="${esColorHex(b.color1) ? b.color1 : "#4338ca"}"> a <input type="color" data-c="color2" value="${esColorHex(b.color2) ? b.color2 : "#db2777"}"></span>`)}
       <div class="grid grid-cols-2 gap-2">
-        <div class="text-[11px] font-bold text-slate-500">Ícono grande<div class="mt-0.5 flex items-center"><input data-c="icono1" data-emoji maxlength="8" aria-label="Ícono grande" value="${esc(b.icono1 || "⭐")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
-        <div class="text-[11px] font-bold text-slate-500">Ícono pequeño<div class="mt-0.5 flex items-center"><input data-c="icono2" data-emoji maxlength="8" aria-label="Ícono pequeño" value="${esc(b.icono2 || "")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
+        <div class="text-[11px] font-bold text-slate-500">Ícono grande<div class="mt-0.5 flex items-center"><input data-c="icono1" data-emoji maxlength="8" aria-label="Ícono grande" value="${esc(b.icono1 || "⭐")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
+        <div class="text-[11px] font-bold text-slate-500">Ícono pequeño<div class="mt-0.5 flex items-center"><input data-c="icono2" data-emoji maxlength="8" aria-label="Ícono pequeño" value="${esc(b.icono2 || "")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
       </div>
       ${campo("Imagen (opcional)", `<input type="file" data-c="archivo" accept="image/png,image/webp,image/jpeg" class="mt-1 block w-full text-xs font-normal">
         <span class="mt-1 flex flex-wrap items-center gap-3 text-[11px] font-normal">
@@ -217,7 +217,7 @@ function filaAcceso(x) {
       </div>
       <div class="grid gap-1.5">
         <label class="text-[11px] font-bold text-slate-500">Título<input data-c="titulo" maxlength="24" value="${esc(x.titulo || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
-        <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(x.icono || "⭐")}" class="w-16 border border-slate-300 p-1.5 rounded-lg text-center text-lg"><button type="button" data-elegir-emoji class="ml-1 align-middle text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2 py-1.5">Elegir 😀</button></div></div>
+        <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(x.icono || "⭐")}" class="w-16 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
       </div>
       <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Color<select data-c="color" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${COLORES_ACCESO.map(c => `<option value="${c}" ${c === x.color ? "selected" : ""}>${c}</option>`).join("")}</select>
         <span class="block mt-2">Imagen (opcional)</span><input type="file" data-c="archivo" accept="image/png,image/webp,image/jpeg" class="mt-0.5 block w-full text-[11px] font-normal">
@@ -291,51 +291,7 @@ function moverAcceso(e) {
   guardarOrdenAccesos(ids);
 }
 
-// ---------- Selector de íconos (fase 2Z.3): buscar por palabra («auto» → 🚗) ----------
-const EMOJIS = [
-  ["🚗", "auto carro coche vehiculo"], ["🏍️", "moto motocicleta"], ["🛵", "scooter moto domicilio"], ["🚲", "bicicleta bici"], ["🚕", "taxi"], ["🚚", "camion trasteo mudanza acarreo"], ["🛞", "llanta rueda"], ["⛽", "gasolina estacion bomba"], ["🔧", "taller mecanico herramienta llave"],
-  ["🏪", "tienda negocio comercio barrio"], ["🛒", "mercado supermercado compras carrito"], ["🛍️", "compras vitrina bolsa"], ["🏬", "centro comercial almacen"], ["🏦", "banco"], ["🏧", "cajero plata dinero"], ["💵", "dinero efectivo plata precio"], ["💳", "tarjeta pago"], ["🏷️", "oferta precio etiqueta descuento"], ["🎁", "regalo promo"],
-  ["💊", "farmacia drogueria medicina pastillas"], ["🩺", "salud medico doctor"], ["🦷", "dentista odontologia"], ["👓", "optica gafas"], ["💉", "vacuna inyeccion"], ["🧴", "cuidado personal crema"], ["💄", "belleza maquillaje"], ["💇", "peluqueria corte cabello"], ["💅", "unas manicure"], ["💈", "barberia"],
-  ["🍔", "hamburguesa comida rapida"], ["🍕", "pizza"], ["🌭", "perro caliente salchicha puesto"], ["🍟", "papas fritas"], ["🌮", "taco"], ["🥟", "empanada"], ["🫓", "arepa"], ["🍗", "pollo asado"], ["🥩", "carne carniceria"], ["🍖", "asado"], ["🍲", "sopa almuerzo restaurante"], ["🍽️", "restaurante comida plato"], ["🍳", "desayuno huevo"],
-  ["🥖", "pan panaderia"], ["🍰", "postre torta pasteleria"], ["🎂", "torta cumpleaños"], ["🧁", "cupcake ponque"], ["🍩", "dona"], ["🍦", "helado heladeria"], ["🍫", "chocolate dulces"], ["🍬", "dulce mecato"], ["☕", "cafe cafeteria tinto"], ["🧃", "jugo"], ["🥤", "gaseosa bebida"], ["🍺", "cerveza"], ["🍻", "bar cerveza rumba"], ["🍷", "vino licor"], ["🍸", "coctel bar"], ["🥃", "licor trago"],
-  ["🍎", "fruta manzana fruver"], ["🥕", "verdura zanahoria fruver"], ["🥑", "aguacate"], ["🍌", "banano platano"], ["🍅", "tomate"], ["🥬", "lechuga verdura"], ["🧀", "queso lacteos"], ["🥛", "leche lacteos"], ["🥚", "huevos"], ["🌽", "mazorca maiz"],
-  ["📱", "celular telefono tecnologia"], ["💻", "computador portatil laptop"], ["🖥️", "computador pantalla"], ["📺", "televisor tv"], ["🎧", "audifonos"], ["📷", "camara foto"], ["🎮", "videojuego consola juego"], ["🔌", "electrodomestico enchufe"], ["🔋", "bateria"], ["🖨️", "impresora papeleria"],
-  ["🏠", "casa hogar inicio"], ["🏡", "casa inmueble arriendo"], ["🏢", "apartamento edificio oficina"], ["🔑", "llave arriendo cerrajero"], ["🛋️", "mueble sofa hogar"], ["🛏️", "cama colchon"], ["🪑", "silla mueble"], ["🧹", "aseo limpieza"], ["🧺", "lavanderia ropa"], ["🪴", "planta jardin"], ["🌻", "flores floristeria"],
-  ["🛠️", "oficios herramientas arreglos"], ["🔨", "martillo ferreteria construccion"], ["🔩", "ferreteria tornillo"], ["🪚", "carpinteria sierra"], ["🧱", "construccion ladrillo"], ["🎨", "pintura arte"], ["⚡", "electricista luz"], ["🚰", "plomero agua"], ["🧰", "caja herramientas tecnico"],
-  ["👕", "ropa camiseta"], ["👗", "vestido ropa mujer"], ["👖", "jean pantalon"], ["👟", "tenis zapatos calzado"], ["👠", "tacones zapatos"], ["👜", "bolso cartera"], ["🧵", "costura sastreria"], ["⌚", "reloj"], ["💍", "joyeria anillo"],
-  ["🐕", "perro mascota"], ["🐈", "gato mascota"], ["🦴", "mascotas veterinaria"], ["🐾", "mascotas huellas"], ["🐄", "vaca ganado campo"], ["🐔", "gallina campo"], ["🌱", "agro campo semillas"], ["🚜", "tractor finca agro"],
-  ["👶", "bebe ninos"], ["🧸", "juguete oso ninos"], ["⚽", "futbol deporte balon"], ["🏋️", "gimnasio pesas"], ["🎸", "guitarra musica"], ["🎹", "piano teclado musica"], ["🎤", "microfono karaoke"], ["📚", "libros educacion"], ["✏️", "papeleria utiles"], ["🎓", "clases estudio"], ["🎉", "fiesta evento"], ["🎈", "globos fiesta"], ["🏨", "hotel hospedaje"], ["⛺", "camping"],
-  ["💼", "empleo trabajo"], ["📢", "publicar anuncio"], ["🤝", "recomendar acuerdo"], ["📍", "ubicacion mapa"], ["🗺️", "mapa directorio"], ["🔍", "buscar"], ["⭐", "estrella destacado"], ["🔥", "oferta caliente"], ["✨", "nuevo brillo"], ["❤️", "favorito"], ["✅", "verificado"], ["🆕", "nuevo"], ["💯", "calidad"], ["🛡️", "seguridad confianza"], ["📦", "otros paquete envio"]
-];
-function emojisConCategorias() {
-  const extra = TIPOS_COMERCIO.map(t => [t.icono, normalizar(t.nombre + " " + [].concat(t.palabras || []).join(" ")).replace(/[^a-z0-9ñ ]+/g, " ")])
-    .concat(CATEGORIAS.filter(c => c.id !== "todos").map(c => [c.icono, normalizar(c.nombre + " " + [].concat(c.palabras || []).join(" ")).replace(/[^a-z0-9ñ ]+/g, " ")]));
-  const mapa = new Map();
-  EMOJIS.concat(extra).forEach(([e, k]) => { if (e) mapa.set(e, ((mapa.get(e) || "") + " " + k).trim()); });
-  return [...mapa.entries()];
-}
-let inputEmoji = null;
-function abrirSelectorEmoji(btn) {
-  inputEmoji = btn.parentElement.querySelector("[data-emoji]");
-  $("emoji-buscar").value = "";
-  pintarEmojis("");
-  $("emoji-pop").classList.remove("hidden");
-  $("emoji-buscar").focus();
-}
-function pintarEmojis(q) {
-  const n = normalizar(q.trim());
-  const lista = emojisConCategorias().filter(([e, k]) => !n || k.split(" ").some(p => p.startsWith(n)) || normalizar(k).includes(n));
-  $("emoji-grid").innerHTML = lista.length
-    ? lista.map(([e, k]) => `<button type="button" data-emoji-valor="${esc(e)}" title="${esc(k)}" class="emoji-opcion">${esc(e)}</button>`).join("")
-    : '<p class="col-span-full text-sm text-slate-400 text-center py-4">Sin resultados. Prueba otra palabra, o escribe el emoji con el teclado del celular.</p>';
-}
-function elegirEmoji(e) {
-  const b = e.target.closest("[data-emoji-valor]");
-  if (!b || !inputEmoji) return;
-  inputEmoji.value = b.dataset.emojiValor;
-  inputEmoji.dispatchEvent(new Event("input", { bubbles: true }));
-  $("emoji-pop").classList.add("hidden");
-}
+// El selector de íconos («Elegir 😀») vive en iconos.js (compartido con Moderación y Comercios)
 function miniAcceso(f) {
   const v = k => f.querySelector(`[data-c="${k}"]`).value;
   const mini = f.querySelector("[data-acc-mini]");
@@ -479,13 +435,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const f = $("acc-lista").lastElementChild; miniAcceso(f); f.querySelector('[data-c="titulo"]').focus();
   });
 
-  // Orden con ◀ ▶ y selector de íconos
+  // Orden con ◀ ▶
   $("acc-vista").addEventListener("click", moverAcceso);
-  document.addEventListener("click", e => { const b = e.target.closest("[data-elegir-emoji]"); if (b) abrirSelectorEmoji(b); });
-  $("emoji-buscar").addEventListener("input", e => pintarEmojis(e.target.value));
-  $("emoji-grid").addEventListener("click", elegirEmoji);
-  $("emoji-pop").addEventListener("click", e => { if (e.target.closest("[data-emoji-cerrar]")) $("emoji-pop").classList.add("hidden"); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") $("emoji-pop").classList.add("hidden"); });
 
   // Entrenar
   pintarCatsEntrenar();

@@ -820,6 +820,49 @@ async function cargarProductosPublicos() {
   return (data || []).map(filaAProducto);
 }
 
+// ---------- Accesos en cuadros del inicio (fase 2Z.1, supabase/20_accesos_inicio.sql) ----------
+// Respaldo si aún no existe la tabla (los mismos que siembra el SQL)
+const ACCESOS_RESPALDO = [
+  { titulo: "Farmacias", icono: "💊", color: "menta", destino: "comercios.html?tipo=farmacia" },
+  { titulo: "Mercado", icono: "🛒", color: "amarillo", destino: "comercios.html?tipo=supermercado" },
+  { titulo: "Comida", icono: "🍔", color: "naranja", destino: "buscar.html?q=comida" },
+  { titulo: "Bares", icono: "🍻", color: "rosa", destino: "comercios.html?tipo=bar" },
+  { titulo: "Tecnología", icono: "📱", color: "azul", destino: "anuncios.html?cat=tecnologia" },
+  { titulo: "Motos", icono: "🏍️", color: "morado", destino: "anuncios.html?cat=motos" },
+  { titulo: "Arriendos", icono: "🏡", color: "menta", destino: "anuncios.html?cat=inmuebles" },
+  { titulo: "Publica gratis", icono: "📢", color: "amarillo", destino: "#publicar" },
+  { titulo: "Recomienda", icono: "🤝", color: "rosa", destino: "recomendar.html" },
+  { titulo: "Tu negocio", icono: "🏪", color: "azul", destino: "registrar-negocio.html" }
+];
+const COLORES_ACCESO = ["morado", "menta", "amarillo", "rosa", "azul", "naranja"];
+// Solo páginas propias o «#publicar» (la base aplica la misma regla)
+const destinoAccesoValido = d => d === "#publicar" || /^[a-z0-9-]+\.html([?#][A-Za-z0-9=&%:_.#+-]*)?$/.test(String(d || ""));
+
+async function cargarAccesosInicio() {
+  try {
+    const { data, error } = await sb.from("accesos_inicio").select("id, titulo, icono, color, destino, orden, activo")
+      .eq("activo", true).order("orden").order("id");
+    if (error || !data || !data.length) return ACCESOS_RESPALDO;
+    return data.filter(a => destinoAccesoValido(a.destino));
+  } catch (e) { return ACCESOS_RESPALDO; }
+}
+async function cargarAccesosAdmin() {
+  const { data, error } = await sb.from("accesos_inicio").select("*").order("orden").order("id");
+  if (error) throw error;
+  return data || [];
+}
+async function guardarAccesoDB(fila) {
+  if (!destinoAccesoValido(fila.destino)) throw new Error("El destino debe ser una página del sitio (ej. comercios.html?tipo=farmacia) o #publicar");
+  const { id, ...resto } = fila;
+  const q = id ? sb.from("accesos_inicio").update(resto).eq("id", id) : sb.from("accesos_inicio").insert(resto);
+  const { error } = await q;
+  if (error) throw error;
+}
+async function borrarAccesoDB(id) {
+  const { error } = await sb.from("accesos_inicio").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ---------- Perfil público del vendedor (fase 2C.5, supabase/18_perfil_vendedor.sql) ----------
 // Solo: id, nombre visible (apodo o primer nombre), miembro desde, anuncios activos y su comercio.
 async function cargarPerfilPublico(id) {

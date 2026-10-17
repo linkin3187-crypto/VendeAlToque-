@@ -329,6 +329,62 @@ async function accionReporteCalificacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Accesos en cuadros del inicio (fase 2Z.1) ----------
+let accesosAdmin = [];
+function filaAcceso(x) {
+  return `<div class="border border-slate-200 rounded-xl p-2.5 ${x.activo === false ? "opacity-60" : ""}" data-acc="${x.id || ""}">
+    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_7rem_1.6fr_4rem_auto] gap-2 items-end">
+      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(x.icono || "⭐")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+      <label class="text-[11px] font-bold text-slate-500">Título<input data-c="titulo" maxlength="24" value="${esc(x.titulo || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Color<select data-c="color" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${COLORES_ACCESO.map(c => `<option value="${c}" ${c === x.color ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Lleva a<input data-c="destino" maxlength="160" value="${esc(x.destino || "")}" placeholder="comercios.html?tipo=farmacia" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs"></label>
+      <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(x.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <div class="flex items-center gap-2">
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" data-c="activo" ${x.activo === false ? "" : "checked"}> Visible</label>
+        <button type="button" data-acc-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Guardar</button>
+        ${x.id ? '<button type="button" data-acc-borrar class="text-slate-400 hover:text-red-600 text-sm" aria-label="Borrar cuadro">🗑️</button>' : ""}
+      </div>
+    </div>
+  </div>`;
+}
+function vistaAccesos() {
+  const visibles = accesosAdmin.filter(x => x.activo !== false && destinoAccesoValido(x.destino));
+  $("acc-vista").classList.toggle("hidden", !visibles.length);
+  $("acc-vista").innerHTML = visibles.map(x => `<span class="acceso"><span class="acceso-cuadro acc-${COLORES_ACCESO.includes(x.color) ? x.color : "morado"}"><span class="acceso-ico">${esc(x.icono)}</span></span><span class="acceso-txt">${esc(x.titulo)}</span></span>`).join("");
+}
+async function pintarAccesosAdmin() {
+  try {
+    accesosAdmin = await cargarAccesosAdmin();
+    $("ac-n").textContent = "(" + accesosAdmin.length + ")";
+    $("acc-lista").innerHTML = accesosAdmin.map(filaAcceso).join("");
+    vistaAccesos();
+  } catch (e) {
+    $("acc-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/20_accesos_inicio.sql.</p>';
+  }
+}
+async function accionAcceso(e) {
+  const f = e.target.closest("[data-acc]");
+  if (!f) return;
+  const id = Number(f.dataset.acc) || null;
+  if (e.target.closest("[data-acc-borrar]")) {
+    if (!confirm("¿Borrar este cuadro? (Si solo quieres esconderlo, quita «Visible»)")) return;
+    try { await borrarAccesoDB(id); mostrarToast("🗑️ Cuadro borrado"); await pintarAccesosAdmin(); } catch (err) { mostrarToast(mensajeError(err), "error"); }
+    return;
+  }
+  const b = e.target.closest("[data-acc-guardar]");
+  if (!b) return;
+  const v = k => f.querySelector(`[data-c="${k}"]`);
+  const titulo = v("titulo").value.trim();
+  if (titulo.length < 2) { mostrarToast("Escribe un título corto", "error"); return; }
+  b.disabled = true;
+  try {
+    await guardarAccesoDB({ id, titulo, icono: v("icono").value.trim() || "⭐", color: v("color").value,
+      destino: v("destino").value.trim(), orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked });
+    mostrarToast("✅ Cuadro guardado: ya se ve en el inicio");
+    await pintarAccesosAdmin();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; }
+}
+
 // ---------- Categorías de anuncios (fase 2Z, supabase/19_categorias_anuncio.sql) ----------
 let catsAnuncioAdmin = [];
 let usosCatAnuncio = {};
@@ -666,6 +722,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
+  $("acc-lista").addEventListener("click", accionAcceso);
+  $("acc-nuevo").addEventListener("click", () => {
+    $("acc-lista").insertAdjacentHTML("beforeend", filaAcceso({ titulo: "", icono: "⭐", color: "morado", destino: "", orden: 500, activo: true }));
+    $("acc-lista").lastElementChild.querySelector("[data-c=titulo]").focus();
+  });
+  pintarAccesosAdmin();
   $("ca-lista").addEventListener("click", accionCatAnuncio);
   $("ca-crear").addEventListener("click", crearCatAnuncio);
   cargarAnuncios().finally(pintarCatsAnuncio);

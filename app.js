@@ -423,6 +423,16 @@ function renderizarCategorias() {
   if (elegida && CATEGORIAS.some(c => c.id === elegida)) $("form-categoria").value = elegida;
   marcarCategoriaActiva();
 }
+// ---------- Accesos en cuadros del inicio (fase 2Z.1) ----------
+function accesoHTML(x) {
+  const color = COLORES_ACCESO.includes(x.color) ? x.color : "morado";
+  const dentro = `<span class="acceso-cuadro acc-${color}" aria-hidden="true"><span class="acceso-ico">${esc(x.icono || "⭐")}</span></span><span class="acceso-txt">${esc(x.titulo)}</span>`;
+  // «Publica gratis» abre el formulario aquí mismo (pide cuenta si hace falta)
+  if (x.destino === "#publicar") return `<button type="button" class="acceso" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro">${dentro}</button>`;
+  return `<a class="acceso" href="${esc(x.destino)}">${dentro}</a>`;
+}
+function pintarAccesos(lista) { $("accesos").innerHTML = lista.filter(x => destinoAccesoValido(x.destino)).map(accesoHTML).join(""); }
+
 // Llegaron las categorías de la base (fase 2Z): se repintan chips y el select del formulario
 document.addEventListener("categorias:anuncio", () => {
   const sub = $("form-subcategoria") ? $("form-subcategoria").value : "";
@@ -1289,6 +1299,8 @@ function iniciarEventos() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // 1) La pantalla se arma ya (categorías, mapa, eventos); los esqueletos se ven mientras llegan los datos.
+  pintarAccesos(ACCESOS_RESPALDO);                 // al instante; luego los de la base
+  cargarAccesosInicio().then(pintarAccesos);
   renderizarCategorias();
   iniciarMapa();
   iniciarEventos();

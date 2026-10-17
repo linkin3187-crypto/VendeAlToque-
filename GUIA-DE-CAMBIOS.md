@@ -328,3 +328,15 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Moderación → 🏷️ Categorías de anuncios:** crear (ícono, nombre, subcategorías separadas por coma), renombrar, editar subcategorías y palabras clave, ordenar y activar/desactivar. Muestra cuántos anuncios activos tiene cada una. Una desactivada no se ofrece al publicar ni en los filtros, pero los anuncios que la tienen la conservan.
 - Si el SQL 19 no se ha ejecutado, la página usa la lista anterior de 12 y todo sigue funcionando.
 - **Revertir:** PR → **Revert**. Para volver a la lista fija: `alter table public.anuncios drop constraint anuncios_categoria_fk;` (la tabla puede quedarse).
+
+## Fase 2Z.1 · Accesos en cuadros + carrusel más bajo
+
+**SQL:** `supabase/20_accesos_inicio.sql` — antes o después de fusionar (sin la tabla, el inicio muestra los 10 cuadros de respaldo). Debe terminar mostrando 1 fila: `cuadros = 10`. Es repetible.
+
+**Cambian:** `index.html`, `app.js`, `data.js`, `moderacion.html`/`moderacion.js`, `styles.css`. Caché `?v=41`.
+
+- **Cuadros de acceso** (franja morada de arriba, en lugar de los accesos pequeños): fila deslizable de cuadros redondeados de color con el ícono en relieve y una «burbuja» de luz (identidad propia, sin imágenes ni logos de terceros). Iniciales: 💊 Farmacias · 🛒 Mercado · 🍔 Comida · 🍻 Bares · 📱 Tecnología · 🏍️ Motos · 🏡 Arriendos · 📢 Publica gratis · 🤝 Recomienda · 🏪 Tu negocio.
+- **Administrables** en **Moderación → 🧩 Accesos del inicio**: ícono, título (máx. 24), color (morado, menta, amarillo, rosa, azul, naranja), **a dónde lleva** (solo páginas del sitio, ej. `comercios.html?tipo=farmacia`, `anuncios.html?cat=motos`, `buscar.html?q=empanadas`, o `#publicar`), orden y visible. Vista previa en vivo. La base rechaza enlaces a otros sitios.
+- **Carrusel ~20 % más bajo** (celular ≈ 258 px de alto en vez de ≈ 320; computador ≈ 218 px en vez de ≈ 272), con textos un poco más pequeños.
+- Más adelante un cuadro podrá ser un **comercio patrocinado** (Fase 5).
+- **Revertir:** PR → **Revert**. La tabla puede quedarse.

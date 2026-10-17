@@ -508,3 +508,48 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .cats-claras .categoria-btn[aria-pressed="true"] { background: #4f46e5 !important; color: #fff !important; border-color: #4f46e5; }
 .cats-claras .subcat-btn { background: #f1f5f9 !important; color: #475569 !important; }
 .cats-claras .subcat-btn[aria-pressed="true"] { background: #fde047 !important; color: #1e1b4b !important; }
+
+/* ===== Fase 2Z.1 · Accesos en cuadros (identidad propia: cuadro de color con «burbuja» y emoji en relieve) ===== */
+.accesos-fila { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 2px 6px; margin: 0 -2px; }
+.accesos-fila > :first-child { margin-left: auto; }
+.accesos-fila > :last-child { margin-right: auto; }
+.acceso {
+  flex: 0 0 auto; width: 76px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  text-decoration: none; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.acceso-cuadro {
+  width: 66px; height: 66px; border-radius: 22px; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 14px rgba(15, 10, 60, .28), inset 0 -4px 0 rgba(0, 0, 0, .08);
+  transition: transform .15s ease;
+}
+.acceso-cuadro::before { content: ""; position: absolute; width: 46px; height: 46px; border-radius: 50%; top: -14px; left: -12px; background: rgba(255, 255, 255, .55); }
+.acceso-cuadro::after { content: ""; position: absolute; width: 22px; height: 22px; border-radius: 50%; bottom: -6px; right: -4px; background: rgba(255, 255, 255, .35); }
+.acceso-ico { position: relative; z-index: 1; font-size: 34px; line-height: 1; transform: rotate(-6deg); filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25)); }
+.acceso-txt { font-size: 12px; font-weight: 700; line-height: 1.15; text-align: center; max-width: 76px; }
+.acceso:hover .acceso-cuadro { transform: translateY(-2px); }
+.acceso:active .acceso-cuadro { transform: scale(.94); }
+.acceso:focus-visible { outline: 3px solid #fde047; outline-offset: 3px; border-radius: 16px; }
+.acc-morado { background: linear-gradient(145deg, #ede9fe, #a78bfa); }
+.acc-menta { background: linear-gradient(145deg, #d1fae5, #34d399); }
+.acc-amarillo { background: linear-gradient(145deg, #fef9c3, #facc15); }
+.acc-rosa { background: linear-gradient(145deg, #fce7f3, #f472b6); }
+.acc-azul { background: linear-gradient(145deg, #dbeafe, #60a5fa); }
+.acc-naranja { background: linear-gradient(145deg, #ffedd5, #fb923c); }
+@media (min-width: 640px) {
+  .acceso { width: 88px; } .acceso-cuadro { width: 76px; height: 76px; border-radius: 24px; } .acceso-ico { font-size: 40px; } .acceso-txt { font-size: 13px; max-width: 88px; }
+}
+
+/* ===== Fase 2Z.1 · Carrusel del inicio ~20 % más bajo ===== */
+.car-slide { min-height: 11.5rem; padding: .85rem 1rem 1.75rem 1.1rem; }
+.car-titulo { font-size: 1.25rem; margin: .15rem 0 .3rem; }
+.car-sub { font-size: .78rem; line-height: 1.3; margin-bottom: .55rem; }
+.car-cta { font-size: .8rem; padding: .5rem .95rem; }
+.car-tarjeta { width: 5.8rem; height: 5.8rem; }
+.car-e1 { font-size: 2.9rem; } .car-e2 { font-size: 1.6rem; }
+.car-puntos { bottom: .45rem; }
+@media (min-width: 640px) {
+  .car-slide { min-height: 13.6rem; padding: 1.6rem 4rem 2.4rem 3rem; }
+  .car-titulo { font-size: 1.9rem; } .car-sub { font-size: .92rem; }
+  .car-tarjeta { width: 8rem; height: 8rem; } .car-e1 { font-size: 4rem; } .car-e2 { font-size: 2.3rem; }
+}

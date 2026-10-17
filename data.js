@@ -61,7 +61,52 @@ const CATEGORIAS_FORO = CATEGORIAS
   .map(c => (c.id === "todos" ? { ...c, icono: "💬" } : c));
 
 const iconosCategoria = {};
-CATEGORIAS.forEach(c => { iconosCategoria[c.id] = c.icono; });
+CATEGORIAS.forEach(c => { iconosCategoria[c.id] = c.icono; c.activo = true; });
+
+// Categorías de anuncios administrables (Fase 2Z · supabase/19_categorias_anuncio.sql). La lista de arriba es el
+// respaldo si aún no existe la tabla. Se reemplaza EN EL MISMO arreglo y objeto (las páginas ya los tienen
+// referenciados) y avisa con el evento «categorias:anuncio» para que cada página repinte sus chips y selects.
+let categoriasAnuncioCargadas = null;
+function cargarCategoriasAnuncio() {
+  if (categoriasAnuncioCargadas) return categoriasAnuncioCargadas;
+  categoriasAnuncioCargadas = (async () => {
+    try {
+      const { data, error } = await sb.from("categorias_anuncio")
+        .select("id, nombre, icono, palabras, subcategorias, orden, activo, foro").order("orden").order("nombre");
+      if (error || !data || !data.length) return CATEGORIAS;
+      const todos = CATEGORIAS.find(c => c.id === "todos") || { id: "todos", nombre: "Todos", icono: "🏠", foro: true };
+      CATEGORIAS.length = 0;
+      CATEGORIAS.push(todos);
+      Object.keys(SUBCATEGORIAS).forEach(k => delete SUBCATEGORIAS[k]);
+      data.forEach(r => {
+        CATEGORIAS.push({ id: r.id, nombre: r.nombre, icono: r.icono || "📦", palabras: r.palabras || "", orden: r.orden,
+                          activo: r.activo !== false, foro: !!r.foro });
+        const subs = (Array.isArray(r.subcategorias) ? r.subcategorias : []).filter(x => x && x.id && x.nombre);
+        if (subs.length) SUBCATEGORIAS[r.id] = subs.map(x => [x.id, x.nombre]);
+      });
+      Object.keys(iconosCategoria).forEach(k => delete iconosCategoria[k]);
+      CATEGORIAS.forEach(c => { iconosCategoria[c.id] = c.icono; });
+      document.dispatchEvent(new CustomEvent("categorias:anuncio"));
+    } catch (e) { console.warn("categorías de anuncios:", e); }
+    return CATEGORIAS;
+  })();
+  return categoriasAnuncioCargadas;
+}
+// Para mostrar y filtrar: las activas (más «Todos»). Para publicar: las activas sin «Todos».
+const categoriasAnuncioVisibles = () => CATEGORIAS.filter(c => c.activo !== false);
+
+// Moderadores: crear o editar una categoría de anuncios (fila con id, nombre, icono, palabras, subcategorias, orden, activo)
+async function guardarCategoriaAnuncioDB(fila) {
+  const { error } = await sb.from("categorias_anuncio").upsert(fila, { onConflict: "id" });
+  if (error) throw error;
+  categoriasAnuncioCargadas = null;
+  await cargarCategoriasAnuncio();
+}
+async function cargarCategoriasAnuncioAdmin() {
+  const { data, error } = await sb.from("categorias_anuncio").select("*").order("orden").order("nombre");
+  if (error) throw error;
+  return data || [];
+}
 
 // ---------- Estado compartido ----------
 let baseDatosAnuncios = [];
@@ -96,6 +141,7 @@ function mensajeError(e) {
 // =====================================================================
 async function cargarMunicipios() {
   cargarCategoriasComercio();   // en paralelo: todas las páginas pasan por aquí
+  const catsAnuncio = cargarCategoriasAnuncio();
   const { data, error } = await sb.from("municipios").select("id, departamento, nombre, lat, lng").order("nombre");
   if (error) { console.error("municipios:", error); mostrarToast(mensajeError(error), "error"); return; }
   municipios = data || [];
@@ -103,6 +149,7 @@ async function cargarMunicipios() {
   municipios.forEach(m => {
     (DEPARTAMENTOS[m.departamento] = DEPARTAMENTOS[m.departamento] || []).push(m.nombre);
   });
+  await catsAnuncio;            // las categorías de anuncios quedan listas antes de pintar anuncios
 }
 
 // Crea el municipio (si no existe) y devuelve su fila. La base valida el nombre, evita duplicados y limita abusos.

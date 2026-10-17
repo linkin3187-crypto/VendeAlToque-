@@ -178,6 +178,12 @@ function iniciarEventosTodos() {
   }
 }
 
+// Llegaron las categorías de la base (fase 2Z): se repintan los chips
+document.addEventListener("categorias:anuncio", () => {
+  $("chips-categorias").innerHTML = chipsCategoriasHTML();
+  marcarCategoriaActiva();
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
   $("chips-categorias").innerHTML = chipsCategoriasHTML();
   marcarCategoriaActiva();

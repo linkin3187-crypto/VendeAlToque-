@@ -132,9 +132,9 @@ function analizarBusqueda(q) {
       const p = puntajeIntencion(frases, tokens, frase);
       if (p) catsComercio.push({ id: t.id, nombre: t.nombre, icono: t.icono, puntaje: p });
     });
-    CATEGORIAS.filter(c => c.id !== "todos").forEach(c => {
+    CATEGORIAS.filter(c => c.id !== "todos" && c.activo !== false).forEach(c => {
       const subs = (SUBCATEGORIAS[c.id] || []).map(s => s[1]).join(",");
-      const frases = frasesClave([c.nombre, PALABRAS_ANUNCIOS[c.id] || "", subs].join(","));
+      const frases = frasesClave([c.nombre, c.palabras || PALABRAS_ANUNCIOS[c.id] || "", subs].join(","));
       const p = puntajeIntencion(frases, tokens, frase);
       if (p) catsAnuncio.push({ id: c.id, nombre: c.nombre, icono: c.icono, puntaje: p });
     });

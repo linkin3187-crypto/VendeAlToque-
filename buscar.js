@@ -180,7 +180,7 @@ function pintarResultados() {
   $("b-titulo").innerHTML = q
     ? (n ? `<b>${n}</b> ${n === 1 ? "resultado" : "resultados"} para «<b>${esc(q)}</b>»${donde}${filtro}` : `Sin resultados para «<b>${esc(q)}</b>»${donde}${filtro}`)
     : `Mostrando <b>todo</b>${donde}${filtro}: <b>${n}</b> ${n === 1 ? "resultado" : "resultados"}`;
-  const pest = [["anuncios", "📢 Publicaciones", r.anuncios.length], ["comercios", "🏪 Comercios", r.comercios.length], ["productos", "🛍️ Vitrinas", r.productos.length]]
+  const pest = [["anuncios", "📢 Anuncios", r.anuncios.length], ["comercios", "🏪 Comercios", r.comercios.length], ["productos", "🛍️ Vitrinas", r.productos.length]]
     .filter(x => x[2]).map(([k, t, c]) => `<a href="#b-${k}" class="b-pestana">${t} <b>${c}</b></a>`);
   $("b-pestanas").innerHTML = pest.join("");
   $("b-pestanas").classList.toggle("hidden", pest.length < 2);

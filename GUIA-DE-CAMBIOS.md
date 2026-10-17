@@ -313,3 +313,18 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **No aparece** en la ficha de un anuncio (tiene su barra de WhatsApp/Llamar), en la tienda (barra de pedido) ni en las páginas de administración. En computador no se muestra.
 - Para ponerla en otra página: `<body data-nav="nombre">` y `<script src="navegacion.js">` después de `data.js`.
 - **Revertir:** PR → **Revert**.
+
+## Fase 2Z · «Anuncios y clasificados» + categorías de anuncios administrables
+
+**SQL:** `supabase/19_categorias_anuncio.sql` — **ANTES** de fusionar. Debe terminar mostrando 1 fila: `categorias = 23 | con_llave = true`. Es repetible y no pisa lo que edites en el panel.
+
+**Cambian:** `index.html`, `anuncios.html`, `buscar.html`/`buscar.js`, `data.js`, `anuncios-comun.js`, `app.js`, `anuncios.js`, `buscador.js`, `moderacion.html`/`moderacion.js`, `styles.css`. Caché `?v=40`.
+
+**Qué cambia:**
+- La sección «📢 Publicaciones» ahora se llama **«📢 Anuncios y clasificados»** (inicio, «Todos los anuncios» y «Buscar en todo»).
+- En el inicio, la sección queda **debajo del carrusel**: título → **categorías** (bajaron de la franja morada) → filtros → anuncios y mapa.
+- **Categorías de anuncios en la base** (tabla `categorias_anuncio`): las 12 de siempre + 11 nuevas (🏍️ Motos, 🔌 Electrodomésticos, 👶 Bebés y niños, ⚽ Deportes y bicicletas, 💄 Belleza y salud, 🎮 Videojuegos y juguetes, 🎸 Música e instrumentos, 📚 Libros y educación, 🎉 Eventos y fiestas, 🌱 Agro y campo, 🎁 Regalo o intercambio), cada una con subcategorías y palabras clave para el buscador. Las subcategorías de siempre se conservan.
+- La base ya no tiene la lista fija: acepta cualquier categoría de la tabla (llave `anuncios_categoria_fk`).
+- **Moderación → 🏷️ Categorías de anuncios:** crear (ícono, nombre, subcategorías separadas por coma), renombrar, editar subcategorías y palabras clave, ordenar y activar/desactivar. Muestra cuántos anuncios activos tiene cada una. Una desactivada no se ofrece al publicar ni en los filtros, pero los anuncios que la tienen la conservan.
+- Si el SQL 19 no se ha ejecutado, la página usa la lista anterior de 12 y todo sigue funcionando.
+- **Revertir:** PR → **Revert**. Para volver a la lista fija: `alter table public.anuncios drop constraint anuncios_categoria_fk;` (la tabla puede quedarse).

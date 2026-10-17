@@ -24,8 +24,53 @@ function pintarSubcategorias() {
   cont.innerHTML = chip("", "Todas", subcategoriaActiva === "") + subs.map(([id, n]) => chip(id, n, subcategoriaActiva === id)).join("");
 }
 
+// ---------- Filtros de Inmuebles y Vehículos (fase 2Z.7) ----------
+// Aparecen bajo las subcategorías solo cuando la categoría es Inmuebles o Vehículos.
+let filtroDet = { op: "", hab: "", estrato: "", anio: "", km: "" };
+let catFiltroDet = "todos";
+const tipoFiltroDet = () => categoriaActiva === "inmuebles" ? "inmueble" : (categoriaActiva === "autos" || categoriaActiva === "motos") ? "vehiculo" : null;
+function limpiarFiltroDet() { filtroDet = { op: "", hab: "", estrato: "", anio: "", km: "" }; }
+function pintarFiltrosDetalle() {
+  const sub = $("chips-subcategorias");
+  if (!sub) return;
+  let caja = $("filtros-detalle");
+  if (!caja) {
+    sub.insertAdjacentHTML("afterend", '<div id="filtros-detalle" class="filtros-detalle hidden" aria-label="Filtros de inmuebles y vehículos"></div>');
+    caja = $("filtros-detalle");
+    caja.addEventListener("change", e => {
+      const k = e.target.dataset.fdet;
+      if (!k) return;
+      filtroDet[k] = e.target.value.trim();
+      refiltrarAnuncios();
+    });
+  }
+  if (catFiltroDet !== categoriaActiva) { limpiarFiltroDet(); catFiltroDet = categoriaActiva; }
+  const tipo = tipoFiltroDet();
+  caja.classList.toggle("hidden", !tipo);
+  if (!tipo) { caja.innerHTML = ""; return; }
+  const sel = (k, etiqueta, ops) => `<select data-fdet="${k}" aria-label="${etiqueta}">${ops.map(([v, t]) => `<option value="${v}" ${filtroDet[k] === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+  const ops = tipo === "inmueble"
+    ? [["", "Venta o arriendo"], ["venta", "En venta"], ["arriendo", "En arriendo"], ["arriendo_dias", "Arriendo por días"]]
+    : [["", "Venta o arriendo"], ["venta", "En venta"], ["arriendo", "En arriendo"]];
+  caja.innerHTML = sel("op", "Operación", ops) + (tipo === "inmueble"
+    ? sel("hab", "Habitaciones", [["", "Habitaciones"], ["1", "1 o más hab"], ["2", "2 o más hab"], ["3", "3 o más hab"], ["4", "4 o más hab"]])
+      + sel("estrato", "Estrato", [["", "Estrato"], ...["1", "2", "3", "4", "5", "6"].map(n => [n, "Estrato " + n])])
+    : sel("anio", "Modelo desde", [["", "Modelo desde"], ...[0, 2, 5, 8, 10, 15].map(n => { const y = String(new Date().getFullYear() - n); return [y, "Desde " + y]; })])
+      + sel("km", "Kilometraje máximo", [["", "Kilometraje"], ["10000", "Hasta 10.000 km"], ["30000", "Hasta 30.000 km"], ["60000", "Hasta 60.000 km"], ["100000", "Hasta 100.000 km"], ["150000", "Hasta 150.000 km"]]));
+}
+function cumpleFiltroDet(a) {
+  const d = a.detalles || {}, f = filtroDet;
+  if (f.op && d.operacion !== f.op) return false;
+  if (f.hab && !(Number(d.habitaciones) >= Number(f.hab))) return false;
+  if (f.estrato && d.estrato !== f.estrato) return false;
+  if (f.anio && !(Number(d.modelo) >= Number(f.anio))) return false;
+  if (f.km && !(d.km != null && Number(d.km) <= Number(f.km))) return false;
+  return true;
+}
+
 function marcarCategoriaActiva() {
   pintarSubcategorias();
+  pintarFiltrosDetalle();
   document.querySelectorAll(".categoria-btn").forEach(btn => {
     const activa = btn.dataset.cat === categoriaActiva;
     btn.setAttribute("aria-pressed", String(activa));
@@ -104,6 +149,7 @@ function filtrarAnuncios(c, limites) {
   const lista = baseDatosAnuncios.filter(a => {
     if (c.categoria !== "todos" && a.categoria !== c.categoria) return false;
     if (c.subcategoria && a.subcategoria !== c.subcategoria) return false;
+    if (tipoFiltroDet() && !cumpleFiltroDet(a)) return false;
     if (c.texto) {
       // Buscador inteligente (buscador.js): sin tildes, plurales y errores de escritura
       if (typeof anuncioCoincide === "function") { if (!anuncioCoincide(a, c.texto)) return false; }
@@ -146,6 +192,14 @@ function pintarChipsActivos() {
     if (cat) chips.push(["cat", cat.icono + " " + cat.nombre]);
   }
   if (c.subcategoria) chips.push(["sub", nombreSubcategoria(c.categoria, c.subcategoria)]);
+  if (tipoFiltroDet()) {
+    const f = filtroDet;
+    if (f.op) chips.push(["det-op", OPERACIONES[f.op] || f.op]);
+    if (f.hab) chips.push(["det-hab", f.hab + "+ hab"]);
+    if (f.estrato) chips.push(["det-estrato", "Estrato " + f.estrato]);
+    if (f.anio) chips.push(["det-anio", "Desde " + f.anio]);
+    if (f.km) chips.push(["det-km", "Hasta " + Number(f.km).toLocaleString("es-CO") + " km"]);
+  }
   const hayBusqueda = chips.length > 0;
   if ($("btn-cerca-anuncios").getAttribute("aria-pressed") === "true") chips.push(["cerca", "📍 Cerca de mí"]);
   if (c.estado) chips.push(["estado", c.estado === "nuevo" ? "✨ Nuevo" : "♻️ Usado"]);
@@ -170,7 +224,7 @@ function refiltrarAnuncios() {
 // pero CONSERVA departamento, ciudad, «Cerca de mí» y el orden.
 function verTodasLasPublicaciones() {
   $("buscador").value = "";
-  categoriaActiva = "todos"; subcategoriaActiva = "";
+  categoriaActiva = "todos"; subcategoriaActiva = ""; limpiarFiltroDet();
   $("filtro-estado").value = ""; $("filtro-radio").value = "0";
   $("filtro-precio-min").value = ""; $("filtro-precio-max").value = "";
   $("filtro-con-foto").checked = false; $("filtro-con-precio").checked = false;
@@ -188,6 +242,8 @@ function quitarChipActivo(e) {
     case "cat": categoriaActiva = "todos"; subcategoriaActiva = ""; marcarCategoriaActiva(); refiltrarAnuncios(); return;
     case "sub": subcategoriaActiva = ""; pintarSubcategorias(); refiltrarAnuncios(); return;
     case "cerca": $("btn-cerca-anuncios").click(); return;   // tocar de nuevo lo apaga (misma lógica de siempre)
+    case "det-op": case "det-hab": case "det-estrato": case "det-anio": case "det-km":
+      filtroDet[b.dataset.quitar.slice(4)] = ""; pintarFiltrosDetalle(); refiltrarAnuncios(); return;
     case "estado": $("filtro-estado").value = ""; avisar("filtro-estado", "change"); break;
     case "radio": $("filtro-radio").value = "0"; avisar("filtro-radio", "change"); break;
     case "pmin": $("filtro-precio-min").value = ""; avisar("filtro-precio-min", "input"); break;
@@ -207,6 +263,7 @@ function criteriosAQuery() {
   if (q) p.set("q", q);
   if (c.categoria !== "todos") p.set("cat", c.categoria);
   if (c.subcategoria) p.set("sub", c.subcategoria);
+  if (tipoFiltroDet()) ["op", "hab", "estrato", "anio", "km"].forEach(k => { if (filtroDet[k]) p.set(k, filtroDet[k]); });
   if (c.departamento) p.set("depto", c.departamento);
   if (c.ciudad) p.set("ciudad", c.ciudad);
   if (c.orden && c.orden !== "recientes" && c.orden !== "cercanos") p.set("orden", c.orden);
@@ -228,6 +285,10 @@ function aplicarQueryAUI(qs) {
     categoriaActiva = cat;
     const sub = p.get("sub");
     subcategoriaActiva = sub && (SUBCATEGORIAS[cat] || []).some(s => s[0] === sub) ? sub : "";
+    catFiltroDet = cat;
+    filtroDet = { op: /^(venta|arriendo|arriendo_dias)$/.test(p.get("op") || "") ? p.get("op") : "",
+                  hab: /^[1-4]$/.test(p.get("hab") || "") ? p.get("hab") : "", estrato: /^[1-6]$/.test(p.get("estrato") || "") ? p.get("estrato") : "",
+                  anio: /^\d{4}$/.test(p.get("anio") || "") ? p.get("anio") : "", km: /^\d{1,7}$/.test(p.get("km") || "") ? p.get("km") : "" };
   }
   const elegir = (id, v) => { if (v && [...$(id).options].some(o => o.value === v)) $(id).value = v; };
   elegir("filtro-departamento", p.get("depto"));
@@ -277,7 +338,7 @@ function tarjetaHTML(a) {
     <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
       <span class="text-5xl">${icono}</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">${esc(a.precio)}</div>` : ""}
+      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">${esc(precioConSufijo(a))}</div>` : ""}
       <span class="cinta-ver absolute bottom-0 inset-x-0 text-center text-xs font-bold text-white py-1.5">👆 Toca para ver el anuncio completo</span>
     </a>
     <div class="p-4 flex flex-col flex-1">
@@ -288,6 +349,7 @@ function tarjetaHTML(a) {
         ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
       </div>
       <h3 class="font-bold text-slate-900 mb-1 line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
+      ${(() => { const r = resumenDetalles(a); return r.length ? `<div class="det-chips">${r.slice(0, 5).map((t, i) => `<span class="det-chip ${i === 0 && a.detalles && a.detalles.operacion ? "op" : ""}">${esc(t)}</span>`).join("")}</div>` : ""; })()}
       <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${esc(a.desc || "")}</p>
       <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2.5 rounded-xl mb-2">Ver anuncio completo →</a>
       <div class="flex gap-2">

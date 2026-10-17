@@ -39,7 +39,7 @@ const SUBCATEGORIAS = {
   tienda:     [["abarrotes", "Abarrotes y víveres"], ["frutas_verduras", "Frutas y verduras"], ["carnes_lacteos", "Carnes y lácteos"], ["licores", "Licores"], ["drogueria", "Droguería y salud"], ["papeleria", "Papelería"], ["otros", "Otros"]],
   comida:     [["restaurantes", "Restaurantes"], ["comidas_rapidas", "Comidas rápidas"], ["panaderia_postres", "Panadería y postres"], ["productos_caseros", "Productos caseros"], ["bebidas", "Bebidas"], ["otros", "Otros"]],
   autos:      [["carros", "Carros"], ["motos", "Motos"], ["camionetas", "Camionetas y camperos"], ["camiones", "Camiones y buses"], ["repuestos", "Repuestos de carro"], ["repuestos_moto", "Repuestos y accesorios de moto"], ["bicicletas", "Bicicletas y patinetas"], ["otros", "Otros"]],
-  inmuebles:  [["apartamentos", "Apartamentos"], ["casas", "Casas"], ["lotes_fincas", "Lotes y fincas"], ["locales_oficinas", "Locales y oficinas"], ["habitaciones", "Habitaciones"], ["otros", "Otros"]],
+  inmuebles:  [["apartamentos", "Apartamentos"], ["casas", "Casas"], ["apartaestudios", "Apartaestudios"], ["lotes_fincas", "Lotes y fincas"], ["locales_oficinas", "Locales y oficinas"], ["bodegas", "Bodegas"], ["habitaciones", "Habitaciones"], ["otros", "Otros"]],
   tecnologia: [["celulares", "Celulares"], ["computadores", "Computadores y tablets"], ["tv_audio", "TV y audio"], ["consolas_juegos", "Consolas y videojuegos"], ["camaras", "Cámaras"], ["accesorios_tech", "Accesorios"], ["otros", "Otros"]],
   servicios:  [["plomeria", "Plomería"], ["electricidad", "Electricidad"], ["mecanica", "Mecánica"], ["belleza", "Belleza y peluquería"], ["aseo_hogar", "Aseo y hogar"], ["construccion", "Construcción y arreglos"], ["mudanzas_transporte", "Mudanzas y transporte"], ["clases", "Clases y tutorías"], ["tecnicos", "Técnicos (electrodomésticos, PC)"], ["otros", "Otros"]],
   ferreteria: [["herramientas", "Herramientas"], ["materiales", "Materiales de construcción"], ["pinturas", "Pinturas"], ["electricos_plomeria", "Eléctricos y plomería"], ["tornilleria", "Tornillería"], ["otros", "Otros"]],
@@ -191,6 +191,7 @@ function filaAAnuncio(r) {
     fotos: r.fotos || [],
     owner: r.owner_id,
     ubicacionAprox: !!r.ubicacion_aprox,   // true = lat/lng públicos están desplazados (ver anuncios_ubicacion)
+    detalles: (r.detalles && typeof r.detalles === "object" && !Array.isArray(r.detalles)) ? r.detalles : {},
     fecha: Date.parse(r.creado_en)
   });
 }
@@ -212,7 +213,21 @@ function normalizarAnuncio(a) {
 
 // Columnas PÚBLICAS de un anuncio. El WhatsApp y el teléfono NO se leen de la tabla: solo con
 // contacto_anuncio(id), que exige cuenta (ver supabase/13_contacto_anuncios.sql y 13b_proteger_contacto.sql).
-const COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono";
+// Fase 2Z.7: + detalles (inmuebles y vehículos). Si aún no se ejecutó el SQL 23, se quita sola (ver conDetalles).
+let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles";
+let hayColumnaDetalles = true;
+const sinColumnaDetalles = e => /detalles/.test((e && e.message) || "");
+// Ejecuta una consulta de anuncios; si falla porque falta la columna «detalles», la repite sin ella
+async function conDetalles(hacer) {
+  let r = await hacer(COLS_ANUNCIO);
+  if (r.error && hayColumnaDetalles && sinColumnaDetalles(r.error)) {
+    hayColumnaDetalles = false;
+    COLS_ANUNCIO = COLS_ANUNCIO.replace(", detalles", "");
+    console.warn("Falta ejecutar supabase/23_detalles_anuncio.sql: los anuncios se muestran sin detalles");
+    r = await hacer(COLS_ANUNCIO);
+  }
+  return r;
+}
 // Si aún no se ejecutó el SQL 13 (no existen tiene_whatsapp/tiene_telefono), se usa la consulta anterior.
 const sinColumnasContacto = e => /tiene_whatsapp|tiene_telefono/.test((e && e.message) || "");
 
@@ -224,7 +239,7 @@ async function cargarAnuncios() {
     .gt("expira_en", new Date().toISOString())
     .order("creado_en", { ascending: false })
     .limit(1000);
-  let { data, error } = await consulta(COLS_ANUNCIO);
+  let { data, error } = await conDetalles(consulta);
   if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
   if (error) {
     console.error("anuncios:", error);
@@ -334,10 +349,12 @@ async function guardarAnuncio(d, id) {
     fila.ubicacion_aprox = aprox;
   }
 
-  const consulta = id
-    ? sb.from("anuncios").update(fila).eq("id", id)
-    : sb.from("anuncios").insert(fila);
-  let { data, error } = await consulta.select(COLS_ANUNCIO).single();
+  if (hayColumnaDetalles) fila.detalles = limpiarDetalles(d.categoria, d.subcategoria, { ...(d.detalles || {}), _estado: d.estado });
+  const consulta = cols => {
+    if (!hayColumnaDetalles) delete fila.detalles;
+    return (id ? sb.from("anuncios").update(fila).eq("id", id) : sb.from("anuncios").insert(fila)).select(cols).single();
+  };
+  let { data, error } = await conDetalles(consulta);
   if (error && sinColumnasContacto(error)) ({ data, error } = await (id ? sb.from("anuncios").update(fila).eq("id", id) : sb.from("anuncios").insert(fila)).select().single());
   if (error) {
     // el anuncio no se guardó: borramos las fotos nuevas que acabamos de subir
@@ -421,7 +438,7 @@ async function cargarAnunciosPorIds(ids) {
     .eq("estado_publicacion", "activo")
     .gt("expira_en", new Date().toISOString())
     .order("creado_en", { ascending: false });
-  let { data, error } = await consulta(COLS_ANUNCIO);
+  let { data, error } = await conDetalles(consulta);
   if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
   if (error) throw error;
   return (data || []).map(filaAAnuncio);
@@ -964,7 +981,7 @@ async function cargarAnunciosDeVendedor(id) {
   const consulta = cols => sb.from("anuncios").select(cols).eq("owner_id", id)
     .eq("estado_publicacion", "activo").gt("expira_en", new Date().toISOString())
     .order("creado_en", { ascending: false }).limit(200);
-  let { data, error } = await consulta(COLS_ANUNCIO);
+  let { data, error } = await conDetalles(consulta);
   if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
   if (error) throw error;
   return (data || []).map(filaAAnuncio);
@@ -1696,4 +1713,156 @@ async function revisarContactoPendiente(buscarAnuncio) {
                         aprox: a.ubicacionAprox ? "1" : "0", ciudad: a.ciudad || "" };
   abrirModal("modal-rapido");
   await alEntrarRapido();
+}
+
+// =====================================================================
+// DETALLES DE INMUEBLES Y VEHÍCULOS (fase 2Z.7 · supabase/23_detalles_anuncio.sql)
+// Cada tipo de anuncio pide sus propios datos: no es lo mismo un carro, una moto o un apartamento.
+// El tipo sale de la categoría + subcategoría. Todo se guarda en anuncios.detalles (jsonb).
+// =====================================================================
+const OPERACIONES = { venta: "Venta", arriendo: "Arriendo", arriendo_dias: "Arriendo por días" };
+const SUBS_CARRO = ["carros", "camionetas", "camiones"];
+const SUBS_SIN_HAB = ["locales_oficinas", "bodegas"];
+const SUBS_VIVIENDA = ["apartamentos", "casas", "apartaestudios"];
+const MARCAS_CARRO = ["Chevrolet", "Renault", "Mazda", "Kia", "Toyota", "Nissan", "Hyundai", "Ford", "Volkswagen", "Suzuki", "BYD", "Mitsubishi", "Mercedes-Benz", "BMW", "Jeep", "Fiat", "Peugeot", "Citroën", "Dodge", "JAC", "Foton", "Hino", "Isuzu"];
+const MARCAS_MOTO = ["Yamaha", "Honda", "Suzuki", "AKT", "Bajaj", "Kawasaki", "TVS", "Hero", "Victory", "KTM", "Royal Enfield", "Kymco", "Auteco", "Benelli", "Ducati", "BMW"];
+
+// "inmueble" | "carro" | "moto" | "repuesto" | "vehiculo" (otros) | null (sin campos extra)
+function tipoDetalle(cat, sub) {
+  if (cat === "inmuebles") return "inmueble";
+  if (cat === "autos" || cat === "motos") {
+    if (SUBS_CARRO.includes(sub)) return "carro";
+    if (sub === "motos" || (cat === "motos" && (!sub || sub === "motos"))) return "moto";
+    if (sub === "repuestos" || sub === "repuestos_moto" || sub === "cascos_accesorios") return "repuesto";
+    if (sub === "otros") return "vehiculo";
+  }
+  return null;
+}
+
+// Campos por tipo. ver/req reciben el contexto {sub, op, estado}.
+// tipo: sel (opciones [valor, texto]) · num (min/max) · txt (max, lista = sugerencias) · si (casilla)
+const ANIO_MAX = new Date().getFullYear() + 1;
+const CAMPOS_DETALLE = {
+  inmueble: [
+    { k: "operacion", t: "¿Venta o arriendo?", tipo: "sel", op: Object.entries(OPERACIONES), req: () => true },
+    { k: "habitaciones", t: "Habitaciones", tipo: "num", min: 0, max: 30, ver: x => !SUBS_SIN_HAB.includes(x.sub) && x.sub !== "habitaciones", req: x => SUBS_VIVIENDA.includes(x.sub) || !x.sub },
+    { k: "banos", t: "Baños", tipo: "num", min: 0, max: 20, ver: x => x.sub !== "lotes_fincas", req: x => SUBS_VIVIENDA.includes(x.sub) || !x.sub },
+    { k: "area", t: "Área (m²)", tipo: "num", min: 1, max: 10000000, req: x => x.sub === "lotes_fincas" },
+    { k: "estrato", t: "Estrato", tipo: "sel", op: [["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", "6"]], ver: x => x.sub !== "lotes_fincas" },
+    { k: "parqueadero", t: "Parqueadero", tipo: "sel", op: [["no", "No tiene"], ["moto", "De moto"], ["carro", "De carro"], ["comunal", "Comunal"], ["2+", "2 o más"]] },
+    { k: "piso", t: "Piso", tipo: "num", min: 0, max: 80, ver: x => ["apartamentos", "apartaestudios", "locales_oficinas", "habitaciones"].includes(x.sub) },
+    { k: "administracion", t: "Administración ($/mes)", tipo: "num", min: 0, max: 50000000, ver: x => x.sub !== "lotes_fincas" && x.sub !== "habitaciones" },
+    { k: "requisitos", t: "Requisitos para arrendar", tipo: "txt", max: 80, lista: ["Fiador con finca raíz", "Póliza de arrendamiento", "Depósito", "Sin fiador"], ver: x => x.op === "arriendo" },
+    { k: "amoblado", t: "Amoblado", tipo: "si", ver: x => x.sub !== "lotes_fincas" && x.sub !== "bodegas" },
+    { k: "ascensor", t: "Ascensor", tipo: "si", ver: x => ["apartamentos", "apartaestudios", "locales_oficinas"].includes(x.sub) },
+    { k: "mascotas", t: "Acepta mascotas", tipo: "si", ver: x => x.op !== "venta" && !SUBS_SIN_HAB.includes(x.sub) },
+    { k: "servicios", t: "Servicios incluidos", tipo: "si", ver: x => x.op !== "venta" }
+  ],
+  carro: [
+    { k: "operacion", t: "¿Venta o arriendo?", tipo: "sel", op: [["venta", "Venta"], ["arriendo", "Arriendo / alquiler"]], req: () => true },
+    { k: "marca", t: "Marca", tipo: "txt", max: 30, lista: MARCAS_CARRO, req: () => true },
+    { k: "modelo", t: "Modelo (año)", tipo: "num", min: 1950, max: ANIO_MAX, req: () => true },
+    { k: "km", t: "Kilometraje", tipo: "num", min: 0, max: 3000000, ver: x => x.estado !== "nuevo", req: x => x.estado !== "nuevo" },
+    { k: "transmision", t: "Transmisión", tipo: "sel", op: [["mecanica", "Mecánica"], ["automatica", "Automática"]] },
+    { k: "combustible", t: "Combustible", tipo: "sel", op: [["gasolina", "Gasolina"], ["diesel", "Diésel"], ["hibrido", "Híbrido"], ["electrico", "Eléctrico"], ["gas", "Gas"]] },
+    { k: "placa", t: "Último dígito de la placa", tipo: "sel", op: [..."0123456789"].map(n => [n, n]), ver: x => x.estado !== "nuevo" },
+    { k: "matricula", t: "Ciudad de matrícula", tipo: "txt", max: 30, ver: x => x.estado !== "nuevo" },
+    { k: "color", t: "Color", tipo: "txt", max: 20 },
+    { k: "soat", t: "SOAT al día", tipo: "si", ver: x => x.estado !== "nuevo" },
+    { k: "tecno", t: "Tecnomecánica al día", tipo: "si", ver: x => x.estado !== "nuevo" },
+    { k: "unico_dueno", t: "Único dueño", tipo: "si", ver: x => x.estado !== "nuevo" }
+  ],
+  moto: [
+    { k: "operacion", t: "¿Venta o arriendo?", tipo: "sel", op: [["venta", "Venta"], ["arriendo", "Arriendo / alquiler"]], req: () => true },
+    { k: "marca", t: "Marca", tipo: "txt", max: 30, lista: MARCAS_MOTO, req: () => true },
+    { k: "modelo", t: "Modelo (año)", tipo: "num", min: 1950, max: ANIO_MAX, req: () => true },
+    { k: "cilindraje", t: "Cilindraje (cc)", tipo: "num", min: 49, max: 2500, req: () => true },
+    { k: "km", t: "Kilometraje", tipo: "num", min: 0, max: 1000000, ver: x => x.estado !== "nuevo", req: x => x.estado !== "nuevo" },
+    { k: "placa", t: "Último dígito de la placa", tipo: "sel", op: [..."0123456789"].map(n => [n, n]), ver: x => x.estado !== "nuevo" },
+    { k: "matricula", t: "Ciudad de matrícula", tipo: "txt", max: 30, ver: x => x.estado !== "nuevo" },
+    { k: "soat", t: "SOAT al día", tipo: "si", ver: x => x.estado !== "nuevo" },
+    { k: "tecno", t: "Tecnomecánica al día", tipo: "si", ver: x => x.estado !== "nuevo" }
+  ],
+  repuesto: [
+    { k: "compatible", t: "¿Para qué vehículo sirve?", tipo: "txt", max: 60 }
+  ],
+  vehiculo: [
+    { k: "operacion", t: "¿Venta o arriendo?", tipo: "sel", op: [["venta", "Venta"], ["arriendo", "Arriendo / alquiler"]], req: () => true },
+    { k: "marca", t: "Marca", tipo: "txt", max: 30 },
+    { k: "modelo", t: "Modelo (año)", tipo: "num", min: 1950, max: ANIO_MAX },
+    { k: "km", t: "Kilometraje", tipo: "num", min: 0, max: 3000000, ver: x => x.estado !== "nuevo" }
+  ]
+};
+// Campos visibles para un anuncio (con su obligatoriedad ya calculada)
+function camposDetalle(cat, sub, ctx) {
+  const tipo = tipoDetalle(cat, sub);
+  const x = { sub: sub || "", op: "", estado: "usado", ...(ctx || {}) };
+  return (CAMPOS_DETALLE[tipo] || []).filter(c => !c.ver || c.ver(x)).map(c => ({ ...c, obligatorio: !!(c.req && c.req(x)) }));
+}
+// Deja solo los campos que corresponden, con el tipo correcto (números como número, casillas solo si están marcadas)
+function limpiarDetalles(cat, sub, d) {
+  d = d || {};
+  const out = {};
+  camposDetalle(cat, sub, { op: d.operacion || "", estado: d._estado || "usado" }).forEach(c => {
+    const v = d[c.k];
+    if (c.tipo === "si") { if (v === true) out[c.k] = true; return; }
+    if (v === undefined || v === null || v === "") return;
+    if (c.tipo === "num") { const n = Number(v); if (Number.isFinite(n) && n >= c.min && n <= c.max) out[c.k] = Math.round(n); return; }
+    if (c.tipo === "sel") { if (c.op.some(([val]) => val === String(v))) out[c.k] = String(v); return; }
+    out[c.k] = String(v).trim().slice(0, c.max || 60);
+  });
+  return out;
+}
+
+const fmtMiles = n => Number(n).toLocaleString("es-CO");
+// «/mes», «/noche» o «/día» según la operación (solo para mostrar)
+function sufijoPrecio(a) {
+  const op = (a.detalles || {}).operacion;
+  if (op === "arriendo") return tipoDetalle(a.categoria, a.subcategoria) === "inmueble" ? "/mes" : "/día";
+  if (op === "arriendo_dias") return "/noche";
+  return "";
+}
+const precioConSufijo = a => a.precio ? a.precio + sufijoPrecio(a) : "";
+// Lo más importante en pocas palabras (tarjetas): ["Arriendo", "3 hab", "2 baños", "72 m²"]
+function resumenDetalles(a) {
+  const d = a.detalles || {}, tipo = tipoDetalle(a.categoria, a.subcategoria);
+  const r = [];
+  if (d.operacion && tipo !== "repuesto") r.push(OPERACIONES[d.operacion] || d.operacion);
+  if (tipo === "inmueble") {
+    if (d.habitaciones != null) r.push(d.habitaciones + " hab");
+    if (d.banos != null) r.push(d.banos + (d.banos === 1 ? " baño" : " baños"));
+    if (d.area) r.push(fmtMiles(d.area) + " m²");
+    if (d.estrato) r.push("Estrato " + d.estrato);
+  } else if (tipo) {
+    if (d.marca) r.push(d.marca);
+    if (d.modelo) r.push(String(d.modelo));
+    if (d.cilindraje) r.push(d.cilindraje + " cc");
+    if (d.km != null) r.push(fmtMiles(d.km) + " km");
+    if (d.compatible) r.push("Para " + d.compatible);
+  }
+  return r;
+}
+// Todos los datos para la ficha del anuncio: [[título, valor], …]
+function fichaDetalles(a) {
+  const d = a.detalles || {};
+  const nombres = { mecanica: "Mecánica", automatica: "Automática", gasolina: "Gasolina", diesel: "Diésel", hibrido: "Híbrido", electrico: "Eléctrico", gas: "Gas",
+                    no: "No tiene", moto: "De moto", carro: "De carro", comunal: "Comunal", "2+": "2 o más" };
+  return camposDetalle(a.categoria, a.subcategoria, { op: d.operacion || "", estado: a.estado }).filter(c => d[c.k] !== undefined && d[c.k] !== "").map(c => {
+    let v = d[c.k];
+    if (c.tipo === "si") v = "Sí";
+    else if (c.k === "operacion") v = OPERACIONES[v] || v;
+    else if (c.k === "km") v = fmtMiles(v) + " km";
+    else if (c.k === "area") v = fmtMiles(v) + " m²";
+    else if (c.k === "administracion") v = "$" + fmtMiles(v);
+    else if (c.k === "cilindraje") v = v + " cc";
+    else if (nombres[v]) v = nombres[v];
+    return [c.t.replace(/^¿Venta o arriendo\?$/, "Operación"), String(v)];
+  });
+}
+// Aviso contra las estafas más comunes de cada tipo
+function avisoFraude(a) {
+  const tipo = tipoDetalle(a.categoria, a.subcategoria);
+  if (tipo === "inmueble") return "🏠 <b>Nunca consignes dinero antes de visitar el inmueble</b> y de confirmar que quien lo ofrece es el dueño o una inmobiliaria real (pide el certificado de tradición y libertad). Desconfía de arriendos muy baratos con «mucha demanda».";
+  if (tipo === "carro" || tipo === "moto" || tipo === "vehiculo") return "🚗 <b>No des anticipos para «separar» el vehículo.</b> Revísalo en persona, consulta la placa en el <b>RUNT</b> (multas, prendas, SOAT) y haz el traspaso en el tránsito antes de pagar el total.";
+  return "";
 }

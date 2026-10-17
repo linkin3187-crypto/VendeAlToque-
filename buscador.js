@@ -185,7 +185,9 @@ function todasLasPalabras(texto, tokens) {
   return tokens.every(q => palabras.some(w => coincidePalabra(q, w)));
 }
 function anuncioCoincide(a, texto) {
-  const campos = [a.nombre, a.desc, a.barrio, a.ciudad, nombreSubcategoria(a.categoria, a.subcategoria)].join(" ");
+  const d = a.detalles || {};   // fase 2Z.7: también la marca, el modelo y «venta/arriendo»
+  const campos = [a.nombre, a.desc, a.barrio, a.ciudad, nombreSubcategoria(a.categoria, a.subcategoria),
+                  d.marca, d.modelo, d.operacion ? (typeof OPERACIONES !== "undefined" ? OPERACIONES[d.operacion] : d.operacion) : ""].join(" ");
   const tokens = tokensBusq(texto);
   if (!tokens.length) return normBusq(campos).includes(normBusq(texto));   // solo palabras cortas o vacías («venta»)
   return todasLasPalabras(campos, tokens);

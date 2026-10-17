@@ -27,7 +27,7 @@ function tarjetaAnuncioBusq(a) {
     <div class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
       <span class="text-4xl">${iconosCategoria[a.categoria] || "📦"}</span>
       ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      ${a.precio ? `<span class="absolute top-1.5 right-1.5 bg-indigo-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">${esc(a.precio)}</span>` : ""}
+      ${a.precio ? `<span class="absolute top-1.5 right-1.5 bg-indigo-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">${esc(precioConSufijo(a))}</span>` : ""}
     </div>
     <div class="p-2.5">
       <h3 class="font-bold text-sm text-slate-900 line-clamp-2">${esc(a.nombre)}</h3>

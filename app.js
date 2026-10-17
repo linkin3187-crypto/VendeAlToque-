@@ -448,13 +448,55 @@ document.addEventListener("categorias:anuncio", () => {
   actualizarSubcategoriasForm(sub);
 });
 
-function actualizarSubcategoriasForm(valor) {
+function actualizarSubcategoriasForm(valor, detalles) {
   const subs = SUBCATEGORIAS[$("form-categoria").value] || [];
   $("caja-subcategoria").classList.toggle("hidden", !subs.length);
   const sel = $("form-subcategoria");
   sel.required = subs.length > 0;
   sel.innerHTML = subs.length ? '<option value="">Elige una subcategoría…</option>' + subs.map(([id, n]) => `<option value="${esc(id)}">${esc(n)}</option>`).join("") : "";
   if (valor) sel.value = valor;
+  pintarCamposDetalle(detalles);
+}
+
+// ---------- Detalles de inmuebles y vehículos (fase 2Z.7) ----------
+// Al elegir Inmuebles o Vehículos aparecen sus datos: no es lo mismo un carro, una moto o un apartamento.
+// Los obligatorios llevan «required», así el paso no avanza sin ellos (validarPaso usa checkValidity).
+function leerDetallesForm() {
+  const d = {};
+  document.querySelectorAll("#caja-detalles [data-det]").forEach(el => {
+    d[el.dataset.det] = el.type === "checkbox" ? el.checked : el.value.trim();
+  });
+  return d;
+}
+let memoriaDetalles = {};   // lo escrito se recuerda aunque el campo se oculte un momento (ej. al cambiar de subcategoría)
+function pintarCamposDetalle(valores) {
+  const caja = $("caja-detalles");
+  if (!caja) return;
+  const v = valores ? { ...valores } : { ...memoriaDetalles, ...leerDetallesForm() };
+  memoriaDetalles = v;
+  const cat = $("form-categoria").value, sub = $("form-subcategoria").value;
+  const tipo = tipoDetalle(cat, sub);
+  const campos = camposDetalle(cat, sub, { op: v.operacion || "", estado: $("form-estado").value });
+  const ayuda = $("form-precio-ayuda");
+  if (ayuda) ayuda.textContent = v.operacion === "arriendo" ? (tipo === "inmueble" ? "· valor del arriendo mensual" : "· valor por día") : v.operacion === "arriendo_dias" ? "· valor por noche" : "";
+  caja.classList.toggle("hidden", !campos.length);
+  if (!campos.length) { caja.innerHTML = ""; return; }
+  const titulo = { inmueble: "🏡 Datos del inmueble", carro: "🚗 Datos del vehículo", moto: "🏍️ Datos de la moto", repuesto: "🔧 Datos del repuesto", vehiculo: "🚜 Datos del vehículo" }[tipo] || "Datos";
+  const id = k => "det-" + k;
+  const etiqueta = c => `<label for="${id(c.k)}" class="block text-xs font-bold text-slate-600 mb-1">${esc(c.t)}${c.obligatorio ? " *" : ""}</label>`;
+  const control = c => {
+    const val = v[c.k] === undefined || v[c.k] === null ? "" : String(v[c.k]);
+    const req = c.obligatorio ? "required" : "";
+    if (c.tipo === "sel") return etiqueta(c) + `<select id="${id(c.k)}" data-det="${c.k}" ${req} class="w-full border border-slate-300 p-2.5 rounded-xl bg-white"><option value="">${c.obligatorio ? "Elige…" : "—"}</option>${c.op.map(([o, t]) => `<option value="${esc(o)}" ${o === val ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
+    if (c.tipo === "num") return etiqueta(c) + `<input id="${id(c.k)}" data-det="${c.k}" type="number" inputmode="numeric" min="${c.min}" max="${c.max}" step="1" ${req} value="${esc(val)}" class="w-full border border-slate-300 p-2.5 rounded-xl bg-white">`;
+    const lista = c.lista ? `<datalist id="dl-${c.k}">${c.lista.map(o => `<option value="${esc(o)}">`).join("")}</datalist>` : "";
+    return etiqueta(c) + `<input id="${id(c.k)}" data-det="${c.k}" maxlength="${c.max || 60}" ${c.lista ? `list="dl-${c.k}"` : ""} autocomplete="off" ${req} value="${esc(val)}" class="w-full border border-slate-300 p-2.5 rounded-xl bg-white">${lista}`;
+  };
+  const casillas = campos.filter(c => c.tipo === "si");
+  caja.innerHTML = `<p class="text-sm font-black text-indigo-900 mb-2">${titulo}</p>
+    <div class="grid grid-cols-2 gap-3">${campos.filter(c => c.tipo !== "si").map(c => `<div class="${c.k === "operacion" || c.k === "requisitos" || c.k === "compatible" ? "col-span-2" : ""}">${control(c)}</div>`).join("")}</div>
+    ${casillas.length ? `<div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${casillas.map(c => `<label class="text-sm flex items-center gap-1.5"><input type="checkbox" id="${id(c.k)}" data-det="${c.k}" ${v[c.k] === true ? "checked" : ""}> ${esc(c.t)}</label>`).join("")}</div>` : ""}
+    ${avisoFraude({ categoria: cat, subcategoria: sub }) ? `<p class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-3">${avisoFraude({ categoria: cat, subcategoria: sub })}</p>` : ""}`;
 }
 
 // =====================================================================
@@ -781,7 +823,7 @@ function resetFormulario() {
   $("publicar-titulo").textContent = "🚀 Publica tu anuncio";
   $("btn-submit-anuncio").textContent = "⚡ Publicar";
   actualizarCiudadesForm();
-  actualizarSubcategoriasForm();
+  actualizarSubcategoriasForm(undefined, {});   // {} = sin datos del anuncio anterior
 }
 
 // La ciudad es una LISTA CERRADA (tabla `municipios`): así "envigado" y "Envigado"
@@ -1026,6 +1068,7 @@ async function registrarAnuncio(e) {
       categoria: $("form-categoria").value,
       subcategoria: $("form-subcategoria").value,
       estado: $("form-estado").value,
+      detalles: leerDetallesForm(),
       departamento: $("form-departamento").value,
       ciudad: $("form-ciudad").value === "__otra" ? "" : $("form-ciudad").value,
       ciudadNueva: $("form-ciudad").value === "__otra" ? $("form-ciudad-nueva").value.trim() : "",
@@ -1076,8 +1119,8 @@ async function editarAnuncio(id) {
   resetFormulario();
   $("form-nombre").value = a.nombre;
   $("form-categoria").value = a.categoria;
-  actualizarSubcategoriasForm(a.subcategoria);
   $("form-estado").value = a.estado || "usado";
+  actualizarSubcategoriasForm(a.subcategoria, a.detalles || {});
   $("form-precio").value = extraerPrecio(a.precio) || "";
   $("form-departamento").value = a.departamento || Object.keys(DEPARTAMENTOS)[0];
   actualizarCiudadesForm();
@@ -1178,6 +1221,9 @@ function iniciarEventos() {
     pintarSubcategorias();
     aplicarFiltros();
   });
+  $("form-subcategoria").addEventListener("change", () => pintarCamposDetalle());
+  $("form-estado").addEventListener("change", () => pintarCamposDetalle());
+  $("caja-detalles").addEventListener("change", e => { if (e.target.dataset.det === "operacion") pintarCamposDetalle(); });
   $("form-categoria").addEventListener("change", () => { actualizarSubcategoriasForm(); if (marcadorFormulario) marcadorFormulario.setIcon(iconoMarcador($("form-categoria").value)); });
 
   const acciones = e => {

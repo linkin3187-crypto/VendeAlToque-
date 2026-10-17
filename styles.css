@@ -595,3 +595,13 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .acceso:hover .acceso-ico { animation-play-state: paused; }
 .acceso-elegido .acceso-ico, .acceso-fantasma .acceso-ico { animation: none; }
 @media (prefers-reduced-motion: reduce) { .acceso-ico, .acceso-cuadro.con-imagen img { animation: none; } }
+
+/* ===== Fase 2Z.7 · Detalles de inmuebles y vehículos ===== */
+.caja-detalles { background: #eef2ff; border: 1px solid #c7d2fe; }
+.det-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.det-chip { font-size: 11px; font-weight: 700; color: #3730a3; background: #eef2ff; border-radius: 999px; padding: 2px 8px; }
+.det-chip.op { background: #fde047; color: #1e1b4b; }
+.filtros-detalle { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
+.filtros-detalle select, .filtros-detalle input { font-size: 13px; color: #334155; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; padding: 6px 10px; max-width: 46vw; }
+.filtros-detalle input { width: 7.5rem; }
+.aviso-fraude { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; }

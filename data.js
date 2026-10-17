@@ -21,7 +21,7 @@ const CATEGORIAS = [
   { id: "todos",      nombre: "Todos",       icono: "🏠", foro: true  },
   { id: "tienda",     nombre: "Tiendas",     icono: "🍎", foro: false },
   { id: "comida",     nombre: "Comida",      icono: "🍔", foro: false },
-  { id: "autos",      nombre: "Autos",       icono: "🚗", foro: true  },
+  { id: "autos",      nombre: "Vehículos",   icono: "🚗", foro: true  },
   { id: "inmuebles",  nombre: "Inmuebles",   icono: "🏡", foro: true  },
   { id: "tecnologia", nombre: "Tecnología",  icono: "📱", foro: true  },
   { id: "servicios",  nombre: "Oficios",     icono: "🛠️", foro: true  },
@@ -38,7 +38,7 @@ const CATEGORIAS = [
 const SUBCATEGORIAS = {
   tienda:     [["abarrotes", "Abarrotes y víveres"], ["frutas_verduras", "Frutas y verduras"], ["carnes_lacteos", "Carnes y lácteos"], ["licores", "Licores"], ["drogueria", "Droguería y salud"], ["papeleria", "Papelería"], ["otros", "Otros"]],
   comida:     [["restaurantes", "Restaurantes"], ["comidas_rapidas", "Comidas rápidas"], ["panaderia_postres", "Panadería y postres"], ["productos_caseros", "Productos caseros"], ["bebidas", "Bebidas"], ["otros", "Otros"]],
-  autos:      [["carros", "Carros"], ["motos", "Motos"], ["camionetas", "Camionetas y camperos"], ["repuestos", "Repuestos y accesorios"], ["bicicletas", "Bicicletas y patinetas"], ["otros", "Otros"]],
+  autos:      [["carros", "Carros"], ["motos", "Motos"], ["camionetas", "Camionetas y camperos"], ["camiones", "Camiones y buses"], ["repuestos", "Repuestos de carro"], ["repuestos_moto", "Repuestos y accesorios de moto"], ["bicicletas", "Bicicletas y patinetas"], ["otros", "Otros"]],
   inmuebles:  [["apartamentos", "Apartamentos"], ["casas", "Casas"], ["lotes_fincas", "Lotes y fincas"], ["locales_oficinas", "Locales y oficinas"], ["habitaciones", "Habitaciones"], ["otros", "Otros"]],
   tecnologia: [["celulares", "Celulares"], ["computadores", "Computadores y tablets"], ["tv_audio", "TV y audio"], ["consolas_juegos", "Consolas y videojuegos"], ["camaras", "Cámaras"], ["accesorios_tech", "Accesorios"], ["otros", "Otros"]],
   servicios:  [["plomeria", "Plomería"], ["electricidad", "Electricidad"], ["mecanica", "Mecánica"], ["belleza", "Belleza y peluquería"], ["aseo_hogar", "Aseo y hogar"], ["construccion", "Construcción y arreglos"], ["mudanzas_transporte", "Mudanzas y transporte"], ["clases", "Clases y tutorías"], ["tecnicos", "Técnicos (electrodomésticos, PC)"], ["otros", "Otros"]],

@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=44">
+  <link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -91,11 +91,11 @@
           <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra o desactiva categorías. Las <b>palabras clave</b> (separadas por coma) ayudan al buscador a entender lo que la gente escribe: por ejemplo, en «Pastelerías»: <i>postres, torta, ponqué, cupcake</i>. Una categoría desactivada no aparece al elegir, pero los comercios que ya la tienen la conservan.</p>
           <div class="border border-indigo-100 bg-indigo-50 rounded-xl p-3 mb-4">
             <p class="text-sm font-bold text-indigo-900 mb-2">➕ Nueva categoría</p>
-            <div class="grid grid-cols-[4rem_1fr] sm:grid-cols-[4rem_1fr_2fr_auto] gap-2 items-end">
-              <label class="text-xs font-bold text-slate-500">Ícono<input id="cat-nuevo-icono" maxlength="8" value="🏪" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-center text-lg"></label>
+            <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_2fr_auto] gap-2 items-end">
+              <div class="text-xs font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input id="cat-nuevo-icono" data-emoji maxlength="8" value="🏪" aria-label="Ícono" class="w-14 border border-slate-300 p-2 rounded-lg text-center text-lg bg-white"><button type="button" data-elegir-emoji class="ml-1 shrink-0 text-xs font-bold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-2 py-2">Elegir 😀</button></div></div>
               <label class="text-xs font-bold text-slate-500">Nombre<input id="cat-nuevo-nombre" maxlength="40" placeholder="Ej.: Empanadas" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
-              <label class="text-xs font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<input id="cat-nuevo-palabras" maxlength="1500" placeholder="empanada, pastel de pollo, papa rellena" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
-              <button type="button" id="cat-crear" class="col-span-2 sm:col-span-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
+              <label class="text-xs font-bold text-slate-500">Palabras clave<input id="cat-nuevo-palabras" maxlength="1500" placeholder="empanada, pastel de pollo, papa rellena" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <button type="button" id="cat-crear" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
             </div>
           </div>
           <div id="cat-lista" class="space-y-2"></div>
@@ -210,8 +210,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=44"></script>
-  <script src="data.js?v=44"></script>
-  <script src="admin-comercios.js?v=44"></script>
+  <script src="utils.js?v=45"></script>
+  <script src="data.js?v=45"></script>
+  <script src="iconos.js?v=45"></script>
+  <script src="admin-comercios.js?v=45"></script>
 </body>
 </html>

@@ -386,3 +386,15 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Ajustar:** en `styles.css`, `acc-flota` (4.6s = velocidad; `-4px` = cuánto sube). **Revertir:** PR → **Revert**.
 
+## Fase 2Z.5 · Categorías de comercios en Moderación + «Elegir 😀» en todas las categorías
+
+**SQL:** ninguno (usa la tabla de `supabase/15_categorias_comercio.sql`, que ya está ejecutado). **Archivo nuevo:** `iconos.js` (el selector de íconos, ahora compartido). **Cambian:** `moderacion.html`, `moderacion.js`, `admin-comercios.html`, `admin-comercios.js`, `editar-inicio.html`, `editar-inicio.js`. Caché `?v=45`.
+
+- **Dónde:** Moderación → **🏪 Categorías de comercios**, justo encima de «🏷️ Categorías de anuncios» (toca el título para abrirla). Sigue también en Comercios (admin-comercios), al final.
+- **➕ Nueva categoría de comercio:** ícono (con **Elegir 😀**), nombre y palabras clave → **Crear**. El nombre se agrega solo a las palabras clave. Aparece de una vez al registrar/editar comercios, en los filtros del directorio, en «Lleva a» de los cuadros y en «Entrenar el buscador».
+- **Editar:** ícono, nombre, palabras clave, orden y **Activa**, luego **Guardar** en esa fila. Desactivar no borra: los comercios que ya la tienen la conservan.
+- No deja crear una con el mismo nombre que otra.
+- **Elegir 😀** ahora también está en las categorías de anuncios (crear y editar) y en las de Comercios.
+
+**Revertir:** PR → **Revert**.
+

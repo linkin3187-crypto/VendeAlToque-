@@ -6,7 +6,7 @@
   <title>Editar inicio y buscador | MercaFree</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=44">
+  <link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -78,26 +78,13 @@
 
   <datalist id="dl-comercios"></datalist>
 
-  <!-- Selector de íconos (fase 2Z.3): busca por palabra («auto» → 🚗) -->
-  <div id="emoji-pop" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="emoji-titulo">
-    <div class="absolute inset-0 bg-slate-900/50" data-emoji-cerrar></div>
-    <div class="relative bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 shadow-2xl max-h-[80vh] flex flex-col">
-      <div class="flex items-center justify-between mb-2">
-        <h3 id="emoji-titulo" class="font-black text-indigo-900">Elige un ícono</h3>
-        <button type="button" data-emoji-cerrar class="text-2xl text-slate-400 hover:text-slate-700" aria-label="Cerrar">&times;</button>
-      </div>
-      <input id="emoji-buscar" type="search" placeholder="Busca por palabra: auto, comida, farmacia…" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-2">
-      <div id="emoji-grid" class="grid grid-cols-7 sm:grid-cols-8 gap-1 overflow-auto"></div>
-      <p class="text-[11px] text-slate-400 mt-2">También puedes escribir cualquier emoji con el teclado del celular (😀).</p>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=44"></script>
-  <script src="data.js?v=44"></script>
-  <script src="buscador.js?v=44"></script>
+  <script src="utils.js?v=45"></script>
+  <script src="data.js?v=45"></script>
+  <script src="buscador.js?v=45"></script>
+  <script src="iconos.js?v=45"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=44"></script>
+  <script src="editar-inicio.js?v=45"></script>
 </body>
 </html>

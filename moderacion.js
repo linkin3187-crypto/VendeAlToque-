@@ -351,8 +351,8 @@ function filaCatAnuncio(c) {
   const subs = Array.isArray(c.subcategorias) ? c.subcategorias : [];
   const n = usosCatAnuncio[c.id] || 0;
   return `<div class="border border-slate-200 rounded-xl p-2.5 ${c.activo === false ? "opacity-60" : ""}" data-cat-a="${esc(c.id)}">
-    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1.4fr_1.4fr_4.5rem_auto] gap-2 items-end">
-      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(c.icono)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+    <div class="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_1.4fr_1.4fr_4.5rem_auto] gap-2 items-end">
+      <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(c.icono)}" class="w-12 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
       <label class="text-[11px] font-bold text-slate-500">Nombre <span class="font-normal text-slate-400">(${esc(c.id)} · ${n} activo${n === 1 ? "" : "s"})</span><input data-c="nombre" maxlength="40" value="${esc(c.nombre)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
       <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Subcategorías<textarea data-c="subs" rows="1" maxlength="600" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(subs.map(s => s.nombre).join(", "))}</textarea></label>
       <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<textarea data-c="palabras" rows="1" maxlength="1500" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(c.palabras || "")}</textarea></label>
@@ -411,6 +411,60 @@ async function crearCatAnuncio() {
   } catch (err) {
     mostrarToast(/categorias_anuncio|does not exist/i.test(err.message || "") ? "Primero ejecuta supabase/19_categorias_anuncio.sql" : mensajeError(err), "error");
   } finally { b.disabled = false; }
+}
+
+// ---------- Categorías de comercios (fase 2Z.5; tabla de supabase/15_categorias_comercio.sql) ----------
+// Igual que las de anuncios pero sin subcategorías. TIPOS_COMERCIO se recarga al guardar (guardarCategoriaDB).
+function filaCatComercio(t) {
+  return `<div class="border border-slate-200 rounded-xl p-2.5 ${t.activo === false ? "opacity-60" : ""}" data-cat-c="${esc(t.id)}">
+    <div class="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_2fr_4.5rem_auto] gap-2 items-end">
+      <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(t.icono)}" class="w-12 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
+      <label class="text-[11px] font-bold text-slate-500">Nombre <span class="font-normal text-slate-400">(${esc(t.id)})</span><input data-c="nombre" maxlength="40" value="${esc(t.nombre)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<textarea data-c="palabras" rows="1" maxlength="1500" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(t.palabras || "")}</textarea></label>
+      <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(t.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <div class="flex items-center gap-2">
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" data-c="activo" ${t.activo === false ? "" : "checked"}> Activa</label>
+        <button type="button" data-cc-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Guardar</button>
+      </div>
+    </div>
+  </div>`;
+}
+async function pintarCatsComercio() {
+  await cargarCategoriasComercio();
+  $("cc-n").textContent = "(" + TIPOS_COMERCIO.length + ")";
+  $("cc-lista").innerHTML = TIPOS_COMERCIO.map(filaCatComercio).join("");
+}
+const avisoTablaComercio = err => /categorias_comercio|does not exist/i.test((err && err.message) || "") ? "Primero ejecuta supabase/15_categorias_comercio.sql" : mensajeError(err);
+async function accionCatComercio(e) {
+  const b = e.target.closest("[data-cc-guardar]");
+  if (!b) return;
+  const f = b.closest("[data-cat-c]");
+  const v = k => f.querySelector(`[data-c="${k}"]`);
+  const nombre = v("nombre").value.trim();
+  if (nombre.length < 2) { mostrarToast("Escribe el nombre de la categoría", "error"); return; }
+  b.disabled = true;
+  try {
+    await guardarCategoriaDB({ id: f.dataset.catC, nombre, icono: v("icono").value.trim() || "🏪",
+      palabras: v("palabras").value.trim(), orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked });
+    mostrarToast("✅ Categoría guardada");
+    await pintarCatsComercio();
+  } catch (err) { mostrarToast(avisoTablaComercio(err), "error"); b.disabled = false; }
+}
+async function crearCatComercio() {
+  const nombre = $("cc-nuevo-nombre").value.trim();
+  const id = idDesdeNombre(nombre);
+  if (nombre.length < 2 || id.length < 2) { mostrarToast("Escribe el nombre de la nueva categoría", "error"); return; }
+  if (TIPOS_COMERCIO.some(t => t.id === id || normalizar(t.nombre) === normalizar(nombre))) { mostrarToast("Ya existe una categoría con ese nombre", "error"); return; }
+  const b = $("cc-crear"); b.disabled = true;
+  try {
+    const extra = $("cc-nuevo-palabras").value.trim();
+    await guardarCategoriaDB({ id, nombre, icono: $("cc-nuevo-icono").value.trim() || "🏪",
+      palabras: [nombre.toLowerCase(), extra].filter(Boolean).join(", ").slice(0, 1500), orden: 500, activo: true });
+    $("cc-nuevo-nombre").value = ""; $("cc-nuevo-palabras").value = ""; $("cc-nuevo-icono").value = "🏪";
+    mostrarToast("✅ Categoría creada: ya aparece al registrar comercios y en el directorio");
+    await pintarCatsComercio();
+  } catch (err) { mostrarToast(avisoTablaComercio(err), "error"); }
+  finally { b.disabled = false; }
 }
 
 // ---------- Comercios recomendados por la gente (fase 2X, supabase/17_recomendaciones.sql) ----------
@@ -674,6 +728,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
+  $("cc-lista").addEventListener("click", accionCatComercio);
+  $("cc-crear").addEventListener("click", crearCatComercio);
+  pintarCatsComercio();
   $("ca-lista").addEventListener("click", accionCatAnuncio);
   $("ca-crear").addEventListener("click", crearCatAnuncio);
   cargarAnuncios().finally(pintarCatsAnuncio);

@@ -739,8 +739,8 @@ async function accionEditor(e) {
 function filaCategoria(t) {
   const usos = listaAdmin.filter(c => comercioEsTipo(c, t.id)).length;
   return `<div class="border border-slate-200 rounded-xl p-2.5 ${t.activo === false ? "opacity-60" : ""}" data-cat="${esc(t.id)}">
-    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_2fr_4.5rem_auto] gap-2 items-end">
-      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(t.icono)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+    <div class="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_2fr_4.5rem_auto] gap-2 items-end">
+      <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(t.icono)}" class="w-12 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${BOTON_EMOJI}</div></div>
       <label class="text-[11px] font-bold text-slate-500">Nombre <span class="font-normal text-slate-400">(${esc(t.id)} · ${usos} comercio${usos === 1 ? "" : "s"})</span><input data-c="nombre" maxlength="40" value="${esc(t.nombre)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
       <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<textarea data-c="palabras" rows="1" maxlength="1500" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(t.palabras || "")}</textarea></label>
       <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(t.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>

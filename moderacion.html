@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=44">
+  <link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -86,6 +86,24 @@
         <span class="text-indigo-600 font-bold text-sm whitespace-nowrap">Abrir →</span>
       </a>
 
+      <!-- Categorías de comercios (fase 2Z.5; tabla de supabase/15_categorias_comercio.sql). También en admin-comercios.html -->
+      <section id="categorias-comercio" class="mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <details>
+          <summary class="cursor-pointer text-lg font-black text-indigo-900">🏪 Categorías de comercios <span id="cc-n" class="text-sm font-semibold text-slate-500"></span></summary>
+          <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra, ordena o desactiva las categorías del <b>directorio de comercios</b> (farmacias, panaderías, bares…). Las <b>palabras clave</b> (separadas por coma) ayudan al buscador: en «Pastelerías», <i>postres, torta, ponqué</i>. Una categoría nueva aparece de una vez al registrar o editar un comercio, en los filtros del directorio y en el menú «Lleva a» de los cuadros. Una desactivada deja de ofrecerse, pero los comercios que ya la tienen la conservan.</p>
+          <div class="border border-indigo-100 bg-indigo-50 rounded-xl p-3 mb-4">
+            <p class="text-sm font-bold text-indigo-900 mb-2">➕ Nueva categoría de comercio</p>
+            <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_2fr_auto] gap-2 items-end">
+              <div class="text-xs font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input id="cc-nuevo-icono" data-emoji maxlength="8" value="🏪" aria-label="Ícono" class="w-14 border border-slate-300 p-2 rounded-lg text-center text-lg bg-white"><button type="button" data-elegir-emoji class="ml-1 shrink-0 text-xs font-bold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-2 py-2">Elegir 😀</button></div></div>
+              <label class="text-xs font-bold text-slate-500">Nombre<input id="cc-nuevo-nombre" maxlength="40" placeholder="Ej.: Talleres de motos" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <label class="text-xs font-bold text-slate-500">Palabras clave<input id="cc-nuevo-palabras" maxlength="1500" placeholder="moto, taller, mecánico, repuestos" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <button type="button" id="cc-crear" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
+            </div>
+          </div>
+          <div id="cc-lista" class="space-y-2"></div>
+        </details>
+      </section>
+
       <!-- Categorías de anuncios (fase 2Z, supabase/19_categorias_anuncio.sql) -->
       <section id="categorias-anuncio" class="mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
         <details>
@@ -93,11 +111,11 @@
           <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra, ordena o desactiva las categorías de los <b>anuncios y clasificados</b>. Las <b>palabras clave</b> (separadas por coma) ayudan al buscador inteligente («guitarra» → Música). Las <b>subcategorías</b> se escriben separadas por coma (máx. 20). Una categoría desactivada no se ofrece al publicar, pero los anuncios que ya la tienen la conservan.</p>
           <div class="border border-indigo-100 bg-indigo-50 rounded-xl p-3 mb-4">
             <p class="text-sm font-bold text-indigo-900 mb-2">➕ Nueva categoría</p>
-            <div class="grid grid-cols-[4rem_1fr] sm:grid-cols-[4rem_1fr_2fr_auto] gap-2 items-end">
-              <label class="text-xs font-bold text-slate-500">Ícono<input id="ca-nuevo-icono" maxlength="8" value="📦" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-center text-lg"></label>
+            <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_2fr_auto] gap-2 items-end">
+              <div class="text-xs font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input id="ca-nuevo-icono" data-emoji maxlength="8" value="📦" aria-label="Ícono" class="w-14 border border-slate-300 p-2 rounded-lg text-center text-lg bg-white"><button type="button" data-elegir-emoji class="ml-1 shrink-0 text-xs font-bold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-2 py-2">Elegir 😀</button></div></div>
               <label class="text-xs font-bold text-slate-500">Nombre<input id="ca-nuevo-nombre" maxlength="40" placeholder="Ej.: Arte y manualidades" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
-              <label class="text-xs font-bold text-slate-500 col-span-2 sm:col-span-1">Subcategorías<input id="ca-nuevo-subs" maxlength="600" placeholder="Pinturas, Tejidos, Cerámica" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
-              <button type="button" id="ca-crear" class="col-span-2 sm:col-span-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
+              <label class="text-xs font-bold text-slate-500">Subcategorías<input id="ca-nuevo-subs" maxlength="600" placeholder="Pinturas, Tejidos, Cerámica" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>
+              <button type="button" id="ca-crear" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Crear</button>
             </div>
           </div>
           <div id="ca-lista" class="space-y-2"></div>
@@ -127,8 +145,9 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=44"></script>
-  <script src="data.js?v=44"></script>
-  <script src="moderacion.js?v=44"></script>
+  <script src="utils.js?v=45"></script>
+  <script src="data.js?v=45"></script>
+  <script src="iconos.js?v=45"></script>
+  <script src="moderacion.js?v=45"></script>
 </body>
 </html>

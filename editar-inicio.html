@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar inicio y buscador | MercaFree</title>
+  <meta name="robots" content="noindex">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=42">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Editar inicio</span></a>
+      <nav class="flex gap-3 text-sm text-indigo-100">
+        <a href="moderacion.html" class="hover:text-white">🛡️ Moderación</a>
+        <a href="index.html" class="hover:text-white">← Inicio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <div id="ei-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+    <div id="ei-sin-permiso" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">🔒</div>
+      <h1 class="text-xl font-bold text-slate-700 mb-2">Solo para moderadores</h1>
+      <a href="index.html#login" class="text-indigo-600 font-medium hover:underline">Iniciar sesión</a>
+    </div>
+
+    <div id="ei-panel" class="hidden space-y-8">
+      <nav class="flex flex-wrap gap-2 text-sm" aria-label="Secciones">
+        <a href="#carrusel-editor" class="b-pestana">🎠 Carrusel</a>
+        <a href="#accesos-editor" class="b-pestana">🧩 Cuadros de acceso</a>
+        <a href="#entrenar" class="b-pestana">🧠 Entrenar el buscador</a>
+      </nav>
+
+      <!-- 1) CARRUSEL -->
+      <section id="carrusel-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">🎠 Carrusel del inicio <span id="ban-n" class="text-sm font-semibold text-slate-500"></span></h2>
+        <p class="text-xs text-slate-500 mt-1 mb-4">Cada diapositiva tiene una <b>vista previa en vivo</b>. El diseño es el mismo de siempre; aquí cambias textos, el botón y <b>a dónde lleva</b>, los colores (paletas listas o tus dos colores), los íconos y, si quieres, una <b>imagen</b> (por ejemplo, hecha con IA): <i>al lado</i> (reemplaza el arte de la derecha; mejor PNG o WebP con fondo transparente) o <i>de fondo</i> (cubre toda la diapositiva y se oscurece para que el texto se lea). Máx. 1 MB después de comprimir.</p>
+        <div id="ban-lista" class="space-y-5"></div>
+        <button type="button" id="ban-nuevo" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">➕ Nueva diapositiva</button>
+      </section>
+
+      <!-- 2) CUADROS DE ACCESO -->
+      <section id="accesos-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">🧩 Cuadros de acceso <span id="ac-n" class="text-sm font-semibold text-slate-500"></span></h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">Los cuadros de colores de arriba del inicio. Ícono (emoji) <b>o una imagen propia</b>, título corto, color y <b>a dónde lleva</b>: una categoría de comercios o de anuncios, <b>un comercio específico</b>, una búsqueda o una acción. Desactiva «Visible» para esconder sin borrar.</p>
+        <div id="acc-vista" class="accesos-fila bg-indigo-700 rounded-2xl p-3 mb-3" aria-label="Vista previa"></div>
+        <div id="acc-lista" class="space-y-2"></div>
+        <button type="button" id="acc-nuevo" class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">➕ Nuevo cuadro</button>
+      </section>
+
+      <!-- 3) ENTRENAR EL BUSCADOR -->
+      <section id="entrenar" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">🧠 Entrenar el buscador</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">Enséñale al buscador qué categorías responden a ciertas palabras, aunque nadie las haya buscado todavía. Ej.: <i>arepas, salchichas, aguacate</i> → Frutas y verduras, Tiendas, Supermercados. Las palabras se agregan a las <b>palabras clave</b> de cada categoría marcada (también las ves y editas en los paneles de categorías). Lo que la gente busca y no encuentra sigue en <a href="moderacion.html#busquedas" class="underline text-indigo-600">Moderación</a>.</p>
+        <label class="block text-xs font-bold text-slate-500">Palabras (separadas por coma)
+          <input id="en-palabras" maxlength="300" placeholder="arepas, salchichas, aguacate" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm"></label>
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <p class="text-xs font-bold text-slate-500">Marca las categorías que deben aparecer con esas palabras</p>
+          <input id="en-filtro" type="search" placeholder="🔎 Filtrar categorías…" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 mt-2">
+          <fieldset class="border border-slate-200 rounded-xl p-3"><legend class="text-xs font-black text-indigo-900 px-1">🏪 Comercios</legend><div id="en-cats-c" class="grid grid-cols-1 gap-1 max-h-64 overflow-auto"></div></fieldset>
+          <fieldset class="border border-slate-200 rounded-xl p-3"><legend class="text-xs font-black text-indigo-900 px-1">📢 Anuncios</legend><div id="en-cats-a" class="grid grid-cols-1 gap-1 max-h-64 overflow-auto"></div></fieldset>
+        </div>
+        <button type="button" id="en-ensenar" class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-lg text-sm">🧠 Enseñar</button>
+
+        <div class="mt-6 border-t border-slate-100 pt-4">
+          <label class="block text-xs font-bold text-slate-500">🔍 Probar: ¿qué entiende el buscador con…?
+            <input id="en-probar" maxlength="60" placeholder="Ej. aguacate" class="mt-0.5 w-full sm:w-80 border border-slate-300 p-2.5 rounded-lg font-normal text-sm"></label>
+          <div id="en-resultado" class="mt-2 text-sm text-slate-600"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <datalist id="dl-comercios"></datalist>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=42"></script>
+  <script src="data.js?v=42"></script>
+  <script src="buscador.js?v=42"></script>
+  <script src="editar-inicio.js?v=42"></script>
+</body>
+</html>

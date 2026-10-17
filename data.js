@@ -254,9 +254,12 @@ async function subirFotos(fotos) {
     for (const f of fotos) {
       if (!String(f).startsWith("data:")) { resultado.push(f); continue; }
       const blob = await (await fetch(f)).blob();
-      const ruta = `${usuarioActual.id}/${crypto.randomUUID()}.jpg`;
+      // jpg por defecto; png/webp cuando la imagen trae transparencia (ej. arte hecho con IA para el carrusel)
+      const tipo = /^data:image\/(png|webp)/.exec(String(f));
+      const ext = tipo ? tipo[1] : "jpg";
+      const ruta = `${usuarioActual.id}/${crypto.randomUUID()}.${ext}`;
       const { error } = await sb.storage.from(BUCKET_FOTOS).upload(ruta, blob, {
-        contentType: "image/jpeg", cacheControl: "31536000", upsert: false
+        contentType: tipo ? "image/" + tipo[1] : "image/jpeg", cacheControl: "31536000", upsert: false
       });
       if (error) throw error;
       subidas.push(ruta);
@@ -836,12 +839,16 @@ const ACCESOS_RESPALDO = [
 ];
 const COLORES_ACCESO = ["morado", "menta", "amarillo", "rosa", "azul", "naranja"];
 // Solo páginas propias o «#publicar» (la base aplica la misma regla)
-const destinoAccesoValido = d => d === "#publicar" || /^[a-z0-9-]+\.html([?#][A-Za-z0-9=&%:_.#+-]*)?$/.test(String(d || ""));
+const destinoAccesoValido = d => d === "#publicar" || d === "#contenido" || /^[a-z0-9-]+\.html([?#][A-Za-z0-9=&%:_.#+-]*)?$/.test(String(d || ""));
 
 async function cargarAccesosInicio() {
   try {
-    const { data, error } = await sb.from("accesos_inicio").select("id, titulo, icono, color, destino, orden, activo")
+    let { data, error } = await sb.from("accesos_inicio").select("id, titulo, icono, color, destino, orden, activo, imagen_url")
       .eq("activo", true).order("orden").order("id");
+    if (error && /imagen_url/.test(error.message || "")) {   // aún sin el SQL 21
+      ({ data, error } = await sb.from("accesos_inicio").select("id, titulo, icono, color, destino, orden, activo")
+        .eq("activo", true).order("orden").order("id"));
+    }
     if (error || !data || !data.length) return ACCESOS_RESPALDO;
     return data.filter(a => destinoAccesoValido(a.destino));
   } catch (e) { return ACCESOS_RESPALDO; }
@@ -861,6 +868,86 @@ async function guardarAccesoDB(fila) {
 async function borrarAccesoDB(id) {
   const { error } = await sb.from("accesos_inicio").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ---------- Carrusel del inicio editable (fase 2Z.2, supabase/21_editor_inicio.sql) ----------
+// Paletas profesionales (las mismas clases .c1… del carrusel de siempre + tres nuevas)
+const PALETAS_BANNER = {
+  indigo: { nombre: "Índigo y violeta", clase: "c1" }, verde: { nombre: "Verde azulado", clase: "c2" },
+  azul: { nombre: "Azul cielo", clase: "c3" }, naranja: { nombre: "Atardecer", clase: "c4" },
+  rosa: { nombre: "Rosa y coral", clase: "c5" }, oscuro: { nombre: "Noche elegante", clase: "c6" },
+  dorado: { nombre: "Dorado", clase: "c7" }, menta: { nombre: "Menta fresca", clase: "c8" },
+  personal: { nombre: "Mis dos colores", clase: "" }
+};
+const esColorHex = c => /^#[0-9a-fA-F]{6}$/.test(String(c || ""));
+
+async function cargarBanners() {
+  try {
+    const { data, error } = await sb.from("banners_inicio").select("*").eq("activo", true).order("orden").order("id");
+    if (error || !data || !data.length) return null;           // null = se queda el carrusel de siempre
+    return data.filter(b => destinoAccesoValido(b.destino));
+  } catch (e) { return null; }
+}
+async function cargarBannersAdmin() {
+  const { data, error } = await sb.from("banners_inicio").select("*").order("orden").order("id");
+  if (error) throw error;
+  return data || [];
+}
+async function guardarBannerDB(fila) {
+  if (!destinoAccesoValido(fila.destino)) throw new Error("El botón debe llevar a una página del sitio, a Publicar o a los anuncios");
+  const { id, ...resto } = fila;
+  const { error } = id ? await sb.from("banners_inicio").update(resto).eq("id", id) : await sb.from("banners_inicio").insert(resto);
+  if (error) throw error;
+}
+async function borrarBannerDB(id) {
+  const { error } = await sb.from("banners_inicio").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Una diapositiva con el MISMO diseño del carrusel de siempre (sirve al inicio y a la vista previa del editor)
+function bannerHTML(b, i, total) {
+  const pal = PALETAS_BANNER[b.paleta] ? b.paleta : "indigo";
+  const estilos = [];
+  if (pal === "personal" && esColorHex(b.color1) && esColorHex(b.color2)) estilos.push(`background:linear-gradient(120deg, ${b.color1}, ${b.color2})`);
+  const img = urlSegura(b.imagen_url || "");
+  const fondo = img && b.imagen_modo === "fondo";
+  if (fondo) estilos.push(`background-image:linear-gradient(90deg, rgba(15,23,42,.82), rgba(15,23,42,.35)), url('${img.replace(/'/g, "%27")}');background-size:cover;background-position:center`);
+  const clase = pal === "personal" ? (estilos.length ? "" : "c1") : PALETAS_BANNER[pal].clase;
+  const cta = b.destino === "#publicar"
+    ? `<button type="button" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro" data-texto-fijo class="car-cta">${esc(b.boton)}</button>`
+    : `<a href="${esc(b.destino)}" class="car-cta">${esc(b.boton)}</a>`;
+  const arte = fondo ? "" : img
+    ? `<div class="car-arte" aria-hidden="true"><img src="${esc(img)}" alt="" class="car-img" loading="lazy"></div>`
+    : `<div class="car-arte" aria-hidden="true"><div class="car-tarjeta"><span class="car-e1">${esc(b.icono1 || "⭐")}</span>${b.icono2 ? `<span class="car-e2">${esc(b.icono2)}</span>` : ""}</div></div>`;
+  return `<article class="car-slide ${clase} ${fondo ? "car-con-fondo" : ""}" ${estilos.length ? `style="${estilos.join(";")}"` : ""} role="group" aria-roledescription="diapositiva" aria-label="${i + 1} de ${total}">
+    <div class="car-texto">
+      ${b.etiqueta ? `<p class="car-etiqueta">${esc(b.etiqueta)}</p>` : ""}
+      <h3 class="car-titulo">${esc(b.titulo)}</h3>
+      ${b.texto ? `<p class="car-sub">${esc(b.texto)}</p>` : ""}
+      ${cta}
+    </div>
+    ${arte}
+  </article>`;
+}
+
+// ---------- Entrenar el buscador a mano (fase 2Z.2) ----------
+// Agrega palabras a las «palabras clave» de una categoría (tipo "c" = comercios, "a" = anuncios), sin repetir.
+async function agregarPalabrasCategoria(tipo, id, palabras) {
+  const tabla = tipo === "a" ? "categorias_anuncio" : "categorias_comercio";
+  const lista = tipo === "a" ? CATEGORIAS : TIPOS_COMERCIO;
+  const { data, error } = await sb.from(tabla).select("palabras").eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Esa categoría no existe en la base (ejecuta el SQL de categorías)");
+  const actuales = String(data.palabras || "").split(",").map(x => x.trim()).filter(Boolean);
+  const nuevas = palabras.map(x => String(x).trim().toLowerCase()).filter(x => x.length >= 2 && !actuales.some(a => normalizar(a) === normalizar(x)));
+  if (!nuevas.length) return 0;
+  const texto = actuales.concat(nuevas).join(", ");
+  if (texto.length > 1500) throw new Error("La categoría ya tiene demasiadas palabras clave (máx. 1500 letras). Quita algunas en su panel");
+  const { error: e2 } = await sb.from(tabla).update({ palabras: texto }).eq("id", id);
+  if (e2) throw e2;
+  const t = lista.find(x => x.id === id);
+  if (t) t.palabras = texto;
+  return nuevas.length;
 }
 
 // ---------- Perfil público del vendedor (fase 2C.5, supabase/18_perfil_vendedor.sql) ----------
@@ -953,15 +1040,10 @@ async function borrarBusqueda(termino) {
 }
 // «Enseñar»: agrega la palabra buscada a las palabras clave de una categoría de comercio
 async function ensenarPalabraCategoria(catId, palabra) {
-  await cargarCategoriasComercio();
-  const t = TIPOS_COMERCIO.find(x => x.id === catId);
-  if (!t) throw new Error("Esa categoría no existe");
-  const actuales = String(t.palabras || "").split(",").map(x => x.trim()).filter(Boolean);
-  if (!actuales.some(x => normalizar(x) === normalizar(palabra))) actuales.push(palabra.trim());
-  const palabras = actuales.join(", ").slice(0, 1500);
-  const { error } = await sb.from("categorias_comercio").update({ palabras }).eq("id", catId);
-  if (error) throw error;
-  t.palabras = palabras;
+  // catId: "c:farmacia" (comercios), "a:musica" (anuncios) o solo "farmacia" (comercios, como antes)
+  const [tipo, id] = String(catId).includes(":") ? String(catId).split(":") : ["c", catId];
+  if (tipo === "c") await cargarCategoriasComercio(); else await cargarCategoriasAnuncio();
+  await agregarPalabrasCategoria(tipo, id, [palabra]);
   await marcarBusquedaResuelta(palabra);
 }
 

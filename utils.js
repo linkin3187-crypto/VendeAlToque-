@@ -425,7 +425,9 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarComoLl
 
 // ---------- Fotos ----------
 // Reduce la foto a 800 px de ancho (JPEG) antes de subirla: ahorra espacio y datos.
-function comprimir(file) {
+// opciones (fase 2Z.2): { max: ancho máximo en px (800 por defecto), transparencia: true → webp/png (conserva el fondo transparente) }
+function comprimir(file, opciones = {}) {
+  const max = opciones.max || 800;
   return new Promise((ok, mal) => {
     const lector = new FileReader();
     lector.onerror = () => mal(new Error("No se pudo leer la imagen"));
@@ -433,11 +435,14 @@ function comprimir(file) {
       const img = new Image();
       img.onerror = () => mal(new Error("Imagen no válida"));
       img.onload = () => {
-        const esc_ = Math.min(1, 800 / img.width);
+        const esc_ = Math.min(1, max / img.width);
         const cv = document.createElement("canvas");
         cv.width = Math.round(img.width * esc_); cv.height = Math.round(img.height * esc_);
         cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-        ok(cv.toDataURL("image/jpeg", 0.8));
+        if (opciones.transparencia) {
+          const w = cv.toDataURL("image/webp", 0.85);
+          ok(w.startsWith("data:image/webp") ? w : cv.toDataURL("image/png"));
+        } else ok(cv.toDataURL("image/jpeg", 0.8));
       };
       img.src = lector.result;
     };

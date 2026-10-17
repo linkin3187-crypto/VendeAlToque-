@@ -426,10 +426,18 @@ function renderizarCategorias() {
 // ---------- Accesos en cuadros del inicio (fase 2Z.1) ----------
 function accesoHTML(x) {
   const color = COLORES_ACCESO.includes(x.color) ? x.color : "morado";
-  const dentro = `<span class="acceso-cuadro acc-${color}" aria-hidden="true"><span class="acceso-ico">${esc(x.icono || "⭐")}</span></span><span class="acceso-txt">${esc(x.titulo)}</span>`;
+  const img = urlSegura(x.imagen_url || "");
+  const dentro = `<span class="acceso-cuadro acc-${color}${img ? " con-imagen" : ""}" aria-hidden="true">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="acceso-ico">${esc(x.icono || "⭐")}</span>`}</span><span class="acceso-txt">${esc(x.titulo)}</span>`;
   // «Publica gratis» abre el formulario aquí mismo (pide cuenta si hace falta)
   if (x.destino === "#publicar") return `<button type="button" class="acceso" data-abrir="modal-publicar" data-requiere-login data-auth-modo="registro">${dentro}</button>`;
   return `<a class="acceso" href="${esc(x.destino)}">${dentro}</a>`;
+}
+// Carrusel desde la base (fase 2Z.2). Sin filas, se queda el de siempre (está escrito en index.html).
+function pintarBanners(lista) {
+  if (!lista || !lista.length) return;
+  $("car-pista").innerHTML = lista.map((b, i) => bannerHTML(b, i, lista.length)).join("");
+  if (window.carruselRefrescar) window.carruselRefrescar();
+  if (typeof actualizarUIAuth === "function") actualizarUIAuth();
 }
 function pintarAccesos(lista) { $("accesos").innerHTML = lista.filter(x => destinoAccesoValido(x.destino)).map(accesoHTML).join(""); }
 
@@ -643,7 +651,7 @@ function actualizarUIAuth() {
   // Fase 2Y: en celular el texto corto; con cuenta deja de titilar (ya está adentro)
   $("btn-publicar-corto").innerHTML = usuarioActual ? "Publicar" : 'Regístrate<span class="enc-gratis"> gratis</span>';
   $("btn-publicar-header").classList.toggle("btn-parpadeo", !usuarioActual);
-  document.querySelectorAll(".car-cta[data-auth-modo]").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
+  document.querySelectorAll(".car-cta[data-auth-modo]:not([data-texto-fijo])").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
   if (usuarioActual) {
     btn.textContent = "👤 " + usuarioActual.nombre.split(" ")[0] + " ▾";
     btn.title = usuarioActual.nombre;
@@ -1301,6 +1309,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 1) La pantalla se arma ya (categorías, mapa, eventos); los esqueletos se ven mientras llegan los datos.
   pintarAccesos(ACCESOS_RESPALDO);                 // al instante; luego los de la base
   cargarAccesosInicio().then(pintarAccesos);
+  cargarBanners().then(pintarBanners);
   renderizarCategorias();
   iniciarMapa();
   iniciarEventos();

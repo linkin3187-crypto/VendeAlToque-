@@ -340,3 +340,23 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Carrusel ~20 % más bajo** (celular ≈ 258 px de alto en vez de ≈ 320; computador ≈ 218 px en vez de ≈ 272), con textos un poco más pequeños.
 - Más adelante un cuadro podrá ser un **comercio patrocinado** (Fase 5).
 - **Revertir:** PR → **Revert**. La tabla puede quedarse.
+
+## Fase 2Z.2 · Editor del inicio (carrusel, cuadros y entrenar el buscador)
+
+**SQL:** `supabase/21_editor_inicio.sql` — antes o después de fusionar (sin él, el inicio se ve igual que hoy). Debe terminar mostrando 1 fila: `diapositivas = 5 | cuadros_con_imagen = true`. Es repetible. Requiere el 20.
+
+**Archivos nuevos:** `editar-inicio.html` + `editar-inicio.js`. **Cambian:** `carrusel.js` (se puede refrescar con diapositivas nuevas), `app.js`, `data.js`, `utils.js` (`comprimir` con tamaño y transparencia), `index.html` (enlace en la barra de moderador), `moderacion.html`/`moderacion.js` (los cuadros pasan al editor; «Enseñar» también a categorías de anuncios), `styles.css`. Caché `?v=42`.
+
+**Dónde:** barra de moderador del inicio → **🎨 Editar inicio**, o Moderación → «🎨 Editar inicio y buscador». Solo moderadores.
+
+**1. 🎠 Carrusel** (tabla `banners_inicio`; se cargan las 5 diapositivas de hoy): por diapositiva, vista previa en vivo con el mismo diseño de siempre y estos campos: etiqueta, título, texto, texto del botón, **a dónde lleva el botón** (menú), **colores** (8 paletas: Índigo y violeta, Verde azulado, Azul cielo, Atardecer, Rosa y coral, Noche elegante, Dorado, Menta fresca; o «Mis dos colores» con selector), ícono grande y pequeño, **imagen opcional** (al lado, ideal PNG/WebP con fondo transparente hecho con IA; o de fondo, se oscurece para que el texto se lea), orden y visible. ➕ Nueva diapositiva, 🗑️ Borrar. Si la tabla está vacía, el inicio muestra el carrusel de siempre.
+
+**2. 🧩 Cuadros de acceso:** lo de la 2Z.1 + **imagen propia** (reemplaza el emoji) y **«Lleva a» con menú**: Categoría de comercios · Categoría de anuncios · **Un comercio específico** (lo eliges escribiendo su nombre) · Una búsqueda · Publicar · Bajar a los anuncios · Recomendar · Registrar negocio · Directorio · Todos los anuncios · Otra página del sitio. Nunca enlaces a otros sitios.
+
+**Menú de destinos → enlace que se guarda:** categoría de comercios `comercios.html?tipo=…` · categoría de anuncios `anuncios.html?cat=…` · comercio `tienda.html?id=…` · búsqueda `buscar.html?q=…` · publicar `#publicar` · bajar a los anuncios `#contenido`.
+
+**3. 🧠 Entrenar el buscador:** escribes palabras («arepas, salchichas, aguacate»), marcas categorías de **comercios y de anuncios** (con filtro) y tocas **Enseñar**: se agregan a sus palabras clave (sin repetir; máx. 1500 letras por categoría). **Probar** muestra qué categorías entiende el buscador para una palabra. En Moderación, «Lo que la gente busca y no encuentra» ahora deja enseñar también a categorías de anuncios.
+
+**Imágenes:** se comprimen en el navegador (carrusel de fondo hasta 1600 px, al lado 700 px, cuadros 300 px) y se suben a Storage (máx. 1 MB).
+
+**Revertir:** PR → **Revert**. Las tablas pueden quedarse.

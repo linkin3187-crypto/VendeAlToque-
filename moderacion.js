@@ -329,62 +329,6 @@ async function accionReporteCalificacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
-// ---------- Accesos en cuadros del inicio (fase 2Z.1) ----------
-let accesosAdmin = [];
-function filaAcceso(x) {
-  return `<div class="border border-slate-200 rounded-xl p-2.5 ${x.activo === false ? "opacity-60" : ""}" data-acc="${x.id || ""}">
-    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_7rem_1.6fr_4rem_auto] gap-2 items-end">
-      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(x.icono || "⭐")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
-      <label class="text-[11px] font-bold text-slate-500">Título<input data-c="titulo" maxlength="24" value="${esc(x.titulo || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
-      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Color<select data-c="color" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${COLORES_ACCESO.map(c => `<option value="${c}" ${c === x.color ? "selected" : ""}>${c}</option>`).join("")}</select></label>
-      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Lleva a<input data-c="destino" maxlength="160" value="${esc(x.destino || "")}" placeholder="comercios.html?tipo=farmacia" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs"></label>
-      <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(x.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
-      <div class="flex items-center gap-2">
-        <label class="text-xs flex items-center gap-1"><input type="checkbox" data-c="activo" ${x.activo === false ? "" : "checked"}> Visible</label>
-        <button type="button" data-acc-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Guardar</button>
-        ${x.id ? '<button type="button" data-acc-borrar class="text-slate-400 hover:text-red-600 text-sm" aria-label="Borrar cuadro">🗑️</button>' : ""}
-      </div>
-    </div>
-  </div>`;
-}
-function vistaAccesos() {
-  const visibles = accesosAdmin.filter(x => x.activo !== false && destinoAccesoValido(x.destino));
-  $("acc-vista").classList.toggle("hidden", !visibles.length);
-  $("acc-vista").innerHTML = visibles.map(x => `<span class="acceso"><span class="acceso-cuadro acc-${COLORES_ACCESO.includes(x.color) ? x.color : "morado"}"><span class="acceso-ico">${esc(x.icono)}</span></span><span class="acceso-txt">${esc(x.titulo)}</span></span>`).join("");
-}
-async function pintarAccesosAdmin() {
-  try {
-    accesosAdmin = await cargarAccesosAdmin();
-    $("ac-n").textContent = "(" + accesosAdmin.length + ")";
-    $("acc-lista").innerHTML = accesosAdmin.map(filaAcceso).join("");
-    vistaAccesos();
-  } catch (e) {
-    $("acc-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/20_accesos_inicio.sql.</p>';
-  }
-}
-async function accionAcceso(e) {
-  const f = e.target.closest("[data-acc]");
-  if (!f) return;
-  const id = Number(f.dataset.acc) || null;
-  if (e.target.closest("[data-acc-borrar]")) {
-    if (!confirm("¿Borrar este cuadro? (Si solo quieres esconderlo, quita «Visible»)")) return;
-    try { await borrarAccesoDB(id); mostrarToast("🗑️ Cuadro borrado"); await pintarAccesosAdmin(); } catch (err) { mostrarToast(mensajeError(err), "error"); }
-    return;
-  }
-  const b = e.target.closest("[data-acc-guardar]");
-  if (!b) return;
-  const v = k => f.querySelector(`[data-c="${k}"]`);
-  const titulo = v("titulo").value.trim();
-  if (titulo.length < 2) { mostrarToast("Escribe un título corto", "error"); return; }
-  b.disabled = true;
-  try {
-    await guardarAccesoDB({ id, titulo, icono: v("icono").value.trim() || "⭐", color: v("color").value,
-      destino: v("destino").value.trim(), orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked });
-    mostrarToast("✅ Cuadro guardado: ya se ve en el inicio");
-    await pintarAccesosAdmin();
-  } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; }
-}
-
 // ---------- Categorías de anuncios (fase 2Z, supabase/19_categorias_anuncio.sql) ----------
 let catsAnuncioAdmin = [];
 let usosCatAnuncio = {};
@@ -521,6 +465,13 @@ async function accionRecomendacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// Categorías para «Enseñar»: de comercios y de anuncios (fase 2Z.2), valor "c:id" / "a:id"
+function opcionesEnsenar() {
+  const c = TIPOS_COMERCIO.filter(t => t.activo !== false).map(t => `<option value="c:${esc(t.id)}">${t.icono} ${esc(t.nombre)}</option>`).join("");
+  const a = CATEGORIAS.filter(x => x.id !== "todos" && x.activo !== false).map(x => `<option value="a:${esc(x.id)}">${x.icono} ${esc(x.nombre)}</option>`).join("");
+  return `<option value="">Elige la categoría…</option><optgroup label="🏪 Comercios">${c}</optgroup><optgroup label="📢 Anuncios">${a}</optgroup>`;
+}
+
 // ---------- Lo que la gente busca y no encuentra (fase 2W, supabase/16_busquedas.sql) ----------
 function filaBusqueda(b) {
   return `<article class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-wrap items-center gap-2" data-busq="${esc(b.termino)}">
@@ -529,7 +480,7 @@ function filaBusqueda(b) {
         <a href="buscar.html?q=${encodeURIComponent(b.termino)}" target="_blank" rel="noopener" class="text-xs font-semibold text-indigo-600 underline ml-1">probar</a></p>
       <p class="text-xs text-slate-500">${b.veces_sin_result} ${b.veces_sin_result === 1 ? "vez" : "veces"} sin resultados · buscada ${b.veces} en total · última: ${esc(fechaCorta(b.ultima_vez))}</p>
     </div>
-    <select data-busq-cat aria-label="Categoría a la que corresponde" class="basis-full sm:basis-auto min-w-0 border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white sm:max-w-[13rem]">${opcionesCategoria("", "Elige la categoría…")}</select>
+    <select data-busq-cat aria-label="Categoría a la que corresponde" class="basis-full sm:basis-auto min-w-0 border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white sm:max-w-[13rem]">${opcionesEnsenar()}</select>
     <button type="button" data-bacc="ensenar" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">🧠 Enseñar</button>
     <button type="button" data-bacc="resuelta" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg" title="Ya se resolvió (ej. agregaste el comercio)">✔ Ya está</button>
     <button type="button" data-bacc="borrar" class="text-sm text-slate-400 hover:text-red-600 px-2" title="Borrar (spam o sin sentido)" aria-label="Borrar">🗑️</button>
@@ -563,8 +514,9 @@ async function accionBusqueda(e) {
       if (!cat) { mostrarToast("Primero elige la categoría a la que corresponde", "error"); return; }
       b.disabled = true;
       await ensenarPalabraCategoria(cat, termino);
-      const t = TIPOS_COMERCIO.find(x => x.id === cat);
-      mostrarToast(`🧠 Aprendido: «${termino}» ahora encuentra ${t ? t.nombre : cat}`);
+      const [tipo, id] = cat.split(":");
+      const t = (tipo === "a" ? CATEGORIAS : TIPOS_COMERCIO).find(x => x.id === id);
+      mostrarToast(`🧠 Aprendido: «${termino}» ahora encuentra ${t ? t.nombre : id}`);
     } else if (b.dataset.bacc === "resuelta") {
       b.disabled = true; await marcarBusquedaResuelta(termino); mostrarToast("✔ Marcada como resuelta");
     } else if (b.dataset.bacc === "borrar") {
@@ -722,12 +674,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
-  $("acc-lista").addEventListener("click", accionAcceso);
-  $("acc-nuevo").addEventListener("click", () => {
-    $("acc-lista").insertAdjacentHTML("beforeend", filaAcceso({ titulo: "", icono: "⭐", color: "morado", destino: "", orden: 500, activo: true }));
-    $("acc-lista").lastElementChild.querySelector("[data-c=titulo]").focus();
-  });
-  pintarAccesosAdmin();
   $("ca-lista").addEventListener("click", accionCatAnuncio);
   $("ca-crear").addEventListener("click", crearCatAnuncio);
   cargarAnuncios().finally(pintarCatsAnuncio);

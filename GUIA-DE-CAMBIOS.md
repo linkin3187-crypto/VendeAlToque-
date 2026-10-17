@@ -375,3 +375,14 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2Z.4 · Movimiento sutil en los cuadros de acceso
+
+**SQL:** ninguno. **Cambia:** `styles.css` (al final). Caché `?v=44` en todas las páginas.
+
+- El ícono de cada cuadro **flota e inclina despacio en 3D**, igual que el ícono del carrusel. Cada cuadro va a su propio ritmo para que no se muevan todos a la vez.
+- Los cuadros con **imagen propia** hacen un acercamiento muy leve.
+- Al pasar el mouse el ícono se queda quieto; si el celular tiene activado «reducir movimiento», no se mueve nada.
+- Solo usa CSS (no gasta batería ni hace más lenta la página).
+
+**Ajustar:** en `styles.css`, `acc-flota` (4.6s = velocidad; `-4px` = cuánto sube). **Revertir:** PR → **Revert**.
+

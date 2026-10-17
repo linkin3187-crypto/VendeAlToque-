@@ -495,9 +495,16 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
   background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28);
 }
 .acceso-chip:hover { background: rgba(255, 255, 255, .24); }
-@media (max-width: 379px) {   /* celulares angostos: que quepan marca, «Entrar» y «Regístrate» */
+@media (max-width: 419px) {   /* celulares: que quepan marca, «Entrar» y «Regístrate» sin montarse */
   .enc-gratis { display: none; }
   .enc-logo { font-size: 1.3rem; }
   #acciones-encabezado #btn-auth { padding-left: .6rem; padding-right: .6rem; }
   #acciones-encabezado #btn-publicar-header { padding-left: .7rem; padding-right: .7rem; }
 }
+
+/* ===== Fase 2Z · Categorías sobre fondo claro (sección «Anuncios y clasificados» del inicio) ===== */
+.cats-claras .categoria-btn { background: #fff !important; color: #475569 !important; border: 1px solid #cbd5e1; box-shadow: none !important; }
+.cats-claras .categoria-btn:hover { border-color: #818cf8; color: #4338ca !important; }
+.cats-claras .categoria-btn[aria-pressed="true"] { background: #4f46e5 !important; color: #fff !important; border-color: #4f46e5; }
+.cats-claras .subcat-btn { background: #f1f5f9 !important; color: #475569 !important; }
+.cats-claras .subcat-btn[aria-pressed="true"] { background: #fde047 !important; color: #1e1b4b !important; }

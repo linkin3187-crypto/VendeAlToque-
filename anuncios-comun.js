@@ -9,8 +9,8 @@ let categoriaActiva = "todos";
 let subcategoriaActiva = "";               // "" = todas las de la categoría
 
 function chipsCategoriasHTML() {
-  return CATEGORIAS.map(c =>
-    `<button type="button" data-cat="${esc(c.id)}" class="categoria-btn px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">${c.icono} ${esc(c.nombre)}</button>`
+  return categoriasAnuncioVisibles().map(c =>
+    `<button type="button" data-cat="${esc(c.id)}" aria-pressed="false" class="categoria-btn px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">${c.icono} ${esc(c.nombre)}</button>`
   ).join("");
 }
 
@@ -28,6 +28,7 @@ function marcarCategoriaActiva() {
   pintarSubcategorias();
   document.querySelectorAll(".categoria-btn").forEach(btn => {
     const activa = btn.dataset.cat === categoriaActiva;
+    btn.setAttribute("aria-pressed", String(activa));
     btn.classList.toggle("bg-white", activa);
     btn.classList.toggle("text-indigo-700", activa);
     btn.classList.toggle("shadow-sm", activa);

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=39" />
+  <link rel="stylesheet" href="styles.css?v=40" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -86,11 +86,6 @@
         <a href="registrar-negocio.html" class="acceso-chip">➕ Registrar mi negocio</a>
         <a href="recomendar.html" class="acceso-chip">🤝 Recomendar un comercio</a>
       </div>
-
-      <!-- Las categorías se dibujan desde CATEGORIAS (data.js) -->
-      <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
-      <!-- Subcategorías de la categoría elegida (se dibujan desde SUBCATEGORIAS en data.js) -->
-      <div id="chips-subcategorias" class="hidden flex gap-2 overflow-x-auto pb-1 pt-1 custom-scrollbar" aria-label="Subcategorías"></div>
     </div>
   </section>
 
@@ -151,8 +146,26 @@
     </div>
   </section>
 
+  <!-- SECCIÓN «ANUNCIOS Y CLASIFICADOS» (fase 2Z): título → categorías → filtros → anuncios y mapa -->
+  <div id="seccion-anuncios" class="max-w-7xl mx-auto px-4 pt-5 scroll-mt-32">
+    <div class="flex flex-wrap items-end justify-between gap-x-3 gap-y-1 mb-2.5">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-indigo-900 leading-tight whitespace-nowrap">📢 Anuncios y clasificados</h2>
+        <p class="text-xs text-slate-500">Lo que vende y ofrece la gente de tu barrio: productos, servicios, empleos e inmuebles</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="contador-resultados" class="text-sm text-slate-500" aria-live="polite"></span>
+        <a href="anuncios.html" id="link-ver-todos" class="text-sm text-indigo-600 font-semibold hover:underline whitespace-nowrap">Ver todos →</a>
+      </div>
+    </div>
+    <!-- Las categorías se dibujan desde la base (categorias_anuncio) o la lista de respaldo de data.js -->
+    <div id="chips-categorias" class="cats-claras flex gap-2 overflow-x-auto pb-2 custom-scrollbar" aria-label="Categorías de anuncios"></div>
+    <!-- Subcategorías de la categoría elegida -->
+    <div id="chips-subcategorias" class="cats-claras hidden flex gap-2 overflow-x-auto pb-1 custom-scrollbar" aria-label="Subcategorías"></div>
+  </div>
+
   <!-- FILTROS (compactos) -->
-  <div class="max-w-7xl mx-auto px-4 pt-4">
+  <div class="max-w-7xl mx-auto px-4 pt-2">
     <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
       <!-- Compactos (fase 2W.1): fila 1 = dónde · fila 2 = cerca, orden y más filtros · luego los filtros activos con ✕.
            En computador todo cabe en una sola fila. Los id no cambian: el código es el mismo. -->
@@ -234,13 +247,6 @@
 
     <!-- LISTA: primero en celular y a la izquierda en computador -->
     <section class="lg:col-span-7 min-w-0">
-      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
-        <h2 class="text-lg font-bold whitespace-nowrap">📢 Publicaciones</h2>
-        <div class="flex items-center gap-3">
-          <span id="contador-resultados" class="text-sm text-slate-500" aria-live="polite"></span>
-          <a href="anuncios.html" id="link-ver-todos" class="text-sm text-indigo-600 font-semibold hover:underline whitespace-nowrap">Ver todos →</a>
-        </div>
-      </div>
 
       <div id="seccion-mis-anuncios" class="hidden mb-6">
         <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
@@ -617,13 +623,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=39"></script>
-  <script src="data.js?v=39"></script>
-  <script src="foro.js?v=39"></script>
-  <script src="carrusel.js?v=39"></script>
-  <script src="buscador.js?v=39"></script>
-  <script src="anuncios-comun.js?v=39"></script>
-  <script src="app.js?v=39"></script>
-  <script src="navegacion.js?v=39"></script>
+  <script src="utils.js?v=40"></script>
+  <script src="data.js?v=40"></script>
+  <script src="foro.js?v=40"></script>
+  <script src="carrusel.js?v=40"></script>
+  <script src="buscador.js?v=40"></script>
+  <script src="anuncios-comun.js?v=40"></script>
+  <script src="app.js?v=40"></script>
+  <script src="navegacion.js?v=40"></script>
 </body>
 </html>

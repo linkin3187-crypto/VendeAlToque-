@@ -329,6 +329,90 @@ async function accionReporteCalificacion(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- Categorías de anuncios (fase 2Z, supabase/19_categorias_anuncio.sql) ----------
+let catsAnuncioAdmin = [];
+let usosCatAnuncio = {};
+const idDesdeNombre = n => slugRef(n).replace(/-/g, "_").slice(0, 30);
+
+// «Pinturas, Tejidos» → [{id, nombre}] conservando el id de las que ya existían (por nombre)
+function subcategoriasDesdeTexto(texto, actuales) {
+  const usados = new Set();
+  return String(texto || "").split(",").map(x => x.trim()).filter(x => x.length >= 2).slice(0, 20).map(nombre => {
+    const previa = (actuales || []).find(s => normalizar(s.nombre) === normalizar(nombre));
+    let id = previa ? previa.id : idDesdeNombre(nombre);
+    if (id.length < 2) id = "sub_" + (usados.size + 1);
+    while (usados.has(id)) id = (id + "_2").slice(0, 30);
+    usados.add(id);
+    return { id, nombre: nombre.slice(0, 40) };
+  });
+}
+
+function filaCatAnuncio(c) {
+  const subs = Array.isArray(c.subcategorias) ? c.subcategorias : [];
+  const n = usosCatAnuncio[c.id] || 0;
+  return `<div class="border border-slate-200 rounded-xl p-2.5 ${c.activo === false ? "opacity-60" : ""}" data-cat-a="${esc(c.id)}">
+    <div class="grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1.4fr_1.4fr_4.5rem_auto] gap-2 items-end">
+      <label class="text-[11px] font-bold text-slate-500">Ícono<input data-c="icono" maxlength="8" value="${esc(c.icono)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg text-center text-lg"></label>
+      <label class="text-[11px] font-bold text-slate-500">Nombre <span class="font-normal text-slate-400">(${esc(c.id)} · ${n} activo${n === 1 ? "" : "s"})</span><input data-c="nombre" maxlength="40" value="${esc(c.nombre)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Subcategorías<textarea data-c="subs" rows="1" maxlength="600" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(subs.map(s => s.nombre).join(", "))}</textarea></label>
+      <label class="text-[11px] font-bold text-slate-500 col-span-2 sm:col-span-1">Palabras clave<textarea data-c="palabras" rows="1" maxlength="1500" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-xs">${esc(c.palabras || "")}</textarea></label>
+      <label class="text-[11px] font-bold text-slate-500">Orden<input data-c="orden" type="number" value="${Number(c.orden) || 100}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>
+      <div class="flex items-center gap-2">
+        <label class="text-xs flex items-center gap-1"><input type="checkbox" data-c="activo" ${c.activo === false ? "" : "checked"}> Activa</label>
+        <button type="button" data-ca-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Guardar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function pintarCatsAnuncio() {
+  try {
+    catsAnuncioAdmin = await cargarCategoriasAnuncioAdmin();
+    if (!catsAnuncioAdmin.length) throw new Error("vacía");
+    usosCatAnuncio = {};
+    baseDatosAnuncios.forEach(a => { usosCatAnuncio[a.categoria] = (usosCatAnuncio[a.categoria] || 0) + 1; });
+    $("ca-n").textContent = "(" + catsAnuncioAdmin.length + ")";
+    $("ca-lista").innerHTML = catsAnuncioAdmin.map(filaCatAnuncio).join("");
+  } catch (e) {
+    $("ca-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/19_categorias_anuncio.sql.</p>';
+  }
+}
+
+async function accionCatAnuncio(e) {
+  const b = e.target.closest("[data-ca-guardar]");
+  if (!b) return;
+  const f = b.closest("[data-cat-a]");
+  const v = k => f.querySelector(`[data-c="${k}"]`);
+  const actual = catsAnuncioAdmin.find(c => c.id === f.dataset.catA) || {};
+  const nombre = v("nombre").value.trim();
+  if (nombre.length < 2) { mostrarToast("Escribe el nombre de la categoría", "error"); return; }
+  b.disabled = true;
+  try {
+    await guardarCategoriaAnuncioDB({ id: f.dataset.catA, nombre, icono: v("icono").value.trim() || "📦",
+      palabras: v("palabras").value.trim(), subcategorias: subcategoriasDesdeTexto(v("subs").value, actual.subcategorias),
+      orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked });
+    mostrarToast("✅ Categoría guardada");
+    await pintarCatsAnuncio();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; }
+}
+
+async function crearCatAnuncio() {
+  const nombre = $("ca-nuevo-nombre").value.trim();
+  const id = idDesdeNombre(nombre);
+  if (nombre.length < 2 || id.length < 2) { mostrarToast("Escribe el nombre de la nueva categoría", "error"); return; }
+  if (id === "todos" || catsAnuncioAdmin.some(c => c.id === id)) { mostrarToast("Ya existe una categoría con ese nombre", "error"); return; }
+  const b = $("ca-crear"); b.disabled = true;
+  try {
+    await guardarCategoriaAnuncioDB({ id, nombre, icono: $("ca-nuevo-icono").value.trim() || "📦", palabras: nombre.toLowerCase(),
+      subcategorias: subcategoriasDesdeTexto($("ca-nuevo-subs").value, []), orden: 500, activo: true });
+    $("ca-nuevo-nombre").value = ""; $("ca-nuevo-subs").value = "";
+    mostrarToast("✅ Categoría creada: ya aparece al publicar y en los filtros");
+    await pintarCatsAnuncio();
+  } catch (err) {
+    mostrarToast(/categorias_anuncio|does not exist/i.test(err.message || "") ? "Primero ejecuta supabase/19_categorias_anuncio.sql" : mensajeError(err), "error");
+  } finally { b.disabled = false; }
+}
+
 // ---------- Comercios recomendados por la gente (fase 2X, supabase/17_recomendaciones.sql) ----------
 function tarjetaRecomendacion(r) {
   const t = TIPOS_COMERCIO.find(x => x.id === r.tipo);
@@ -582,6 +666,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
+  $("ca-lista").addEventListener("click", accionCatAnuncio);
+  $("ca-crear").addEventListener("click", crearCatAnuncio);
+  cargarAnuncios().finally(pintarCatsAnuncio);
   $("recom-lista").addEventListener("click", accionRecomendacion);
   $("recom-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   pintarRecomendaciones();

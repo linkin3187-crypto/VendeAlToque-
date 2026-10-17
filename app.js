@@ -416,11 +416,19 @@ function quitarZona() {
 function renderizarCategorias() {
   $("chips-categorias").innerHTML = chipsCategoriasHTML();
 
-  $("form-categoria").innerHTML = CATEGORIAS.filter(c => c.id !== "todos").map(c =>
+  const elegida = $("form-categoria").value;
+  $("form-categoria").innerHTML = CATEGORIAS.filter(c => c.id !== "todos" && (c.activo !== false || c.id === elegida)).map(c =>
     `<option value="${esc(c.id)}">${c.icono} ${esc(c.nombre)}</option>`
   ).join("");
+  if (elegida && CATEGORIAS.some(c => c.id === elegida)) $("form-categoria").value = elegida;
   marcarCategoriaActiva();
 }
+// Llegaron las categorías de la base (fase 2Z): se repintan chips y el select del formulario
+document.addEventListener("categorias:anuncio", () => {
+  const sub = $("form-subcategoria") ? $("form-subcategoria").value : "";
+  renderizarCategorias();
+  actualizarSubcategoriasForm(sub);
+});
 
 function actualizarSubcategoriasForm(valor) {
   const subs = SUBCATEGORIAS[$("form-categoria").value] || [];

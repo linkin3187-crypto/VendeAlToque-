@@ -468,3 +468,16 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**. Las columnas pueden quedarse.
 
+## Fase 2Z.9 · «Ubicado» bien explicado y foto con cámara o galería
+
+**SQL:** ninguno. **Cambian:** `tienda.js`, `mi-tienda.js`, `comercios.js`, `registrar-negocio.html/.js`, `recomendar.html/.js`, `styles.css`. Caché `?v=49`.
+
+**¿Qué pasa al aprobar «sin verificar»?** El negocio queda **«Ubicado»** y **SÍ aparece en el mapa y en el directorio**, igual que los importados. Lo único que espera la verificación (WhatsApp o llamada) son **sus productos** (la vitrina): así nadie puede usar una tienda falsa para vender. Antes el mensaje decía «Solo tú ves…» y parecía que el negocio entero estaba escondido.
+
+- **Dueño** (Mi tienda y su ficha): «📍 Tu negocio YA aparece en el mapa y en el directorio con la etiqueta «Ubicado». Lo que aún no ven los clientes son tus productos…».
+- **Visitantes** (ficha de cualquier comercio «Ubicado», importado o nuevo): aviso arriba «⚠️ Comercio «Ubicado», aún sin verificar… Llama o escribe antes de ir».
+- **Directorio:** «⚠️ Aún sin verificar que exista aquí: confirma antes de ir».
+- **Foto:** al registrar un negocio y al recomendar uno hay dos botones: **📷 Tomar foto** (abre la cámara) y **🖼️ Elegir de la galería** (para fotos profesionales). Si cancela uno, no se borra la foto ya elegida.
+
+**Revertir:** PR → **Revert**.
+

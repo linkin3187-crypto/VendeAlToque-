@@ -146,9 +146,13 @@ function renderizarTienda(c, ps) {
   const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esModerador());
   if (!publica) {
     const av = $("t-aviso-privado");
-    av.textContent = gestiona
-      ? "👀 Solo tú ves la vitrina de esta tienda: se publicará cuando el comercio esté activo y verificado por MercaFree."
-      : "ℹ️ Dato de mapa: MercaFree aún no ha verificado este comercio. Confirma horario y dirección antes de ir. Si lo conoces, tu opinión ayuda a otros.";
+    // Fase 2Z.9: el comercio sí es público (como los importados); explica qué significa «Ubicado»
+    av.className = "mb-3 text-sm aviso-ubicado rounded-xl px-3 py-2";
+    av.innerHTML = gestiona
+      ? (c.activo
+        ? "📍 <b>Este negocio ya aparece en el mapa y el directorio</b> como «Ubicado». Los <b>productos</b> de esta vitrina solo los ves tú hasta que MercaFree lo verifique por WhatsApp o llamada."
+        : "🙈 Este negocio está oculto: solo lo ves tú (o un moderador).")
+      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero MercaFree todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
   pintarProductos();

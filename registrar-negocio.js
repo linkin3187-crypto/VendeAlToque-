@@ -28,8 +28,7 @@ function aplicarModo() {
     ? "Marca tu casa o la zona donde trabajas. <b>Nadie verá este punto exacto</b>: al publicar lo corremos unas cuadras."
     : "Arrastra el pin hasta la <b>puerta de tu negocio</b> (o toca el mapa). Si estás ahí ahora, pulsa «Estoy en mi negocio»: ayuda a que te aprobemos más rápido.";
   $("rn-foto-txt").textContent = casa ? "📷 Foto de tus productos o tu logo *" : "📷 Foto de la fachada *";
-  $("rn-foto-ayuda").textContent = casa ? "No subas fotos de tu casa ni de tu calle: mejor tus productos, tu marca o tu moto de domicilios." : "Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.";
-  if (casa) $("rn-foto").removeAttribute("capture"); else $("rn-foto").setAttribute("capture", "environment");
+  $("rn-foto-ayuda").textContent = casa ? "No subas fotos de tu casa ni de tu calle: mejor tus productos, tu marca o tu moto de domicilios." : "Que se vea la entrada y el nombre o número del local. Puedes tomarla ahora o subir una foto profesional de tu galería. Sin clientes ni menores.";
 }
 
 function error(msg) {
@@ -176,12 +175,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   aplicarModo();
   $("rn-gps").addEventListener("click", usarGps);
   $("rn-buscar").addEventListener("click", buscarDireccion);
-  $("rn-foto").addEventListener("change", async ev => {
+  ["rn-foto", "rn-foto-cam"].forEach(id => $(id).addEventListener("change", async ev => {
     const f = ev.target.files[0];
-    if (!f) { fotoData = null; $("rn-foto-prev").classList.add("hidden"); return; }
-    try { fotoData = await comprimir(f); $("rn-foto-prev").src = fotoData; $("rn-foto-prev").classList.remove("hidden"); }
+    if (!f) return;   // canceló: se conserva la foto que ya tenía
+    try { fotoData = await comprimir(f); $("rn-foto-prev").src = fotoData; $("rn-foto-prev").classList.remove("hidden"); $("rn-foto-nombre").textContent = "✅ Foto lista. Si quieres cambiarla, toca otra vez «Tomar foto» o «Elegir de la galería»."; }
     catch (err) { fotoData = null; mostrarToast("No se pudo leer la imagen", "error"); }
-  });
+  }));
   $("rn-sig").addEventListener("click", () => { const m = validarPaso(paso); error(m); if (!m) { paso++; pintarPasos(); window.scrollTo({ top: 0 }); } });
   $("rn-atras").addEventListener("click", () => { error(""); paso--; pintarPasos(); });
   $("form-registro").addEventListener("submit", enviar);

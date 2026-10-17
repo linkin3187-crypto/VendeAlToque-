@@ -6,7 +6,7 @@
   <meta name="description" content="Recomienda los comercios que visitas: tiendas, restaurantes, bares, puestos de comida y más. Ayuda a que tu barrio aparezca en el mapa.">
   <title>Recomendar un comercio | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=48">
+  <link rel="stylesheet" href="styles.css?v=49">
 </head>
 <body class="bg-slate-50 text-slate-800" data-nav="recomendar">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -54,8 +54,11 @@
               <input id="rc-dir" maxlength="160" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white" placeholder="Ej. Calle 50 # 40-12, frente al parque"></label>
           </div>
 
-          <label class="block text-xs font-bold text-slate-500">Foto de la fachada <span class="font-normal">(opcional, ayuda mucho)</span>
-            <input id="rc-foto" type="file" accept="image/*" capture="environment" class="mt-1 block w-full text-sm font-normal"></label>
+          <div class="text-xs font-bold text-slate-500">Foto de la fachada <span class="font-normal">(opcional, ayuda mucho)</span>
+            <span class="foto-botones mt-1.5">
+                <label class="foto-btn"><input type="file" id="rc-foto-cam" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+                <label class="foto-btn"><input type="file" id="rc-foto" accept="image/*" class="sr-only">🖼️ Elegir de la galería</label>
+              </span></div>
           <img id="rc-foto-prev" alt="Vista previa de la foto" class="hidden w-40 h-28 object-cover rounded-lg border border-slate-200">
 
           <label class="block text-xs font-bold text-slate-500">¿Por qué lo recomiendas? <span class="font-normal">(opcional)</span>
@@ -81,9 +84,9 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=48"></script>
-  <script src="data.js?v=48"></script>
-  <script src="navegacion.js?v=48"></script>
-  <script src="recomendar.js?v=48"></script>
+  <script src="utils.js?v=49"></script>
+  <script src="data.js?v=49"></script>
+  <script src="navegacion.js?v=49"></script>
+  <script src="recomendar.js?v=49"></script>
 </body>
 </html>

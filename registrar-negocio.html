@@ -7,7 +7,7 @@
   <title>Registrar mi negocio | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=48">
+  <link rel="stylesheet" href="styles.css?v=49">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -95,8 +95,14 @@
 
           <div data-paso="3" class="hidden space-y-3">
             <label class="block text-xs font-bold text-slate-500"><span id="rn-foto-txt">📷 Foto de la fachada *</span>
-              <span id="rn-foto-ayuda" class="block font-normal text-slate-500 mt-0.5">Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.</span>
-              <input type="file" id="rn-foto" accept="image/*" capture="environment" class="mt-1 block w-full text-xs font-normal"></label>
+              <span id="rn-foto-ayuda" class="block font-normal text-slate-500 mt-0.5">Que se vea la entrada y el nombre o número del local. Puedes tomarla ahora o subir una foto profesional de tu galería. Sin clientes ni menores.</span>
+            </label>
+              <!-- Fase 2Z.9: tomar la foto con la cámara O subir una foto profesional desde la galería -->
+              <span class="foto-botones mt-1.5">
+                <label class="foto-btn"><input type="file" id="rn-foto-cam" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+                <label class="foto-btn"><input type="file" id="rn-foto" accept="image/*" class="sr-only">🖼️ Elegir de la galería</label>
+              </span>
+              <span id="rn-foto-nombre" class="block text-[11px] text-slate-500 mt-1"></span>
             <img id="rn-foto-prev" alt="Vista previa de la fachada" class="hidden w-full max-h-56 object-cover rounded-xl border border-slate-200">
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
               <b>¿Cómo confirmamos que eres tú?</b> Un moderador revisa la foto y las señales de seguridad, y te escribe al WhatsApp o te llama para confirmar el nombre y la dirección. No pedimos cédula ni documentos por aquí.
@@ -127,8 +133,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=48"></script>
-  <script src="data.js?v=48"></script>
-  <script src="registrar-negocio.js?v=48"></script>
+  <script src="utils.js?v=49"></script>
+  <script src="data.js?v=49"></script>
+  <script src="registrar-negocio.js?v=49"></script>
 </body>
 </html>

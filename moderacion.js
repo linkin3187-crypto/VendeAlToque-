@@ -597,6 +597,7 @@ function tarjetaNegocio(n) {
       <div class="min-w-0">
         <h3 class="font-bold leading-tight">${esc(n.nombre)}</h3>
         <p class="text-xs text-slate-500">${esc(etiquetaTipo(n.tipo))} · ${esc(mun ? mun.nombre : "")}</p>
+        ${n.modo_atencion && n.modo_atencion !== "local" ? `<p class="mt-1"><span class="badge-modo ${n.modo_atencion}">${MODOS_ATENCION[n.modo_atencion].icono} ${MODOS_ATENCION[n.modo_atencion].nombre}</span> <span class="text-[11px] text-slate-500">La dirección es privada: en el mapa saldrá solo la zona. La foto puede ser de sus productos.</span></p>` : ""}
         <p class="text-sm text-slate-600 mt-1">📍 ${esc(n.direccion)}</p>
         ${n.horario ? `<p class="text-xs text-slate-500">🕒 ${esc(n.horario)}</p>` : ""}
         <p class="text-xs text-slate-400 mt-0.5">Enviado por ${esc(n.solicitante ? n.solicitante.nombre : "—")} · ${esc(fechaCorta(n.creado_en))}</p>

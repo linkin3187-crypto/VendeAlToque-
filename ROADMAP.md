@@ -97,7 +97,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | **2Z.5 Categorías de comercios en Moderación** ✅ *(hecho, sin SQL: panel «🏪 Categorías de comercios» junto al de anuncios (crear, renombrar, ícono, palabras, orden, activar); «Elegir 😀» compartido en iconos.js para todas las categorías)* | ✅ |
 | **2Z.6 Categorías nuevas** ✅ *(hecho, **SQL 22**: Minimercados, Inmobiliarias, Concesionarios; «Autos» → Vehículos uniendo Motos; Apartaestudios y Bodegas en Inmuebles; palabras clave para licorería, tienda de barrio, fruver y supermercados; sin subcategorías en comercios por ahora)* | ✅ |
 | **2Z.7 Formulario de Inmuebles y Vehículos** ✅ *(hecho, **SQL 23**: campos propios para inmueble, carro, moto y repuesto con obligatorios; precio /mes·/día·/noche; chips en tarjetas; ficha completa; avisos antifraude; filtros venta/arriendo, habitaciones, estrato, modelo y km; buscador por marca)* | ✅ |
-| **2Z.8 «Atiendo desde casa / local / solo domicilios»** 🔜 *(ubicación aproximada para quien vende desde su casa)* | 🔜 |
+| **2Z.8 ¿Cómo atiendes?** ✅ *(hecho, **SQL 24**: local / desde casa / solo domicilios; el servidor corre el punto 150–350 m y borra la dirección pública; registro con dirección privada y foto de productos; Mi tienda, admin y moderación; ficha y directorio sin «Cómo llegar» y con «Pedir por WhatsApp»)* | ✅ |
 | **2Q Calificación de vendedores (anuncios)** ⏳ *(después: solo cuando el vendedor marque «vendido a…», para evitar reseñas falsas)* | ⏳ |
 
 **Niveles de sello (cada uno dice exactamente qué significa y la fecha):**

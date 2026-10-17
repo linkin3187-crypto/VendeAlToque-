@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Mi tienda | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=47">
+  <link rel="stylesheet" href="styles.css?v=48">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -73,6 +73,14 @@
             <span class="font-normal text-slate-400">Con este formato mostramos «Abierto ahora» automáticamente.</span></label>
           <label class="block text-xs font-bold text-slate-500">Foto de portada
             <div class="flex items-center gap-2 mt-1"><img id="mt-foto-prev" alt="" class="hidden w-14 h-14 rounded object-cover"><input type="file" id="mt-foto" accept="image/*" class="text-xs font-normal"></div></label>
+          <!-- Fase 2Z.8: cómo atiende (desde casa / solo domicilios = zona aproximada y sin dirección pública) -->
+          <fieldset id="mt-modo" class="space-y-2">
+            <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo atiendes?</legend>
+            <label class="modo-opcion"><input type="radio" name="mt-modo" value="local"> <span><b>🏬 Local abierto al público</b><small>Se ve el punto exacto y la dirección.</small></span></label>
+            <label class="modo-opcion"><input type="radio" name="mt-modo" value="casa"> <span><b>🏠 Atiendo desde mi casa</b><small>Solo una zona aproximada en el mapa y sin dirección. Tú la das por WhatsApp.</small></span></label>
+            <label class="modo-opcion"><input type="radio" name="mt-modo" value="domicilio"> <span><b>🛵 Solo domicilios</b><small>Solo la zona donde trabajas, sin dirección.</small></span></label>
+            <p id="mt-modo-aviso" class="hidden text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-2">Al guardar, tu punto en el mapa se correrá unas cuadras y se borrará la dirección pública. Si luego vuelves a «Local abierto», pide a un moderador que ubique de nuevo tu puerta («Pedir cambio de nombre o dirección»).</p>
+          </fieldset>
           <fieldset class="text-sm space-y-2">
             <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo entregas?</legend>
             <label class="flex items-center gap-2"><input type="checkbox" id="mt-recoge"> Se recoge en el local</label>
@@ -105,8 +113,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=47"></script>
-  <script src="data.js?v=47"></script>
-  <script src="mi-tienda.js?v=47"></script>
+  <script src="utils.js?v=48"></script>
+  <script src="data.js?v=48"></script>
+  <script src="mi-tienda.js?v=48"></script>
 </body>
 </html>

@@ -199,7 +199,8 @@ let ultimoAnalisis = { q: null, ids: null };
 function comercioCoincide(c, texto) {
   const nombreCat = id => { const t = TIPOS_COMERCIO.find(z => z.id === id); return t ? t.nombre : ""; };
   const cats = [c.tipo].concat(c.tiposExtra || []);
-  const campos = [c.nombre, c.direccion, c.ciudad, c.descripcion].concat(cats.map(nombreCat)).join(" ");
+  const modo = typeof MODOS_ATENCION !== "undefined" && c.modoAtencion && c.modoAtencion !== "local" ? MODOS_ATENCION[c.modoAtencion].nombre + " " + MODOS_ATENCION[c.modoAtencion].corto : "";   // «desde casa», «domicilios»
+  const campos = [c.nombre, c.direccion, c.ciudad, c.descripcion, modo].concat(cats.map(nombreCat)).join(" ");
   const tokens = tokensBusq(texto);
   if (!tokens.length) return normBusq(campos).includes(normBusq(texto));
   if (todasLasPalabras(campos, tokens)) return true;

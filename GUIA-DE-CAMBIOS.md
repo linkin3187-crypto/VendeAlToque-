@@ -447,3 +447,24 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**. La columna `detalles` puede quedarse.
 
+## Fase 2Z.8 · ¿Cómo atiendes? (local · desde casa · solo domicilios)
+
+**SQL:** `supabase/24_modo_atencion.sql` — antes o después de fusionar (sin él todo sigue como hoy; solo no se pueden registrar negocios «desde casa»). Debe terminar mostrando 1 fila: `modo_en_comercios = true | modo_en_solicitudes = true | privacidad = true`. Es repetible.
+
+**Cambian:** `registrar-negocio.html/.js`, `mi-tienda.html/.js`, `admin-comercios.js`, `moderacion.js`, `tienda.js`, `comercios.js`, `app.js` (ventanita del mapa), `data.js`, `buscador.js`, `styles.css`. Caché `?v=48`.
+
+| Opción | Qué se ve en público |
+|---|---|
+| 🏬 **Local abierto al público** (por defecto) | Punto exacto, dirección y «Cómo llegar», como siempre |
+| 🏠 **Atiendo desde mi casa** | Etiqueta «Desde casa», **zona aproximada** (círculo en el mapa), **sin dirección** ni «Cómo llegar»; botón «💬 Pedir por WhatsApp» |
+| 🛵 **Solo domicilios** | Igual: solo la zona donde trabaja, sin dirección |
+
+- **La privacidad la hace el servidor** (no se puede saltar): al crear el comercio, al cambiar a «casa/domicilio» o si alguien mueve el pin, el punto público se corre **al azar entre 150 y 350 m** y la dirección pública se borra. La dirección exacta queda solo en la solicitud, que ven los moderadores.
+- **Registro:** nuevo paso «¿Cómo atiendes?». Si es desde casa: la dirección dice «privada, solo para el moderador», el botón dice «Estoy en mi casa» y la foto pedida es **de los productos o el logo** (nunca de la casa).
+- **Moderación:** la solicitud muestra la etiqueta y recuerda que la dirección es privada. Al aprobar, el comercio hereda su forma de atender.
+- **Mi tienda:** el dueño puede cambiarla (avisa que el punto se correrá). Si vuelve a «Local», un moderador debe ubicar otra vez su puerta.
+- **Comercios (admin):** selector «¿Cómo atiende?» en cada comercio y etiqueta «zona aproximada».
+- **Buscador:** «desde casa» o «domicilios» encuentra estos negocios.
+
+**Revertir:** PR → **Revert**. Las columnas pueden quedarse.
+

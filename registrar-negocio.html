@@ -7,7 +7,7 @@
   <title>Registrar mi negocio | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=47">
+  <link rel="stylesheet" href="styles.css?v=48">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -59,6 +59,13 @@
               <input id="rn-nombre" maxlength="100" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Miscelánea El Parche"></label>
             <label class="block text-xs font-bold text-slate-500">Tipo de negocio *
               <select id="rn-tipo" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <!-- Fase 2Z.8: cómo atiende (los que venden desde casa no muestran su dirección) -->
+            <fieldset id="rn-modo" class="space-y-2">
+              <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo atiendes? *</legend>
+              <label class="modo-opcion"><input type="radio" name="rn-modo" value="local" checked> <span><b>🏬 Tengo local abierto al público</b><small>Tienda, puesto o local donde la gente puede llegar. Se ve el punto exacto en el mapa.</small></span></label>
+              <label class="modo-opcion"><input type="radio" name="rn-modo" value="casa"> <span><b>🏠 Atiendo desde mi casa</b><small>Postres, comidas, ropa, arreglos… En el mapa solo se ve una <b>zona aproximada</b> y nunca tu dirección.</small></span></label>
+              <label class="modo-opcion"><input type="radio" name="rn-modo" value="domicilio"> <span><b>🛵 Solo domicilios</b><small>No recibes clientes: llevas los pedidos. Se ve solo la zona donde trabajas.</small></span></label>
+            </fieldset>
             <label class="block text-xs font-bold text-slate-500">Ciudad *
               <select id="rn-muni" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
             <div class="grid sm:grid-cols-2 gap-3">
@@ -75,7 +82,8 @@
           </div>
 
           <div data-paso="2" class="hidden space-y-3">
-            <label class="block text-xs font-bold text-slate-500">Dirección *
+            <p id="rn-privado" class="hidden text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3">🔒 <b>Tu dirección es privada.</b> Solo la ve el moderador para confirmar tu negocio. En el mapa público aparecerá una <b>zona aproximada</b> (a unas cuadras de tu casa) y los clientes te escriben por WhatsApp.</p>
+            <label class="block text-xs font-bold text-slate-500"><span id="rn-dir-txt">Dirección *</span>
               <input id="rn-dir" maxlength="160" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Cra 43A # 36 Sur-10"></label>
             <div class="flex flex-wrap gap-2">
               <button type="button" id="rn-gps" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-3 py-2 rounded-lg">📍 Estoy en mi negocio</button>
@@ -86,8 +94,8 @@
           </div>
 
           <div data-paso="3" class="hidden space-y-3">
-            <label class="block text-xs font-bold text-slate-500">📷 Foto de la fachada *
-              <span class="block font-normal text-slate-500 mt-0.5">Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.</span>
+            <label class="block text-xs font-bold text-slate-500"><span id="rn-foto-txt">📷 Foto de la fachada *</span>
+              <span id="rn-foto-ayuda" class="block font-normal text-slate-500 mt-0.5">Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.</span>
               <input type="file" id="rn-foto" accept="image/*" capture="environment" class="mt-1 block w-full text-xs font-normal"></label>
             <img id="rn-foto-prev" alt="Vista previa de la fachada" class="hidden w-full max-h-56 object-cover rounded-xl border border-slate-200">
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
@@ -119,8 +127,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=47"></script>
-  <script src="data.js?v=47"></script>
-  <script src="registrar-negocio.js?v=47"></script>
+  <script src="utils.js?v=48"></script>
+  <script src="data.js?v=48"></script>
+  <script src="registrar-negocio.js?v=48"></script>
 </body>
 </html>

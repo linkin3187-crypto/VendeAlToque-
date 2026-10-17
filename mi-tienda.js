@@ -32,6 +32,8 @@ function pintarDatos() {
   $("mt-wa").value = actual.whatsapp.replace(/^57/, "");
   $("mt-tel").value = actual.telefono;
   $("mt-hor").value = actual.horario;
+  document.querySelectorAll('input[name="mt-modo"]').forEach(r => { r.checked = r.value === (actual.modoAtencion || "local"); });
+  $("mt-modo-aviso").classList.add("hidden");
   $("mt-recoge").checked = actual.recoge;
   $("mt-dom").checked = actual.domicilio;
   $("mt-dom-info").value = actual.domicilioInfo;
@@ -54,6 +56,9 @@ async function guardarNegocio(e) {
       horario: nul($("mt-hor").value), recoge: $("mt-recoge").checked, domicilio: $("mt-dom").checked,
       domicilio_info: $("mt-dom").checked ? nul($("mt-dom-info").value) : null
     };
+    // Cómo atiende (SQL 24): solo se envía si es distinto de «local» o si cambió
+    const modo = (document.querySelector('input[name="mt-modo"]:checked') || {}).value || "local";
+    if (modo !== (actual.modoAtencion || "local")) cambios.modo_atencion = modo;
     // Categorías: solo se envían si existe la tabla nueva (SQL 15); si no, el resto se guarda igual
     if (TIPOS_COMERCIO.some(t => t.palabras)) {
       cambios.tipo = $("mt-tipo").value;
@@ -163,6 +168,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("mt-selector-caja").classList.remove("hidden");
   }
   $("form-negocio").addEventListener("submit", guardarNegocio);
+  $("mt-modo").addEventListener("change", () => {
+    const modo = (document.querySelector('input[name="mt-modo"]:checked') || {}).value;
+    $("mt-modo-aviso").classList.toggle("hidden", !(actual && modo !== (actual.modoAtencion || "local")));
+  });
   $("mt-productos").addEventListener("click", accionProducto);
   $("mt-productos").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("mt-agregar").addEventListener("click", () => {

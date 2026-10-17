@@ -711,6 +711,15 @@ async function guardarCategoriaDB(fila) {
 
 let comercios = [];   // lista pública de comercios activos
 
+// ¿Cómo atiende? (fase 2Z.8 · supabase/24_modo_atencion.sql). «casa» y «domicilio» muestran solo una zona
+// aproximada en el mapa y sin dirección: el servidor corre el punto 150–350 m y borra la dirección pública.
+const MODOS_ATENCION = {
+  local:     { icono: "🏬", corto: "Local abierto",     nombre: "Local abierto al público", ayuda: "Tienes un local o puesto donde la gente puede llegar. Se muestra el punto exacto en el mapa." },
+  casa:      { icono: "🏠", corto: "Desde casa",        nombre: "Atiendo desde mi casa",     ayuda: "Vendes o atiendes desde tu casa. En el mapa solo se ve una zona aproximada (a unas cuadras) y nunca tu dirección: tú la das por WhatsApp a quien quieras." },
+  domicilio: { icono: "🛵", corto: "Solo domicilios",   nombre: "Solo domicilios",           ayuda: "No recibes clientes: llevas los pedidos. Se muestra solo la zona donde trabajas, sin dirección." }
+};
+const esUbicacionAprox = c => c && (c.modoAtencion === "casa" || c.modoAtencion === "domicilio");
+
 function filaAComercio(r) {
   const m = municipios.find(x => x.id === r.municipio_id) || {};
   return {
@@ -725,6 +734,7 @@ function filaAComercio(r) {
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
     nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
     tiposExtra: Array.isArray(r.tipos_extra) ? r.tipos_extra : [],
+    modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
     // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
     calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0
   };
@@ -1211,23 +1221,30 @@ async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
 async function crearNegocioPendiente(d) {
   if (!usuarioActual) throw new Error("Inicia sesión para registrar tu negocio");
   const foto = await subirFotoComercio(d.foto);
-  const { error } = await sb.from("negocios_pendientes").insert({
+  const fila = {
     nombre: d.nombre.trim(), tipo: d.tipo, municipio_id: d.municipioId, direccion: d.direccion.trim(),
     lat: +d.lat.toFixed(6), lng: +d.lng.toFixed(6), telefono: d.telefono || null, whatsapp: d.whatsapp || null,
     horario: d.horario || null, descripcion: d.descripcion || null, foto_fachada_url: foto,
     gps_cerca: !!d.gpsCerca, acepta_terminos: true
-  });
+  };
+  if (d.modo && d.modo !== "local") fila.modo_atencion = d.modo;   // «local» es el valor por defecto
+  const { error } = await sb.from("negocios_pendientes").insert(fila);
+  if (error && /modo_atencion/.test(error.message || "")) throw new Error("Para registrar un negocio que atiende desde casa o solo a domicilio falta un ajuste del sistema. Elige «Local abierto» o inténtalo más tarde.");
   if (error) throw error;
 }
 
 // Mis solicitudes (la persona) o todas las pendientes (moderadores; con estado)
 async function cargarNegociosPendientes(estado, soloMias) {
-  let q = sb.from("negocios_pendientes")
-    .select("id, nombre, tipo, municipio_id, direccion, lat, lng, telefono, whatsapp, horario, descripcion, foto_fachada_url, gps_cerca, estado, motivo_rechazo, comercio_id, solicitante_id, creado_en, solicitante:perfiles!solicitante_id(nombre)")
-    .order("creado_en", { ascending: false }).limit(100);
-  if (estado) q = q.eq("estado", estado);
-  if (soloMias && usuarioActual) q = q.eq("solicitante_id", usuarioActual.id);
-  const { data, error } = await q;
+  const consulta = extra => {
+    let q = sb.from("negocios_pendientes")
+      .select("id, nombre, tipo, municipio_id, direccion, lat, lng, telefono, whatsapp, horario, descripcion, foto_fachada_url, gps_cerca, estado, motivo_rechazo, comercio_id, solicitante_id, creado_en" + extra + ", solicitante:perfiles!solicitante_id(nombre)")
+      .order("creado_en", { ascending: false }).limit(100);
+    if (estado) q = q.eq("estado", estado);
+    if (soloMias && usuarioActual) q = q.eq("solicitante_id", usuarioActual.id);
+    return q;
+  };
+  let { data, error } = await consulta(", modo_atencion");
+  if (error && /modo_atencion/.test(error.message || "")) ({ data, error } = await consulta(""));   // sin el SQL 24
   if (error) throw error;
   return data || [];
 }

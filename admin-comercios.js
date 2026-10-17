@@ -232,6 +232,9 @@ async function guardarSeleccion() {
 function urlMapa(c) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(c.lat + "," + c.lng); }
 function urlMapaNombre(c) { return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(c.nombre + " " + c.ciudad + " Antioquia"); }
 
+// Fase 2Z.8: «desde casa» y «solo domicilios» → el servidor corre el punto y borra la dirección pública
+const opcionesModo = actual => Object.entries(MODOS_ATENCION).map(([k, m]) => `<option value="${k}" ${k === (actual || "local") ? "selected" : ""}>${m.icono} ${esc(m.nombre)}</option>`).join("");
+
 function filaEditor(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
   const campo = (k, etq, v, ph) => `<label class="text-xs font-bold text-slate-500">${etq}
@@ -239,6 +242,7 @@ function filaEditor(c) {
   return `<article class="border border-slate-200 rounded-xl p-3" data-id="${c.id}">
     <div class="flex flex-wrap items-center gap-2 mb-2">
       <b>${esc(t ? t.icono : "📍")} ${esc(c.nombre)}</b>
+      ${esUbicacionAprox(c) ? `<span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${MODOS_ATENCION[c.modoAtencion].corto} · zona aproximada</span>` : ""}
       <span class="text-xs text-slate-500">${esc(c.ciudad)}</span>
       <span class="text-xs ${(SELLOS[c.nivel] || SELLOS[1]).clase} px-2 py-0.5 rounded-full font-semibold">${c.nivel >= 2 ? "✔ " : ""}${esc((SELLOS[c.nivel] || SELLOS[1]).corto)}${c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</span>
       ${selloVencido(c) ? '<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-semibold">⚠ Vencida: repetir verificación</span>' : ""}
@@ -261,6 +265,8 @@ function filaEditor(c) {
         <select data-extra class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria((c.tiposExtra || [])[0] || "", "— Ninguna —")}</select></label>
       <label class="text-xs font-bold text-slate-500">Secundaria 2 (opcional)
         <select data-extra class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria((c.tiposExtra || [])[1] || "", "— Ninguna —")}</select></label>
+      <label class="text-xs font-bold text-slate-500">¿Cómo atiende?
+        <select data-k="modo_atencion" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesModo(c.modoAtencion)}</select></label>
       <label class="text-xs font-bold text-slate-500 sm:col-span-2">Foto del local
         <div class="flex items-center gap-2 mt-0.5">
           ${c.foto ? `<img src="${esc(urlSegura(c.foto))}" alt="" class="w-10 h-10 rounded object-cover">` : ""}
@@ -713,6 +719,7 @@ async function accionEditor(e) {
       mostrarToast("🗑️ Comercio borrado");
     } else {
       const val = k => fila.querySelector(`[data-k="${k}"]`);
+      const c0 = listaAdmin.find(x => x.id === id) || {};
       const texto = k => { const v = val(k).value.trim(); return v || null; };
       const nombre = texto("nombre");
       if (!nombre || nombre.length < 2) throw new Error("El nombre es obligatorio");
@@ -720,6 +727,7 @@ async function accionEditor(e) {
       const cambios = {
         nombre, direccion: texto("direccion"), telefono: texto("telefono"), horario: texto("horario"),
         activo: val("activo").checked, tipo,
+        ...(val("modo_atencion") && (val("modo_atencion").value !== "local" || c0.modoAtencion !== "local") ? { modo_atencion: val("modo_atencion").value } : {}),
         tipos_extra: [...new Set([...fila.querySelectorAll("[data-extra]")].map(s => s.value).filter(v => v && v !== tipo))]
       };
       const archivo = fila.querySelector("[data-foto]").files[0];

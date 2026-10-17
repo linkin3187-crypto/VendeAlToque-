@@ -91,8 +91,14 @@ function renderizarTienda(c, ps) {
   }
   if (c.descripcion) { $("t-desc").textContent = c.descripcion; $("t-desc").classList.remove("hidden"); }
   const fila = (id, txt) => { if (txt) { $(id).querySelector("span").textContent = txt; $(id).classList.remove("hidden"); } };
-  fila("t-dir", c.direccion); fila("t-hor", c.horario);
-  const entrega = [c.recoge ? "Recoger en el local" : "", c.domicilio ? "Domicilio" + (c.domicilioInfo ? " (" + c.domicilioInfo + ")" : "") : ""].filter(Boolean).join(" · ");
+  const aprox = esUbicacionAprox(c);   // fase 2Z.8: atiende desde casa o solo a domicilio
+  if (aprox) {
+    const m = MODOS_ATENCION[c.modoAtencion];
+    $("t-sello").insertAdjacentHTML("afterend", ` <span class="badge-modo ${c.modoAtencion}">${m.icono} ${esc(m.corto)}</span>`);
+  }
+  fila("t-dir", aprox ? (c.modoAtencion === "casa" ? "Atiende desde casa: en el mapa se ve solo la zona. Pide la dirección o el punto de entrega por WhatsApp." : "Solo domicilios: escribe por WhatsApp para pedir.") : c.direccion);
+  fila("t-hor", c.horario);
+  const entrega = [c.recoge ? (aprox ? "Recoger en un punto acordado por WhatsApp" : "Recoger en el local") : "", c.domicilio ? "Domicilio" + (c.domicilioInfo ? " (" + c.domicilioInfo + ")" : "") : ""].filter(Boolean).join(" · ");
   fila("t-ent", entrega);
 
   const ab = estaAbierto(c.horario);
@@ -111,6 +117,7 @@ function renderizarTienda(c, ps) {
   const ll = $("t-llegar");
   ll.href = urlGoogleMaps(c.lat, c.lng);
   Object.assign(ll.dataset, { comoLlegar: "", lat: c.lat, lng: c.lng, nombre: c.nombre, ciudad: c.ciudad || "" });
+  if (aprox) ll.classList.add("hidden");   // no hay a dónde «llegar»: el punto es aproximado
   pintarMapaComercio(c, t);
   $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id + (c.ownerId ? "" : "&tipo=reclamar");
   if (!c.ownerId) { $("t-es-tuyo").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
@@ -153,10 +160,16 @@ function renderizarTienda(c, ps) {
 function pintarMapaComercio(c, t) {
   if (!tieneCoords(c) || typeof L === "undefined") return;
   $("t-mapa-caja").classList.remove("hidden");
-  $("t-mapa-dir").textContent = [c.direccion, c.ciudad].filter(Boolean).join(" · ");
+  const aprox = esUbicacionAprox(c);
+  $("t-mapa-dir").textContent = aprox ? "📍 Zona aproximada · " + (c.ciudad || "") : [c.direccion, c.ciudad].filter(Boolean).join(" · ");
   const movil = !!(L.Browser && L.Browser.mobile);
   try {
-    const mapa = crearMapaBase("t-mapa", [c.lat, c.lng], 17, { scrollWheelZoom: false, dragging: !movil, tap: false });
+    const mapa = crearMapaBase("t-mapa", [c.lat, c.lng], aprox ? 15 : 17, { scrollWheelZoom: false, dragging: !movil, tap: false });
+    if (aprox) {   // zona, no punto: un círculo suave y sin «Cómo llegar»
+      L.circle([c.lat, c.lng], { radius: 400, color: "#059669", weight: 2, fillColor: "#10b981", fillOpacity: 0.15 }).addTo(mapa);
+      $("t-mapa-llegar").classList.add("hidden");
+      return;
+    }
     const icono = L.divIcon({ className: "marcador-cat", html: `<div class="pin-comercio pin-comercio-grande"><span>${esc(t ? t.icono : "🏪")}</span></div>`,
                              iconSize: [40, 40], iconAnchor: [20, 40] });
     L.marker([c.lat, c.lng], { icon: icono, title: c.nombre, keyboard: false }).addTo(mapa)

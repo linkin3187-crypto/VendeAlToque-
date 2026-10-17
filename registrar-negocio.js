@@ -17,6 +17,21 @@ function pintarPasos() {
   if (paso === 2) iniciarMapa();
 }
 
+// Fase 2Z.8: cómo atiende. «casa» y «domicilio» cambian los textos: la dirección es privada y la foto no es de la casa.
+const modoElegido = () => (document.querySelector('input[name="rn-modo"]:checked') || {}).value || "local";
+function aplicarModo() {
+  const casa = modoElegido() !== "local";
+  $("rn-privado").classList.toggle("hidden", !casa);
+  $("rn-dir-txt").textContent = casa ? "Tu dirección (privada, solo para el moderador) *" : "Dirección *";
+  $("rn-gps").textContent = modoElegido() === "casa" ? "📍 Estoy en mi casa" : modoElegido() === "domicilio" ? "📍 Estoy en mi zona" : "📍 Estoy en mi negocio";
+  $("rn-mapa-aviso").innerHTML = casa
+    ? "Marca tu casa o la zona donde trabajas. <b>Nadie verá este punto exacto</b>: al publicar lo corremos unas cuadras."
+    : "Arrastra el pin hasta la <b>puerta de tu negocio</b> (o toca el mapa). Si estás ahí ahora, pulsa «Estoy en mi negocio»: ayuda a que te aprobemos más rápido.";
+  $("rn-foto-txt").textContent = casa ? "📷 Foto de tus productos o tu logo *" : "📷 Foto de la fachada *";
+  $("rn-foto-ayuda").textContent = casa ? "No subas fotos de tu casa ni de tu calle: mejor tus productos, tu marca o tu moto de domicilios." : "Que se vea la entrada y el nombre o número del local. Sin clientes ni menores.";
+  if (casa) $("rn-foto").removeAttribute("capture"); else $("rn-foto").setAttribute("capture", "environment");
+}
+
 function error(msg) {
   $("rn-error").textContent = msg || "";
   $("rn-error").classList.toggle("hidden", !msg);
@@ -31,10 +46,10 @@ function validarPaso(n) {
   }
   if (n === 2) {
     if ($("rn-dir").value.trim().length < 5) return "Escribe la dirección del negocio";
-    if (!pinFijado) return "Marca la puerta de tu negocio en el mapa (arrastra el pin o toca el mapa)";
+    if (!pinFijado) return modoElegido() === "local" ? "Marca la puerta de tu negocio en el mapa (arrastra el pin o toca el mapa)" : "Marca tu casa o tu zona en el mapa (arrastra el pin o toca el mapa)";
   }
   if (n === 3) {
-    if (!fotoData) return "Sube la foto de la fachada";
+    if (!fotoData) return modoElegido() === "local" ? "Sube la foto de la fachada" : "Sube una foto de tus productos o tu logo";
     if (!$("rn-acepto").checked) return "Debes confirmar que eres el dueño o administrador y aceptar los términos";
   }
   return "";
@@ -68,10 +83,10 @@ function usarGps() {
   navigator.geolocation.getCurrentPosition(p => {
     gpsPos = { lat: p.coords.latitude, lng: p.coords.longitude };
     moverPin(gpsPos.lat, gpsPos.lng, 19);
-    b.disabled = false; b.textContent = "📍 Estoy en mi negocio";
+    b.disabled = false; aplicarModo();
     mostrarToast("📍 Pin puesto donde estás. Muévelo si no quedó sobre la puerta");
   }, () => {
-    b.disabled = false; b.textContent = "📍 Estoy en mi negocio";
+    b.disabled = false; aplicarModo();
     mostrarToast("No pudimos obtener tu ubicación. Marca el pin a mano", "error");
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
 }
@@ -104,7 +119,7 @@ async function pintarMias() {
   $("rn-mis-lista").innerHTML = lista.map(n => {
     const [txt, cls] = ESTADOS_NEG[n.estado] || [n.estado, "bg-slate-100"];
     return `<div class="border border-slate-200 rounded-xl p-3 text-sm">
-      <div class="flex flex-wrap items-center gap-2"><b>${esc(n.nombre)}</b><span class="text-xs px-2 py-0.5 rounded-full font-semibold ${cls}">${txt}</span></div>
+      <div class="flex flex-wrap items-center gap-2"><b>${esc(n.nombre)}</b>${n.modo_atencion && n.modo_atencion !== "local" ? `<span class="text-xs text-slate-500">${MODOS_ATENCION[n.modo_atencion].icono} ${MODOS_ATENCION[n.modo_atencion].corto}</span>` : ""}<span class="text-xs px-2 py-0.5 rounded-full font-semibold ${cls}">${txt}</span></div>
       ${n.estado === "rechazado" ? `<p class="text-xs text-slate-600 mt-1">Motivo: ${esc(n.motivo_rechazo || "")}</p>` : ""}
       ${n.estado === "aprobado" ? `<p class="text-xs text-slate-600 mt-1">${(() => { const c = misCom.find(x => x.id === n.comercio_id); return c && c.nivel >= 2 ? "Tu negocio está publicado y verificado. Ya puedes abrir tu vitrina." : "Tu negocio ya aparece en el mapa. Falta verificarlo (te escribiremos); con el sello se activa tu vitrina pública."; })()}</p>
         <a href="mi-tienda.html" class="text-xs text-indigo-600 underline">Ir a Mi tienda →</a>` : ""}
@@ -127,7 +142,7 @@ async function enviar(e) {
       direccion: $("rn-dir").value, lat: p.lat, lng: p.lng,
       telefono: $("rn-tel").value.trim(), whatsapp: wa ? "57" + wa : null,
       horario: $("rn-hor").value.trim(), descripcion: $("rn-desc").value.trim(),
-      foto: fotoData, gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
+      foto: fotoData, modo: modoElegido(), gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
     });
     $("rn-form-caja").classList.add("hidden");
     $("rn-exito").classList.remove("hidden");
@@ -157,6 +172,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("rn-tipo").value = "tienda";
   $("rn-muni").innerHTML = municipios.map(m => `<option value="${m.id}">${esc(m.nombre)} (${esc(m.departamento)})</option>`).join("");
   $("rn-muni").addEventListener("change", () => { if (!pinFijado && mapa) mapa.setView(centroMunicipio(), 16), pin.setLatLng(centroMunicipio()); });
+  $("rn-modo").addEventListener("change", aplicarModo);
+  aplicarModo();
   $("rn-gps").addEventListener("click", usarGps);
   $("rn-buscar").addEventListener("click", buscarDireccion);
   $("rn-foto").addEventListener("change", async ev => {

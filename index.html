@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -73,19 +73,15 @@
 
   <!-- QUÉ ES (texto corto) + ACCESOS + CATEGORÍAS. El buscador vive ahora en el encabezado fijo (fase 2Y). -->
   <section class="bg-gradient-to-b from-indigo-700 to-indigo-800 text-white pb-4 pt-3 px-4">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
       <div class="text-center mb-3">
         <h2 class="text-lg sm:text-2xl font-black leading-tight tracking-tight">Compra, vende y <span class="text-yellow-300">encuentra comercios</span> cerca de ti</h2>
         <p class="text-white text-xs sm:text-sm font-semibold mt-0.5">Clasificados de barrio + Directorio de comercios de tu ciudad</p>
         <p class="text-indigo-200 text-[11px] sm:text-xs mt-0.5">Anuncia gratis, contacta por WhatsApp y ubica farmacias, panaderías, cajeros y más en el mapa • 100% gratis</p>
       </div>
-      <!-- Accesos rápidos (antes eran 3 botones grandes) -->
-      <div class="flex gap-2 overflow-x-auto pb-2 mb-1 sm:justify-center custom-scrollbar" aria-label="Accesos rápidos">
-        <a href="#contenido" class="acceso-chip">🛒 Ver clasificados</a>
-        <a href="comercios.html" class="acceso-chip">🏪 Directorio de comercios</a>
-        <a href="registrar-negocio.html" class="acceso-chip">➕ Registrar mi negocio</a>
-        <a href="recomendar.html" class="acceso-chip">🤝 Recomendar un comercio</a>
-      </div>
+      <!-- Accesos en cuadros (fase 2Z.1): ilustración propia por color. Los administra Moderación → «🧩 Accesos del inicio»;
+           si aún no existe la tabla, app.js pinta los mismos de respaldo (ACCESOS_RESPALDO en data.js). -->
+      <nav id="accesos" class="accesos-fila custom-scrollbar" aria-label="Accesos rápidos"></nav>
     </div>
   </section>
 
@@ -623,13 +619,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=40"></script>
-  <script src="data.js?v=40"></script>
-  <script src="foro.js?v=40"></script>
-  <script src="carrusel.js?v=40"></script>
-  <script src="buscador.js?v=40"></script>
-  <script src="anuncios-comun.js?v=40"></script>
-  <script src="app.js?v=40"></script>
-  <script src="navegacion.js?v=40"></script>
+  <script src="utils.js?v=41"></script>
+  <script src="data.js?v=41"></script>
+  <script src="foro.js?v=41"></script>
+  <script src="carrusel.js?v=41"></script>
+  <script src="buscador.js?v=41"></script>
+  <script src="anuncios-comun.js?v=41"></script>
+  <script src="app.js?v=41"></script>
+  <script src="navegacion.js?v=41"></script>
 </body>
 </html>

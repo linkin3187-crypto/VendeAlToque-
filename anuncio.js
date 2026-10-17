@@ -167,7 +167,7 @@ function renderizarAnuncio(a) {
   // El dueño (o un moderador) ve «Editar mi publicación»: abre el formulario de edición del inicio
   const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
   if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }
-  $("anuncio-precio").textContent = a.precio || "Precio a convenir";
+  $("anuncio-precio").textContent = a.precio ? precioConSufijo(a) : "Precio a convenir";
   $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ");
   $("anuncio-desc").textContent = a.desc || "Sin descripción";
 
@@ -175,13 +175,18 @@ function renderizarAnuncio(a) {
     ? '<span class="badge-nuevo text-xs font-semibold px-2 py-0.5 rounded-full">Nuevo</span>'
     : a.estado === "usado" ? '<span class="badge-usado text-xs font-semibold px-2 py-0.5 rounded-full">Usado</span>' : "";
   $("anuncio-badges").innerHTML =
-    `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${esc(cat.nombre)}</span>${badgeEstado}`;
+    `<span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">${cat.icono} ${esc(cat.nombre)}</span>${badgeEstado}`
+    + ((a.detalles || {}).operacion ? `<span class="det-chip op">${esc(OPERACIONES[a.detalles.operacion] || "")}</span>` : "");
 
   const fecha = new Date(a.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
   const item = (t, v) => `<div><dt class="text-xs text-slate-400">${t}</dt><dd class="font-medium">${esc(v)}</dd></div>`;
   $("anuncio-detalles").innerHTML =
-    item("Categoría", cat.nombre) + item("Estado", a.estado || "—") +
+    item("Categoría", cat.nombre) + (nombreSubcategoria(a.categoria, a.subcategoria) ? item("Tipo", nombreSubcategoria(a.categoria, a.subcategoria)) : "") +
+    item("Estado", a.estado || "—") + fichaDetalles(a).map(([t, v]) => item(t, v)).join("") +
     item("Barrio", a.barrio || "—") + item("Publicado", fecha);
+  // Fase 2Z.7: aviso contra las estafas más comunes en inmuebles y vehículos
+  const fraude = avisoFraude(a);
+  if (fraude && !$("anuncio-fraude")) $("anuncio-detalles").insertAdjacentHTML("afterend", `<p id="anuncio-fraude" class="aviso-fraude text-sm rounded-xl p-3 mt-4">${fraude}</p>`);
 
   // El número NO llega a la página: al tocar el botón, data.js lo pide a la base de datos (solo con cuenta;
   // sin cuenta abre el registro rápido). Ver supabase/13_contacto_anuncios.sql.

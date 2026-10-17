@@ -419,3 +419,31 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert** (el SQL no hace falta deshacerlo; si quieres, reactiva «Motos» en Moderación).
 
+## Fase 2Z.7 · Formulario de Inmuebles y Vehículos
+
+**SQL:** `supabase/23_detalles_anuncio.sql` — antes o después de fusionar (sin él todo funciona como hoy, solo que sin los campos nuevos). Debe terminar mostrando 1 fila: `columna_detalles = true | se_puede_leer = true`. Es repetible.
+
+**Orden:** fusiona primero el PR de la 2Z.6 (categorías) y después este.
+
+**Cambian:** `index.html` (caja de datos en el paso 1), `app.js` (formulario), `data.js` (qué campos pide cada tipo, cómo se guardan y se muestran), `anuncios-comun.js` (tarjetas y filtros), `anuncio.js` (ficha y aviso antifraude), `buscador.js` (busca por marca y «venta/arriendo»), `buscar.js` y `favoritos.js` (precio con «/mes»), `styles.css`. Caché `?v=47`.
+
+**Al publicar, según lo que elijas:**
+
+| Tipo | Obligatorio | Opcional |
+|---|---|---|
+| 🏡 Apartamento / casa / apartaestudio | ¿Venta, arriendo o arriendo por días? · Habitaciones · Baños | Área m², estrato, parqueadero, piso, administración, amoblado, ascensor; en arriendo: requisitos, acepta mascotas, servicios incluidos |
+| 🏡 Local, oficina o bodega | Operación | Baños, área, estrato, parqueadero… (sin habitaciones) |
+| 🏡 Lote o finca | Operación · Área | Habitaciones, parqueadero |
+| 🚗 Carro / camioneta / camión | Venta o arriendo · Marca · Modelo (año) · Kilometraje (si es usado) | Transmisión, combustible, último dígito de placa (pico y placa), ciudad de matrícula, color, SOAT, tecnomecánica, único dueño |
+| 🏍️ Moto | Venta o arriendo · Marca · Modelo · **Cilindraje** · Kilometraje (si es usada) | Placa, matrícula, SOAT, tecnomecánica |
+| 🔧 Repuestos | — | ¿Para qué vehículo sirve? |
+
+- Si marcas **Nuevo**, no pide kilometraje ni placa. Marca con sugerencias (Mazda, Renault, Yamaha, AKT…).
+- El precio dice **«/mes»** en arriendo de inmuebles, **«/día»** en vehículos y **«/noche»** en arriendo por días.
+- **Tarjetas:** chips con lo clave («Arriendo · 3 hab · 2 baños · 72 m² · Estrato 4» o «Venta · Mazda · 2019 · 45.000 km»).
+- **Ficha:** todos los datos + **aviso antifraude** (inmuebles: no consignar antes de visitar; vehículos: sin anticipos, revisar en el RUNT).
+- **Filtros** (al elegir Inmuebles o Vehículos, bajo las subcategorías): venta/arriendo, habitaciones mínimas y estrato; o modelo desde y kilometraje máximo. Salen como chips con ✕ y van en el enlace de «Compartir esta búsqueda».
+- **Buscador:** encuentra por marca («mazda») y por «arriendo».
+
+**Revertir:** PR → **Revert**. La columna `detalles` puede quedarse.
+

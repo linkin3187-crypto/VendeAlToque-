@@ -242,6 +242,7 @@ function filaEditor(c) {
   return `<article class="border border-slate-200 rounded-xl p-3" data-id="${c.id}">
     <div class="flex flex-wrap items-center gap-2 mb-2">
       <b>${esc(t ? t.icono : "📍")} ${esc(c.nombre)}</b>
+      ${c.confirmaSi || c.confirmaNo ? `<span class="text-xs ${comercioDudoso(c) ? "bg-red-100 text-red-800" : "bg-sky-100 text-sky-800"} px-2 py-0.5 rounded-full font-semibold">👥 ${c.confirmaSi} sí${c.confirmaLugar ? " (" + c.confirmaLugar + " en el lugar)" : ""} · ${c.confirmaNo} no</span>` : ""}
       ${esUbicacionAprox(c) ? `<span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${MODOS_ATENCION[c.modoAtencion].corto} · zona aproximada</span>` : ""}
       <span class="text-xs text-slate-500">${esc(c.ciudad)}</span>
       <span class="text-xs ${(SELLOS[c.nivel] || SELLOS[1]).clase} px-2 py-0.5 rounded-full font-semibold">${c.nivel >= 2 ? "✔ " : ""}${esc((SELLOS[c.nivel] || SELLOS[1]).corto)}${c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</span>

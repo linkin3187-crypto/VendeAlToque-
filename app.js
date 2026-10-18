@@ -178,12 +178,17 @@ function popupComercioHTML(c) {
     ${esUbicacionAprox(c) ? `<div class="text-xs mt-1"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> zona aproximada</div>` : c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
     ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
     <div class="text-[11px] mt-1">${resumenCalifHTML(c)}</div>
+    ${confirmadoPorVecinos(c) && c.nivel < 2 ? `<div class="mt-1"><span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span></div>` : ""}
+    ${comercioDudoso(c) ? `<div class="text-[11px] font-semibold text-red-700 mt-1">🚩 ${c.confirmaNo} personas dicen que ya no está</div>` : ""}
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${esc((SELLOS[c.nivel] || SELLOS[1]).largo)}${c.verificado && c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</div>
     <div class="flex flex-wrap gap-1.5 mt-2">
       ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
       ${esUbicacionAprox(c) ? (c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">💬 Pedir por WhatsApp</a>` : "")
         : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>`}
     </div>
+    ${pedirConfirmacion(c) && !(usuarioActual && c.ownerId === usuarioActual.id) ? `<div class="conf-pop mt-2" data-conf-pop="${c.id}"><span>¿Existe aquí?</span>
+      <button type="button" data-conf-voto="existe" aria-label="Sí, existe y atiende aquí" title="Sí, existe">👍</button>
+      <button type="button" data-conf-voto="no_existe" aria-label="No está o cerró" title="No está o cerró">👎</button></div>` : ""}
     ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="block mt-2 text-center bg-teal-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
     <a href="tienda.html?id=${c.id}#opinar" class="block mt-2 text-center bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">⭐ Calificar / ver opiniones</a>
     ${c.ownerId ? `<a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>`
@@ -1407,4 +1412,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
   }
   if (location.hash === "#publicar") { history.replaceState(null, "", location.pathname + location.search); $("btn-publicar-header").click(); }
+});
+
+// Fase 2Z.10: 👍 / 👎 en la ventanita del mapa («¿Existe aquí?»)
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-conf-voto]");
+  if (!b) return;
+  const caja = b.closest("[data-conf-pop]");
+  const c = comercios.find(x => x.id === Number(caja.dataset.confPop));
+  if (!c) return;
+  if (!usuarioActual) { mostrarToast("Crea tu cuenta gratis para ayudar a tus vecinos"); abrirModal("modal-auth"); return; }
+  caja.querySelectorAll("button").forEach(x => { x.disabled = true; });
+  try {
+    const r = await confirmarComercio(c, b.dataset.confVoto);
+    Object.assign(c, { confirmaSi: r.comercio.confirmaSi, confirmaNo: r.comercio.confirmaNo, confirmaLugar: r.comercio.confirmaLugar });
+    caja.innerHTML = "🙌 ¡Gracias por ayudar a tus vecinos!";
+  } catch (err) { mostrarToast(mensajeError(err), "error"); caja.querySelectorAll("button").forEach(x => { x.disabled = false; }); }
 });

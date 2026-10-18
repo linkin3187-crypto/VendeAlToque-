@@ -620,3 +620,21 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .foto-btn:hover { background: #e0e7ff; }
 .foto-btn:focus-within { outline: 3px solid #a5b4fc; outline-offset: 2px; }
 .aviso-ubicado { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; }
+
+/* ===== Fase 2Z.10 · La comunidad confirma comercios + acelerar verificación ===== */
+.badge-vecinos { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #075985; white-space: nowrap; }
+.confirmar-caja { position: relative; background: linear-gradient(135deg, #eef2ff, #f0fdfa); border: 1px solid #c7d2fe; border-radius: 16px; padding: 12px 14px; }
+.confirmar-caja.gracias { background: #f0fdf4; border-color: #bbf7d0; }
+.confirmar-cerrar { position: absolute; top: 6px; right: 8px; width: 28px; height: 28px; border-radius: 999px; color: #64748b; font-size: 14px; }
+.confirmar-cerrar:hover { background: #e2e8f0; }
+.btn-conf { font-size: 13px; font-weight: 700; border-radius: 12px; padding: 8px 12px; border: 1px solid; }
+.btn-conf.si { background: #16a34a; border-color: #16a34a; color: #fff; }
+.btn-conf.si:hover { background: #15803d; }
+.btn-conf.no { background: #fff; border-color: #fca5a5; color: #b91c1c; }
+.btn-conf.no:hover { background: #fef2f2; }
+.btn-conf:disabled { opacity: .6; }
+.conf-pop { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #475569; }
+.conf-pop button { font-size: 16px; line-height: 1; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; }
+.conf-pop button:hover { background: #eef2ff; }
+.btn-acelerar { font-size: 13px; font-weight: 800; color: #1e1b4b; background: #fde047; border-radius: 12px; padding: 8px 14px; box-shadow: 0 2px 0 #ca8a04; }
+.btn-acelerar:hover { background: #facc15; }

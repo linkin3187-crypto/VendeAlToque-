@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=52">
+  <link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -104,6 +104,104 @@
     </div>
   </main>
 
+
+  <!-- Fase 2AA.2: editor completo de un comercio (pestañas). Va ANTES de «Ubicación» para que el mapa se abra encima -->
+  <div id="modal-editor" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="ed-titulo">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-2xl w-full shadow-2xl relative max-h-[94vh] flex flex-col">
+      <div class="p-4 pb-0">
+        <button type="button" data-ed-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+        <h3 id="ed-titulo" class="text-lg font-black text-indigo-900 pr-8">✏️ <span id="ed-nombre-tit"></span></h3>
+        <p id="ed-sub" class="text-xs text-slate-500"></p>
+        <nav class="ed-pestanas mt-3" role="tablist" aria-label="Secciones del comercio">
+          <button type="button" role="tab" data-ed-tab="datos" aria-selected="true">📝 Datos</button>
+          <button type="button" role="tab" data-ed-tab="contacto" aria-selected="false">📞 Contacto y entrega</button>
+          <button type="button" role="tab" data-ed-tab="ubicacion" aria-selected="false">📍 Ubicación</button>
+          <button type="button" role="tab" data-ed-tab="foto" aria-selected="false">📷 Foto</button>
+          <button type="button" role="tab" data-ed-tab="dueno" aria-selected="false">🙋 Dueño y visibilidad</button>
+        </nav>
+      </div>
+      <form id="form-editor" class="p-4 overflow-auto flex-1 space-y-3" novalidate>
+        <section data-ed-panel="datos" class="space-y-3">
+          <label class="block text-xs font-bold text-slate-500">Nombre *
+            <input id="ed-nombre" maxlength="100" required class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <div class="grid sm:grid-cols-3 gap-2">
+            <label class="block text-xs font-bold text-slate-500">🏷️ Categoría principal
+              <select id="ed-tipo" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <label class="block text-xs font-bold text-slate-500">También es… (opcional)
+              <select id="ed-extra1" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <label class="block text-xs font-bold text-slate-500">…y también (opcional)
+              <select id="ed-extra2" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+          </div>
+          <label class="block text-xs font-bold text-slate-500">¿Cómo atiende?
+            <select id="ed-modo" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+          <label class="block text-xs font-bold text-slate-500">Descripción (máx. 300)
+            <textarea id="ed-desc" maxlength="300" rows="3" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Qué vende, desde cuándo, qué lo hace especial"></textarea></label>
+          <label class="block text-xs font-bold text-slate-500">Horario
+            <input id="ed-hor" maxlength="120" placeholder="Lun-Sáb 8:00-20:00, Dom 9-14" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+            <span class="font-normal text-slate-400">Con este formato se muestra «Abierto ahora».</span></label>
+        </section>
+        <section data-ed-panel="contacto" class="hidden space-y-3">
+          <div class="grid sm:grid-cols-2 gap-2">
+            <label class="block text-xs font-bold text-slate-500">💬 WhatsApp (10 dígitos)
+              <input id="ed-wa" inputmode="numeric" maxlength="14" placeholder="300 123 4567" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+            <label class="block text-xs font-bold text-slate-500">📞 Teléfono (celular o fijo)
+              <input id="ed-tel" maxlength="40" placeholder="604 123 4567" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          </div>
+          <fieldset class="text-sm space-y-2">
+            <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo entrega?</legend>
+            <label class="flex items-center gap-2"><input type="checkbox" id="ed-recoge"> Se recoge en el local</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="ed-dom"> Domicilio con sus propios domiciliarios</label>
+            <input id="ed-dom-info" maxlength="200" placeholder="Zona, costo y tiempo. Ej: Centro, $3.000, 30 min" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm">
+          </fieldset>
+        </section>
+        <section data-ed-panel="ubicacion" class="hidden space-y-3">
+          <div class="grid sm:grid-cols-2 gap-2">
+            <label class="block text-xs font-bold text-slate-500">Municipio
+              <select id="ed-muni" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm bg-white text-slate-800"></select></label>
+            <label class="block text-xs font-bold text-slate-500">Dirección
+              <input id="ed-dir" maxlength="160" placeholder="Cra 43A # 10-20" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
+            <p>📍 Pin: <b id="ed-coords"></b> <span id="ed-coords-cambio" class="hidden text-amber-700 font-semibold">(movido, se guarda con «Guardar todo»)</span></p>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button type="button" id="ed-mover-pin" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg">📍 Mover el pin en el mapa</button>
+              <a id="ed-ver-pin" href="#" target="_blank" rel="noopener" class="text-xs bg-blue-100 text-blue-800 font-semibold px-3 py-1.5 rounded-lg">🗺️ Ver en Google Maps</a>
+            </div>
+            <p id="ed-aviso-aprox" class="hidden text-xs text-emerald-800 mt-2">🏠 Atiende desde casa o solo a domicilio: al guardar, el servidor corre el punto público unas cuadras y no muestra la dirección.</p>
+          </div>
+        </section>
+        <section data-ed-panel="foto" class="hidden space-y-3">
+          <div class="flex items-center gap-3">
+            <img id="ed-foto-prev" alt="Foto actual" class="hidden w-28 h-28 rounded-xl object-cover border border-slate-200">
+            <p id="ed-sin-foto" class="hidden text-sm text-slate-400">Este comercio aún no tiene foto.</p>
+          </div>
+          <span class="foto-botones">
+            <label class="foto-btn"><input type="file" data-grupo-foto="edc" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+            <label class="foto-btn"><input type="file" data-grupo-foto="edc" accept="image/*" class="sr-only">🖼️ Galería</label>
+          </span>
+          <span data-foto-nombre="edc" class="block text-[11px] text-slate-500"></span>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="ed-quitar-foto"> Quitar la foto actual</label>
+        </section>
+        <section data-ed-panel="dueno" class="hidden space-y-3">
+          <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="ed-activo"> Visible en el mapa y el directorio</label>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm space-y-2">
+            <p>🙋 Dueño: <b id="ed-dueno-estado"></b></p>
+            <div class="flex flex-wrap gap-2">
+              <input id="ed-dueno-correo" placeholder="correo de su cuenta" class="flex-1 min-w-[12rem] border border-slate-300 p-2 rounded-lg text-sm">
+              <button type="button" id="ed-dueno-asignar" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-2 rounded-lg text-xs">Asignar</button>
+              <button type="button" id="ed-dueno-quitar" class="hidden text-red-600 hover:underline text-xs">Quitar dueño</button>
+            </div>
+            <p class="text-[11px] text-slate-500">Asignar o quitar el dueño se aplica al momento (no espera a «Guardar todo»).</p>
+          </div>
+        </section>
+      </form>
+      <div class="p-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+        <span id="ed-sucio" class="hidden text-xs font-semibold text-amber-700">✏️ Cambios sin guardar</span>
+        <button type="button" data-ed-cerrar class="ml-auto border border-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-xl">Cancelar</button>
+        <button type="button" id="ed-guardar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl disabled:opacity-60">💾 Guardar todo</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Ubicación exacta de un comercio -->
   <div id="modal-ubicacion" data-protegido class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="ub-titulo">
@@ -219,9 +317,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=52"></script>
-  <script src="data.js?v=52"></script>
-  <script src="iconos.js?v=52"></script>
-  <script src="admin-comercios.js?v=52"></script>
+  <script src="utils.js?v=53"></script>
+  <script src="data.js?v=53"></script>
+  <script src="iconos.js?v=53"></script>
+  <script src="admin-comercios.js?v=53"></script>
 </body>
 </html>

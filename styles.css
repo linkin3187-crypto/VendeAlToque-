@@ -656,3 +656,8 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 
 /* ===== Fase 2AA.1 · Panel de comercios ===== */
 .ficha-borrador { box-shadow: 0 0 0 2px #f59e0b; }
+
+/* ===== Fase 2AA.2 · Editor completo de comercios ===== */
+.ed-pestanas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; scrollbar-width: thin; }
+.ed-pestanas button { white-space: nowrap; font-size: 13px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 7px 12px; }
+.ed-pestanas button[aria-selected="true"] { background: #4f46e5; color: #fff; }

@@ -249,7 +249,8 @@ function filaEditor(c) {
       ${selloVencido(c) ? '<span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-semibold">⚠ Vencida: repetir verificación</span>' : ""}
       ${c.activo ? "" : '<span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Oculto</span>'}
       <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${ORIGENES[origenComercio(c)].icono} ${esc(ORIGENES[origenComercio(c)].corto)}</span>
-      <button type="button" data-acc="verificar" class="ml-auto text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">✅ Verificar</button>
+      <button type="button" data-acc="editor" class="ml-auto text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">✏️ Editor completo</button>
+      <button type="button" data-acc="verificar" class="text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">✅ Verificar</button>
       <button type="button" data-acc="ubicacion" class=" text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
       <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
       <a href="${esc(urlMapaNombre(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1.5 rounded-lg font-semibold">🔎 Buscar en Google</a>
@@ -623,6 +624,13 @@ function gpsUb() {
 
 async function guardarUbicacion() {
   if (!comercioUb || !coordsUb) return;
+  if (ubParaEditor) {   // fase 2AA.2: el pin vuelve al editor completo (se guarda con «Guardar todo»)
+    edCoords = { lat: coordsUb.lat, lng: coordsUb.lng };
+    if ($("ub-direccion").value.trim()) $("ed-dir").value = $("ub-direccion").value.trim();
+    ubParaEditor = false; marcarEditorSucio(); pintarCoordsEditor();
+    cerrarModal("modal-ubicacion");
+    return;
+  }
   const b = $("ub-guardar");
   b.disabled = true;
   try {
@@ -740,11 +748,147 @@ async function enviarVerificacion(resultado) {
   } finally { botones.forEach(b => { b.disabled = false; }); }
 }
 
+// ---------- Editor completo de un comercio (fase 2AA.2) ----------
+// Todo lo que tienen el registro de negocio y «Mi tienda», en pestañas y con un solo «Guardar todo».
+// La ubicación se mueve con el mismo mapa de «Corregir ubicación», pero vuelve aquí sin guardarse sola.
+let edC = null, edCoords = null, edSucio = false, ubParaEditor = false;
+function marcarEditorSucio() { edSucio = true; $("ed-sucio").classList.remove("hidden"); }
+function pintarCoordsEditor() {
+  const p = edCoords || edC;
+  $("ed-coords").textContent = tieneCoords(p) ? p.lat.toFixed(5) + ", " + p.lng.toFixed(5) : "sin ubicar";
+  $("ed-coords-cambio").classList.toggle("hidden", !edCoords);
+  $("ed-ver-pin").href = tieneCoords(p) ? urlGoogleMaps(p.lat, p.lng) : "#";
+}
+function tabEditor(t) {
+  document.querySelectorAll("#modal-editor [data-ed-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.edTab === t)));
+  document.querySelectorAll("#modal-editor [data-ed-panel]").forEach(p => p.classList.toggle("hidden", p.dataset.edPanel !== t));
+}
+function abrirEditor(id) {
+  const c = listaAdmin.find(x => x.id === id);
+  if (!c) return;
+  edC = c; edCoords = null; edSucio = false; ubParaEditor = false;
+  $("ed-sucio").classList.add("hidden");
+  $("ed-nombre-tit").textContent = c.nombre;
+  $("ed-sub").textContent = [c.ciudad, (SELLOS[c.nivel] || SELLOS[1]).corto, ORIGENES[origenComercio(c)].corto].filter(Boolean).join(" · ");
+  $("ed-nombre").value = c.nombre;
+  $("ed-tipo").innerHTML = opcionesCategoria(c.tipo);
+  $("ed-extra1").innerHTML = opcionesCategoria((c.tiposExtra || [])[0] || "", "— Ninguna —");
+  $("ed-extra2").innerHTML = opcionesCategoria((c.tiposExtra || [])[1] || "", "— Ninguna —");
+  $("ed-modo").innerHTML = opcionesModo(c.modoAtencion);
+  $("ed-desc").value = c.descripcion || "";
+  $("ed-hor").value = c.horario || "";
+  $("ed-wa").value = (c.whatsapp || "").replace(/^57/, "");
+  $("ed-tel").value = c.telefono || "";
+  $("ed-recoge").checked = !!c.recoge; $("ed-dom").checked = !!c.domicilio; $("ed-dom-info").value = c.domicilioInfo || "";
+  $("ed-muni").innerHTML = municipios.slice().sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+    .map(m => `<option value="${m.id}" ${m.id === c.municipioId ? "selected" : ""}>${esc(m.nombre)} (${esc(m.departamento)})</option>`).join("");
+  $("ed-dir").value = c.direccion || "";
+  $("ed-aviso-aprox").classList.toggle("hidden", !esUbicacionAprox(c));
+  pintarCoordsEditor();
+  const f = urlSegura(c.foto);
+  $("ed-foto-prev").classList.toggle("hidden", !f); if (f) $("ed-foto-prev").src = f;
+  $("ed-sin-foto").classList.toggle("hidden", !!f);
+  limpiarFoto("edc"); $("ed-quitar-foto").checked = false;
+  $("ed-activo").checked = !!c.activo;
+  pintarDuenoEditor();
+  tabEditor("datos");
+  abrirModal("modal-editor");
+}
+function pintarDuenoEditor() {
+  $("ed-dueno-estado").textContent = edC.ownerId ? "asignado" : "sin asignar";
+  $("ed-dueno-quitar").classList.toggle("hidden", !edC.ownerId);
+  $("ed-dueno-correo").value = "";
+}
+function cerrarEditor() {
+  if (edSucio && !confirm("Tienes cambios sin guardar en este comercio. ¿Cerrar sin guardar?")) return;
+  edSucio = false;
+  cerrarModal("modal-editor");
+}
+async function guardarEditor() {
+  if (!edC) return;
+  const nombre = $("ed-nombre").value.trim();
+  if (nombre.length < 2) { tabEditor("datos"); mostrarToast("El nombre es obligatorio", "error"); $("ed-nombre").focus(); return; }
+  const wa = $("ed-wa").value.replace(/\D/g, "").replace(/^57(?=\d{10}$)/, "");
+  if (wa && wa.length !== 10) { tabEditor("contacto"); mostrarToast("El WhatsApp debe tener 10 dígitos (ej. 300 123 4567)", "error"); $("ed-wa").focus(); return; }
+  const nul = v => (v || "").trim() || null;
+  const tipo = $("ed-tipo").value;
+  const cambios = {
+    nombre, tipo,
+    tipos_extra: [...new Set([$("ed-extra1").value, $("ed-extra2").value].filter(v => v && v !== tipo))],
+    descripcion: nul($("ed-desc").value), horario: nul($("ed-hor").value),
+    whatsapp: wa ? "57" + wa : null, telefono: nul($("ed-tel").value),
+    recoge: $("ed-recoge").checked, domicilio: $("ed-dom").checked,
+    domicilio_info: $("ed-dom").checked ? nul($("ed-dom-info").value) : null,
+    municipio_id: Number($("ed-muni").value) || edC.municipioId,
+    direccion: nul($("ed-dir").value), activo: $("ed-activo").checked
+  };
+  const modo = $("ed-modo").value;
+  if (modo !== "local" || edC.modoAtencion !== "local") cambios.modo_atencion = modo;
+  if (edCoords) { cambios.lat = +edCoords.lat.toFixed(6); cambios.lng = +edCoords.lng.toFixed(6); }
+  const b = $("ed-guardar"); b.disabled = true; b.textContent = "Guardando…";
+  try {
+    const archivo = fotoElegida("edc");
+    if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
+    else if ($("ed-quitar-foto").checked) cambios.foto_url = null;
+    await guardarComercioDB(edC.id, cambios);
+    edSucio = false;
+    cerrarModal("modal-editor");
+    mostrarToast("✅ Comercio guardado");
+    await refrescarLista(edC.id);
+  } catch (err) { console.error(err); mostrarToast(mensajeError(err), "error"); }
+  finally { b.disabled = false; b.textContent = "💾 Guardar todo"; }
+}
+async function duenoEditor(quitar) {
+  const correo = $("ed-dueno-correo").value.trim();
+  if (!quitar && !correo) { mostrarToast("Escribe el correo de la cuenta del dueño", "error"); return; }
+  if (quitar && !confirm("¿Quitar el dueño de este comercio?")) return;
+  try {
+    await asignarDuenoComercio(edC.id, quitar ? {} : { email: correo });
+    mostrarToast(quitar ? "Dueño quitado" : "✅ Dueño asignado");
+    await refrescarLista(edC.id);
+    edC = listaAdmin.find(x => x.id === edC.id) || edC;
+    pintarDuenoEditor();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+}
+function conectarEditor() {
+  $("modal-editor").addEventListener("click", e => {
+    const t = e.target.closest("[data-ed-tab]");
+    if (t) { tabEditor(t.dataset.edTab); return; }
+    if (e.target.closest("[data-ed-cerrar]")) cerrarEditor();
+  });
+  $("form-editor").addEventListener("input", marcarEditorSucio);
+  $("form-editor").addEventListener("change", e => {
+    marcarEditorSucio();
+    if (e.target.id === "ed-modo") $("ed-aviso-aprox").classList.toggle("hidden", e.target.value === "local");
+  });
+  $("form-editor").addEventListener("submit", e => { e.preventDefault(); guardarEditor(); });
+  $("ed-guardar").addEventListener("click", guardarEditor);
+  $("ed-mover-pin").addEventListener("click", () => {
+    ubParaEditor = true;
+    abrirUbicacion(edC.id);
+    $("ub-direccion").value = $("ed-dir").value;
+    if (edCoords) { marcadorUb.setLatLng([edCoords.lat, edCoords.lng]); mapaUb.setView([edCoords.lat, edCoords.lng], 18); fijarCoordsUb(edCoords.lat, edCoords.lng, false); }
+    $("ub-guardar").textContent = "✅ Usar este punto";
+  });
+  document.addEventListener("modal:cerrado", e => {
+    if (e.detail && e.detail.id === "modal-ubicacion") { ubParaEditor = false; $("ub-guardar").textContent = "💾 Guardar ubicación"; }
+  });
+  $("ed-dueno-asignar").addEventListener("click", () => duenoEditor(false));
+  $("ed-dueno-quitar").addEventListener("click", () => duenoEditor(true));
+  // Escape: si el editor está arriba y tiene cambios, pregunta antes de cerrar
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    const abiertos = document.querySelectorAll(".modal-fondo:not(.hidden)");
+    if (abiertos.length && abiertos[abiertos.length - 1].id === "modal-editor") { e.stopImmediatePropagation(); cerrarEditor(); }
+  }, true);
+}
+
 async function accionEditor(e) {
   const b = e.target.closest("[data-acc]");
   const fila = e.target.closest("[data-id]");
   if (!b || !fila) return;
   const id = Number(fila.dataset.id);
+  if (b.dataset.acc === "editor") { abrirEditor(id); return; }
   if (b.dataset.acc === "ubicacion") { abrirUbicacion(id); return; }
   if (b.dataset.acc === "verificar") { abrirVisita(id); return; }
   if (b.dataset.acc === "dueno" || b.dataset.acc === "quitar-dueno") {
@@ -874,6 +1018,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ub-direccion").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarDireccionUb(); } });
   $("ub-gps").addEventListener("click", gpsUb);
   $("ub-guardar").addEventListener("click", guardarUbicacion);
+  conectarEditor();
   document.querySelectorAll('input[name="vi-metodo"]').forEach(r => r.addEventListener("change", pintarListaVi));
   $("vi-gps").addEventListener("click", gpsVisita);
   $("vi-aprobar").addEventListener("click", () => enviarVerificacion("aprobada"));

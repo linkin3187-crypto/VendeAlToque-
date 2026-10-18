@@ -83,6 +83,7 @@ function renderizarTienda(c, ps) {
   const sello = SELLOS[c.nivel] || SELLOS[1];
   $("t-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + sello.clase;
   $("t-sello").textContent = (c.nivel >= 2 ? "✔ " : "") + sello.corto + (c.verificadoEn ? " · " + fechaSello(c) : "");
+  if (esComercioSalud(c) && c.saludRevisado) $("t-sello").insertAdjacentHTML("afterend", " " + BADGE_SALUD);   // fase 2AB.2b
   pintarGaleriaComercio(c);   // fase 2AA.4: hasta 5 fotos, tocar para ver en grande
   if (c.descripcion) { $("t-desc").textContent = c.descripcion; $("t-desc").classList.remove("hidden"); }
   const fila = (id, txt) => { if (txt) { $(id).querySelector("span").textContent = txt; $(id).classList.remove("hidden"); } };
@@ -139,6 +140,13 @@ function renderizarTienda(c, ps) {
   // Aviso si la tienda aún no es pública (solo la ven el dueño o un moderador)
   const publica = c.activo && c.nivel >= 2;
   const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esModerador());
+  // Fase 2AB.2b: droguería o naturista verificada pero sin visto bueno sanitario → productos aún privados
+  if (publica && saludPendiente(c) && gestiona) {
+    const av = $("t-aviso-privado");
+    av.className = "mb-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-3 py-2";
+    av.innerHTML = "🧾 <b>Tus productos aún no son públicos.</b> En droguerías y tiendas naturistas, la vitrina se publica cuando Merkap revisa tus <b>datos sanitarios</b> (Mi tienda → 🧾 Datos sanitarios).";
+    av.classList.remove("hidden");
+  }
   if (!publica) {
     const av = $("t-aviso-privado");
     // Fase 2Z.9: el comercio sí es público (como los importados); explica qué significa «Ubicado»

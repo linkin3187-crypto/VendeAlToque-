@@ -124,6 +124,11 @@ function tarjetaSolicitud(s) {
     </div>
     <p class="text-sm mt-2"><b>${esc(s.nombre_contacto)}</b> · <span class="select-all">${esc(s.contacto)}</span></p>
     ${s.mensaje ? `<p class="text-sm text-slate-600 mt-1">“${esc(s.mensaje)}”</p>` : ""}
+    ${s.datos_sanitarios ? (d => `<div class="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900">
+      <b>🧾 Datos sanitarios (privados):</b> ${esc(TIPOS_ESTABLECIMIENTO_SALUD[d.tipo_establecimiento] || d.tipo_establecimiento || "")}<br>
+      ${esc(d.razon_social || "")} · NIT <b>${esc(d.nit || "")}</b> · Director técnico: ${esc(d.director_tecnico || "")}
+      ${d.acta_numero || d.acta_fecha ? `<br>Acta/concepto: ${esc(d.acta_numero || "—")} ${d.acta_fecha ? "(" + esc(d.acta_fecha) + ")" : ""}` : ""}
+      <br><span class="text-emerald-700">Al asignarlo como dueño, estos datos pasan solos a «🧾 Sanitario» del comercio (por revisar).</span></div>`)(s.datos_sanitarios) : ""}
     <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
       ${s.tipo === "reclamar" && s.solicitante_id && c && !c.owner_id ? `<button type="button" data-sdueno="${esc(s.solicitante_id)}" data-scom="${c.id}" class="text-xs bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg font-semibold">👤 Asignar como dueño</button>` : ""}
       ${s.tipo === "retirar" && c && c.activo ? `<button type="button" data-socultar="${c.id}" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar comercio</button>` : ""}

@@ -741,7 +741,9 @@ function filaAComercio(r) {
     // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)
     confirmaSi: Number(r.confirma_si) || 0, confirmaNo: Number(r.confirma_no) || 0, confirmaLugar: Number(r.confirma_lugar) || 0,
     // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
-    calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0
+    calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0,
+    // Fase 2AB.2b: visto bueno sanitario (droguerías y naturistas). Sin el SQL 31, la columna no existe.
+    saludRevisado: r.salud_revisado_en || null, tieneSelloSalud: "salud_revisado_en" in r
   };
 }
 
@@ -1236,6 +1238,10 @@ async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
 const TIPOS_SALUD = ["farmacia", "naturista"];
 const esTipoSalud = t => TIPOS_SALUD.includes(t);
 const esComercioSalud = c => !!c && (esTipoSalud(c.tipo) || (c.tiposExtra || []).some(esTipoSalud));
+// Fase 2AB.2b: ¿la vitrina se ve en público? Verificado (teléfono o en persona) y, si es de salud, con visto bueno sanitario.
+const saludPendiente = c => esComercioSalud(c) && c.tieneSelloSalud && !c.saludRevisado;
+const vitrinaPublica = c => !!c && c.activo !== false && c.nivel >= 2 && !saludPendiente(c);
+const BADGE_SALUD = '<span class="badge-salud" title="Merkap revisó su razón social, NIT y director técnico. No significa que venda medicamentos por Merkap.">🧾 Datos sanitarios revisados</span>';
 const TIPOS_ESTABLECIMIENTO_SALUD = {
   drogueria: "Droguería (director técnico o regente)",
   farmacia_drogueria: "Farmacia-droguería (químico farmacéutico)",
@@ -1476,21 +1482,28 @@ async function cambiarVisibilidadAnuncio(id, estadoPublicacion) {
 // =====================================================================
 // SOLICITUDES DE COMERCIOS (dueños que piden actualizar, retirar o reclamar su ficha)
 // =====================================================================
-async function crearSolicitudComercio(comercioId, { tipo, nombre, contacto, mensaje }) {
+async function crearSolicitudComercio(comercioId, { tipo, nombre, contacto, mensaje, datosSanitarios }) {
   if (!usuarioActual) throw new Error("Inicia sesión para enviar la solicitud");
-  const { error } = await sb.from("solicitudes_comercio").insert({
-    comercio_id: comercioId, tipo, nombre_contacto: nombre, contacto, mensaje: mensaje || null
-  });
+  const fila = { comercio_id: comercioId, tipo, nombre_contacto: nombre, contacto, mensaje: mensaje || null };
+  if (datosSanitarios) fila.datos_sanitarios = datosSanitarios;   // fase 2AB.2b (SQL 31)
+  let { error } = await sb.from("solicitudes_comercio").insert(fila);
+  if (error && /datos_sanitarios/.test(error.message || "")) {   // aún sin el SQL 31: se envía igual y los datos se piden después en Mi tienda
+    delete fila.datos_sanitarios; ({ error } = await sb.from("solicitudes_comercio").insert(fila));
+  }
   if (error) throw error;
 }
 
 // Solo moderadores
 async function cargarSolicitudesComercio(estado) {
-  let q = sb.from("solicitudes_comercio")
-    .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, solicitante_id, comercio:comercios(id, nombre, tipo, municipio_id, owner_id, activo)")
-    .order("creado_en", { ascending: false }).limit(200);
-  if (estado) q = q.eq("estado", estado);
-  const { data, error } = await q;
+  const consulta = extra => {
+    let q = sb.from("solicitudes_comercio")
+      .select("id, tipo, nombre_contacto, contacto, mensaje, estado, creado_en, solicitante_id" + extra + ", comercio:comercios(id, nombre, tipo, municipio_id, owner_id, activo)")
+      .order("creado_en", { ascending: false }).limit(200);
+    if (estado) q = q.eq("estado", estado);
+    return q;
+  };
+  let { data, error } = await consulta(", datos_sanitarios");
+  if (error && /datos_sanitarios/.test(error.message || "")) ({ data, error } = await consulta(""));   // sin el SQL 31
   if (error) throw error;
   return data || [];
 }

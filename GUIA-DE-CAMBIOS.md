@@ -572,3 +572,16 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. La columna `fotos` puede quedarse.
 
+## Fase 2AA.5 · Fotos de los productos de la vitrina (dueño y administrador)
+
+**SQL:** `supabase/28_fotos_producto.sql` — antes o después de fusionar (sin él cada producto sigue con 1 foto). Debe terminar mostrando 1 fila: `columna_fotos = true | sin_desfase = 0`. Es repetible. Requiere el 27.
+
+**Cambian:** `mi-tienda.js`, `tienda.js`, `admin-comercios.js`, `data.js`. Caché `?v=56`.
+
+- **Dueño, en «Mi tienda» → Mis productos:** cada producto tiene su galería de **hasta 3 fotos** con el mismo manejo que la del comercio: «📷 Tomar foto» / «🖼️ Galería» (varias a la vez), ★ principal, ◀ ▶ ordenar, ✕ quitar, tocar para ver en grande. Se guarda con «Guardar» / «Agregar» del producto.
+- **Vitrina pública:** si un producto tiene varias fotos sale «📷 2»; al tocar la foto se abre el **visor a pantalla completa** con todas sus fotos.
+- **Límites del dueño (no cambian):** solo edita **sus** productos (máx. 20 por comercio), no puede mostrar un producto que un moderador ocultó, y siguen las reglas de los Términos (sin medicamentos con fórmula ni productos regulados; licor y tabaco solo para mayores).
+- **Administrador (tú):** en «Editar comercios» cada ficha tiene **«🛍️ Editar vitrina»**, que abre la tienda de **cualquier** comercio en **modo administrador** (agregar, editar, borrar productos y fotos, datos del negocio), con aviso arriba y enlace para volver.
+
+**Revertir:** PR → **Revert**. La columna puede quedarse.
+

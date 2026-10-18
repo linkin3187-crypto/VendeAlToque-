@@ -15,7 +15,7 @@ function haceDias(fechaIso) {
 }
 
 function tarjetaProducto(p) {
-  const foto = urlSegura(p.foto);
+  const foto = urlSegura((p.fotos || [])[0] || p.foto);
   const enCarro = carrito.get(p.id) || 0;
   const control = !p.disponible ? '<span class="text-xs font-semibold text-slate-400">Agotado</span>'
     : !tienda.whatsapp ? ""
@@ -26,6 +26,7 @@ function tarjetaProducto(p) {
     <div class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
       <span class="text-3xl">🛍️</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(p.nombre)}" loading="lazy" data-ver-prod="${p.id}" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in">` : ""}
+      ${(p.fotos || []).length > 1 ? `<span class="absolute bottom-2 right-2 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">📷 ${p.fotos.length}</span>` : ""}
       ${p.disponible ? "" : '<span class="absolute top-2 left-2 bg-slate-700 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">Agotado</span>'}
     </div>
     <div class="p-3 flex-1 flex flex-col">
@@ -319,7 +320,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const im = e.target.closest("[data-ver-prod]");
     if (!im) return;
     const p = productos.find(x => String(x.id) === im.dataset.verProd);
-    if (p && p.foto) abrirVisorFotos([p.foto], 0, p.nombre);
+    if (p && (p.fotos || []).length) abrirVisorFotos(p.fotos, 0, p.nombre);
   });
   $("t-lista").addEventListener("click", manejarClicks);
   $("t-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);

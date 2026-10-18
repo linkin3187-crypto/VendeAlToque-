@@ -180,7 +180,7 @@ async function pintarConfirmar(c) {
   if (usuarioActual && c.ownerId === usuarioActual.id) return;            // el dueño no vota por su negocio
   const leer = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const visita = leerVisitas().find(v => v.id === c.id);
-  const volvio = !!(visita && Date.now() - visita.t > 2 * 60000);
+  const volvio = !!(visita && Date.now() - visita.t > 90000);
   if (leer("mf_conf_cerrado_" + c.id) === "1" && !volvio) return;
   if (usuarioActual && await miConfirmacion(c.id)) return;                 // ya opinó
   const verificado = c.nivel >= 2;

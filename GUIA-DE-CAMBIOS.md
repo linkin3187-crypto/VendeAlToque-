@@ -511,3 +511,21 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2AA.1 · Panel de comercios: arreglos urgentes + verificación con tu criterio
+
+**SQL:** `supabase/26_verificacion_flexible.sql` — antes o después de fusionar. Debe terminar mostrando 1 fila: `foto_opcional = true | minimo = true`. Es repetible. (Sin él, el panel funciona, pero la base de datos seguirá pidiendo foto en la visita.)
+
+**Cambian:** `admin-comercios.html/.js`, `comercios.js`, `app.js`, `tienda.js`, `data.js`, `styles.css`. Caché `?v=52`.
+
+- **Arreglado: «Corregir ubicación» ya no borra lo que estabas escribiendo.** Al guardar la ubicación (o verificar, o guardar otra ficha) la lista se recarga, pero ahora se guarda un borrador de lo que habías cambiado en cada ficha y se vuelve a poner, con el aviso «✏️ Tienes cambios sin guardar en esta ficha». Tampoco se cierran las fichas que ya habías abierto con «Ver más».
+- **WhatsApp en el editor:** nuevo campo «💬 WhatsApp (10 dígitos)» (se guarda con 57). El botón **💬 WhatsApp** ahora sale para **todos** los comercios que tengan número: tarjeta del directorio, ventanita del mapa, comercios del inicio y ficha completa (antes solo los «desde casa»).
+- **Foto con cámara o galería** al **editar**, **crear** y **verificar** un comercio: «📷 Tomar foto» / «🖼️ Galería».
+- **Verificación con tu criterio:**
+  - **En persona:** basta marcar **«El local existe y atiende en esta dirección»** (dice «obligatorio»). Los demás puntos son opcionales.
+  - **Por teléfono:** basta **«Confirmé el nombre y la dirección»**.
+  - **Foto opcional:** si no subes foto te pregunta «¿Guardar así?» y tú decides.
+  - El **historial** muestra qué comprobaste: «✅ 18 oct · En persona · comprobado: existe · sin foto».
+- **«¿Lo encontraste?»** ahora sale **arriba** (en celular arriba de todo; en computador arriba a la derecha), en una **franja pequeña**, a **1 minuto y medio**, y **se va sola a los 25 segundos** si no la tocas. Si se ignora 2 veces, no vuelve a preguntar por ese comercio.
+
+**Revertir:** PR → **Revert**. La regla del SQL se puede dejar.
+

@@ -641,7 +641,18 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 /* 2Z.10b: «¿Existe aquí?» más visible en la ventanita y «¿Lo encontraste?» flotante */
 .conf-pop { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 5px 7px; font-weight: 700; color: #3730a3; }
 .conf-pop button { font-size: 12px; font-weight: 700; color: #1e293b; }
-.lo-encontraste { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 90; max-width: 420px; margin: 0 auto;
-  background: #fff; border: 2px solid #a5b4fc; border-radius: 18px; padding: 12px 14px; box-shadow: 0 12px 30px rgba(30, 27, 75, .25); animation: ni-sube .25s ease-out; }
-@media (min-width: 768px) { .lo-encontraste { bottom: 20px; left: auto; right: 20px; } }
+.lo-encontraste { position: fixed; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top, 0px)); z-index: 90; max-width: 460px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; background: rgba(255,255,255,.97); border: 1px solid #c7d2fe; border-radius: 14px;
+  padding: 8px 10px; box-shadow: 0 8px 22px rgba(30, 27, 75, .18); animation: le-baja .25s ease-out; transition: opacity .35s, transform .35s; }
+.lo-encontraste.saliendo { opacity: 0; transform: translateY(-12px); }
+.lo-encontraste .le-texto { font-size: 13px; color: #1e1b4b; flex: 1 1 180px; min-width: 0; }
+.lo-encontraste .le-botones { display: flex; align-items: center; gap: 6px; }
+.lo-encontraste .btn-conf { font-size: 12px; padding: 6px 10px; border-radius: 10px; }
+.le-cerrar { width: 28px; height: 28px; border-radius: 999px; color: #64748b; font-size: 13px; }
+.le-cerrar:hover { background: #e2e8f0; }
+@keyframes le-baja { from { transform: translateY(-110%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 768px) { .lo-encontraste { left: auto; right: 16px; top: 76px; margin: 0; } }
 @media (prefers-reduced-motion: reduce) { .lo-encontraste { animation: none; } }
+
+/* ===== Fase 2AA.1 · Panel de comercios ===== */
+.ficha-borrador { box-shadow: 0 0 0 2px #f59e0b; }

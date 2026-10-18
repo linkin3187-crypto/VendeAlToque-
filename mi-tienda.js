@@ -8,6 +8,7 @@ let productosMios = [];
 const MAX_PRODUCTOS = 20;
 
 let galeria = null;
+let datosSalud = null;   // fase 2AB.1: datos sanitarios del comercio actual (o null)
 const soloDigitos = s => String(s || "").replace(/\D/g, "");
 
 function pintarCabecera() {
@@ -72,6 +73,7 @@ async function guardarNegocio(e) {
     actual = await guardarMiComercio(actual.id, cambios);
     misComercios = misComercios.map(c => c.id === actual.id ? actual : c);
     pintarDatos();
+    await pintarSalud(); pintarProductosMios();
     mostrarToast("✅ Datos guardados");
   } catch (err) {
     console.error(err);
@@ -118,7 +120,8 @@ function pintarProductosMios() {
   iniciarGaleriasProductos();
   $("mt-vacio").classList.toggle("hidden", productosMios.length > 0);
   $("mt-cuenta").textContent = `(${productosMios.length} de ${MAX_PRODUCTOS})`;
-  $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS;
+  $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS || (esComercioSalud(actual) && !datosSalud);
+  $("mt-agregar").title = esComercioSalud(actual) && !datosSalud ? "Primero guarda tus datos sanitarios" : "";
 }
 
 async function accionProducto(e) {
@@ -140,6 +143,7 @@ async function accionProducto(e) {
       const crudo = v("precio").value.trim();
       const precio = crudo ? Number(soloDigitos(crudo)) : null;
       if (crudo && (!Number.isFinite(precio) || precio > 99999999999)) throw new Error("El precio no es válido");
+      if (!confirmarNoMedicamento(nombre + " " + v("descripcion").value, "en las vitrinas")) { b.disabled = false; return; }
       const gal = galeriasProd.get(fila);
       const datos = { nombre, descripcion: v("descripcion").value, precio, disponible: v("disponible").checked };
       if (gal && (gal.cambiado || !pid)) datos.fotos = await gal.subir();
@@ -159,9 +163,43 @@ async function refrescarProductos() {
   pintarProductosMios();
 }
 
+// ---------- Datos sanitarios (fase 2AB.1) ----------
+async function pintarSalud() {
+  const salud = esComercioSalud(actual);
+  $("mt-salud").classList.toggle("hidden", !salud);
+  $("mt-reglas").innerHTML = salud
+    ? "💊 <b>Droguerías y naturistas:</b> por ahora tu vitrina es solo para productos que <b>no son medicamentos</b>: aseo e higiene, cuidado personal, bebé, dermocosmética, botiquín, tapabocas… Los medicamentos (de venta libre o con fórmula) y los productos fitoterapéuticos se habilitarán más adelante, solo para establecimientos autorizados. <a href=\"politica-productos-salud.html\" class=\"underline\">Ver reglas</a>"
+    : "No se permiten medicamentos (ni de venta libre ni con fórmula médica) ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan. <a href=\"politica-productos-salud.html\" class=\"underline\">Ver reglas</a>";
+  datosSalud = null;
+  if (!salud) return;
+  try { datosSalud = await cargarDatosSanitarios(actual.id); }
+  catch (e) { console.warn("datos sanitarios:", e); $("mt-salud-estado").textContent = ""; $("mt-salud-campos").innerHTML = '<p class="text-sm text-slate-500">Esta sección se activa en unos días.</p>'; datosSalud = {}; return; }
+  const est = $("mt-salud-estado");
+  if (!datosSalud) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"; est.textContent = "Falta llenarlos"; }
+  else if (datosSalud.revisado_en) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800"; est.textContent = "✔ Revisados por MercaFree"; }
+  else { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"; est.textContent = "⏳ En revisión"; }
+  $("mt-salud-nota").classList.toggle("hidden", !(datosSalud && datosSalud.nota_moderador));
+  $("mt-salud-nota").textContent = datosSalud && datosSalud.nota_moderador ? "💬 MercaFree: " + datosSalud.nota_moderador : "";
+  $("mt-salud-campos").innerHTML = htmlDatosSanitarios("mt-ds", datosSalud || { tipo_establecimiento: actual.tipo === "naturista" ? "naturista" : "" });
+}
+async function guardarSalud(e) {
+  e.preventDefault();
+  const r = leerDatosSanitarios("mt-ds");
+  if (r.error) { mostrarToast(r.error, "error"); return; }
+  const b = e.target.querySelector('button[type="submit"]'); b.disabled = true;
+  try {
+    await guardarDatosSanitarios(actual.id, r.datos);
+    mostrarToast("✅ Datos sanitarios guardados. MercaFree los revisará");
+    await pintarSalud();
+    pintarProductosMios();
+  } catch (err) { console.error(err); mostrarToast(mensajeError(err), "error"); }
+  finally { b.disabled = false; }
+}
+
 async function elegirComercio(id) {
   actual = misComercios.find(c => c.id === id) || misComercios[0];
   pintarCabecera(); pintarDatos();
+  await pintarSalud();
   await refrescarProductos();
 }
 
@@ -185,6 +223,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("mt-selector-caja").classList.remove("hidden");
   }
   $("form-negocio").addEventListener("submit", guardarNegocio);
+  $("form-salud").addEventListener("submit", guardarSalud);
   $("mt-modo").addEventListener("change", () => {
     const modo = (document.querySelector('input[name="mt-modo"]:checked') || {}).value;
     $("mt-modo-aviso").classList.toggle("hidden", !(actual && modo !== (actual.modoAtencion || "local")));

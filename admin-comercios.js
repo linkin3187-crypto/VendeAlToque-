@@ -831,8 +831,41 @@ function abrirEditor(id) {
   edGaleria = gestorFotos($("ed-galeria"), c.fotos, marcarEditorSucio);   // fase 2AA.4: hasta 5 fotos
   $("ed-activo").checked = !!c.activo;
   pintarDuenoEditor();
+  pintarSaludEditor();
   tabEditor("datos");
   abrirModal("modal-editor");
+}
+// ---------- 🧾 Datos sanitarios (fase 2AB.1) ----------
+let edDS = null;
+async function pintarSaludEditor() {
+  const salud = esComercioSalud(edC);
+  document.querySelector('#modal-editor [data-ed-tab="salud"]').classList.toggle("hidden", !salud);
+  if (!salud) return;
+  const id = edC.id;
+  $("ed-ds-estado").textContent = "Cargando…"; $("ed-ds-campos").innerHTML = ""; $("ed-ds-quien").textContent = "";
+  try { edDS = await cargarDatosSanitarios(id); }
+  catch (e) { $("ed-ds-estado").textContent = "Se activa al ejecutar supabase/29_productos_salud.sql"; return; }
+  if (!edC || edC.id !== id) return;
+  $("ed-ds-estado").textContent = !edDS ? "❌ Sin datos (el dueño no puede cargar productos)" : edDS.revisado_en ? "✔ Revisados el " + new Date(edDS.revisado_en).toLocaleDateString("es-CO") : "⏳ Por revisar";
+  $("ed-ds-quien").textContent = edDS ? "Última actualización: " + new Date(edDS.actualizado_en).toLocaleString("es-CO") : "Puedes llenarlos tú si el dueño te los dio por WhatsApp o llamada.";
+  $("ed-ds-campos").innerHTML = htmlDatosSanitarios("ed-ds", edDS || { tipo_establecimiento: edC.tipo === "naturista" ? "naturista" : "" });
+  $("ed-ds-nota").value = (edDS && edDS.nota_moderador) || "";
+  $("ed-ds-ok").classList.toggle("hidden", !edDS || !!edDS.revisado_en);
+  $("ed-ds-quitar").classList.toggle("hidden", !(edDS && edDS.revisado_en));
+}
+async function accionSaludEditor(acc) {
+  try {
+    if (acc === "guardar") {
+      const r = leerDatosSanitarios("ed-ds");
+      if (r.error) { mostrarToast(r.error, "error"); return; }
+      await guardarDatosSanitarios(edC.id, { ...r.datos, nota_moderador: $("ed-ds-nota").value.trim() || null });
+      mostrarToast("✅ Datos sanitarios guardados");
+    } else {
+      await revisarDatosSanitarios(edC.id, acc === "ok", $("ed-ds-nota").value);
+      mostrarToast(acc === "ok" ? "✅ Marcados como revisados" : "Visto bueno quitado");
+    }
+    await pintarSaludEditor();
+  } catch (err) { console.error(err); mostrarToast(mensajeError(err), "error"); }
 }
 function pintarDuenoEditor() {
   $("ed-dueno-estado").textContent = edC.ownerId ? "asignado" : "sin asignar";
@@ -915,6 +948,11 @@ function conectarEditor() {
   document.addEventListener("modal:cerrado", e => {
     if (e.detail && e.detail.id === "modal-ubicacion") { ubParaEditor = false; $("ub-guardar").textContent = "💾 Guardar ubicación"; }
   });
+  $("ed-ds-guardar").addEventListener("click", () => accionSaludEditor("guardar"));
+  $("ed-ds-ok").addEventListener("click", () => accionSaludEditor("ok"));
+  $("ed-ds-quitar").addEventListener("click", () => accionSaludEditor("quitar"));
+  // lo de esta pestaña se guarda aparte: no cuenta como «cambios sin guardar» del comercio
+  ["input", "change"].forEach(ev => document.querySelector('#modal-editor [data-ed-panel="salud"]').addEventListener(ev, e => e.stopPropagation()));
   $("ed-dueno-asignar").addEventListener("click", () => duenoEditor(false));
   $("ed-dueno-quitar").addEventListener("click", () => duenoEditor(true));
   // Escape: si el editor está arriba y tiene cambios, pregunta antes de cerrar

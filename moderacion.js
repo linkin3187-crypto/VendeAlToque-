@@ -276,6 +276,59 @@ async function accionReporteProducto(e) {
   } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
+// ---------- 💊 Salud (fase 2AB.1) ----------
+async function pintarSalud() {
+  let lista = [], ds = [];
+  try { lista = await cargarRevisionSalud(); } catch (e) {
+    $("salud-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Se activa al ejecutar supabase/29_productos_salud.sql.</p>';
+    return;
+  }
+  try { ds = await cargarDatosSanitariosPorRevisar(); } catch (e) { /* sin el SQL 29 */ }
+  $("n-salud").textContent = lista.length ? "(" + lista.length + ")" : "";
+  $("salud-lista").innerHTML = lista.length ? lista.map(r => {
+    const ver = r.tipo === "anuncio" ? `anuncio.html?id=${r.ref_id}` : `tienda.html?id=${r.comercio_id}`;
+    return `<article class="bg-white border border-slate-200 rounded-xl p-3 text-sm" data-salud="${r.id}" data-tipo="${esc(r.tipo)}" data-ref="${r.ref_id}">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${r.tipo === "anuncio" ? "bg-sky-100 text-sky-800" : "bg-violet-100 text-violet-800"}">${r.tipo === "anuncio" ? "📢 Anuncio" : "🛍️ Producto de vitrina"}</span>
+        <span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">💊 «${esc(r.coincide)}»</span>
+        <span class="text-xs text-slate-400">${esc(fechaCorta(r.creado_en))}</span>
+      </div>
+      <p class="mt-1 text-slate-700">${esc(r.texto)}</p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        <a href="${ver}" target="_blank" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">👁️ Ver</a>
+        <button type="button" data-sacc="ocultado" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🚫 Ocultar</button>
+        <button type="button" data-sacc="permitido" class="text-xs bg-white border border-green-300 text-green-800 hover:bg-green-50 px-3 py-1.5 rounded-lg font-semibold">✅ Está permitido</button>
+      </div>
+    </article>`;
+  }).join("") : '<p class="text-sm text-slate-400 text-center py-4">Nada que parezca medicamento. ✨</p>';
+  $("n-dsan").textContent = ds.length ? "(" + ds.length + ")" : "";
+  $("dsan-lista").innerHTML = ds.length ? ds.map(d => {
+    const c = d.comercio || {};
+    return `<div class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm">
+      <b>${esc(c.nombre || "Comercio #" + d.comercio_id)}</b>
+      <span class="text-xs text-slate-500">${esc(d.razon_social)} · NIT ${esc(d.nit)}</span>
+      <span class="text-xs text-slate-400">${esc(fechaCorta(d.actualizado_en))}</span>
+      <a href="admin-comercios.html?editar=${d.comercio_id}" class="ml-auto text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg font-semibold">🧾 Revisar →</a>
+    </div>`;
+  }).join("") : '<p class="text-sm text-slate-400 text-center py-3">No hay datos sanitarios por revisar.</p>';
+}
+async function accionSalud(e) {
+  const b = e.target.closest("[data-sacc]");
+  const art = e.target.closest("[data-salud]");
+  if (!b || !art) return;
+  art.querySelectorAll("button").forEach(x => { x.disabled = true; });
+  try {
+    if (b.dataset.sacc === "ocultado") {
+      const ref = Number(art.dataset.ref);
+      if (art.dataset.tipo === "anuncio") await cambiarVisibilidadAnuncio(ref, "oculto");
+      else await ocultarProducto(ref, true);
+    }
+    await resolverRevisionSalud(Number(art.dataset.salud), b.dataset.sacc);
+    mostrarToast(b.dataset.sacc === "ocultado" ? "🚫 Ocultado" : "✅ Marcado como permitido");
+    await pintarSalud();
+  } catch (err) { art.querySelectorAll("button").forEach(x => { x.disabled = false; }); mostrarToast(mensajeError(err), "error"); }
+}
+
 // ---------- Opiniones (calificaciones) reportadas ----------
 function tarjetaReporteCalificacion(r) {
   const q = r.calificacion;
@@ -604,6 +657,11 @@ function tarjetaNegocio(n) {
       </div>
     </div>
     ${n.descripcion ? `<p class="text-sm text-slate-600 mt-2">“${esc(n.descripcion)}”</p>` : ""}
+    ${n.datos_sanitarios ? (d => `<div class="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900">
+      <b>🧾 Datos sanitarios (privados):</b> ${esc(TIPOS_ESTABLECIMIENTO_SALUD[d.tipo_establecimiento] || d.tipo_establecimiento || "")}<br>
+      ${esc(d.razon_social || "")} · NIT <b>${esc(d.nit || "")}</b> · Director técnico: ${esc(d.director_tecnico || "")}
+      ${d.acta_numero || d.acta_fecha ? `<br>Acta/concepto: ${esc(d.acta_numero || "—")} ${d.acta_fecha ? "(" + esc(d.acta_fecha) + ")" : ""}` : ""}
+      <br><span class="text-emerald-700">Revisa el NIT en RUES antes de aprobar. Al aprobar, estos datos pasan solos al comercio.</span></div>`)(n.datos_sanitarios) : ""}
     <div data-senales class="mt-3 text-xs text-slate-400">Calculando señales de confianza…</div>
     <div class="flex flex-wrap gap-2 mt-3">
       ${wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-semibold">💬 Escribir por WhatsApp</a>` : ""}
@@ -772,6 +830,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarNegocios();
   pintarAprobadosSinVerificar();
   pintarReportesProducto();
+  $("salud-lista").addEventListener("click", accionSalud);
+  pintarSalud();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
   $("cc-lista").addEventListener("click", accionCatComercio);

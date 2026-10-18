@@ -36,7 +36,7 @@ const CATEGORIAS = [
 // Subcategorías (opcionales por categoría). Se guarda solo el `id` (texto corto) en anuncios.subcategoria.
 // Para agregar una: añádela aquí con un id en minúsculas (a-z, 0-9, _) de hasta 30 caracteres. No requiere SQL.
 const SUBCATEGORIAS = {
-  tienda:     [["abarrotes", "Abarrotes y víveres"], ["frutas_verduras", "Frutas y verduras"], ["carnes_lacteos", "Carnes y lácteos"], ["licores", "Licores"], ["drogueria", "Droguería y salud"], ["papeleria", "Papelería"], ["otros", "Otros"]],
+  tienda:     [["abarrotes", "Abarrotes y víveres"], ["frutas_verduras", "Frutas y verduras"], ["carnes_lacteos", "Carnes y lácteos"], ["licores", "Licores"], ["drogueria", "Cuidado personal y aseo"], ["papeleria", "Papelería"], ["otros", "Otros"]],
   comida:     [["restaurantes", "Restaurantes"], ["comidas_rapidas", "Comidas rápidas"], ["panaderia_postres", "Panadería y postres"], ["productos_caseros", "Productos caseros"], ["bebidas", "Bebidas"], ["otros", "Otros"]],
   autos:      [["carros", "Carros"], ["motos", "Motos"], ["camionetas", "Camionetas y camperos"], ["camiones", "Camiones y buses"], ["repuestos", "Repuestos de carro"], ["repuestos_moto", "Repuestos y accesorios de moto"], ["bicicletas", "Bicicletas y patinetas"], ["otros", "Otros"]],
   inmuebles:  [["apartamentos", "Apartamentos"], ["casas", "Casas"], ["apartaestudios", "Apartaestudios"], ["lotes_fincas", "Lotes y fincas"], ["locales_oficinas", "Locales y oficinas"], ["bodegas", "Bodegas"], ["habitaciones", "Habitaciones"], ["otros", "Otros"]],
@@ -860,7 +860,7 @@ async function cargarProductosPublicos() {
 // ---------- Accesos en cuadros del inicio (fase 2Z.1, supabase/20_accesos_inicio.sql) ----------
 // Respaldo si aún no existe la tabla (los mismos que siembra el SQL)
 const ACCESOS_RESPALDO = [
-  { titulo: "Farmacias", icono: "💊", color: "menta", destino: "comercios.html?tipo=farmacia" },
+  { titulo: "Droguerías", icono: "💊", color: "menta", destino: "comercios.html?tipo=farmacia" },
   { titulo: "Mercado", icono: "🛒", color: "amarillo", destino: "comercios.html?tipo=supermercado" },
   { titulo: "Comida", icono: "🍔", color: "naranja", destino: "buscar.html?q=comida" },
   { titulo: "Bares", icono: "🍻", color: "rosa", destino: "comercios.html?tipo=bar" },
@@ -1228,6 +1228,112 @@ async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
   if (error) throw error;
 }
 
+// =====================================================================
+// DROGUERÍAS Y PRODUCTOS DE SALUD (fase 2AB.1, supabase/29_productos_salud.sql)
+// Hoy NO se venden medicamentos (Términos 4B). Las droguerías y naturistas dejan sus datos sanitarios
+// (privados: solo el dueño y MercaFree) y su vitrina muestra solo productos que no son medicamentos.
+// =====================================================================
+const TIPOS_SALUD = ["farmacia", "naturista"];
+const esTipoSalud = t => TIPOS_SALUD.includes(t);
+const esComercioSalud = c => !!c && (esTipoSalud(c.tipo) || (c.tiposExtra || []).some(esTipoSalud));
+const TIPOS_ESTABLECIMIENTO_SALUD = {
+  drogueria: "Droguería (director técnico o regente)",
+  farmacia_drogueria: "Farmacia-droguería (químico farmacéutico)",
+  naturista: "Tienda naturista"
+};
+// La misma lista que public.palabra_medicamento() del SQL 29: solo AVISA; la última palabra es del moderador
+const RX_MEDICAMENTO = /\b(medicamentos?|acetaminofen|paracetamol|ibuprofeno|naproxeno|diclofenaco|aspirina|amoxicilina|ampicilina|azitromicina|ciprofloxacina|cefalexina|antibioticos?|losartan|enalapril|metformina|insulinas?|omeprazol|esomeprazol|loratadina|cetirizina|dexametasona|prednisolona|betametasona|clonazepam|alprazolam|diazepam|tramadol|codeina|morfina|sildenafil|viagra|misoprostol|cytotec|anticonceptiv[a-z]*|dolex|advil|noxpirin|apronax|buscapina|sin formula|sin receta|formula medica|ampollas?|inyectables?|jarabes?|tabletas?|capsulas?|pastillas?|grageas?|[0-9]+ ?mg)\b/;
+function pareceMedicamento(texto) {
+  const t = String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const m = t.match(RX_MEDICAMENTO);
+  return m ? m[1] : "";
+}
+// Pregunta antes de guardar algo que parece un medicamento. true = sigue (la persona confirmó que NO lo es).
+function confirmarNoMedicamento(texto, donde) {
+  const p = pareceMedicamento(texto);
+  if (!p) return true;
+  return confirm(`«${p}» parece un medicamento.\n\nEn MercaFree no se publican medicamentos (ni de venta libre ni con fórmula médica) ${donde || ""}. Si lo publicas, un moderador lo revisa y puede ocultarlo.\n\n¿Confirmas que NO es un medicamento?`);
+}
+
+// Formulario reutilizable (registro, Mi tienda y el editor del administrador). pre = prefijo de los id.
+function htmlDatosSanitarios(pre, d) {
+  d = d || {};
+  const opt = Object.entries(TIPOS_ESTABLECIMIENTO_SALUD).map(([k, v]) => `<option value="${k}" ${d.tipo_establecimiento === k ? "selected" : ""}>${esc(v)}</option>`).join("");
+  const inp = "mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800";
+  return `<div class="space-y-3">
+    <p class="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3">🔒 <b>Estos datos son privados.</b> Solo los ven tú y MercaFree. No aparecen en tu ficha pública. Los pide la ley para identificar a quien ofrece productos (Ley 1480 de 2011, art. 53) y porque las droguerías son establecimientos vigilados por la Secretaría de Salud.</p>
+    <label class="block text-xs font-bold text-slate-500">Tipo de establecimiento *
+      <select id="${pre}-tipo-est" class="${inp} bg-white"><option value="">— Elige —</option>${opt}</select></label>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block text-xs font-bold text-slate-500">Razón social *
+        <input id="${pre}-razon" maxlength="150" value="${esc(d.razon_social || "")}" class="${inp}" placeholder="Droguería El Sol S.A.S."></label>
+      <label class="block text-xs font-bold text-slate-500">NIT (o cédula si es persona natural) *
+        <input id="${pre}-nit" maxlength="14" inputmode="numeric" value="${esc(d.nit || "")}" class="${inp}" placeholder="900123456-7"></label>
+    </div>
+    <label class="block text-xs font-bold text-slate-500">Director técnico o regente de farmacia *
+      <input id="${pre}-director" maxlength="120" value="${esc(d.director_tecnico || "")}" class="${inp}" placeholder="Nombre completo"></label>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block text-xs font-bold text-slate-500">N.º de acta o concepto sanitario <span class="font-normal">(opcional)</span>
+        <input id="${pre}-acta" maxlength="60" value="${esc(d.acta_numero || "")}" class="${inp}" placeholder="Ej. 2026-0412"></label>
+      <label class="block text-xs font-bold text-slate-500">Fecha de la última visita <span class="font-normal">(opcional)</span>
+        <input id="${pre}-acta-fecha" type="date" value="${esc(d.acta_fecha || "")}" max="${new Date().toISOString().slice(0, 10)}" class="${inp}"></label>
+    </div>
+    <label class="flex items-start gap-2 text-sm"><input type="checkbox" id="${pre}-declara" class="mt-1" ${d.declara_autorizacion ? "checked" : ""}>
+      <span>Declaro que este establecimiento cuenta con <b>autorización y concepto sanitario vigente</b> de la Secretaría de Salud, y que conozco la <a href="politica-productos-salud.html" target="_blank" class="underline text-indigo-600">Política de productos de salud</a> de MercaFree: hoy <b>no publico medicamentos</b> en mi vitrina.</span></label>
+  </div>`;
+}
+// Lee y valida. Devuelve { datos } o { error }.
+function leerDatosSanitarios(pre) {
+  const v = id => (document.getElementById(pre + "-" + id) || {}).value || "";
+  const datos = {
+    tipo_establecimiento: v("tipo-est"), razon_social: v("razon").trim(),
+    nit: v("nit").replace(/[\s.]/g, ""), director_tecnico: v("director").trim(),
+    acta_numero: v("acta").trim() || null, acta_fecha: v("acta-fecha") || null,
+    declara_autorizacion: !!(document.getElementById(pre + "-declara") || {}).checked
+  };
+  if (!datos.tipo_establecimiento) return { error: "Elige el tipo de establecimiento" };
+  if (datos.razon_social.length < 2) return { error: "Escribe la razón social" };
+  if (!/^[0-9]{5,12}(-[0-9])?$/.test(datos.nit)) return { error: "El NIT debe tener solo números, con o sin dígito de verificación (ej. 900123456-7)" };
+  if (datos.director_tecnico.length < 3) return { error: "Escribe el nombre del director técnico o regente" };
+  if (datos.acta_fecha && datos.acta_fecha > new Date().toISOString().slice(0, 10)) return { error: "La fecha del acta no puede ser futura" };
+  if (!datos.declara_autorizacion) return { error: "Debes declarar que cuentas con autorización de la Secretaría de Salud" };
+  return { datos };
+}
+async function cargarDatosSanitarios(comercioId) {
+  const { data, error } = await sb.from("datos_sanitarios").select("*").eq("comercio_id", comercioId).maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+async function guardarDatosSanitarios(comercioId, datos) {
+  const { data, error } = await sb.from("datos_sanitarios").upsert({ comercio_id: comercioId, ...datos }, { onConflict: "comercio_id" }).select().single();
+  if (error) throw error;
+  return data;
+}
+// Solo moderadores: visto bueno (o quitarlo) con una nota opcional
+async function revisarDatosSanitarios(comercioId, ok, nota) {
+  const { data, error } = await sb.from("datos_sanitarios").update({
+    revisado_en: ok ? new Date().toISOString() : null, revisado_por: ok ? usuarioActual.id : null, nota_moderador: (nota || "").trim() || null
+  }).eq("comercio_id", comercioId).select().single();
+  if (error) throw error;
+  return data;
+}
+async function cargarDatosSanitariosPorRevisar() {
+  const { data, error } = await sb.from("datos_sanitarios").select("*, comercio:comercios(id, nombre, tipo, municipio_id)")
+    .is("revisado_en", null).order("actualizado_en", { ascending: true }).limit(100);
+  if (error) throw error;
+  return data || [];
+}
+// Cola «💊 Posibles medicamentos» (solo moderadores)
+async function cargarRevisionSalud() {
+  const { data, error } = await sb.from("revision_salud").select("*").eq("estado", "pendiente").order("creado_en", { ascending: true }).limit(200);
+  if (error) throw error;
+  return data || [];
+}
+async function resolverRevisionSalud(id, estado) {
+  const { error } = await sb.from("revision_salud").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
+
 // ---------- Registro de negocios nuevos (Fase 2D.6) ----------
 // d: { nombre, tipo, municipioId, direccion, lat, lng, telefono, whatsapp, horario, descripcion, foto (data:), gpsCerca }
 async function crearNegocioPendiente(d) {
@@ -1240,7 +1346,9 @@ async function crearNegocioPendiente(d) {
     gps_cerca: !!d.gpsCerca, acepta_terminos: true
   };
   if (d.modo && d.modo !== "local") fila.modo_atencion = d.modo;   // «local» es el valor por defecto
+  if (d.datosSanitarios) fila.datos_sanitarios = d.datosSanitarios;   // fase 2AB.1 (SQL 29)
   const { error } = await sb.from("negocios_pendientes").insert(fila);
+  if (error && /datos_sanitarios/.test(error.message || "")) throw new Error("El registro de droguerías y tiendas naturistas se activa en unos días. Escríbenos a mercafree7@gmail.com y te registramos.");
   if (error && /modo_atencion/.test(error.message || "")) throw new Error("Para registrar un negocio que atiende desde casa o solo a domicilio falta un ajuste del sistema. Elige «Local abierto» o inténtalo más tarde.");
   if (error) throw error;
 }
@@ -1255,7 +1363,8 @@ async function cargarNegociosPendientes(estado, soloMias) {
     if (soloMias && usuarioActual) q = q.eq("solicitante_id", usuarioActual.id);
     return q;
   };
-  let { data, error } = await consulta(", modo_atencion");
+  let { data, error } = await consulta(", modo_atencion, datos_sanitarios");
+  if (error && /datos_sanitarios/.test(error.message || "")) ({ data, error } = await consulta(", modo_atencion"));   // sin el SQL 29
   if (error && /modo_atencion/.test(error.message || "")) ({ data, error } = await consulta(""));   // sin el SQL 24
   if (error) throw error;
   return data || [];

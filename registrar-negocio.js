@@ -48,6 +48,7 @@ function validarPaso(n) {
     if (!pinFijado) return modoElegido() === "local" ? "Marca la puerta de tu negocio en el mapa (arrastra el pin o toca el mapa)" : "Marca tu casa o tu zona en el mapa (arrastra el pin o toca el mapa)";
   }
   if (n === 3) {
+    if (esTipoSalud($("rn-tipo").value)) { const r = leerDatosSanitarios("rn-ds"); if (r.error) return r.error; }
     if (!fotoData) return modoElegido() === "local" ? "Sube la foto de la fachada" : "Sube una foto de tus productos o tu logo";
     if (!$("rn-acepto").checked) return "Debes confirmar que eres el dueño o administrador y aceptar los términos";
   }
@@ -141,7 +142,8 @@ async function enviar(e) {
       direccion: $("rn-dir").value, lat: p.lat, lng: p.lng,
       telefono: $("rn-tel").value.trim(), whatsapp: wa ? "57" + wa : null,
       horario: $("rn-hor").value.trim(), descripcion: $("rn-desc").value.trim(),
-      foto: fotoData, modo: modoElegido(), gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
+      foto: fotoData, modo: modoElegido(),
+      datosSanitarios: esTipoSalud($("rn-tipo").value) ? leerDatosSanitarios("rn-ds").datos : null, gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
     });
     $("rn-form-caja").classList.add("hidden");
     $("rn-exito").classList.remove("hidden");
@@ -169,6 +171,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarCategoriasComercio();
   $("rn-tipo").innerHTML = opcionesCategoria("tienda");
   $("rn-tipo").value = "tienda";
+  // Fase 2AB.1: al elegir Farmacia/Droguería o Naturista aparecen los datos sanitarios (paso 3)
+  $("rn-salud-campos").innerHTML = htmlDatosSanitarios("rn-ds", { tipo_establecimiento: "" });
+  const aplicarSalud = () => {
+    const salud = esTipoSalud($("rn-tipo").value);
+    $("rn-salud").classList.toggle("hidden", !salud);
+    if (salud && !$("rn-ds-tipo-est").value) $("rn-ds-tipo-est").value = $("rn-tipo").value === "naturista" ? "naturista" : "drogueria";
+  };
+  $("rn-tipo").addEventListener("change", aplicarSalud);
+  aplicarSalud();
   $("rn-muni").innerHTML = municipios.map(m => `<option value="${m.id}">${esc(m.nombre)} (${esc(m.departamento)})</option>`).join("");
   $("rn-muni").addEventListener("change", () => { if (!pinFijado && mapa) mapa.setView(centroMunicipio(), 16), pin.setLatLng(centroMunicipio()); });
   $("rn-modo").addEventListener("change", aplicarModo);

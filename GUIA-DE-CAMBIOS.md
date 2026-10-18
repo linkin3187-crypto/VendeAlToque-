@@ -585,3 +585,18 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. La columna puede quedarse.
 
+
+## Fase 2AB.1 · Droguerías y productos de salud: la norma queda instalada (sin vender medicamentos)
+
+**SQL:** `supabase/29_productos_salud.sql` — **antes** de fusionar (el registro de droguerías y la cola de revisión lo necesitan). Debe terminar con 1 fila: `tabla_privada = true | cola = true | en_registro = true | subcat_renombrada = true`. Es repetible.
+
+**Cambian:** `terminos.html`, `privacidad.html`, **nuevo** `politica-productos-salud.html`, `registrar-negocio.*`, `mi-tienda.*`, `admin-comercios.*`, `moderacion.*`, `app.js`, `data.js`. Caché `?v=57`.
+
+- **Legal:** Términos **4B** (hoy no se publican medicamentos; las personas nunca; MercaFree es intermediario tecnológico; siempre prohibidos control especial, magistrales, muestras, sin INVIMA) y en **4A** la identificación de quien ofrece (Ley 1480, art. 53). Privacidad: datos sanitarios privados y **no recibimos fórmulas médicas**. Página nueva con las reglas futuras de venta libre y con fórmula (Res. 1896 de 2023).
+- **Dónde quedan los datos sanitarios:** tabla privada `datos_sanitarios` (una fila por comercio). Solo la leen y cambian el **dueño** y los **moderadores** (RLS). En la solicitud de registro viajan en `negocios_pendientes.datos_sanitarios` y al aprobar pasan solos a la tabla.
+- **Botones:** dueño → **Mi tienda → 🧾 Datos sanitarios** (ver, editar, estado y tu nota). Tú → **Editar comercios → ✏️ Editor completo → 🧾 Sanitario** (ver, editar, «✅ Marcar revisado», nota) y **Moderación → 💊 Salud → 🧾 Datos sanitarios por revisar**. La solicitud de una droguería nueva los muestra en **➕ Negocios nuevos**.
+- **Reglas del servidor:** droguería o naturista sin datos sanitarios no puede agregar productos; si el dueño cambia sus datos, se quita tu visto bueno; un anuncio o producto con palabras de medicamento entra a la cola **💊 Posibles medicamentos** (no se oculta solo: decides «Ocultar» o «Está permitido»).
+- **Avisos al usuario:** al publicar un anuncio o guardar un producto que parece medicamento, se pide confirmar que **no** lo es.
+- **Nombres:** Anuncios → Tiendas «Droguería y salud» → «Cuidado personal y aseo»; Belleza y salud «Salud y bienestar» → «Bienestar (sin medicamentos)»; cuadro del inicio «Farmacias» → «Droguerías».
+
+**Revertir:** PR → **Revert**. Las tablas pueden quedarse; si quieres quitar la regla de productos: `drop trigger productos_salud_requisito on public.productos_comercio;`.

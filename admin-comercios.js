@@ -259,6 +259,7 @@ function filaEditor(c) {
       ${campo("nombre", "Nombre", c.nombre, "")}
       ${campo("direccion", "Dirección", c.direccion, "Cra 43A # 10-20")}
       ${campo("telefono", "Teléfono", c.telefono, "604 123 4567")}
+      ${campo("whatsapp", "💬 WhatsApp (10 dígitos)", (c.whatsapp || "").replace(/^57/, ""), "300 123 4567")}
       ${campo("horario", "Horario", c.horario, "Lun-Sáb 8:00-20:00")}
       <label class="text-xs font-bold text-slate-500">🏷️ Categoría principal
         <select data-k="tipo" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria(c.tipo)}</select></label>
@@ -268,11 +269,15 @@ function filaEditor(c) {
         <select data-extra class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesCategoria((c.tiposExtra || [])[1] || "", "— Ninguna —")}</select></label>
       <label class="text-xs font-bold text-slate-500">¿Cómo atiende?
         <select data-k="modo_atencion" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesModo(c.modoAtencion)}</select></label>
-      <label class="text-xs font-bold text-slate-500 sm:col-span-2">Foto del local
-        <div class="flex items-center gap-2 mt-0.5">
+      <div class="text-xs font-bold text-slate-500 sm:col-span-2">Foto del local
+        <div class="flex flex-wrap items-center gap-2 mt-0.5">
           ${c.foto ? `<img src="${esc(urlSegura(c.foto))}" alt="" class="w-10 h-10 rounded object-cover">` : ""}
-          <input type="file" data-foto accept="image/*" class="text-xs font-normal">
-        </div></label>
+          <span class="foto-botones">
+            <label class="foto-btn"><input type="file" data-foto data-grupo-foto="ed" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+            <label class="foto-btn"><input type="file" data-foto data-grupo-foto="ed" accept="image/*" class="sr-only">🖼️ Galería</label>
+          </span>
+          <span data-foto-nombre="ed" class="text-[11px] font-normal text-slate-500"></span>
+        </div></div>
     </div>
     <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
       <span class="font-bold text-slate-500">🙋 Dueño:</span>
@@ -361,9 +366,42 @@ async function cargarOtrosPendientes() {
   pintarPendientes();
 }
 
-async function refrescarLista() {
-  try { listaAdmin = await cargarComerciosAdmin(); limiteLista = 40; pintarLista(); if ($("cat-lista")) pintarCategorias(); }
-  catch (e) { mostrarToast(mensajeError(e), "error"); }
+// Fase 2AA.1: al recargar la lista (p. ej. tras «Corregir ubicación» o verificar) NO se pierde lo que estabas
+// escribiendo en otras fichas: se guarda un borrador de los campos cambiados y se vuelve a poner.
+const SEL_CAMPOS = "[data-k], [data-extra], [data-dueno]";
+function capturarBorradores(excepto) {
+  const m = new Map();
+  document.querySelectorAll("#ac-lista [data-id]").forEach(f => {
+    if (String(f.dataset.id) === String(excepto)) return;
+    const cambios = {};
+    f.querySelectorAll(SEL_CAMPOS).forEach((el, i) => {
+      const v = el.type === "checkbox" ? el.checked : el.value;
+      const def = el.type === "checkbox" ? el.defaultChecked
+        : el.tagName === "SELECT" ? (([...el.options].find(o => o.defaultSelected) || el.options[0] || {}).value) : el.defaultValue;
+      if (v !== def) cambios[i] = v;
+    });
+    if (Object.keys(cambios).length) m.set(String(f.dataset.id), cambios);
+  });
+  return m;
+}
+function restaurarBorradores(m) {
+  m.forEach((cambios, id) => {
+    const f = document.querySelector(`#ac-lista [data-id="${id}"]`);
+    if (!f) return;
+    const els = f.querySelectorAll(SEL_CAMPOS);
+    Object.entries(cambios).forEach(([i, v]) => { const el = els[i]; if (!el) return; if (el.type === "checkbox") el.checked = v; else el.value = v; });
+    f.classList.add("ficha-borrador");
+    f.insertAdjacentHTML("afterbegin", '<p class="text-xs font-semibold text-amber-700 mb-1">✏️ Tienes cambios sin guardar en esta ficha: toca «Guardar».</p>');
+  });
+}
+async function refrescarLista(excepto) {
+  const borradores = capturarBorradores(excepto);
+  try {
+    listaAdmin = await cargarComerciosAdmin();
+    pintarLista();                        // se conserva cuántas fichas había abiertas (limiteLista)
+    restaurarBorradores(borradores);
+    if ($("cat-lista")) pintarCategorias();
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
 }
 
 // ---------- Agregar un comercio a mano ----------
@@ -384,7 +422,7 @@ function abrirNuevo() {
   coordsNu = null; recomendacionNu = null; $("nu-error").classList.add("hidden");
   if ($("nu-rec-aviso")) $("nu-rec-aviso").classList.add("hidden");
   ["nu-nombre", "nu-dir", "nu-tel", "nu-wa", "nu-hor", "nu-desc"].forEach(id => { $(id).value = ""; });
-  $("nu-foto").value = "";
+  limpiarFoto("nu");
   $("nu-coords").textContent = "Toca el mapa o arrastra el pin hasta la puerta del local";
   abrirModal("modal-nuevo");
   const centro = centroNu();
@@ -460,7 +498,7 @@ async function guardarNuevo() {
       lat: +coordsNu.lat.toFixed(6), lng: +coordsNu.lng.toFixed(6), activo: true,
       fuente: recomendacionNu ? "Recomendado por la comunidad" : "Agregado por el equipo"
     };
-    const archivo = $("nu-foto").files[0];
+    const archivo = fotoElegida("nu");
     if (archivo) fila.foto_url = await subirFotoComercio(await comprimir(archivo));
     else if (recomendacionNu && recomendacionNu.foto_url) fila.foto_url = recomendacionNu.foto_url;
     const c = await crearComercioDB(fila);
@@ -614,14 +652,16 @@ const LISTA_VERIF = {
     ["terminos", "El dueño acepta los términos y autoriza publicar los datos del negocio"]
   ]
 };
+// Lo único obligatorio para aprobar (el resto es opcional y queda en el historial)
+const MINIMO_VERIF = { telefono: "nombre_dir", visita: "existe" };
 let comercioVi = null, gpsVi = null;
 
 const metodoVi = () => document.querySelector('input[name="vi-metodo"]:checked').value;
 
 function pintarListaVi() {
   const m = metodoVi();
-  $("vi-lista").innerHTML = LISTA_VERIF[m].map(([k, t]) =>
-    `<label class="flex items-start gap-2"><input type="checkbox" data-v="${k}" class="mt-1 shrink-0"> <span>${esc(t)}</span></label>`).join("");
+  $("vi-lista").innerHTML = '<p class="text-xs text-slate-500">Marca lo que comprobaste. Solo el primero es obligatorio; lo demás queda anotado en el historial.</p>' + LISTA_VERIF[m].map(([k, t]) =>
+    `<label class="flex items-start gap-2"><input type="checkbox" data-v="${k}" class="mt-1 shrink-0"> <span>${esc(t)}${k === MINIMO_VERIF[m] ? ' <b class="text-indigo-700">(obligatorio)</b>' : ""}</span></label>`).join("");
   $("vi-visita").classList.toggle("hidden", m !== "visita");
 }
 
@@ -638,7 +678,7 @@ async function abrirVisita(id) {
   $("vi-nombre").textContent = comercioVi.nombre;
   $("vi-actual").textContent = "Sello actual: " + (SELLOS[comercioVi.nivel] || SELLOS[1]).corto + (comercioVi.verificadoEn ? " · " + fechaSello(comercioVi) : "");
   document.querySelector('input[name="vi-metodo"][value="visita"]').checked = true;
-  $("vi-foto").value = ""; $("vi-notas").value = ""; $("vi-gps-txt").textContent = "Sin capturar: se conserva el pin actual";
+  limpiarFoto("vi"); $("vi-notas").value = ""; $("vi-gps-txt").textContent = "Sin capturar: se conserva el pin actual";
   errorVi("");
   pintarListaVi();
   $("vi-historial").innerHTML = '<li class="text-slate-400">Cargando…</li>';
@@ -647,7 +687,10 @@ async function abrirVisita(id) {
     const h = await cargarVerificaciones(id);
     $("vi-historial").innerHTML = h.length ? h.map(v => {
       const f = new Date(v.creado_en).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
-      return `<li>${v.resultado === "aprobada" ? "✅" : "❌"} ${f} · ${v.metodo === "visita" ? "En persona" : "Por teléfono"}${v.verificador_id === (usuarioActual && usuarioActual.id) ? " · tú" : ""}${v.notas ? " · " + esc(v.notas) : ""}</li>`;
+      // Fase 2AA.1: qué se comprobó (los puntos marcados) y si hubo foto
+      const corto = { nombre_dir: "nombre y dirección", telefono_negocio: "teléfono", existe: "existe", responsable: "responsable", pin_puerta: "pin", terminos: "términos" };
+      const hechos = Object.entries(v.lista || {}).filter(([, x]) => x).map(([k]) => corto[k] || k);
+      return `<li>${v.resultado === "aprobada" ? "✅" : "❌"} ${f} · ${v.metodo === "visita" ? "En persona" : "Por teléfono"}${v.verificador_id === (usuarioActual && usuarioActual.id) ? " · tú" : ""}${v.resultado === "aprobada" && hechos.length ? " · comprobado: " + esc(hechos.join(", ")) : ""}${v.resultado === "aprobada" && v.metodo === "visita" && !v.foto_fachada_url ? " · sin foto" : ""}${v.notas ? " · " + esc(v.notas) : ""}</li>`;
     }).join("") : '<li class="text-slate-400">Sin verificaciones registradas.</li>';
   } catch (err) {
     $("vi-historial").innerHTML = '<li class="text-slate-400">No se pudo cargar el historial.</li>';
@@ -670,10 +713,13 @@ async function enviarVerificacion(resultado) {
   const lista = {};
   document.querySelectorAll("#vi-lista [data-v]").forEach(i => { lista[i.dataset.v] = i.checked; });
   const notas = $("vi-notas").value.trim();
-  const archivo = $("vi-foto").files[0];
+  const archivo = fotoElegida("vi");
   if (resultado === "aprobada") {
-    if (Object.values(lista).some(v => !v)) { errorVi("Marca todos los puntos de la lista para aprobar. Si algo no se cumple, usa «No se pudo verificar»."); return; }
-    if (m === "visita" && !archivo) { errorVi("Falta la foto de la fachada."); return; }
+    // Fase 2AA.1: tú decides. Solo es obligatorio el punto principal; lo demás queda registrado tal cual.
+    const minimo = MINIMO_VERIF[m];
+    if (!lista[minimo]) { errorVi("Para aprobar, marca al menos: «" + LISTA_VERIF[m].find(x => x[0] === minimo)[1] + "». Si no se cumple, usa «No se pudo verificar»."); return; }
+    const faltan = LISTA_VERIF[m].filter(([k]) => !lista[k]).length;
+    if (m === "visita" && !archivo && !confirm("Vas a verificar sin foto de la fachada" + (faltan ? " y con " + faltan + " punto(s) sin marcar" : "") + ". ¿Guardar así?")) return;
   } else if (notas.length < 5) { errorVi("Explica en las notas por qué no se pudo verificar."); return; }
   errorVi("");
   const botones = [$("vi-aprobar"), $("vi-rechazar")];
@@ -725,18 +771,21 @@ async function accionEditor(e) {
       const nombre = texto("nombre");
       if (!nombre || nombre.length < 2) throw new Error("El nombre es obligatorio");
       const tipo = val("tipo").value;
+      const wa = (val("whatsapp").value || "").replace(/\D/g, "").replace(/^57(?=\d{10}$)/, "");
+      if (wa && wa.length !== 10) { mostrarToast("El WhatsApp debe tener 10 dígitos (ej. 300 123 4567)", "error"); b.disabled = false; return; }
       const cambios = {
         nombre, direccion: texto("direccion"), telefono: texto("telefono"), horario: texto("horario"),
+        whatsapp: wa ? "57" + wa : null,
         activo: val("activo").checked, tipo,
         ...(val("modo_atencion") && (val("modo_atencion").value !== "local" || c0.modoAtencion !== "local") ? { modo_atencion: val("modo_atencion").value } : {}),
         tipos_extra: [...new Set([...fila.querySelectorAll("[data-extra]")].map(s => s.value).filter(v => v && v !== tipo))]
       };
-      const archivo = fila.querySelector("[data-foto]").files[0];
+      const archivo = fotoElegida("ed", fila);
       if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
       await guardarComercioDB(id, cambios);
       mostrarToast("✅ Guardado");
     }
-    await refrescarLista();
+    await refrescarLista(id);   // esta ficha queda con lo guardado; las demás conservan lo que estabas escribiendo
   } catch (err) {
     console.error(err);
     b.disabled = false;

@@ -1319,7 +1319,7 @@ async function crearVerificacion(datos) {
 
 async function cargarVerificaciones(comercioId) {
   const { data, error } = await sb.from("verificaciones_comercio")
-    .select("id, metodo, resultado, nivel, notas, foto_fachada_url, creado_en, verificador_id")
+    .select("id, metodo, resultado, nivel, lista, notas, foto_fachada_url, creado_en, verificador_id")
     .eq("comercio_id", comercioId).order("creado_en", { ascending: false }).limit(20);
   if (error) throw error;
   return data || [];
@@ -2016,7 +2016,7 @@ async function cargarSenalesComunidad() {
 
 // ---- «🧭 ¿Lo encontraste?» en cualquier página (fase 2Z.10b) ----
 // Cuando alguien toca «Cómo llegar», WhatsApp o Llamar de un comercio (directorio, mapa, ficha o inicio),
-// se anota la visita. Al volver a la página (o abrir otra) 2 minutos después, sale una tarjeta flotante:
+// se anota la visita. Al volver a la página (o abrir otra) 1 minuto y medio después, sale arriba una franja pequeña:
 // «¿Encontraste «X»? ✅ Sí, existe / ❌ No estaba». Se puede cerrar y no vuelve a preguntar por ese comercio.
 const CLAVE_VISITAS = "mf_visitas_com";
 function leerVisitas() { try { return JSON.parse(localStorage.getItem(CLAVE_VISITAS) || "[]"); } catch (e) { return []; } }
@@ -2031,7 +2031,7 @@ function olvidarVisita(id) { guardarVisitas(leerVisitas().filter(v => v.id !== i
 // Visita pendiente de preguntar: entre 2 minutos y 3 días, la más reciente
 function visitaPorPreguntar(excluirId) {
   const ahora = Date.now();
-  const l = leerVisitas().filter(v => ahora - v.t > 2 * 60000 && ahora - v.t < 3 * 864e5 && v.id !== excluirId
+  const l = leerVisitas().filter(v => ahora - v.t > 90000 && ahora - v.t < 3 * 864e5 && v.id !== excluirId && (v.pr || 0) < 2
     && !(usuarioActual && v.o && v.o === usuarioActual.id));
   return l.length ? l[l.length - 1] : null;
 }
@@ -2048,15 +2048,21 @@ function preguntarLoEncontraste() {
   const excluir = (typeof tienda !== "undefined" && tienda) ? tienda.id : null;   // en su ficha pregunta la tarjeta de la ficha
   const v = visitaPorPreguntar(excluir);
   if (!v) return;
+  try { if (sessionStorage.getItem("mf_le_" + v.id)) return; sessionStorage.setItem("mf_le_" + v.id, "1"); } catch (e) { /* nada */ }
+  // Se cuenta cuántas veces se preguntó: si se ignora 2 veces, no se vuelve a preguntar
+  guardarVisitas(leerVisitas().map(x => x.id === v.id ? Object.assign(x, { pr: (x.pr || 0) + 1 }) : x));
   document.body.insertAdjacentHTML("beforeend", `<div id="lo-encontraste" class="lo-encontraste" role="dialog" aria-label="¿Lo encontraste?">
-    <button type="button" data-le="cerrar" class="confirmar-cerrar" aria-label="Cerrar">✕</button>
-    <p class="font-black text-indigo-900 pr-6">🧭 ¿Encontraste «${esc(v.n)}»?</p>
-    <p class="text-xs text-slate-600">Hace poco buscaste cómo llegar o lo contactaste. Tu respuesta ayuda a tus vecinos.</p>
-    <div class="flex flex-wrap gap-2 mt-2">
-      <button type="button" data-le="existe" class="btn-conf si">✅ Sí, existe</button>
+    <p class="le-texto">🧭 ¿Encontraste <b>${esc(v.n)}</b>?</p>
+    <div class="le-botones">
+      <button type="button" data-le="existe" class="btn-conf si">✅ Sí</button>
       <button type="button" data-le="no_existe" class="btn-conf no">❌ No estaba</button>
+      <button type="button" data-le="cerrar" class="le-cerrar" aria-label="Cerrar">✕</button>
     </div></div>`);
   const caja = document.getElementById("lo-encontraste");
+  // No molesta: se va sola a los 25 segundos si no la tocas
+  let tocada = false;
+  caja.addEventListener("pointerdown", () => { tocada = true; });
+  setTimeout(() => { if (!tocada && caja.isConnected) { caja.classList.add("saliendo"); setTimeout(() => caja.remove(), 400); } }, 25000);
   caja.addEventListener("click", async e => {
     const b = e.target.closest("[data-le]");
     if (!b) return;
@@ -2072,7 +2078,7 @@ function preguntarLoEncontraste() {
     try {
       await confirmarComercio({ id: v.id, nombre: v.n, lat: v.lat, lng: v.lng, modoAtencion: v.m }, b.dataset.le);
       olvidarVisita(v.id);
-      caja.innerHTML = '<p class="font-black text-green-800">🙌 ¡Gracias por ayudar a tus vecinos!</p>';
+      caja.innerHTML = '<p class="le-texto font-bold text-green-800">🙌 ¡Gracias por ayudar a tus vecinos!</p>';
       setTimeout(() => caja.remove(), 2500);
     } catch (err) {
       // Si ya había opinado, no se vuelve a preguntar
@@ -2085,3 +2091,27 @@ function preguntarLoEncontraste() {
 // Al abrir la página y al volver a ella (por ejemplo, desde Google Maps o WhatsApp)
 document.addEventListener("DOMContentLoaded", () => setTimeout(preguntarLoEncontraste, 2500));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(preguntarLoEncontraste, 800); });
+
+// ---- Foto: «📷 Tomar foto» o «🖼️ Galería» (fase 2AA.1) ----
+// Dos <input type=file> con el mismo data-grupo-foto; se usa el último que se eligió.
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (!el || el.type !== "file" || !el.dataset.grupoFoto) return;
+  if (!el.files || !el.files[0]) return;                    // canceló: se conserva la que había
+  el.dataset.t = String(Date.now());
+  const raiz = el.closest("[data-id]") || document;
+  const aviso = raiz.querySelector(`[data-foto-nombre="${el.dataset.grupoFoto}"]`);
+  if (aviso) aviso.textContent = "✅ Foto lista: " + el.files[0].name;
+}, true);
+// El archivo elegido más recientemente en un grupo (dentro de «raiz»), o null
+function fotoElegida(grupo, raiz) {
+  const els = [...(raiz || document).querySelectorAll(`input[type=file][data-grupo-foto="${grupo}"]`)].filter(x => x.files && x.files[0]);
+  els.sort((a, b) => (Number(b.dataset.t) || 0) - (Number(a.dataset.t) || 0));
+  return els.length ? els[0].files[0] : null;
+}
+function limpiarFoto(grupo, raiz) {
+  (raiz || document).querySelectorAll(`input[type=file][data-grupo-foto="${grupo}"]`).forEach(x => { x.value = ""; delete x.dataset.t; });
+  const aviso = (raiz || document).querySelector(`[data-foto-nombre="${grupo}"]`);
+  if (aviso) aviso.textContent = "";
+}
+

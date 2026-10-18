@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=51">
+  <link rel="stylesheet" href="styles.css?v=52">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -166,7 +166,12 @@
         <label class="block text-xs font-bold text-slate-500">Descripción (máx. 300)
           <textarea id="nu-desc" maxlength="300" rows="2" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></textarea></label>
         <label class="block text-xs font-bold text-slate-500">Foto del local (opcional)
-          <input type="file" id="nu-foto" accept="image/*" class="mt-1 block w-full text-xs font-normal"></label>
+</label>
+          <span class="foto-botones mt-1">
+            <label class="foto-btn"><input type="file" id="nu-foto-cam" data-grupo-foto="nu" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+            <label class="foto-btn"><input type="file" id="nu-foto" data-grupo-foto="nu" accept="image/*" class="sr-only">🖼️ Galería</label>
+          </span>
+          <span data-foto-nombre="nu" class="block text-[11px] text-slate-500"></span>
       </div>
       <p id="nu-error" class="hidden text-sm text-red-600 font-semibold mt-2"></p>
       <div class="flex gap-2 mt-4">
@@ -188,8 +193,12 @@
       </div>
       <div id="vi-lista" class="space-y-2 text-sm mb-3"></div>
       <div id="vi-visita" class="space-y-2 mb-3">
-        <label class="block text-xs font-bold text-slate-500">📷 Foto de la fachada (con el número visible, sin clientes)
-          <input type="file" id="vi-foto" accept="image/*" capture="environment" class="mt-1 block w-full text-xs font-normal"></label>
+<div class="text-xs font-bold text-slate-500">📷 Foto de la fachada <span class="font-normal">(opcional, pero ayuda mucho: con el número visible, sin clientes)</span>
+          <span class="foto-botones mt-1">
+            <label class="foto-btn"><input type="file" id="vi-foto-cam" data-grupo-foto="vi" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+            <label class="foto-btn"><input type="file" id="vi-foto" data-grupo-foto="vi" accept="image/*" class="sr-only">🖼️ Galería</label>
+          </span>
+          <span data-foto-nombre="vi" class="block text-[11px] font-normal text-slate-500"></span></div>
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" id="vi-gps" class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200">📍 Capturar GPS en la puerta</button>
           <span id="vi-gps-txt" class="text-xs text-slate-500">Sin capturar: se conserva el pin actual</span>
@@ -210,9 +219,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=51"></script>
-  <script src="data.js?v=51"></script>
-  <script src="iconos.js?v=51"></script>
-  <script src="admin-comercios.js?v=51"></script>
+  <script src="utils.js?v=52"></script>
+  <script src="data.js?v=52"></script>
+  <script src="iconos.js?v=52"></script>
+  <script src="admin-comercios.js?v=52"></script>
 </body>
 </html>

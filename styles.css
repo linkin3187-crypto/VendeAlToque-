@@ -661,3 +661,19 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .ed-pestanas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; scrollbar-width: thin; }
 .ed-pestanas button { white-space: nowrap; font-size: 13px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 7px 12px; }
 .ed-pestanas button[aria-selected="true"] { background: #4f46e5; color: #fff; }
+
+/* ===== Fase 2AA.3 · Clasificar comercios por categoría ===== */
+.ac-cat-chip { flex: 0 0 auto; white-space: nowrap; font-size: 12px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 999px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 5px; }
+.ac-cat-chip:hover { border-color: #818cf8; }
+.ac-cat-chip.activo { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.ac-cat-ver { font-size: 10px; font-weight: 800; color: #15803d; background: #dcfce7; border-radius: 999px; padding: 1px 6px; }
+.ac-cat-chip.activo .ac-cat-ver { color: #fff; background: rgba(255,255,255,.25); }
+.ac-vista-btn { border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 8px; font-weight: 700; color: #475569; background: #fff; }
+.ac-vista-btn[aria-pressed="true"] { background: #eef2ff; border-color: #6366f1; color: #3730a3; }
+.ac-grupo { border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px 12px; background: #fff; }
+.ac-grupo > summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; list-style: none; }
+.ac-grupo > summary::-webkit-details-marker { display: none; }
+.ac-grupo > summary::before { content: "▸"; color: #6366f1; font-weight: 900; }
+.ac-grupo[open] > summary::before { content: "▾"; }
+.ac-barra { width: 90px; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: inline-block; }
+.ac-barra > span { display: block; height: 100%; background: #22c55e; }

@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=53">
+  <link rel="stylesheet" href="styles.css?v=54">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -79,6 +79,15 @@
           <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-2 bg-white" aria-label="Municipio"></select>
         </div>
         <div id="ac-origenes" class="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Origen del comercio"></div>
+        <!-- Fase 2AA.3: clasificar por categoría (según el municipio y filtros elegidos) -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <p class="text-xs font-bold text-slate-500">🏷️ Por categoría <span id="ac-cats-ctx" class="font-normal"></span></p>
+          <div class="flex gap-1 text-xs" role="group" aria-label="Vista">
+            <button type="button" data-vista="lista" class="ac-vista-btn">📋 Lista</button>
+            <button type="button" data-vista="grupos" class="ac-vista-btn">🗂️ Agrupada</button>
+          </div>
+        </div>
+        <div id="ac-cats" class="flex gap-1.5 mb-3 overflow-x-auto pb-1 custom-scrollbar" role="tablist" aria-label="Categoría"></div>
         <p class="text-sm text-slate-500 mb-3">Completa teléfono, horario y foto y guarda. Para dar el sello usa <b>✅ Verificar</b>: se abre el <b>modo visita</b> con la lista de comprobación y queda un registro (quién, cuándo y cómo). El sello solo cambia así. Si ya no existe, desmarca <b>Visible</b> o bórralo. Para <b>cambiar el nombre</b> de un comercio importado, edita el campo <b>Nombre</b> y pulsa <b>Guardar</b>. ¿Un negocio de barrio que no salió del mapa o te lo recomendaron? Usa <b>➕ Agregar comercio</b>.</p>
         <p id="ac-solo-uno" class="hidden mb-3 text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2">Mostrando solo el comercio que elegiste. <button type="button" id="ac-ver-todos" class="underline font-semibold">Ver todos</button></p>
         <div id="ac-lista" class="space-y-3"></div>
@@ -317,9 +326,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=53"></script>
-  <script src="data.js?v=53"></script>
-  <script src="iconos.js?v=53"></script>
-  <script src="admin-comercios.js?v=53"></script>
+  <script src="utils.js?v=54"></script>
+  <script src="data.js?v=54"></script>
+  <script src="iconos.js?v=54"></script>
+  <script src="admin-comercios.js?v=54"></script>
 </body>
 </html>

@@ -545,3 +545,16 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2AA.3 · Clasificar comercios por municipio y categoría
+
+**SQL:** ninguno. **Cambian:** `admin-comercios.html/.js`, `styles.css`. Caché `?v=54`.
+
+En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filtros:
+
+- **🏷️ Por categoría:** chips con **cuántos comercios hay de cada categoría** en el municipio y filtros elegidos (estado, origen, búsqueda), de mayor a menor, y cuántos están **verificados** (✔2) o ninguno (⏳). Cuentan también los que tienen la categoría como **secundaria**. Tocar un chip **filtra la lista**; «Todas» lo quita.
+- Al cambiar de **municipio**, los conteos se recalculan solos (ej. Medellín: 💊 Farmacias 3 ✔1 · 🥖 Panaderías 1).
+- **📋 Lista / 🗂️ Agrupada:** la vista agrupada muestra **una sección por categoría principal** (nadie sale repetido) con **barra de avance** («✔ 2 verificados · ⏳ 1 por verificar · 🙈 ocultos»). Cada sección se abre y muestra hasta 10 fichas; «Ver los N de …» lleva a la lista de esa categoría. La vista elegida se recuerda.
+- Las tarjetas de «Pendientes» de arriba quitan también el filtro de categoría.
+
+**Revertir:** PR → **Revert**.
+

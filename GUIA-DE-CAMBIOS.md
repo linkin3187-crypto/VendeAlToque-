@@ -529,3 +529,19 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**. La regla del SQL se puede dejar.
 
+## Fase 2AA.2 · Editor completo de comercios
+
+**SQL:** ninguno. **Cambian:** `admin-comercios.html/.js`, `index.html` (texto), `styles.css`. Caché `?v=53`.
+
+- En cada ficha de «Editar comercios» hay un botón **✏️ Editor completo** que abre una ventana con **5 pestañas** y **todos los campos** del registro de negocio y de «Mi tienda»:
+  - **📝 Datos:** nombre, categoría principal + 2 secundarias, cómo atiende, descripción (300), horario.
+  - **📞 Contacto y entrega:** WhatsApp (10 dígitos), teléfono, «se recoge en el local», domicilio y sus condiciones.
+  - **📍 Ubicación:** municipio (para moverlo de ciudad), dirección y **«Mover el pin en el mapa»** (abre el mismo mapa de siempre; el botón dice «✅ Usar este punto» y el pin vuelve al editor sin guardarse solo).
+  - **📷 Foto:** ver la actual, «Tomar foto» / «Galería», o «Quitar la foto actual».
+  - **🙋 Dueño y visibilidad:** visible sí/no, asignar o quitar dueño (esto se aplica al momento).
+- Un solo **💾 Guardar todo**. Si cierras con ✕, «Cancelar» o la tecla Esc teniendo **cambios sin guardar**, pregunta antes.
+- La edición rápida de la ficha sigue igual, por si solo quieres cambiar un dato.
+- **Texto de «Anuncios y clasificados»:** «Lo que vende y ofrece la gente de tu barrio o ciudad: productos, servicios, empleos, inmuebles y más».
+
+**Revertir:** PR → **Revert**.
+

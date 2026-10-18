@@ -319,14 +319,56 @@ function pintarLista() {
   base.forEach(c => { cuenta[origenComercio(c)]++; });
   $("ac-origenes").innerHTML = [["todos", "Todos"]].concat(Object.entries(ORIGENES).map(([k, o]) => [k, o.icono + " " + o.corto]))
     .map(([k, txt]) => `<button type="button" role="tab" data-origen="${k}" class="text-xs font-semibold px-3 py-1.5 rounded-full border ${origenAct === k ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"}">${txt} <b>${cuenta[k]}</b></button>`).join("");
+  const porOrigen = base.filter(c => origenAct === "todos" || origenComercio(c) === origenAct);
+  pintarCategoriasFiltro(porOrigen, m);
   const lista = soloId !== null ? listaAdmin.filter(c => c.id === soloId)
-    : base.filter(c => origenAct === "todos" || origenComercio(c) === origenAct);
+    : porOrigen.filter(c => !catAct || comercioEsTipo(c, catAct));
+  if (soloId === null && vistaAct === "grupos") { pintarAgrupada(lista); pintarPendientes(); return; }
   const visibles = soloId !== null ? lista : lista.slice(0, limiteLista);
   $("ac-lista").innerHTML = lista.length
     ? (origenAct !== "todos" && soloId === null ? `<p class="text-xs text-slate-500">${esc(ORIGENES[origenAct].nombre)}</p>` : "") + visibles.map(filaEditor).join("")
       + (lista.length > visibles.length ? `<div class="text-center"><button type="button" id="ac-mas" class="bg-white border border-slate-300 hover:border-indigo-400 font-semibold px-5 py-2 rounded-xl text-sm">Ver ${Math.min(40, lista.length - visibles.length)} más (${lista.length - visibles.length} restantes)</button></div>` : "")
     : `<p class="text-sm text-slate-400 text-center py-8">${listaAdmin.length ? "No hay comercios con estos filtros 🎉" : "Aún no hay comercios. Importa algunos arriba o usa «Agregar comercio»."}</p>`;
   pintarPendientes();
+}
+
+// ---------- Clasificar por categoría (fase 2AA.3) ----------
+// Chips con cuántos comercios hay de cada categoría en el municipio y filtros elegidos (principal o secundaria),
+// y cuántos están verificados. «🗂️ Agrupada» muestra secciones por categoría con su avance de verificación.
+let catAct = "", vistaAct = (() => { try { return localStorage.getItem("mf_ac_vista") || "lista"; } catch (e) { return "lista"; } })();
+const nivelesDe = l => ({ total: l.length, ver: l.filter(c => c.nivel >= 2).length, ocultos: l.filter(c => !c.activo).length });
+function pintarCategoriasFiltro(lista, muni) {
+  const cuenta = TIPOS_COMERCIO.map(t => {
+    const de = lista.filter(c => comercioEsTipo(c, t.id));
+    return { t, ...nivelesDe(de) };
+  }).filter(x => x.total > 0).sort((a, b) => b.total - a.total || a.t.nombre.localeCompare(b.t.nombre, "es"));
+  if (catAct && !cuenta.some(x => x.t.id === catAct)) catAct = "";   // la categoría ya no tiene comercios aquí
+  const mun = muni ? municipios.find(x => String(x.id) === String(muni)) : null;
+  $("ac-cats-ctx").textContent = "· " + (mun ? mun.nombre : "todos los municipios") + " · " + cuenta.length + " categorías";
+  const chip = (id, txt, n, ver, act) => `<button type="button" role="tab" aria-selected="${act}" data-cat-filtro="${esc(id)}" title="${ver} verificados de ${n}"
+    class="ac-cat-chip ${act ? "activo" : ""}">${txt} <b>${n}</b>${n ? `<span class="ac-cat-ver">${ver ? "✔" + ver : "⏳"}</span>` : ""}</button>`;
+  const todos = nivelesDe(lista);
+  $("ac-cats").innerHTML = chip("", "Todas", todos.total, todos.ver, !catAct) + cuenta.map(x => chip(x.t.id, x.t.icono + " " + esc(x.t.nombre), x.total, x.ver, catAct === x.t.id)).join("");
+  document.querySelectorAll(".ac-vista-btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vista === vistaAct)));
+}
+// Vista agrupada: una sección por categoría PRINCIPAL (así nadie sale repetido), con barra de avance
+function pintarAgrupada(lista) {
+  const grupos = new Map();
+  lista.forEach(c => { if (!grupos.has(c.tipo)) grupos.set(c.tipo, []); grupos.get(c.tipo).push(c); });
+  const orden = [...grupos.entries()].sort((a, b) => b[1].length - a[1].length);
+  if (!orden.length) { $("ac-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-8">No hay comercios con estos filtros 🎉</p>'; return; }
+  $("ac-lista").innerHTML = orden.map(([tipo, cs]) => {
+    const t = TIPOS_COMERCIO.find(x => x.id === tipo) || { icono: "🏪", nombre: tipo };
+    const n = nivelesDe(cs), pct = Math.round(n.ver * 100 / n.total);
+    const muestra = cs.slice(0, 10);
+    return `<details class="ac-grupo" data-grupo="${esc(tipo)}" ${orden.length <= 3 ? "open" : ""}>
+      <summary><span class="font-black text-indigo-900">${t.icono} ${esc(t.nombre)}</span> <b>${n.total}</b>
+        <span class="ac-barra" aria-label="${pct}% verificados"><span style="width:${pct}%"></span></span>
+        <span class="text-xs text-slate-500">✔ ${n.ver} verificados · ⏳ ${n.total - n.ver} por verificar${n.ocultos ? " · 🙈 " + n.ocultos + " ocultos" : ""}</span></summary>
+      <div class="space-y-3 mt-3">${muestra.map(filaEditor).join("")}
+        ${cs.length > muestra.length ? `<button type="button" data-cat-filtro="${esc(tipo)}" class="w-full bg-white border border-slate-300 hover:border-indigo-400 font-semibold py-2 rounded-xl text-sm">Ver los ${cs.length} de ${esc(t.nombre)} →</button>` : ""}
+      </div></details>`;
+  }).join("");
 }
 
 // ---------- Resumen de pendientes ----------
@@ -1027,10 +1069,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ac-buscar-nombre").addEventListener("input", () => { soloId = null; limiteLista = 40; pintarLista(); });
   $("ac-origenes").addEventListener("click", e => { const b = e.target.closest("[data-origen]"); if (b) { origenAct = b.dataset.origen; soloId = null; limiteLista = 40; pintarLista(); } });
   $("ac-lista").addEventListener("click", e => { if (e.target.closest("#ac-mas")) { limiteLista += 40; pintarLista(); } });
+  // Fase 2AA.3: categoría y vista
+  document.addEventListener("click", e => {
+    const c = e.target.closest("[data-cat-filtro]");
+    if (c && (c.closest("#ac-cats") || c.closest("#ac-lista"))) {
+      catAct = c.dataset.catFiltro; soloId = null; limiteLista = 40;
+      if (c.closest("#ac-lista")) { vistaAct = "lista"; try { localStorage.setItem("mf_ac_vista", vistaAct); } catch (er) { /* nada */ } }
+      pintarLista(); return;
+    }
+    const v = e.target.closest(".ac-vista-btn");
+    if (v) { vistaAct = v.dataset.vista; try { localStorage.setItem("mf_ac_vista", vistaAct); } catch (er) { /* nada */ } soloId = null; pintarLista(); }
+  });
   $("ac-pend-grid").addEventListener("click", e => {
     const b = e.target.closest("[data-ir], [data-ir-estado]");
     if (!b) return;
-    soloId = null; limiteLista = 40; $("ac-buscar-nombre").value = ""; $("ac-filtro-muni").value = "";
+    soloId = null; limiteLista = 40; catAct = ""; $("ac-buscar-nombre").value = ""; $("ac-filtro-muni").value = "";
     if (b.dataset.irEstado) { $("ac-filtro-ver").value = b.dataset.irEstado; origenAct = "todos"; }
     else { $("ac-filtro-ver").value = "no"; origenAct = b.dataset.ir; }
     pintarLista(); $("ac-origenes").scrollIntoView({ behavior: "smooth", block: "start" });

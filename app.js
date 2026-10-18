@@ -1063,6 +1063,8 @@ async function registrarAnuncio(e) {
   const precio = extraerPrecio($("form-precio").value);
   if (precio !== null && precio > 99999999999) { mostrarToast("El precio es demasiado alto", "error"); irAPaso(1); return; }
 
+  // Fase 2AB.1: los particulares no publican medicamentos (Términos 4B). Avisa; si confirma, un moderador lo revisa.
+  if (!confirmarNoMedicamento($("form-nombre").value + " " + (($("form-descripcion") || {}).value || ""), "en los clasificados")) return;
   const previo = modoEdicionId ? baseDatosAnuncios.find(a => a.id === modoEdicionId) : null;
   const btn = $("btn-submit-anuncio");
   const textoBtn = btn.textContent;

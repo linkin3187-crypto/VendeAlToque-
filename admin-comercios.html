@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=56">
+  <link rel="stylesheet" href="styles.css?v=57">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -127,6 +127,7 @@
           <button type="button" role="tab" data-ed-tab="ubicacion" aria-selected="false">📍 Ubicación</button>
           <button type="button" role="tab" data-ed-tab="foto" aria-selected="false">📷 Fotos</button>
           <button type="button" role="tab" data-ed-tab="dueno" aria-selected="false">🙋 Dueño y visibilidad</button>
+          <button type="button" role="tab" data-ed-tab="salud" aria-selected="false" class="hidden">🧾 Sanitario</button>
         </nav>
       </div>
       <form id="form-editor" class="p-4 overflow-auto flex-1 space-y-3" novalidate>
@@ -182,6 +183,20 @@
         <section data-ed-panel="foto" class="hidden space-y-3">
           <p class="text-xs text-slate-500">Hasta <b>5 fotos</b>: fachada, interior, productos… La <b>primera es la portada</b> (★ para cambiarla, ◀ ▶ para ordenar, ✕ para quitar).</p>
           <div id="ed-galeria"></div>
+        </section>
+        <!-- Fase 2AB.1: datos sanitarios (privados). Se guardan al momento, no con «Guardar todo» -->
+        <section data-ed-panel="salud" class="hidden space-y-3">
+          <p class="text-sm">🧾 Estado: <b id="ed-ds-estado"></b></p>
+          <p id="ed-ds-quien" class="text-[11px] text-slate-500"></p>
+          <div id="ed-ds-campos"></div>
+          <label class="block text-xs font-bold text-slate-500">Nota para el dueño <span class="font-normal">(la ve en Mi tienda)</span>
+            <input id="ed-ds-nota" maxlength="300" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Confirmado con la Secretaría de Salud de Antioquia"></label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="ed-ds-guardar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg text-xs">💾 Guardar datos</button>
+            <button type="button" id="ed-ds-ok" class="bg-green-700 hover:bg-green-800 text-white font-semibold px-3 py-2 rounded-lg text-xs">✅ Marcar revisado</button>
+            <button type="button" id="ed-ds-quitar" class="hidden text-red-600 hover:underline text-xs">Quitar visto bueno</button>
+          </div>
+          <p class="text-[11px] text-slate-500">Revisa en RUES (Cámara de Comercio) la razón social y el NIT, y si puedes confirma con la Secretaría de Salud. Estos botones se aplican al momento (no esperan a «Guardar todo»). El visto bueno <b>no</b> habilita vender medicamentos.</p>
         </section>
         <section data-ed-panel="dueno" class="hidden space-y-3">
           <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="ed-activo"> Visible en el mapa y el directorio</label>
@@ -318,9 +333,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=56"></script>
-  <script src="data.js?v=56"></script>
-  <script src="iconos.js?v=56"></script>
-  <script src="admin-comercios.js?v=56"></script>
+  <script src="utils.js?v=57"></script>
+  <script src="data.js?v=57"></script>
+  <script src="iconos.js?v=57"></script>
+  <script src="admin-comercios.js?v=57"></script>
 </body>
 </html>

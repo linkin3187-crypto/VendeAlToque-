@@ -734,6 +734,9 @@ function filaAComercio(r) {
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
     nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
     tiposExtra: Array.isArray(r.tipos_extra) ? r.tipos_extra : [],
+    // Fase 2AA.4: galería (máx. 5; la primera es la portada). Sin el SQL 27, la foto de siempre.
+    fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 5),
+    tieneColumnaFotos: Array.isArray(r.fotos),
     modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
     // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)
     confirmaSi: Number(r.confirma_si) || 0, confirmaNo: Number(r.confirma_no) || 0, confirmaLugar: Number(r.confirma_lugar) || 0,
@@ -2113,5 +2116,122 @@ function limpiarFoto(grupo, raiz) {
   (raiz || document).querySelectorAll(`input[type=file][data-grupo-foto="${grupo}"]`).forEach(x => { x.value = ""; delete x.dataset.t; });
   const aviso = (raiz || document).querySelector(`[data-foto-nombre="${grupo}"]`);
   if (aviso) aviso.textContent = "";
+}
+
+// =====================================================================
+// VISOR DE FOTOS A PANTALLA COMPLETA (fase 2AA.4) — comercios y productos
+// Toca una foto → se ve ENTERA (sin recortar). ‹ › o deslizar para cambiar; tocar, ✕ o Esc para cerrar.
+// =====================================================================
+let visorFotos = { lista: [], i: 0, titulo: "" };
+function abrirVisorFotos(lista, i, titulo) {
+  const fotos = (lista || []).map(urlSegura).filter(Boolean);
+  if (!fotos.length) return;
+  visorFotos = { lista: fotos, i: Math.max(0, Math.min(i || 0, fotos.length - 1)), titulo: titulo || "" };
+  let v = document.getElementById("visor-fotos");
+  if (!v) {
+    document.body.insertAdjacentHTML("beforeend", `<div id="visor-fotos" class="visor-fotos hidden" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+      <button type="button" data-vf="cerrar" class="vf-cerrar" aria-label="Cerrar foto">&times;</button>
+      <button type="button" data-vf="ant" class="vf-flecha vf-ant" aria-label="Foto anterior">&#8249;</button>
+      <img id="vf-img" alt="" draggable="false">
+      <button type="button" data-vf="sig" class="vf-flecha vf-sig" aria-label="Foto siguiente">&#8250;</button>
+      <p id="vf-pie" class="vf-pie"></p></div>`);
+    v = document.getElementById("visor-fotos");
+    v.addEventListener("click", e => {
+      const b = e.target.closest("[data-vf]");
+      if (b && b.dataset.vf === "ant") { moverVisor(-1); return; }
+      if (b && b.dataset.vf === "sig") { moverVisor(1); return; }
+      cerrarVisorFotos();
+    });
+    let x0 = null;   // deslizar con el dedo
+    v.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+    v.addEventListener("touchend", e => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) { e.preventDefault(); moverVisor(dx < 0 ? 1 : -1); }
+    });
+    document.addEventListener("keydown", e => {
+      if (document.getElementById("visor-fotos").classList.contains("hidden")) return;
+      if (e.key === "Escape") { e.stopImmediatePropagation(); cerrarVisorFotos(); }
+      if (e.key === "ArrowRight") moverVisor(1);
+      if (e.key === "ArrowLeft") moverVisor(-1);
+    }, true);
+  }
+  v.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  pintarVisor();
+}
+function moverVisor(d) { const n = visorFotos.lista.length; visorFotos.i = (visorFotos.i + d + n) % n; pintarVisor(); }
+function pintarVisor() {
+  const { lista, i, titulo } = visorFotos;
+  const img = document.getElementById("vf-img");
+  img.src = lista[i]; img.alt = (titulo ? titulo + " - " : "") + "foto " + (i + 1);
+  document.querySelectorAll("#visor-fotos .vf-flecha").forEach(b => b.classList.toggle("hidden", lista.length < 2));
+  document.getElementById("vf-pie").textContent = (titulo ? titulo + " · " : "") + (lista.length > 1 ? (i + 1) + " de " + lista.length : "");
+}
+function cerrarVisorFotos() {
+  const v = document.getElementById("visor-fotos");
+  if (v) v.classList.add("hidden");
+  if (!document.querySelector(".modal-fondo:not(.hidden)")) document.body.style.overflow = "";
+}
+
+// =====================================================================
+// GESTOR DE FOTOS DE UN COMERCIO (fase 2AA.4): hasta 5, la primera es la portada
+// Uso: const g = gestorFotos(contenedor, fotosActuales); … const urls = await g.subir();
+// =====================================================================
+const MAX_FOTOS_COMERCIO = 5;
+function gestorFotos(cont, iniciales, alCambiar) {
+  let items = (iniciales || []).filter(Boolean).slice(0, MAX_FOTOS_COMERCIO).map(url => ({ url }));
+  let cambiado = false;
+  const grupo = "gf" + Math.random().toString(36).slice(2, 7);
+  function pintar() {
+    cont.innerHTML = `<div class="gf-grid">${items.map((it, i) => `<div class="gf-item" data-gf="${i}">
+        <img src="${esc(it.data || urlSegura(it.url))}" alt="Foto ${i + 1}" data-gf-ver="${i}">
+        ${i === 0 ? '<span class="gf-portada">Portada</span>' : ""}
+        <div class="gf-acciones">
+          ${i > 0 ? `<button type="button" data-gf-mover="-1" aria-label="Mover a la izquierda">◀</button>` : ""}
+          ${i > 0 ? `<button type="button" data-gf-portada aria-label="Usar como portada" title="Usar como portada">★</button>` : ""}
+          ${i < items.length - 1 ? `<button type="button" data-gf-mover="1" aria-label="Mover a la derecha">▶</button>` : ""}
+          <button type="button" data-gf-quitar aria-label="Quitar foto" class="gf-quitar">✕</button>
+        </div></div>`).join("")}</div>
+      ${items.length < MAX_FOTOS_COMERCIO ? `<span class="foto-botones mt-2">
+        <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
+        <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" multiple class="sr-only">🖼️ Galería</label>
+      </span>` : ""}
+      <p class="text-[11px] text-slate-500 mt-1">${items.length} de ${MAX_FOTOS_COMERCIO} fotos. La primera es la <b>portada</b>; toca una foto para verla en grande.</p>`;
+  }
+  function cambio() { cambiado = true; pintar(); if (alCambiar) alCambiar(); }
+  cont.addEventListener("click", e => {
+    const ver = e.target.closest("[data-gf-ver]");
+    if (ver) { abrirVisorFotos(items.map(it => it.data || it.url), Number(ver.dataset.gfVer)); return; }
+    const box = e.target.closest("[data-gf]");
+    if (!box) return;
+    const i = Number(box.dataset.gf);
+    if (e.target.closest("[data-gf-quitar]")) { items.splice(i, 1); cambio(); return; }
+    if (e.target.closest("[data-gf-portada]")) { items.unshift(items.splice(i, 1)[0]); cambio(); return; }
+    const m = e.target.closest("[data-gf-mover]");
+    if (m) { const j = i + Number(m.dataset.gfMover); [items[i], items[j]] = [items[j], items[i]]; cambio(); }
+  });
+  cont.addEventListener("change", async e => {
+    const inp = e.target.closest("[data-gf-nueva]");
+    if (!inp || !inp.files || !inp.files.length) return;
+    const archivos = [...inp.files].slice(0, MAX_FOTOS_COMERCIO - items.length);
+    for (const f of archivos) {
+      try { items.push({ data: await comprimir(f) }); } catch (err) { mostrarToast("No se pudo leer una imagen", "error"); }
+    }
+    if ([...inp.files].length > archivos.length) mostrarToast("Máximo " + MAX_FOTOS_COMERCIO + " fotos por comercio", "error");
+    cambio();
+  });
+  pintar();
+  return {
+    get cambiado() { return cambiado; },
+    get cantidad() { return items.length; },
+    // Sube las nuevas (en orden) y devuelve la lista final de URLs
+    async subir() {
+      const nuevas = items.filter(it => it.data);
+      const urls = nuevas.length ? await subirFotos(nuevas.map(it => it.data)) : [];
+      nuevas.forEach((it, k) => { it.url = urls[k]; delete it.data; });
+      return items.map(it => it.url).filter(Boolean);
+    }
+  };
 }
 

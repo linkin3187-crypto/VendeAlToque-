@@ -272,7 +272,8 @@ function filaEditor(c) {
         <select data-k="modo_atencion" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white text-slate-800">${opcionesModo(c.modoAtencion)}</select></label>
       <div class="text-xs font-bold text-slate-500 sm:col-span-2">Foto del local
         <div class="flex flex-wrap items-center gap-2 mt-0.5">
-          ${c.foto ? `<img src="${esc(urlSegura(c.foto))}" alt="" class="w-10 h-10 rounded object-cover">` : ""}
+          ${c.foto ? `<img src="${esc(urlSegura(c.foto))}" alt="Ver fotos" data-ver-fotos="${c.id}" class="w-10 h-10 rounded object-cover cursor-zoom-in">` : ""}
+          ${c.fotos.length > 1 ? `<span class="font-normal text-slate-500">${c.fotos.length} fotos</span>` : ""}
           <span class="foto-botones">
             <label class="foto-btn"><input type="file" data-foto data-grupo-foto="ed" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
             <label class="foto-btn"><input type="file" data-foto data-grupo-foto="ed" accept="image/*" class="sr-only">🖼️ Galería</label>
@@ -793,7 +794,7 @@ async function enviarVerificacion(resultado) {
 // ---------- Editor completo de un comercio (fase 2AA.2) ----------
 // Todo lo que tienen el registro de negocio y «Mi tienda», en pestañas y con un solo «Guardar todo».
 // La ubicación se mueve con el mismo mapa de «Corregir ubicación», pero vuelve aquí sin guardarse sola.
-let edC = null, edCoords = null, edSucio = false, ubParaEditor = false;
+let edC = null, edCoords = null, edSucio = false, ubParaEditor = false, edGaleria = null;
 function marcarEditorSucio() { edSucio = true; $("ed-sucio").classList.remove("hidden"); }
 function pintarCoordsEditor() {
   const p = edCoords || edC;
@@ -827,10 +828,7 @@ function abrirEditor(id) {
   $("ed-dir").value = c.direccion || "";
   $("ed-aviso-aprox").classList.toggle("hidden", !esUbicacionAprox(c));
   pintarCoordsEditor();
-  const f = urlSegura(c.foto);
-  $("ed-foto-prev").classList.toggle("hidden", !f); if (f) $("ed-foto-prev").src = f;
-  $("ed-sin-foto").classList.toggle("hidden", !!f);
-  limpiarFoto("edc"); $("ed-quitar-foto").checked = false;
+  edGaleria = gestorFotos($("ed-galeria"), c.fotos, marcarEditorSucio);   // fase 2AA.4: hasta 5 fotos
   $("ed-activo").checked = !!c.activo;
   pintarDuenoEditor();
   tabEditor("datos");
@@ -869,9 +867,11 @@ async function guardarEditor() {
   if (edCoords) { cambios.lat = +edCoords.lat.toFixed(6); cambios.lng = +edCoords.lng.toFixed(6); }
   const b = $("ed-guardar"); b.disabled = true; b.textContent = "Guardando…";
   try {
-    const archivo = fotoElegida("edc");
-    if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
-    else if ($("ed-quitar-foto").checked) cambios.foto_url = null;
+    if (edGaleria && edGaleria.cambiado) {
+      const urls = await edGaleria.subir();
+      if (edC.tieneColumnaFotos) cambios.fotos = urls;   // el servidor pone la portada (la primera)
+      else cambios.foto_url = urls[0] || null;           // sin el SQL 27: solo la portada
+    }
     await guardarComercioDB(edC.id, cambios);
     edSucio = false;
     cerrarModal("modal-editor");
@@ -926,6 +926,8 @@ function conectarEditor() {
 }
 
 async function accionEditor(e) {
+  const vf = e.target.closest("[data-ver-fotos]");
+  if (vf) { const c = listaAdmin.find(x => x.id === Number(vf.dataset.verFotos)); if (c) abrirVisorFotos(c.fotos, 0, c.nombre); return; }
   const b = e.target.closest("[data-acc]");
   const fila = e.target.closest("[data-id]");
   if (!b || !fila) return;

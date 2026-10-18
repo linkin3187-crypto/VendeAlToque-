@@ -7,6 +7,7 @@ let actual = null;
 let productosMios = [];
 const MAX_PRODUCTOS = 20;
 
+let galeria = null;
 const soloDigitos = s => String(s || "").replace(/\D/g, "");
 
 function pintarCabecera() {
@@ -40,10 +41,7 @@ function pintarDatos() {
   $("mt-recoge").checked = actual.recoge;
   $("mt-dom").checked = actual.domicilio;
   $("mt-dom-info").value = actual.domicilioInfo;
-  $("mt-foto").value = "";
-  const f = urlSegura(actual.foto);
-  $("mt-foto-prev").classList.toggle("hidden", !f);
-  if (f) $("mt-foto-prev").src = f;
+  galeria = gestorFotos($("mt-galeria"), actual.fotos);   // fase 2AA.4
 }
 
 async function guardarNegocio(e) {
@@ -67,8 +65,10 @@ async function guardarNegocio(e) {
       cambios.tipo = $("mt-tipo").value;
       cambios.tipos_extra = [...new Set([$("mt-extra1").value, $("mt-extra2").value].filter(v => v && v !== cambios.tipo))];
     }
-    const archivo = $("mt-foto").files[0];
-    if (archivo) cambios.foto_url = await subirFotoComercio(await comprimir(archivo));
+    if (galeria && galeria.cambiado) {
+      const urls = await galeria.subir();
+      if (actual.tieneColumnaFotos) cambios.fotos = urls; else cambios.foto_url = urls[0] || null;
+    }
     actual = await guardarMiComercio(actual.id, cambios);
     misComercios = misComercios.map(c => c.id === actual.id ? actual : c);
     pintarDatos();

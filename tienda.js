@@ -25,7 +25,7 @@ function tarjetaProducto(p) {
   return `<article class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${p.disponible ? "" : "opacity-70"}" data-prod="${p.id}">
     <div class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
       <span class="text-3xl">🛍️</span>
-      ${foto ? `<img src="${esc(foto)}" alt="${esc(p.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
+      ${foto ? `<img src="${esc(foto)}" alt="${esc(p.nombre)}" loading="lazy" data-ver-prod="${p.id}" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in">` : ""}
       ${p.disponible ? "" : '<span class="absolute top-2 left-2 bg-slate-700 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">Agotado</span>'}
     </div>
     <div class="p-3 flex-1 flex flex-col">
@@ -82,13 +82,7 @@ function renderizarTienda(c, ps) {
   const sello = SELLOS[c.nivel] || SELLOS[1];
   $("t-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + sello.clase;
   $("t-sello").textContent = (c.nivel >= 2 ? "✔ " : "") + sello.corto + (c.verificadoEn ? " · " + fechaSello(c) : "");
-  const foto = urlSegura(c.foto);
-  if (foto) {
-    const img = document.createElement("img");
-    img.src = foto; img.alt = "Foto de " + c.nombre; img.className = "absolute inset-0 w-full h-full object-cover";
-    img.addEventListener("error", () => img.remove());
-    $("t-portada").appendChild(img);
-  }
+  pintarGaleriaComercio(c);   // fase 2AA.4: hasta 5 fotos, tocar para ver en grande
   if (c.descripcion) { $("t-desc").textContent = c.descripcion; $("t-desc").classList.remove("hidden"); }
   const fila = (id, txt) => { if (txt) { $(id).querySelector("span").textContent = txt; $(id).classList.remove("hidden"); } };
   const aprox = esUbicacionAprox(c);   // fase 2Z.8: atiende desde casa o solo a domicilio
@@ -170,6 +164,30 @@ function renderizarTienda(c, ps) {
   ["t-wa", "t-llamar", "t-llegar", "t-mapa-llegar"].forEach(id => $(id) && $(id).addEventListener("click", () => registrarVisitaComercio(c)));
   pintarProductos();
   $("t-contenido").classList.remove("hidden");
+}
+
+// ---------- Galería del comercio (fase 2AA.4) ----------
+// Portada grande + miniaturas; tocar cualquiera abre el visor con la foto ENTERA (sin recortar).
+let fotoComercioActiva = 0;
+function pintarGaleriaComercio(c) {
+  const fotos = (c.fotos || []).map(urlSegura).filter(Boolean);
+  const port = $("t-portada");
+  port.querySelectorAll("img, .t-foto-ctrl").forEach(x => x.remove());
+  if (!fotos.length) return;
+  const img = document.createElement("img");
+  img.alt = "Foto de " + c.nombre; img.className = "absolute inset-0 w-full h-full object-cover cursor-zoom-in";
+  img.addEventListener("error", () => img.remove());
+  port.appendChild(img);
+  port.insertAdjacentHTML("beforeend", `<button type="button" class="t-foto-ctrl t-ampliar" aria-label="Ver foto en grande">🔍 Ampliar${fotos.length > 1 ? ` · <span id="t-foto-n">1</span>/${fotos.length}` : ""}</button>`);
+  const mostrar = i => { fotoComercioActiva = i; img.src = fotos[i]; if ($("t-foto-n")) $("t-foto-n").textContent = i + 1;
+    document.querySelectorAll("#t-miniaturas [data-t-foto]").forEach(b => b.setAttribute("aria-current", String(Number(b.dataset.tFoto) === i))); };
+  port.onclick = e => { if (e.target === img || e.target.closest(".t-ampliar")) abrirVisorFotos(fotos, fotoComercioActiva, c.nombre); };
+  if (fotos.length > 1) {
+    port.insertAdjacentHTML("afterend", `<div id="t-miniaturas" class="flex gap-2 mt-2 overflow-x-auto pb-1">${fotos.map((f, i) =>
+      `<button type="button" data-t-foto="${i}" class="miniatura w-16 h-12 sm:w-20 sm:h-14 rounded-lg overflow-hidden shrink-0" aria-label="Ver foto ${i + 1}"><img src="${esc(f)}" alt="" class="w-full h-full object-cover" loading="lazy"></button>`).join("")}</div>`);
+    $("t-miniaturas").addEventListener("click", e => { const b = e.target.closest("[data-t-foto]"); if (b) mostrar(Number(b.dataset.tFoto)); });
+  }
+  mostrar(0);
 }
 
 // ---------- «¿Conoces este negocio?» (fase 2Z.10) ----------
@@ -297,6 +315,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!c) { $("t-error").classList.remove("hidden"); return; }
   renderizarTienda(c, ps);
   iniciarOpiniones();
+  $("t-lista").addEventListener("click", e => {   // fase 2AA.4: foto del producto en grande
+    const im = e.target.closest("[data-ver-prod]");
+    if (!im) return;
+    const p = productos.find(x => String(x.id) === im.dataset.verProd);
+    if (p && p.foto) abrirVisorFotos([p.foto], 0, p.nombre);
+  });
   $("t-lista").addEventListener("click", manejarClicks);
   $("t-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("form-rep-prod").addEventListener("submit", async e => {

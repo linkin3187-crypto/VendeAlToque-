@@ -52,7 +52,7 @@ function tarjetaComercioBusq(c) {
       <div class="flex flex-wrap gap-1 mt-1">
         <span class="${sello.clase} text-[10px] font-semibold px-1.5 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
         ${abierto === true ? '<span class="bg-green-50 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🟢 Abierto</span>' : ""}
-        ${c.nivel >= 2 && c.nProductos > 0 ? `<span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🛍️ Vitrina (${c.nProductos})</span>` : ""}
+        ${vitrinaPublica(c) && c.nProductos > 0 ? `<span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🛍️ Vitrina (${c.nProductos})</span>` : ""}
       </div>
     </div>
   </a>`;

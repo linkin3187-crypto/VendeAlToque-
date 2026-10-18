@@ -16,11 +16,14 @@ function pintarCabecera() {
   const s = SELLOS[actual.nivel] || SELLOS[1];
   $("mt-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + s.clase;
   $("mt-sello").textContent = (actual.nivel >= 2 ? "✔ " : "") + s.corto;
+  const bs = $("mt-badge-salud"); if (bs) bs.remove();
+  if (esComercioSalud(actual) && actual.saludRevisado) $("mt-sello").insertAdjacentHTML("afterend", '<span id="mt-badge-salud"> ' + BADGE_SALUD + "</span>");
   const e = $("mt-estado");
   const publica = actual.activo && actual.nivel >= 2;
   e.className = "text-sm rounded-lg px-3 py-2 mt-2 " + (publica ? "bg-green-50 text-green-900 border border-green-200" : "bg-amber-50 text-amber-900 border border-amber-200");
   // Fase 2Z.9: «Ubicado» SÍ aparece en el mapa y el directorio (igual que los importados); lo que espera la verificación son los productos
-  e.innerHTML = publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
+  e.innerHTML = publica && saludPendiente(actual) ? "🧾 Tu negocio está verificado, pero <b>tus productos se publican cuando Merkap revise tus datos sanitarios</b> (más abajo). Te avisamos por WhatsApp o llamada."
+    : publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
     : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
     : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando Merkap confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
   $("mt-ver").href = "tienda.html?id=" + actual.id;
@@ -190,6 +193,8 @@ async function guardarSalud(e) {
   try {
     await guardarDatosSanitarios(actual.id, r.datos);
     mostrarToast("✅ Datos sanitarios guardados. Merkap los revisará");
+    const fresco = await cargarComercioPorId(actual.id).catch(() => null);   // el servidor quita el visto bueno si cambiaste algo
+    if (fresco) { actual = fresco; misComercios = misComercios.map(c => c.id === actual.id ? actual : c); pintarCabecera(); }
     await pintarSalud();
     pintarProductosMios();
   } catch (err) { console.error(err); mostrarToast(mensajeError(err), "error"); }

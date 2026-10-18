@@ -614,3 +614,17 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - Lo que **no** cambió: el correo mercafree7@gmail.com (pendiente P2) y los nombres internos (`mf_…`), que no se ven.
 
 **Revertir:** PR → **Revert**.
+
+## Fase 2AB.2b · Sello sanitario aparte del sello de verificación
+
+**SQL:** `supabase/31_sello_sanitario.sql` — **antes** de fusionar. Debe mostrar `sello_publico = true | en_reclamo = true | regla_vitrina = true`. Es repetible.
+
+**Cambian:** `data.js`, `tienda.js`, `comercios.*`, `app.js`, `buscar.js`, `mi-tienda.js`, `moderacion.js`, `styles.css`. Caché `?v=59`.
+
+- **Dos cosas distintas:** el **sello de verificación** (Ubicado / Verificado por teléfono / en persona) dice que el negocio existe y quién es el dueño. El **visto bueno sanitario** dice que Merkap revisó razón social, NIT y director técnico.
+- **Distintivo público** «🧾 Datos sanitarios revisados» en la ficha y el directorio, solo cuando tú das el visto bueno (Editor → 🧾 Sanitario → «✅ Marcar revisado»). Los datos siguen privados.
+- **Vitrina de droguerías y naturistas:** pública solo si está verificada **y** con visto bueno sanitario. El dueño ve el aviso en Mi tienda y en su ficha.
+- **Reclamar una droguería** («¿Es tu negocio? → Soy el dueño») pide los datos sanitarios; en Moderación se ven en la solicitud y al tocar «👤 Asignar como dueño» pasan solos a 🧾 Sanitario (por revisar).
+- Si el dueño cambia sus datos, el distintivo se apaga hasta que vuelvas a revisarlos. Nadie más puede encenderlo.
+
+**Revertir:** PR → **Revert**. Para quitar la regla de la vitrina, vuelve a ejecutar la política de productos del `07_vitrina.sql`.

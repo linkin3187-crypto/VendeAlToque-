@@ -50,14 +50,15 @@ function tarjetaComercio(c) {
       ${califHTML(c)}
       ${c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
       ${c.nivel < 2 ? (confirmadoPorVecinos(c) ? `<p class="mt-1"><span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span></p>` : '<p class="text-[11px] text-amber-700 mt-0.5">⚠️ Aún sin verificar que exista aquí: confirma antes de ir</p>') : ""}
+      ${esComercioSalud(c) && c.saludRevisado ? `<p class="mt-1">${BADGE_SALUD}</p>` : ""}
       ${comercioDudoso(c) ? `<p class="text-[11px] font-semibold text-red-700 mt-0.5">🚩 ${c.confirmaNo} personas dicen que ya no está aquí</p>` : ""}
       ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
-      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${c.nivel >= 2 && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
+      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
-        ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
+        ${vitrinaPublica(c) && c.nProductos > 0 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
         ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">💬 ${esUbicacionAprox(c) ? "Pedir por WhatsApp" : "WhatsApp"}</a>` : ""}
         ${tieneCoords(c) && !esUbicacionAprox(c) ? `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>` : ""}
       </div>
@@ -90,7 +91,7 @@ function baseCo(f) {
     if ((f.nivel === "2" || f.nivel === "3") && c.nivel < Number(f.nivel)) return false;
     if (f.calif && !((c.nCalif || 0) > 0 && (c.calif || 0) >= f.calif)) return false;
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
-    if (f.vitrina && !(c.nivel >= 2 && c.nProductos > 0)) return false;
+    if (f.vitrina && !(vitrinaPublica(c) && c.nProductos > 0)) return false;
     if (f.texto) {
       // Buscador inteligente (buscador.js): «postres» también encuentra pastelerías y panaderías
       if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, f.texto)) return false; }
@@ -269,18 +270,30 @@ function abrirSolicitud(id, tipo) {
   $("sol-comercio").textContent = c.nombre + " · " + c.ciudad;
   $("sol-nombre").value = usuarioActual.nombre || "";
   $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = ["reclamar", "retirar"].includes(tipo) ? tipo : "actualizar";
+  $("sol-salud-campos").innerHTML = esComercioSalud(c) ? htmlDatosSanitarios("sol-ds", { tipo_establecimiento: c.tipo === "naturista" ? "naturista" : "drogueria" }) : "";
+  aplicarSaludSolicitud();
   abrirModal("modal-solicitud");
 }
+
+// Fase 2AB.2b: el bloque sanitario solo aparece al reclamar una droguería o naturista
+const pideSaludSolicitud = () => !!comercioSolicitud && esComercioSalud(comercioSolicitud) && $("sol-tipo").value === "reclamar";
+function aplicarSaludSolicitud() { $("sol-salud").classList.toggle("hidden", !pideSaludSolicitud()); }
 
 async function enviarSolicitud(e) {
   e.preventDefault();
   if (!comercioSolicitud) return;
+  let datosSanitarios = null;
+  if (pideSaludSolicitud()) {
+    const r = leerDatosSanitarios("sol-ds");
+    if (r.error) { mostrarToast(r.error, "error"); return; }
+    datosSanitarios = r.datos;
+  }
   const btn = $("sol-enviar");
   btn.disabled = true;
   try {
     await crearSolicitudComercio(comercioSolicitud.id, {
       tipo: $("sol-tipo").value, nombre: $("sol-nombre").value.trim(),
-      contacto: $("sol-contacto").value.trim(), mensaje: $("sol-mensaje").value.trim()
+      contacto: $("sol-contacto").value.trim(), mensaje: $("sol-mensaje").value.trim(), datosSanitarios
     });
     cerrarModal("modal-solicitud");
     mostrarToast("✅ Solicitud enviada. Te contactaremos pronto");
@@ -293,6 +306,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await Promise.all([cargarComercios(), cargarSesion()]);
   pintarUbicacionesCo();
+  $("sol-tipo").addEventListener("change", aplicarSaludSolicitud);
   const conRetraso = debounce(pintar, 250);
   $("co-buscar").addEventListener("input", conRetraso);
   $("co-depto").addEventListener("change", () => { llenarMunisCo(""); pintar(); });

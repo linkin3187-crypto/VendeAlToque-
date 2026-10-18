@@ -2013,3 +2013,75 @@ async function cargarSenalesComunidad() {
   return (data || []).map(filaAComercio);
 }
 
+
+// ---- «🧭 ¿Lo encontraste?» en cualquier página (fase 2Z.10b) ----
+// Cuando alguien toca «Cómo llegar», WhatsApp o Llamar de un comercio (directorio, mapa, ficha o inicio),
+// se anota la visita. Al volver a la página (o abrir otra) 2 minutos después, sale una tarjeta flotante:
+// «¿Encontraste «X»? ✅ Sí, existe / ❌ No estaba». Se puede cerrar y no vuelve a preguntar por ese comercio.
+const CLAVE_VISITAS = "mf_visitas_com";
+function leerVisitas() { try { return JSON.parse(localStorage.getItem(CLAVE_VISITAS) || "[]"); } catch (e) { return []; } }
+function guardarVisitas(l) { try { localStorage.setItem(CLAVE_VISITAS, JSON.stringify(l.slice(-15))); } catch (e) { /* sin almacenamiento */ } }
+function registrarVisitaComercio(c) {
+  if (!c || !c.id) return;
+  const l = leerVisitas().filter(v => v.id !== c.id);
+  l.push({ id: c.id, n: c.nombre, lat: c.lat, lng: c.lng, m: c.modoAtencion || "local", o: c.ownerId || null, t: Date.now() });
+  guardarVisitas(l);
+}
+function olvidarVisita(id) { guardarVisitas(leerVisitas().filter(v => v.id !== id)); }
+// Visita pendiente de preguntar: entre 2 minutos y 3 días, la más reciente
+function visitaPorPreguntar(excluirId) {
+  const ahora = Date.now();
+  const l = leerVisitas().filter(v => ahora - v.t > 2 * 60000 && ahora - v.t < 3 * 864e5 && v.id !== excluirId
+    && !(usuarioActual && v.o && v.o === usuarioActual.id));
+  return l.length ? l[l.length - 1] : null;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-fui]");
+  if (!b) return;
+  const id = Number(b.dataset.fui);
+  const c = (typeof comercios !== "undefined" && comercios.find(x => x.id === id)) || (typeof tienda !== "undefined" && tienda && tienda.id === id ? tienda : null);
+  if (c) registrarVisitaComercio(c);
+}, true);
+
+function preguntarLoEncontraste() {
+  if (document.getElementById("lo-encontraste")) return;
+  const excluir = (typeof tienda !== "undefined" && tienda) ? tienda.id : null;   // en su ficha pregunta la tarjeta de la ficha
+  const v = visitaPorPreguntar(excluir);
+  if (!v) return;
+  document.body.insertAdjacentHTML("beforeend", `<div id="lo-encontraste" class="lo-encontraste" role="dialog" aria-label="¿Lo encontraste?">
+    <button type="button" data-le="cerrar" class="confirmar-cerrar" aria-label="Cerrar">✕</button>
+    <p class="font-black text-indigo-900 pr-6">🧭 ¿Encontraste «${esc(v.n)}»?</p>
+    <p class="text-xs text-slate-600">Hace poco buscaste cómo llegar o lo contactaste. Tu respuesta ayuda a tus vecinos.</p>
+    <div class="flex flex-wrap gap-2 mt-2">
+      <button type="button" data-le="existe" class="btn-conf si">✅ Sí, existe</button>
+      <button type="button" data-le="no_existe" class="btn-conf no">❌ No estaba</button>
+    </div></div>`);
+  const caja = document.getElementById("lo-encontraste");
+  caja.addEventListener("click", async e => {
+    const b = e.target.closest("[data-le]");
+    if (!b) return;
+    if (b.dataset.le === "cerrar") { olvidarVisita(v.id); caja.remove(); return; }
+    if (!usuarioActual) {
+      mostrarToast("Crea tu cuenta gratis (1 minuto) para ayudar a tus vecinos");
+      if (document.getElementById("modal-auth") && typeof abrirModal === "function") { abrirModal("modal-auth"); return; }
+      try { sessionStorage.setItem("mf_volver", location.pathname.split("/").pop() + location.search); } catch (er) { /* nada */ }
+      setTimeout(() => { location.href = "index.html#login"; }, 1100);
+      return;
+    }
+    caja.querySelectorAll("[data-le]").forEach(x => { x.disabled = true; });
+    try {
+      await confirmarComercio({ id: v.id, nombre: v.n, lat: v.lat, lng: v.lng, modoAtencion: v.m }, b.dataset.le);
+      olvidarVisita(v.id);
+      caja.innerHTML = '<p class="font-black text-green-800">🙌 ¡Gracias por ayudar a tus vecinos!</p>';
+      setTimeout(() => caja.remove(), 2500);
+    } catch (err) {
+      // Si ya había opinado, no se vuelve a preguntar
+      if (/30 días|duplicate|ya diste/i.test(err.message || "")) { olvidarVisita(v.id); caja.remove(); mostrarToast("Ya habías dado tu opinión sobre este comercio. ¡Gracias!"); return; }
+      mostrarToast(mensajeError(err), "error");
+      caja.querySelectorAll("[data-le]").forEach(x => { x.disabled = false; });
+    }
+  });
+}
+// Al abrir la página y al volver a ella (por ejemplo, desde Google Maps o WhatsApp)
+document.addEventListener("DOMContentLoaded", () => setTimeout(preguntarLoEncontraste, 2500));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(preguntarLoEncontraste, 800); });

@@ -638,3 +638,10 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .conf-pop button:hover { background: #eef2ff; }
 .btn-acelerar { font-size: 13px; font-weight: 800; color: #1e1b4b; background: #fde047; border-radius: 12px; padding: 8px 14px; box-shadow: 0 2px 0 #ca8a04; }
 .btn-acelerar:hover { background: #facc15; }
+/* 2Z.10b: «¿Existe aquí?» más visible en la ventanita y «¿Lo encontraste?» flotante */
+.conf-pop { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 5px 7px; font-weight: 700; color: #3730a3; }
+.conf-pop button { font-size: 12px; font-weight: 700; color: #1e293b; }
+.lo-encontraste { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 90; max-width: 420px; margin: 0 auto;
+  background: #fff; border: 2px solid #a5b4fc; border-radius: 18px; padding: 12px 14px; box-shadow: 0 12px 30px rgba(30, 27, 75, .25); animation: ni-sube .25s ease-out; }
+@media (min-width: 768px) { .lo-encontraste { bottom: 20px; left: auto; right: 20px; } }
+@media (prefers-reduced-motion: reduce) { .lo-encontraste { animation: none; } }

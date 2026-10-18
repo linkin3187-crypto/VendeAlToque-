@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -49,6 +49,16 @@
       </div>
       <p class="text-xs text-slate-500 mb-3">Dueños que piden actualizar, retirar o reclamar su ficha. Contáctalos para confirmar que representan el negocio, haz el cambio en “Editar comercios” y marca la solicitud como atendida.</p>
       <div id="sol-lista" class="space-y-3"></div>
+
+      <!-- Fase 2Z.10: dueños que piden que los llamen + lo que dice la comunidad (supabase/25_confirmaciones_comercio.sql) -->
+      <div class="mt-10 mb-3">
+        <h2 id="acelerar" class="text-xl font-black text-indigo-900 scroll-mt-4">⚡ Piden verificación <span id="n-acelerar" class="text-sm font-semibold text-slate-500"></span></h2>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Dueños de comercios «Ubicado» que tocaron <b>«Acelerar mi verificación»</b>: llámalos en la franja que eligieron, verifica en «Editar comercios» y marca <b>Atendida</b>. Los más antiguos van primero.</p>
+      <div id="acel-lista" class="space-y-3"></div>
+      <h3 class="text-base font-black text-indigo-900 mt-6 mb-1">👥 Señales de la comunidad <span id="n-senales" class="text-sm font-semibold text-slate-500"></span></h3>
+      <p class="text-xs text-slate-500 mb-3">Comercios sin verificar que los vecinos <b>confirman</b> (3 o más «sí», con al menos uno en el lugar → prioridad para verificar) o que dicen que <b>ya no están</b> (2 o más «no» → revisar y, si es así, desmarcar «Visible»). Los votos nunca verifican solos: siempre decides tú.</p>
+      <div id="senales-lista" class="space-y-2"></div>
 
       <div class="mt-10 mb-3">
         <h2 id="negocios" class="text-xl font-black text-indigo-900 scroll-mt-4">➕ Negocios nuevos por revisar <span id="n-negocios" class="text-sm font-semibold text-slate-500"></span></h2>
@@ -145,9 +155,9 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=49"></script>
-  <script src="data.js?v=49"></script>
-  <script src="iconos.js?v=49"></script>
-  <script src="moderacion.js?v=49"></script>
+  <script src="utils.js?v=50"></script>
+  <script src="data.js?v=50"></script>
+  <script src="iconos.js?v=50"></script>
+  <script src="moderacion.js?v=50"></script>
 </body>
 </html>

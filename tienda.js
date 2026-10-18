@@ -155,8 +155,80 @@ function renderizarTienda(c, ps) {
       : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero MercaFree todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
+  // Fase 2Z.10: lo que dice la comunidad + «⚡ Acelerar mi verificación» (dueño)
+  if (confirmadoPorVecinos(c) && c.nivel < 2) $("t-sello").insertAdjacentHTML("afterend", ` <span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span>`);
+  if (comercioDudoso(c) && !gestiona) {
+    const av = $("t-aviso-privado");
+    if (av.classList.contains("hidden")) { av.className = "mb-3 text-sm aviso-ubicado rounded-xl px-3 py-2"; av.innerHTML = ""; }
+    av.insertAdjacentHTML("beforeend", `<span class="block ${av.innerHTML ? "mt-1" : ""} font-semibold">🚩 ${c.confirmaNo} personas dicen que ya no está aquí: confirma antes de ir.</span>`);
+  }
+  if (gestiona && c.ownerId && usuarioActual && c.ownerId === usuarioActual.id && c.activo && c.nivel < 2) {
+    $("t-aviso-privado").insertAdjacentHTML("beforeend", '<div id="t-acelerar"></div>');
+    pintarAcelerar($("t-acelerar"), c);
+  }
+  pintarConfirmar(c);
+  ["t-wa", "t-llamar", "t-llegar", "t-mapa-llegar"].forEach(id => $(id) && $(id).addEventListener("click", () => {
+    try { localStorage.setItem("mf_fui_" + c.id, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
+  }));
   pintarProductos();
   $("t-contenido").classList.remove("hidden");
+}
+
+// ---------- «¿Conoces este negocio?» (fase 2Z.10) ----------
+// Tarjeta que se puede cerrar. Si la persona tocó «Cómo llegar», WhatsApp o Llamar y vuelve más tarde,
+// la pregunta cambia a «¿Lo encontraste?» (la respuesta más confiable) y aparece aunque la hubiera cerrado.
+async function pintarConfirmar(c) {
+  if (!pedirConfirmacion(c)) return;
+  if (usuarioActual && c.ownerId === usuarioActual.id) return;            // el dueño no vota por su negocio
+  const leer = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const fue = Number(leer("mf_fui_" + c.id)) || 0;
+  const volvio = fue && Date.now() - fue > 10 * 60000;
+  if (leer("mf_conf_cerrado_" + c.id) === "1" && !volvio) return;
+  if (usuarioActual && await miConfirmacion(c.id)) return;                 // ya opinó
+  const verificado = c.nivel >= 2;
+  const titulo = volvio ? "🧭 ¿Lo encontraste?" : verificado ? "👥 ¿Sigue abierto este negocio?" : "👥 ¿Conoces este negocio?";
+  const texto = volvio ? "Hace poco buscaste cómo llegar o lo contactaste. Cuéntales a tus vecinos si de verdad está ahí."
+    : "Ayuda a tus vecinos: dinos si existe y atiende en este lugar. Con tu ayuda lo verificamos más rápido.";
+  $("t-aviso-privado").insertAdjacentHTML("afterend", `<div id="t-confirmar" class="confirmar-caja mb-3" role="region" aria-label="Confirmar comercio">
+    <button type="button" data-conf-cerrar class="confirmar-cerrar" aria-label="Cerrar">✕</button>
+    <p class="font-black text-indigo-900">${titulo}</p>
+    <p class="text-xs text-slate-600 mt-0.5 pr-6">${texto}</p>
+    <div class="flex flex-wrap gap-2 mt-2">
+      <button type="button" data-conf="existe" class="btn-conf si">✅ Sí, existe y atiende aquí</button>
+      <button type="button" data-conf="no_existe" class="btn-conf no">❌ No está o cerró</button>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-1.5">Tu opinión no verifica el negocio por sí sola: la revisa un moderador.</p>
+  </div>`);
+  const caja = $("t-confirmar");
+  caja.addEventListener("click", async e => {
+    if (e.target.closest("[data-conf-cerrar]")) {
+      try { localStorage.setItem("mf_conf_cerrado_" + c.id, "1"); localStorage.removeItem("mf_fui_" + c.id); } catch (er) { /* nada */ }
+      caja.remove(); return;
+    }
+    const b = e.target.closest("[data-conf]");
+    if (!b) return;
+    if (!usuarioActual) {
+      mostrarToast("Crea tu cuenta gratis (1 minuto) para ayudar a tus vecinos");
+      try { sessionStorage.setItem("mf_volver", "tienda.html?id=" + c.id); } catch (er) { /* nada */ }
+      setTimeout(() => { location.href = "index.html#login"; }, 1100);
+      return;
+    }
+    caja.querySelectorAll("[data-conf]").forEach(x => { x.disabled = true; });
+    b.textContent = "Guardando…";
+    try {
+      const r = await confirmarComercio(c, b.dataset.conf);
+      const n = await contarMisConfirmaciones();
+      try { localStorage.removeItem("mf_fui_" + c.id); } catch (er) { /* nada */ }
+      caja.innerHTML = `<p class="font-black text-green-800">🙌 ¡Gracias!</p><p class="text-sm text-slate-700">${b.dataset.conf === "existe"
+        ? (r.enLugar ? "Confirmaste que existe, y estabas en el lugar: tu opinión vale doble." : "Confirmaste que existe.")
+        : "Avisaste que ya no está. Un moderador lo revisará."} ${n > 1 ? `Ya ayudaste a confirmar <b>${n}</b> negocios de tu barrio.` : ""}</p>`;
+      caja.classList.add("gracias");
+    } catch (err) {
+      mostrarToast(mensajeError(err), "error");
+      caja.querySelectorAll("[data-conf]").forEach(x => { x.disabled = false; });
+      b.textContent = b.dataset.conf === "existe" ? "✅ Sí, existe y atiende aquí" : "❌ No está o cerró";
+    }
+  });
 }
 
 // Mapa de ubicación del comercio: compacto, con proporción fija (ver .mapa-comercio en styles.css).

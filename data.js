@@ -735,6 +735,8 @@ function filaAComercio(r) {
     nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
     tiposExtra: Array.isArray(r.tipos_extra) ? r.tipos_extra : [],
     modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
+    // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)
+    confirmaSi: Number(r.confirma_si) || 0, confirmaNo: Number(r.confirma_no) || 0, confirmaLugar: Number(r.confirma_lugar) || 0,
     // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
     calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0
   };
@@ -1883,3 +1885,131 @@ function avisoFraude(a) {
   if (tipo === "carro" || tipo === "moto" || tipo === "vehiculo") return "🚗 <b>No des anticipos para «separar» el vehículo.</b> Revísalo en persona, consulta la placa en el <b>RUNT</b> (multas, prendas, SOAT) y haz el traspaso en el tránsito antes de pagar el total.";
   return "";
 }
+
+// =====================================================================
+// LA COMUNIDAD CONFIRMA COMERCIOS + «ACELERAR MI VERIFICACIÓN» (fase 2Z.10 · supabase/25_confirmaciones_comercio.sql)
+// =====================================================================
+const UMBRAL_CONFIRMADO = 3, UMBRAL_DUDOSO = 2;
+// «👥 Confirmado por N vecinos»: 3+ dicen que existe y al menos 1 estaba en el lugar
+const confirmadoPorVecinos = c => c && c.confirmaSi >= UMBRAL_CONFIRMADO && c.confirmaLugar >= 1;
+// «algunos dicen que ya no está»: 2+ y más «no» que «sí» (nunca se oculta solo)
+const comercioDudoso = c => c && c.confirmaNo >= UMBRAL_DUDOSO && c.confirmaNo >= c.confirmaSi;
+// ¿Le preguntamos a la gente? Los «Ubicado» siempre; los verificados, si el sello tiene más de 6 meses
+const pedirConfirmacion = c => c && c.activo && (c.nivel < 2 || (c.verificadoEn && Date.now() - new Date(c.verificadoEn).getTime() > 180 * 864e5));
+const sinTablaConfirmaciones = e => /confirmaciones_comercio|solicitudes_verificacion|does not exist|schema cache/i.test((e && e.message) || "");
+
+async function miConfirmacion(comercioId) {
+  if (!usuarioActual) return null;
+  const { data, error } = await sb.from("confirmaciones_comercio").select("id, voto, en_lugar, creado_en")
+    .eq("comercio_id", comercioId).eq("usuario_id", usuarioActual.id).maybeSingle();
+  if (error) { if (!sinTablaConfirmaciones(error)) console.warn("confirmación:", error); return null; }
+  return data || null;
+}
+async function contarMisConfirmaciones() {
+  if (!usuarioActual) return 0;
+  const { count, error } = await sb.from("confirmaciones_comercio").select("id", { count: "exact", head: true }).eq("usuario_id", usuarioActual.id);
+  return error ? 0 : (count || 0);
+}
+// Ubicación rápida (máx. 6 s) para saber si la persona está en el lugar; sin permiso → null
+function posicionRapida() {
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(null);
+    const t = setTimeout(() => res(null), 6500);
+    navigator.geolocation.getCurrentPosition(p => { clearTimeout(t); res({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      () => { clearTimeout(t); res(null); }, { enableHighAccuracy: false, timeout: 6000, maximumAge: 120000 });
+  });
+}
+// Vota «existe» / «no_existe». Devuelve el comercio con los totales nuevos (si se pueden leer).
+async function confirmarComercio(c, voto) {
+  if (!usuarioActual) throw new Error("Inicia sesión para confirmar comercios");
+  const pos = tieneCoords(c) ? await posicionRapida() : null;
+  // Los que atienden desde casa tienen el punto corrido: el radio es más amplio
+  const enLugar = !!(pos && distanciaKm(pos, c) <= (esUbicacionAprox(c) ? 0.45 : 0.15));
+  const previo = await miConfirmacion(c.id);
+  const fila = { comercio_id: c.id, voto, en_lugar: enLugar };
+  const { error } = previo
+    ? await sb.from("confirmaciones_comercio").update(fila).eq("id", previo.id)
+    : await sb.from("confirmaciones_comercio").insert(fila);
+  if (error) {
+    if (sinTablaConfirmaciones(error)) throw new Error("Esta opción se activa pronto. ¡Gracias por querer ayudar!");
+    throw error;
+  }
+  const { data } = await sb.from("comercios").select("*").eq("id", c.id).maybeSingle();
+  return { comercio: data ? filaAComercio(data) : c, enLugar };
+}
+
+// ---- Dueño: «⚡ Acelerar mi verificación» → que me llamen ----
+const FRANJAS = { manana: "en la mañana (8–12)", tarde: "en la tarde (12–6)", noche: "en la noche (6–8)" };
+async function ultimaSolicitudVerificacion(comercioId) {
+  const { data, error } = await sb.from("solicitudes_verificacion").select("id, franja, estado, creado_en")
+    .eq("comercio_id", comercioId).order("creado_en", { ascending: false }).limit(1);
+  if (error) return null;
+  return (data || [])[0] || null;
+}
+async function pedirLlamadaVerificacion(comercioId, franja, telefono) {
+  const { error } = await sb.from("solicitudes_verificacion").insert({ comercio_id: comercioId, franja, telefono: String(telefono).replace(/[^\d+ ]/g, "").trim() });
+  if (error) {
+    if (sinTablaConfirmaciones(error)) throw new Error("Esta opción se activa pronto. Mientras tanto te contactaremos al número de tu negocio.");
+    throw error;
+  }
+}
+// Caja del botón (Mi tienda y la ficha del dueño). cont = elemento donde se dibuja.
+function pintarAcelerar(cont, c) {
+  if (!cont || !c || c.nivel >= 2 || !c.activo) { if (cont) cont.innerHTML = ""; return; }
+  const tel = (c.whatsapp || "").replace(/^57/, "") || String(c.telefono || "").replace(/[^\d]/g, "");
+  cont.innerHTML = `<div class="acelerar mt-2">
+    <button type="button" data-acel-abrir class="btn-acelerar">⚡ Acelerar mi verificación</button>
+    <form data-acel-form class="hidden mt-2 space-y-2 text-sm">
+      <p class="text-xs text-slate-600">Un moderador te llama para confirmar el nombre y la dirección (2 minutos). Tu pedido pasa al <b>primer lugar de la fila</b>.</p>
+      <label class="block text-xs font-bold text-slate-600">¿Cuándo te llamamos?
+        <select data-acel-franja class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg bg-white font-normal">${Object.entries(FRANJAS).map(([k, t]) => `<option value="${k}">${t[0].toUpperCase() + t.slice(1)}</option>`).join("")}</select></label>
+      <label class="block text-xs font-bold text-slate-600">Número para llamarte
+        <input data-acel-tel inputmode="tel" maxlength="20" required value="${esc(tel)}" placeholder="300 123 4567" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal"></label>
+      <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg">📞 Que me llamen</button>
+    </form>
+    <p data-acel-estado class="hidden text-xs mt-2"></p>
+  </div>`;
+  const $$ = s => cont.querySelector(s);
+  const mostrarEstado = sol => {
+    if (!sol || sol.estado !== "pendiente") return false;
+    $$("[data-acel-abrir]").classList.add("hidden"); $$("[data-acel-form]").classList.add("hidden");
+    const e = $$("[data-acel-estado]");
+    e.innerHTML = `✅ <b>Ya pediste que te llamemos</b> ${esc(FRANJAS[sol.franja] || "")}. Tu negocio está de primero en la fila.`;
+    e.className = "text-xs mt-2 bg-green-50 border border-green-200 text-green-900 rounded-lg px-3 py-2";
+    return true;
+  };
+  ultimaSolicitudVerificacion(c.id).then(mostrarEstado);
+  $$("[data-acel-abrir]").addEventListener("click", () => $$("[data-acel-form]").classList.toggle("hidden"));
+  $$("[data-acel-form]").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const tel2 = $$("[data-acel-tel]").value.replace(/\D/g, "");
+    if (tel2.length < 7) { mostrarToast("Escribe un número para llamarte", "error"); return; }
+    const b = ev.target.querySelector("button[type=submit]"); b.disabled = true;
+    try {
+      await pedirLlamadaVerificacion(c.id, $$("[data-acel-franja]").value, tel2);
+      mostrarEstado({ estado: "pendiente", franja: $$("[data-acel-franja]").value });
+      mostrarToast("⚡ ¡Listo! Te llamaremos " + FRANJAS[$$("[data-acel-franja]").value]);
+    } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; }
+  });
+}
+
+// ---- Moderadores ----
+async function cargarSolicitudesVerificacion() {
+  const { data, error } = await sb.from("solicitudes_verificacion")
+    .select("id, comercio_id, franja, telefono, estado, creado_en, comercio:comercios(id, nombre, municipio_id, nivel_verificacion, confirma_si, confirma_no, confirma_lugar)")
+    .eq("estado", "pendiente").order("creado_en", { ascending: true }).limit(100);
+  if (error) throw error;
+  return data || [];
+}
+async function atenderSolicitudVerificacion(id) {
+  const { error } = await sb.from("solicitudes_verificacion").update({ estado: "atendida" }).eq("id", id);
+  if (error) throw error;
+}
+// Comercios sin verificar con señales de la comunidad (los que más «sí» tienen primero; luego los dudosos)
+async function cargarSenalesComunidad() {
+  const { data, error } = await sb.from("comercios").select("*").lt("nivel_verificacion", 2)
+    .or(`confirma_si.gte.${UMBRAL_CONFIRMADO},confirma_no.gte.${UMBRAL_DUDOSO}`).order("confirma_si", { ascending: false }).limit(60);
+  if (error) throw error;
+  return (data || []).map(filaAComercio);
+}
+

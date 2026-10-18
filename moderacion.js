@@ -634,6 +634,49 @@ function pintarSenales(art, n, s) {
     ${cerca ? `<p class="text-[11px] text-red-600 mt-1">Parecido cerca: ${cerca}</p>` : ""}`;
 }
 
+// ---------- ⚡ Piden verificación + 👥 señales de la comunidad (fase 2Z.10) ----------
+async function pintarAcelerar() {
+  let lista = [], senales = [];
+  try { lista = await cargarSolicitudesVerificacion(); } catch (e) {
+    $("acel-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Se activa al ejecutar supabase/25_confirmaciones_comercio.sql.</p>';
+  }
+  try { senales = await cargarSenalesComunidad(); } catch (e) { /* sin el SQL 25 */ }
+  $("n-acelerar").textContent = lista.length ? "(" + lista.length + ")" : "";
+  if (lista.length || !$("acel-lista").innerHTML) $("acel-lista").innerHTML = lista.length ? lista.map(s => {
+    const c = s.comercio || {};
+    const mun = municipios.find(x => x.id === c.municipio_id);
+    const tel = String(s.telefono || "").replace(/[^\d+]/g, "");
+    return `<article class="bg-white border-2 border-amber-300 rounded-2xl p-4 shadow-sm" data-acel="${s.id}">
+      <div class="flex flex-wrap items-center gap-2"><b>${esc(c.nombre || "Comercio #" + s.comercio_id)}</b>
+        <span class="text-xs text-slate-500">${esc(mun ? mun.nombre : "")}</span>
+        <span class="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-semibold">⚡ Llamar ${esc(FRANJAS[s.franja] || "")}</span>
+        ${c.confirma_si ? `<span class="badge-vecinos">👥 ${c.confirma_si} sí${c.confirma_lugar ? " (" + c.confirma_lugar + " en el lugar)" : ""}</span>` : ""}
+        ${c.confirma_no ? `<span class="text-xs text-red-700 font-semibold">🚩 ${c.confirma_no} no</span>` : ""}
+      </div>
+      <p class="text-xs text-slate-400 mt-0.5">Pedido ${esc(fechaCorta(s.creado_en))}</p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold">📞 Llamar ${esc(s.telefono)}</a>` : ""}
+        <a href="admin-comercios.html?editar=${s.comercio_id}" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✅ Verificar en «Editar comercios»</a>
+        <button type="button" data-acel-hecho class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">✔ Atendida</button>
+      </div>
+    </article>`;
+  }).join("") : '<p class="text-sm text-slate-400 text-center py-4">Nadie ha pedido acelerar su verificación. ✨</p>';
+  $("n-senales").textContent = senales.length ? "(" + senales.length + ")" : "";
+  $("senales-lista").innerHTML = senales.length ? senales.map(c => `<div class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm">
+      <a href="tienda.html?id=${c.id}" class="font-semibold text-indigo-700 underline">${esc(c.nombre)}</a><span class="text-xs text-slate-500">${esc(c.ciudad)}</span>
+      ${confirmadoPorVecinos(c) ? `<span class="badge-vecinos">👥 ${c.confirmaSi} sí · ${c.confirmaLugar} en el lugar</span>` : c.confirmaSi ? `<span class="text-xs text-slate-600">👍 ${c.confirmaSi}</span>` : ""}
+      ${c.confirmaNo ? `<span class="text-xs font-semibold ${comercioDudoso(c) ? "text-red-700" : "text-slate-500"}">🚩 ${c.confirmaNo} dicen que no está</span>` : ""}
+      <a href="admin-comercios.html?editar=${c.id}" class="ml-auto text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg font-semibold">Revisar →</a>
+    </div>`).join("") : '<p class="text-sm text-slate-400 text-center py-3">Aún no hay comercios con suficientes votos.</p>';
+}
+async function accionAcelerar(e) {
+  const b = e.target.closest("[data-acel-hecho]");
+  if (!b) return;
+  b.disabled = true;
+  try { await atenderSolicitudVerificacion(Number(b.closest("[data-acel]").dataset.acel)); mostrarToast("✔ Marcada como atendida"); await pintarAcelerar(); }
+  catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 async function pintarNegocios() {
   try {
     if (!municipios.length) await cargarMunicipios();
@@ -722,6 +765,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("rprod-lista").addEventListener("click", accionReporteProducto);
   $("rcom-lista").addEventListener("click", accionReporteComercio);
   pintarReportesComercio();
+  $("acel-lista").addEventListener("click", accionAcelerar);
+  pintarAcelerar();
   $("neg-lista").addEventListener("click", accionNegocio);
   $("neg-lista").addEventListener("change", accionNegocio);
   pintarNegocios();

@@ -481,3 +481,22 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2Z.10 · La comunidad confirma comercios + «⚡ Acelerar mi verificación»
+
+**SQL:** `supabase/25_confirmaciones_comercio.sql` — antes o después de fusionar (sin él la página funciona igual, solo sin los botones nuevos). Debe terminar mostrando 1 fila: `tabla_votos = true | totales = true | tabla_llamadas = true`. Es repetible.
+
+**Cambian:** `tienda.js`, `mi-tienda.html/.js`, `comercios.js`, `app.js` (ventanita del mapa), `moderacion.html/.js`, `admin-comercios.js`, `data.js`, `styles.css`. Caché `?v=50`.
+
+**1. «¿Conoces este negocio?»** (ficha de cada comercio «Ubicado», y de los verificados hace más de 6 meses como «¿Sigue abierto?»):
+- Tarjeta con **✅ Sí, existe y atiende aquí** / **❌ No está o cerró**, que se puede **cerrar con ✕** (no vuelve a salir).
+- Si la persona tocó «Cómo llegar», WhatsApp o Llamar y **vuelve más tarde**, pregunta **«🧭 ¿Lo encontraste?»** aunque la hubiera cerrado.
+- En la **ventanita del mapa**: «¿Existe aquí? 👍 👎».
+- Reglas (las hace cumplir la base de datos): **con cuenta**, **un voto por persona y comercio** (se puede cambiar a los 30 días), **el dueño no vota** por su negocio, máx. 40 votos al día. Si el celular está a menos de 150 m (450 m en negocios «desde casa») el voto cuenta **«en el lugar»**.
+- **Los votos nunca verifican.** Con **3+ «sí»** (al menos 1 en el lugar) sale **«👥 Confirmado por N vecinos»** y sube en tu lista; con **2+ «no»** sale «🚩 N personas dicen que ya no está aquí» y te llega para revisar. **Nada se oculta solo.**
+
+**2. «⚡ Acelerar mi verificación»** (dueño de un comercio «Ubicado», en Mi tienda y en su ficha): **«📞 Que me llamen»** eligiendo mañana, tarde o noche y el número (viene puesto el del negocio). Una vez al día. **No muestra ningún número de MercaFree.**
+
+**3. Moderación:** nuevas secciones **«⚡ Piden verificación»** (franja, botón 📞 Llamar, ir a verificar y ✔ Atendida) y **«👥 Señales de la comunidad»** (confirmados y dudosos). En «Editar comercios» cada ficha muestra «👥 N sí · M no».
+
+**Revertir:** PR → **Revert**. Las tablas pueden quedarse.
+

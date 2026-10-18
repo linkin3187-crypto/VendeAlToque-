@@ -7,7 +7,7 @@
   <title>Comercios (admin) | MercaFree</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=54">
+  <link rel="stylesheet" href="styles.css?v=55">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -125,7 +125,7 @@
           <button type="button" role="tab" data-ed-tab="datos" aria-selected="true">📝 Datos</button>
           <button type="button" role="tab" data-ed-tab="contacto" aria-selected="false">📞 Contacto y entrega</button>
           <button type="button" role="tab" data-ed-tab="ubicacion" aria-selected="false">📍 Ubicación</button>
-          <button type="button" role="tab" data-ed-tab="foto" aria-selected="false">📷 Foto</button>
+          <button type="button" role="tab" data-ed-tab="foto" aria-selected="false">📷 Fotos</button>
           <button type="button" role="tab" data-ed-tab="dueno" aria-selected="false">🙋 Dueño y visibilidad</button>
         </nav>
       </div>
@@ -180,16 +180,8 @@
           </div>
         </section>
         <section data-ed-panel="foto" class="hidden space-y-3">
-          <div class="flex items-center gap-3">
-            <img id="ed-foto-prev" alt="Foto actual" class="hidden w-28 h-28 rounded-xl object-cover border border-slate-200">
-            <p id="ed-sin-foto" class="hidden text-sm text-slate-400">Este comercio aún no tiene foto.</p>
-          </div>
-          <span class="foto-botones">
-            <label class="foto-btn"><input type="file" data-grupo-foto="edc" accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
-            <label class="foto-btn"><input type="file" data-grupo-foto="edc" accept="image/*" class="sr-only">🖼️ Galería</label>
-          </span>
-          <span data-foto-nombre="edc" class="block text-[11px] text-slate-500"></span>
-          <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="ed-quitar-foto"> Quitar la foto actual</label>
+          <p class="text-xs text-slate-500">Hasta <b>5 fotos</b>: fachada, interior, productos… La <b>primera es la portada</b> (★ para cambiarla, ◀ ▶ para ordenar, ✕ para quitar).</p>
+          <div id="ed-galeria"></div>
         </section>
         <section data-ed-panel="dueno" class="hidden space-y-3">
           <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="ed-activo"> Visible en el mapa y el directorio</label>
@@ -326,9 +318,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=54"></script>
-  <script src="data.js?v=54"></script>
-  <script src="iconos.js?v=54"></script>
-  <script src="admin-comercios.js?v=54"></script>
+  <script src="utils.js?v=55"></script>
+  <script src="data.js?v=55"></script>
+  <script src="iconos.js?v=55"></script>
+  <script src="admin-comercios.js?v=55"></script>
 </body>
 </html>

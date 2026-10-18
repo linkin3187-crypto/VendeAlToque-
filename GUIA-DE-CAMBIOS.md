@@ -558,3 +558,17 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2AA.4 · Galería de hasta 5 fotos por comercio + ver fotos en grande
+
+**SQL:** `supabase/27_fotos_comercio.sql` — antes o después de fusionar (sin él cada comercio sigue con 1 foto). Debe terminar mostrando 1 fila: `columna_fotos = true | sin_desfase = 0`. Es repetible. Los comercios que ya tenían foto la conservan como la primera de su galería.
+
+**Cambian:** `tienda.js` (ficha), `admin-comercios.html/.js` (editor), `mi-tienda.html/.js`, `data.js` (visor y gestor de fotos), `styles.css`. Caché `?v=55`.
+
+- **Ficha del comercio:** portada grande con botón **«🔍 Ampliar · 1/3»** y **miniaturas** debajo. Tocar la foto o «Ampliar» abre el **visor a pantalla completa** con la foto **entera, sin recortar**; ‹ › (o deslizar con el dedo, o las flechas del teclado) para pasar de foto; tocar, ✕ o Esc para cerrar.
+- **Fotos de los productos** de la vitrina: también se tocan y se ven en grande.
+- **Editor completo → 📷 Fotos** y **Mi tienda (dueño):** hasta **5 fotos** (fachada, interior, productos…). La **primera es la portada**: ★ la vuelve portada, ◀ ▶ ordenan, ✕ quita. «📷 Tomar foto» o «🖼️ Galería» (desde la galería se pueden elegir **varias a la vez**). Tocar una miniatura la abre en grande. Se guarda con «Guardar todo» / «Guardar datos».
+- En la edición rápida de la ficha, la miniatura se toca para ver todas las fotos; cambiar la foto ahí reemplaza solo la portada.
+- La **portada** (la que sale en el directorio y el mapa) siempre es la primera foto: lo mantiene el servidor.
+
+**Revertir:** PR → **Revert**. La columna `fotos` puede quedarse.
+

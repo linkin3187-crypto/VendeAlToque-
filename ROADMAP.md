@@ -105,7 +105,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | **2AA.1 Panel de comercios: arreglos urgentes** ✅ *(hecho, **SQL 26**: «Corregir ubicación» ya no borra borradores; WhatsApp editable y visible en tarjeta, mapa, inicio y ficha; foto cámara/galería al crear, editar y verificar; verificación con mínimo («existe» / «nombre y dirección»), foto opcional e historial de lo comprobado; «¿Lo encontraste?» arriba, a 90 s y se va sola)* | ✅ |
 | **2AA.2 Editor completo de comercios** ✅ *(hecho, sin SQL: «✏️ Editor completo» con pestañas Datos · Contacto y entrega · Ubicación (municipio, dirección, mover pin) · Foto (cámara/galería/quitar) · Dueño y visibilidad; «Guardar todo» y aviso de cambios sin guardar; texto nuevo de Anuncios y clasificados)* | ✅ |
 | **2AA.3 Clasificar por municipio y categoría** ✅ *(hecho, sin SQL: chips por categoría con conteo y verificados según municipio y filtros; vista agrupada por categoría principal con barra de avance; recuerda la vista)* | ✅ |
-| *2AA.4 Galería de fotos por comercio (opcional)* 🔜 *(hasta 5 fotos: fachada, interior, productos)* | 🔜 |
+| **2AA.4 Galería de fotos por comercio** ✅ *(hecho, **SQL 27**: hasta 5 fotos con portada = primera (la mantiene el servidor); gestor con ★ portada, ◀ ▶ ordenar, ✕ quitar, cámara o varias de la galería, en el editor y en Mi tienda; ficha con miniaturas y visor a pantalla completa (deslizar, flechas, Esc); productos también se amplían)* | ✅ |
 | **2Q Calificación de vendedores (anuncios)** ⏳ *(después: solo cuando el vendedor marque «vendido a…», para evitar reseñas falsas)* | ⏳ |
 
 **Niveles de sello (cada uno dice exactamente qué significa y la fecha):**

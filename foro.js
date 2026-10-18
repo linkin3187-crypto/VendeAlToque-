@@ -1,4 +1,4 @@
-// ===== MercaFree - Foro de Ventas =====
+// ===== Merkap - Foro de Ventas =====
 // Requiere utils.js y data.js (de ahí vienen esc, EDITOR, CATEGORIAS_FORO...).
 // Se usa en index.html (lista de temas) y en post.html (reutiliza renderizado y datos).
 

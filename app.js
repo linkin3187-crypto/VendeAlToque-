@@ -1,4 +1,4 @@
-// ===== MercaFree - Lógica principal (index.html) =====
+// ===== Merkap - Lógica principal (index.html) =====
 // Requiere (en este orden): leaflet, markercluster, utils.js, data.js
 
 const POR_PAGINA = 12;
@@ -186,7 +186,7 @@ function popupComercioHTML(c) {
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${esc((SELLOS[c.nivel] || SELLOS[1]).largo)}${c.verificado && c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</div>
     <div class="flex flex-wrap gap-1.5 mt-2">
       ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
-      ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">💬 WhatsApp</a>` : ""}
+      ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">💬 WhatsApp</a>` : ""}
       ${esUbicacionAprox(c) ? ""
         : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>`}
     </div>
@@ -299,7 +299,7 @@ function tarjetaComercioFeed(c) {
       ${c.nivel >= 2 && c.nProductos > 0 ? `<p class="text-xs font-bold text-teal-700 mt-1.5">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${c.nivel >= 2 && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
-        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg">💬 WhatsApp</a>` : ""}
+        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg">💬 WhatsApp</a>` : ""}
         ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg">📞 Llamar</a>` : ""}
         ${esUbicacionAprox(c) ? "" : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>`}
         <a href="tienda.html?id=${c.id}#opinar" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold px-3 py-1.5 rounded-lg">⭐ Calificar</a>

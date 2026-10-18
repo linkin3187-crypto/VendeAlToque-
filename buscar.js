@@ -1,4 +1,4 @@
-// ===== MercaFree · Página de resultados «Buscar en todo» (Fase 2W / 2W.2) =====
+// ===== Merkap · Página de resultados «Buscar en todo» (Fase 2W / 2W.2) =====
 // buscar.html?q=postres[&depto=Antioquia][&ciudad=Envigado][&cat=a:tecnologia | c:pasteleria]
 // Junta en una sola página: categorías, publicaciones (anuncios), comercios y productos de vitrina.
 // La relevancia la calcula buscador.js (sin tildes, plurales, errores de escritura e intenciones).
@@ -110,7 +110,7 @@ function pintarResultados() {
   const q = qActual();
   $("buscador").value = q;
   $("b-limpiar").classList.toggle("hidden", !$("buscador").value);
-  document.title = (q ? q + " · " : "") + "Buscar | MercaFree";
+  document.title = (q ? q + " · " : "") + "Buscar | Merkap";
 
   const ciudad = ciudadActual(), depto = deptoActual();
   const enZona = x => (!depto || x.departamento === depto) && (!ciudad || x.ciudad === ciudad);

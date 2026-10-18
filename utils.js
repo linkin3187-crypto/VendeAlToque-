@@ -1,4 +1,4 @@
-// ===== MercaFree - Utilidades compartidas =====
+// ===== Merkap - Utilidades compartidas =====
 // APRENDE: este archivo se carga PRIMERO en todas las páginas. Todo lo que
 // antes estaba copiado en varios archivos (escapar HTML, toast, modo editor,
 // modales) vive ahora aquí, una sola vez. Si algo cambia, lo cambias en un sitio.
@@ -122,8 +122,8 @@ function tieneCoords(a) {
 function urlWhatsApp(numero, nombreAnuncio) {
   const n = String(numero || "").replace(/\D/g, "");
   const texto = nombreAnuncio
-    ? `Hola, vi tu anuncio «${nombreAnuncio}» en MercaFree. ¿Sigue disponible?`
-    : "Hola, vi tu anuncio en MercaFree.";
+    ? `Hola, vi tu anuncio «${nombreAnuncio}» en Merkap. ¿Sigue disponible?`
+    : "Hola, vi tu anuncio en Merkap.";
   return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
 }
 
@@ -325,7 +325,7 @@ function urlBuscarCerca(tipo, lat, lng) {
 }
 
 function mensajeEncuentro(nombreAnuncio) {
-  return `Hola, vi tu anuncio «${nombreAnuncio}» en MercaFree. ¿Nos vemos en un lugar público y concurrido, como una estación del metro, un centro comercial o un CAI? ¿Cuál te queda mejor? Cuando lo definas, mándame la ubicación por WhatsApp.`;
+  return `Hola, vi tu anuncio «${nombreAnuncio}» en Merkap. ¿Nos vemos en un lugar público y concurrido, como una estación del metro, un centro comercial o un CAI? ¿Cuál te queda mejor? Cuando lo definas, mándame la ubicación por WhatsApp.`;
 }
 
 // datos: { lat, lng, nombre, aprox, ciudad, whatsapp (opcional: activa «punto de encuentro») }
@@ -363,7 +363,7 @@ function abrirComoLlegar(datos) {
       <p id="cl-punto-msg" class="hidden text-xs text-red-600 mt-1"></p>
       <button type="button" id="cl-volver" class="hidden text-xs text-indigo-700 underline mt-1">↩ Volver al destino del anuncio</button>
     </div>${encuentro}
-    <p class="text-[11px] text-slate-400 mt-4">MercaFree no presta servicios de transporte ni tiene alianza con estas aplicaciones; son enlaces de ayuda.</p>
+    <p class="text-[11px] text-slate-400 mt-4">Merkap no presta servicios de transporte ni tiene alianza con estas aplicaciones; son enlaces de ayuda.</p>
   </div>`;
   let op = null;
   const pintar = (dest, esPunto) => {
@@ -517,7 +517,7 @@ function mensajePedido(comercio, items, modo) {
   const lineas = items.map(i => `• ${i.cantidad} × ${i.nombre}${i.precio != null ? " (" + peso(i.precio * i.cantidad) + ")" : ""}`);
   const total = items.reduce((s, i) => s + (i.precio != null ? i.precio * i.cantidad : 0), 0);
   const conPrecio = items.every(i => i.precio != null);
-  return [`Hola, vi tu tienda «${comercio.nombre}» en MercaFree y quiero pedir:`, ...lineas,
+  return [`Hola, vi tu tienda «${comercio.nombre}» en Merkap y quiero pedir:`, ...lineas,
     total && conPrecio ? `Total aproximado: ${peso(total)}` : "",
     modo === "domicilio" ? "Lo quiero a domicilio." : modo === "recoger" ? "Lo recojo en el local." : "",
     "¿Lo tienen disponible?"].filter(Boolean).join("\n");

@@ -1,4 +1,4 @@
-// ===== MercaFree - Registrar un negocio nuevo (registrar-negocio.html) =====
+// ===== Merkap - Registrar un negocio nuevo (registrar-negocio.html) =====
 // La persona deja sus datos + foto de la fachada + ubicación; un moderador revisa las señales y aprueba (ver moderacion.js).
 // Nada se publica hasta esa aprobación, y el sello de verificación se da aparte (2D.1).
 

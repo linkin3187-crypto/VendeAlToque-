@@ -1,4 +1,4 @@
-// ===== MercaFree · Selector de íconos «Elegir 😀» (fase 2Z.3 / 2Z.5) =====
+// ===== Merkap · Selector de íconos «Elegir 😀» (fase 2Z.3 / 2Z.5) =====
 // Compartido por «Editar inicio», Moderación y Comercios. Uso: poner junto al campo del ícono
 //   <div class="flex items-center"><input data-emoji …>${BOTON_EMOJI}</div>
 // El botón abre una ventana con íconos que se buscan por palabra en español («auto» → 🚗).

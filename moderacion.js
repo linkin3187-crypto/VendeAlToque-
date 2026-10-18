@@ -1,4 +1,4 @@
-// ===== MercaFree - Panel de moderación (moderacion.html) =====
+// ===== Merkap - Panel de moderación (moderacion.html) =====
 // POR QUÉ aquí no hay lógica de seguridad: aunque alguien abra esta página sin ser
 // moderador, la base de datos (RLS) no le devuelve ningún reporte ni le deja ocultar nada.
 // El chequeo de rol de abajo solo evita mostrar una pantalla vacía.
@@ -642,7 +642,7 @@ function etiquetaTipo(id) { const t = TIPOS_COMERCIO.find(x => x.id === id); ret
 function tarjetaNegocio(n) {
   const mun = municipios.find(x => x.id === n.municipio_id);
   const foto = urlSegura(n.foto_fachada_url);
-  const wa = n.whatsapp ? urlWhatsAppTexto(n.whatsapp, `Hola, te escribe MercaFree. Recibimos el registro de «${n.nombre}» (${n.direccion}). ¿Nos confirmas que eres el dueño o administrador del negocio?`) : "";
+  const wa = n.whatsapp ? urlWhatsAppTexto(n.whatsapp, `Hola, te escribe Merkap. Recibimos el registro de «${n.nombre}» (${n.direccion}). ¿Nos confirmas que eres el dueño o administrador del negocio?`) : "";
   const tel = String(n.telefono || "").replace(/[^\d+]/g, "");
   return `<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm" data-neg="${n.id}">
     <div class="flex gap-3">

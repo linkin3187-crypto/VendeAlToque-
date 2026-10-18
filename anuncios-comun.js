@@ -1,4 +1,4 @@
-// ===== MercaFree · código compartido de anuncios =====
+// ===== Merkap · código compartido de anuncios =====
 // Lo usan el inicio (index.html → app.js) y «Todos los anuncios» (anuncios.html → anuncios.js).
 // Ambas páginas tienen los MISMOS id en los filtros (buscador, filtro-departamento, filtro-ciudad,
 // ordenar-por, panel de «Más filtros»…), así que estas funciones sirven para las dos.
@@ -280,7 +280,9 @@ function criteriosAQuery() {
 function aplicarQueryAUI(qs) {
   const p = new URLSearchParams(qs);
   if (p.get("q")) $("buscador").value = p.get("q").slice(0, 80);
-  const cat = p.get("cat");
+  let cat = p.get("cat");
+  // «Motos» ahora es una subcategoría de Vehículos (SQL 22): los enlaces viejos siguen funcionando
+  if (cat === "motos") { cat = "autos"; if (!p.get("sub")) p.set("sub", "motos"); }
   if (cat && CATEGORIAS.some(x => x.id === cat)) {
     categoriaActiva = cat;
     const sub = p.get("sub");

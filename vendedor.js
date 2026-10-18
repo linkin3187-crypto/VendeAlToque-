@@ -1,4 +1,4 @@
-// ===== MercaFree · Perfil público del vendedor (Fase 2C.5) =====
+// ===== Merkap · Perfil público del vendedor (Fase 2C.5) =====
 // vendedor.html?id=UUID  ·  Nombre visible, «miembro desde», su comercio y TODOS sus anuncios activos
 // (con buscador y categorías). Los datos vienen de perfil_publico() (supabase/18_perfil_vendedor.sql):
 // nunca correo, teléfono ni rol. El contacto de cada anuncio sigue pidiendo cuenta (como siempre).
@@ -27,7 +27,7 @@ function pintarAnunciosV() {
 
 function pintarVendedorV() {
   const v = vendedor;
-  document.title = `${v.nombre} · Vendedor | MercaFree`;
+  document.title = `${v.nombre} · Vendedor | Merkap`;
   $("v-avatar").textContent = (v.nombre || "?").trim().charAt(0).toUpperCase();
   $("v-nombre").textContent = v.nombre;
   $("v-desde").textContent = "Miembro desde " + fechaMiembro(v.desde);
@@ -53,7 +53,7 @@ async function corazonV(id, btn) {
 
 async function compartirPerfil() {
   const url = location.href;
-  const datos = { title: vendedor.nombre + " en MercaFree", text: `Mira los anuncios de ${vendedor.nombre} en MercaFree`, url };
+  const datos = { title: vendedor.nombre + " en Merkap", text: `Mira los anuncios de ${vendedor.nombre} en Merkap`, url };
   if (navigator.share) { try { await navigator.share(datos); } catch (e) { /* canceló */ } return; }
   try { await navigator.clipboard.writeText(url); mostrarToast("🔗 Enlace copiado: pégalo en WhatsApp"); } catch (e) { prompt("Copia este enlace:", url); }
 }

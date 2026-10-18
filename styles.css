@@ -1,4 +1,4 @@
-/* ===== MercaFree - Estilos adicionales (lo que Tailwind no cubre) ===== */
+/* ===== Merkap - Estilos adicionales (lo que Tailwind no cubre) ===== */
 
 /* --- Mapas ---
    ANTES: `.leaflet-container { height: 420px }` afectaba a TODOS los mapas de la
@@ -696,3 +696,11 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 .gf-acciones { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 3px; padding: 3px; background: linear-gradient(transparent, rgba(15,23,42,.7)); }
 .gf-acciones button { width: 26px; height: 24px; border-radius: 6px; background: rgba(255,255,255,.9); color: #1e293b; font-size: 11px; font-weight: 800; }
 .gf-acciones .gf-quitar { color: #b91c1c; }
+
+/* ===== Marca Merkap (fase 2AB.2): ícono + palabra, con los colores de la página (índigo y amarillo) ===== */
+.marca { display: inline-flex; align-items: center; gap: .42em; line-height: 1; vertical-align: middle; white-space: nowrap; }
+.marca-ico { width: 1.45em; height: 1.45em; flex: none; filter: drop-shadow(0 2px 0 rgba(30, 27, 75, .35)); transition: transform .25s ease; }
+.marca-txt { font-weight: 900; letter-spacing: -.045em; color: #fff; font-size: 1.08em; }
+.marca-txt b { font-weight: 900; color: #fde047; }
+a:hover > .marca .marca-ico, .marca:hover .marca-ico { transform: rotate(-8deg) scale(1.06); }
+@media (prefers-reduced-motion: reduce) { .marca-ico { transition: none; } }

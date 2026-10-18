@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MercaFree | Clasificados y directorio de comercios de tu ciudad</title>
+  <title>Merkap | Clasificados y directorio de comercios de tu ciudad</title>
   <meta name="description" content="Clasificados gratis y directorio de comercios de tu ciudad: compra, vende y encuentra farmacias, panaderías, supermercados y más cerca de ti.">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛍️%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='9'%20fill='%234f46e5'/%3E%3Cpath%20d='M8.5%2023V10.5l7.5%207.5%207.5-7.5V23'%20fill='none'%20stroke='%23fde047'%20stroke-width='3.4'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='25'%20cy='7'%20r='2.6'%20fill='%23fde047'/%3E%3C/svg%3E">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=57" />
+  <link rel="stylesheet" href="styles.css?v=58" />
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -25,7 +25,7 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-4 enc-grid">
       <div class="enc-marca flex items-center gap-2.5">
         <h1 class="enc-logo text-2xl font-black tracking-tight whitespace-nowrap">
-          <span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span>
+          <span class="marca"><svg class="marca-ico" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#fde047"/><path d="M8.5 23V10.5l7.5 7.5 7.5-7.5V23" fill="none" stroke="#4338ca" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="7" r="2.6" fill="#4338ca"/></svg><span class="marca-txt">Merk<b>ap</b></span></span>
         </h1>
         <span class="hidden 2xl:inline-block text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium whitespace-nowrap">Clasificados + Directorio de comercios</span>
       </div>
@@ -51,7 +51,7 @@
       </div>
       <!-- Buscador inteligente: el letrero va cambiando solo (restaurantes, farmacias, usados…) -->
       <div class="enc-busca">
-        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar en MercaFree" placeholder="¿Qué buscas hoy?" class="w-full pl-5 pr-14 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-lg text-base">
+        <input type="search" id="buscador" autocomplete="off" aria-label="Buscar en Merkap" placeholder="¿Qué buscas hoy?" class="w-full pl-5 pr-14 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-lg text-base">
         <button type="button" id="btn-buscar" class="btn-buscar" aria-label="Buscar en anuncios, comercios y vitrinas" title="Buscar en todo">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
         </button>
@@ -365,7 +365,7 @@
 
   <footer class="bg-white border-t border-slate-200 mt-8 py-8">
     <div class="max-w-7xl mx-auto px-4 text-center">
-      <p class="text-slate-500 text-sm">© 2026 <span class="font-bold text-indigo-600">MercaFree</span> — 100% gratis</p>
+      <p class="text-slate-500 text-sm">© 2026 <span class="font-bold text-indigo-600">Merkap</span> — 100% gratis</p>
       <p class="text-slate-400 text-xs mt-2">
         <a href="comercios.html" class="hover:text-indigo-600 underline">Comercios verificados</a> ·
         <a href="terminos.html" class="hover:text-indigo-600 underline">Términos y condiciones</a> ·
@@ -499,7 +499,7 @@
               <button type="button" id="form-mismo-numero" class="mt-1 text-xs text-indigo-600 underline">Usar el mismo número del WhatsApp</button>
             </div>
             <p id="form-contacto-error" class="hidden text-xs text-red-600 font-semibold">Pon tu WhatsApp, tu teléfono o ambos para que puedan contactarte.</p>
-            <p class="text-[11px] text-slate-500">🔒 Tu número no se muestra en pantalla: solo lo reciben personas con cuenta en MercaFree cuando tocan el botón.</p>
+            <p class="text-[11px] text-slate-500">🔒 Tu número no se muestra en pantalla: solo lo reciben personas con cuenta en Merkap cuando tocan el botón.</p>
           </div>
           <div>
             <label for="form-descripcion" class="block text-xs font-bold text-slate-500 mb-1">Descripción *</label>
@@ -622,13 +622,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=57"></script>
-  <script src="data.js?v=57"></script>
-  <script src="foro.js?v=57"></script>
-  <script src="carrusel.js?v=57"></script>
-  <script src="buscador.js?v=57"></script>
-  <script src="anuncios-comun.js?v=57"></script>
-  <script src="app.js?v=57"></script>
-  <script src="navegacion.js?v=57"></script>
+  <script src="utils.js?v=58"></script>
+  <script src="data.js?v=58"></script>
+  <script src="foro.js?v=58"></script>
+  <script src="carrusel.js?v=58"></script>
+  <script src="buscador.js?v=58"></script>
+  <script src="anuncios-comun.js?v=58"></script>
+  <script src="app.js?v=58"></script>
+  <script src="navegacion.js?v=58"></script>
 </body>
 </html>

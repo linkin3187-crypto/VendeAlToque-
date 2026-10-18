@@ -1,4 +1,4 @@
-// ===== MercaFree - Vitrina pública de un comercio (tienda.html?id=...) =====
+// ===== Merkap - Vitrina pública de un comercio (tienda.html?id=...) =====
 // El público solo ve tiendas ACTIVAS y VERIFICADAS (nivel 2 o 3); la base de datos lo exige (RLS).
 // El dueño y los moderadores pueden ver su tienda antes de que sea pública (con un aviso).
 
@@ -76,7 +76,7 @@ function pintarBarra() {
 function renderizarTienda(c, ps) {
   tienda = c; productos = ps;
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-  document.title = `${c.nombre} | MercaFree`;
+  document.title = `${c.nombre} | Merkap`;
   $("t-nombre").textContent = c.nombre;
   $("t-icono").textContent = t ? t.icono : "🏪";
   $("t-sub").textContent = [nombreCategorias(c), c.ciudad].filter(Boolean).join(" · ");
@@ -104,7 +104,7 @@ function renderizarTienda(c, ps) {
   }
 
   if (c.whatsapp) {
-    $("t-wa").href = urlWhatsAppTexto(c.whatsapp, `Hola, vi tu tienda «${c.nombre}» en MercaFree.`);
+    $("t-wa").href = urlWhatsAppTexto(c.whatsapp, `Hola, vi tu tienda «${c.nombre}» en Merkap.`);
     $("t-wa").classList.remove("hidden");
   }
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
@@ -118,7 +118,7 @@ function renderizarTienda(c, ps) {
   if (!c.ownerId) { $("t-es-tuyo").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
   $("t-reportar").addEventListener("click", () => abrirReporteComercio(c));
   $("t-compartir").addEventListener("click", async () => {
-    const datos = { title: c.nombre, text: `${c.nombre} en MercaFree`, url: location.href };
+    const datos = { title: c.nombre, text: `${c.nombre} en Merkap`, url: location.href };
     if (navigator.share) { try { await navigator.share(datos); } catch (e) { /* canceló */ } return; }
     try { await navigator.clipboard.writeText(location.href); mostrarToast("🔗 Enlace copiado"); } catch (e) { window.prompt("Copia el enlace:", location.href); }
   });
@@ -145,9 +145,9 @@ function renderizarTienda(c, ps) {
     av.className = "mb-3 text-sm aviso-ubicado rounded-xl px-3 py-2";
     av.innerHTML = gestiona
       ? (c.activo
-        ? "📍 <b>Este negocio ya aparece en el mapa y el directorio</b> como «Ubicado». Los <b>productos</b> de esta vitrina solo los ves tú hasta que MercaFree lo verifique por WhatsApp o llamada."
+        ? "📍 <b>Este negocio ya aparece en el mapa y el directorio</b> como «Ubicado». Los <b>productos</b> de esta vitrina solo los ves tú hasta que Merkap lo verifique por WhatsApp o llamada."
         : "🙈 Este negocio está oculto: solo lo ves tú (o un moderador).")
-      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero MercaFree todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
+      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
   // Fase 2Z.10: lo que dice la comunidad + «⚡ Acelerar mi verificación» (dueño)

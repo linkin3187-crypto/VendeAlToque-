@@ -1,4 +1,4 @@
-// ===== MercaFree · Enlaces con código y QR (solo moderadores) =====
+// ===== Merkap · Enlaces con código y QR (solo moderadores) =====
 const PAGINAS_REF = { inicio: "index.html", registrar: "registrar-negocio.html", directorio: "comercios.html", tienda: "tienda.html" };
 let svgActual = "";
 

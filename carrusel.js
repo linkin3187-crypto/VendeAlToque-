@@ -1,4 +1,4 @@
-// ===== MercaFree · Carrusel de banners del inicio =====
+// ===== Merkap · Carrusel de banners del inicio =====
 // Desliza con el dedo (scroll-snap), flechas en pantallas grandes, puntos, y avance automático
 // cada 6 s que se pausa al tocar, pasar el mouse, enfocar o cuando la pestaña no está visible.
 // Si la persona pidió «reducir movimiento», no avanza solo.

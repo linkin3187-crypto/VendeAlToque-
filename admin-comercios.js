@@ -1,4 +1,4 @@
-// ===== MercaFree - Importar y gestionar comercios (admin-comercios.html) =====
+// ===== Merkap - Importar y gestionar comercios (admin-comercios.html) =====
 // POR QUÉ la importación corre en TU navegador: el servidor donde trabaja Claude no puede
 // llamar a Overpass, pero tu navegador sí. La seguridad no depende de esta página: la base
 // de datos solo deja escribir en `comercios` a cuentas con rol moderador/admin.

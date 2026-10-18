@@ -1,4 +1,4 @@
-// ===== MercaFree - Directorio de comercios (comercios.html) =====
+// ===== Merkap - Directorio de comercios (comercios.html) =====
 // Muestra TODOS los comercios activos (verificados y sin verificar). Cada tarjeta lleva su sello honesto:
 // «Ubicado» (dato de mapa sin verificar), «Verificado por teléfono» o «Verificado en persona».
 // Los filtros quedan en el enlace (comercios.html?tipo=farmacia&muni=4) para compartir la búsqueda.
@@ -58,7 +58,7 @@ function tarjetaComercio(c) {
       <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
         ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
-        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">💬 ${esUbicacionAprox(c) ? "Pedir por WhatsApp" : "WhatsApp"}</a>` : ""}
+        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">💬 ${esUbicacionAprox(c) ? "Pedir por WhatsApp" : "WhatsApp"}</a>` : ""}
         ${tieneCoords(c) && !esUbicacionAprox(c) ? `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>` : ""}
       </div>
       <a href="tienda.html?id=${c.id}#opinar" class="relative z-10 mt-2 inline-flex w-fit items-center gap-1 text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg">⭐ Calificar</a>
@@ -245,7 +245,7 @@ async function cercaDeMiCo() {
 async function compartirBusquedaCo() {
   const url = location.href;
   try {
-    if (navigator.share) { await navigator.share({ title: "MercaFree", text: "Mira estos comercios en MercaFree", url }); return; }
+    if (navigator.share) { await navigator.share({ title: "Merkap", text: "Mira estos comercios en Merkap", url }); return; }
     await navigator.clipboard.writeText(url);
     mostrarToast("🔗 Enlace copiado: pégalo en WhatsApp");
   } catch (err) {

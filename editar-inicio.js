@@ -1,4 +1,4 @@
-// ===== MercaFree · Editar inicio y buscador (Fase 2Z.2) =====
+// ===== Merkap · Editar inicio y buscador (Fase 2Z.2) =====
 // Solo moderadores. Tres paneles: 🎠 carrusel (banners_inicio), 🧩 cuadros de acceso (accesos_inicio)
 // y 🧠 entrenar el buscador (palabras clave de las categorías). Ver supabase/20 y 21.
 

@@ -1,4 +1,4 @@
-// ===== MercaFree - Página de detalle de un anuncio (anuncio.html?id=...) =====
+// ===== Merkap - Página de detalle de un anuncio (anuncio.html?id=...) =====
 // POR QUÉ una página propia (y no un acordeón dentro de la lista):
 //  1) Cada anuncio tiene un ENLACE que se puede compartir por WhatsApp.
 //  2) Más espacio para galería, mapa y datos sin romper la cuadrícula.
@@ -101,7 +101,7 @@ function renderizarGaleria(a) {
 }
 
 async function compartir() {
-  const datos = { title: anuncioActual.nombre, text: `${anuncioActual.nombre} en MercaFree`, url: location.href };
+  const datos = { title: anuncioActual.nombre, text: `${anuncioActual.nombre} en Merkap`, url: location.href };
   if (navigator.share) {
     try { await navigator.share(datos); } catch (e) { /* el usuario canceló */ }
     return;
@@ -159,7 +159,7 @@ function renderizarAnuncio(a) {
   // Título de la pestaña y descripción: útiles al compartir y para el historial.
   // (Ojo: Google y WhatsApp leen el HTML SIN ejecutar JS, así que para que la vista
   //  previa muestre el anuncio hará falta renderizar en servidor: Fase 3.)
-  document.title = `${a.nombre} | MercaFree`;
+  document.title = `${a.nombre} | Merkap`;
   $("meta-desc").content = (a.desc || "").slice(0, 150);
 
   $("anuncio-titulo").textContent = a.nombre;
@@ -240,7 +240,7 @@ function renderizarGuia(a) {
   const aprox = a.ubicacionAprox;
   $("guia-contenido").innerHTML = esDueno
     ? `<p class="text-xs text-slate-500">Este es tu anuncio. Así lo ven y así te contactan:</p><ol>
-        ${paso(1, "Te contactan con tu número protegido", "Las personas interesadas te escriben o te llaman desde los botones. Tu número no se muestra en pantalla y solo lo obtienen personas con cuenta en MercaFree.")}
+        ${paso(1, "Te contactan con tu número protegido", "Las personas interesadas te escriben o te llaman desde los botones. Tu número no se muestra en pantalla y solo lo obtienen personas con cuenta en Merkap.")}
         ${paso(2, "Acuerden precio y lugar", "Reúnete en un lugar público y concurrido (estación del metro, centro comercial, CAI). No des tu dirección de casa.")}
         ${paso(3, "Tu ubicación está protegida", aprox ? "El mapa muestra solo una zona cercana, no tu punto exacto. Tú le dices al comprador dónde encontrarse." : "Tu anuncio muestra el punto exacto. Si es tu casa, edítalo y activa «Mostrar solo la zona aproximada».")}
         ${paso(4, "Cuando se venda", "Entra a «Mis anuncios» y elimínalo o edítalo para no recibir más mensajes.")}

@@ -1,4 +1,4 @@
-// ===== MercaFree - Panel del dueño del comercio (mi-tienda.html) =====
+// ===== Merkap - Panel del dueño del comercio (mi-tienda.html) =====
 // El dueño solo puede cambiar descripción, WhatsApp, teléfono, horario, foto y entrega, y gestionar hasta 20 productos.
 // Las reglas las impone la base de datos (RLS y triggers); esta pantalla solo las hace cómodas.
 
@@ -22,7 +22,7 @@ function pintarCabecera() {
   // Fase 2Z.9: «Ubicado» SÍ aparece en el mapa y el directorio (igual que los importados); lo que espera la verificación son los productos
   e.innerHTML = publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
     : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
-    : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando MercaFree confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
+    : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando Merkap confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
   $("mt-ver").href = "tienda.html?id=" + actual.id;
   pintarAcelerar($("mt-acelerar"), actual);   // fase 2Z.10: «⚡ Acelerar mi verificación» (solo si está «Ubicado»)
 }
@@ -176,10 +176,10 @@ async function pintarSalud() {
   catch (e) { console.warn("datos sanitarios:", e); $("mt-salud-estado").textContent = ""; $("mt-salud-campos").innerHTML = '<p class="text-sm text-slate-500">Esta sección se activa en unos días.</p>'; datosSalud = {}; return; }
   const est = $("mt-salud-estado");
   if (!datosSalud) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"; est.textContent = "Falta llenarlos"; }
-  else if (datosSalud.revisado_en) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800"; est.textContent = "✔ Revisados por MercaFree"; }
+  else if (datosSalud.revisado_en) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800"; est.textContent = "✔ Revisados por Merkap"; }
   else { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"; est.textContent = "⏳ En revisión"; }
   $("mt-salud-nota").classList.toggle("hidden", !(datosSalud && datosSalud.nota_moderador));
-  $("mt-salud-nota").textContent = datosSalud && datosSalud.nota_moderador ? "💬 MercaFree: " + datosSalud.nota_moderador : "";
+  $("mt-salud-nota").textContent = datosSalud && datosSalud.nota_moderador ? "💬 Merkap: " + datosSalud.nota_moderador : "";
   $("mt-salud-campos").innerHTML = htmlDatosSanitarios("mt-ds", datosSalud || { tipo_establecimiento: actual.tipo === "naturista" ? "naturista" : "" });
 }
 async function guardarSalud(e) {
@@ -189,7 +189,7 @@ async function guardarSalud(e) {
   const b = e.target.querySelector('button[type="submit"]'); b.disabled = true;
   try {
     await guardarDatosSanitarios(actual.id, r.datos);
-    mostrarToast("✅ Datos sanitarios guardados. MercaFree los revisará");
+    mostrarToast("✅ Datos sanitarios guardados. Merkap los revisará");
     await pintarSalud();
     pintarProductosMios();
   } catch (err) { console.error(err); mostrarToast(mensajeError(err), "error"); }

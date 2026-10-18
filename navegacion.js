@@ -1,4 +1,4 @@
-// ===== MercaFree · Barra inferior tipo app (Fase 2Y) =====
+// ===== Merkap · Barra inferior tipo app (Fase 2Y) =====
 // Solo en celular y tablet (en computador se oculta con CSS). Se activa en las páginas cuyo <body>
 // tiene data-nav="inicio|comercios|favoritos|…" y se carga después de utils.js y data.js.
 // 🏠 Inicio · 🏪 Comercios · ( ＋ ) · ❤️ Favoritos · 👤 Yo/Entrar

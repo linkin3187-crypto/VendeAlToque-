@@ -1,4 +1,4 @@
-// ===== MercaFree - Datos (Supabase) =====
+// ===== Merkap - Datos (Supabase) =====
 // Requiere: supabase-js (CDN) y utils.js cargados antes.
 //
 // APRENDE: TODO el acceso a la base de datos vive en este archivo. El resto de la
@@ -865,7 +865,7 @@ const ACCESOS_RESPALDO = [
   { titulo: "Comida", icono: "🍔", color: "naranja", destino: "buscar.html?q=comida" },
   { titulo: "Bares", icono: "🍻", color: "rosa", destino: "comercios.html?tipo=bar" },
   { titulo: "Tecnología", icono: "📱", color: "azul", destino: "anuncios.html?cat=tecnologia" },
-  { titulo: "Motos", icono: "🏍️", color: "morado", destino: "anuncios.html?cat=motos" },
+  { titulo: "Motos", icono: "🏍️", color: "morado", destino: "anuncios.html?cat=autos&sub=motos" },
   { titulo: "Arriendos", icono: "🏡", color: "menta", destino: "anuncios.html?cat=inmuebles" },
   { titulo: "Publica gratis", icono: "📢", color: "amarillo", destino: "#publicar" },
   { titulo: "Recomienda", icono: "🤝", color: "rosa", destino: "recomendar.html" },
@@ -1231,7 +1231,7 @@ async function asignarDuenoComercio(comercioId, { usuarioId, email } = {}) {
 // =====================================================================
 // DROGUERÍAS Y PRODUCTOS DE SALUD (fase 2AB.1, supabase/29_productos_salud.sql)
 // Hoy NO se venden medicamentos (Términos 4B). Las droguerías y naturistas dejan sus datos sanitarios
-// (privados: solo el dueño y MercaFree) y su vitrina muestra solo productos que no son medicamentos.
+// (privados: solo el dueño y Merkap) y su vitrina muestra solo productos que no son medicamentos.
 // =====================================================================
 const TIPOS_SALUD = ["farmacia", "naturista"];
 const esTipoSalud = t => TIPOS_SALUD.includes(t);
@@ -1252,7 +1252,7 @@ function pareceMedicamento(texto) {
 function confirmarNoMedicamento(texto, donde) {
   const p = pareceMedicamento(texto);
   if (!p) return true;
-  return confirm(`«${p}» parece un medicamento.\n\nEn MercaFree no se publican medicamentos (ni de venta libre ni con fórmula médica) ${donde || ""}. Si lo publicas, un moderador lo revisa y puede ocultarlo.\n\n¿Confirmas que NO es un medicamento?`);
+  return confirm(`«${p}» parece un medicamento.\n\nEn Merkap no se publican medicamentos (ni de venta libre ni con fórmula médica) ${donde || ""}. Si lo publicas, un moderador lo revisa y puede ocultarlo.\n\n¿Confirmas que NO es un medicamento?`);
 }
 
 // Formulario reutilizable (registro, Mi tienda y el editor del administrador). pre = prefijo de los id.
@@ -1261,7 +1261,7 @@ function htmlDatosSanitarios(pre, d) {
   const opt = Object.entries(TIPOS_ESTABLECIMIENTO_SALUD).map(([k, v]) => `<option value="${k}" ${d.tipo_establecimiento === k ? "selected" : ""}>${esc(v)}</option>`).join("");
   const inp = "mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800";
   return `<div class="space-y-3">
-    <p class="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3">🔒 <b>Estos datos son privados.</b> Solo los ven tú y MercaFree. No aparecen en tu ficha pública. Los pide la ley para identificar a quien ofrece productos (Ley 1480 de 2011, art. 53) y porque las droguerías son establecimientos vigilados por la Secretaría de Salud.</p>
+    <p class="text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3">🔒 <b>Estos datos son privados.</b> Solo los ven tú y Merkap. No aparecen en tu ficha pública. Los pide la ley para identificar a quien ofrece productos (Ley 1480 de 2011, art. 53) y porque las droguerías son establecimientos vigilados por la Secretaría de Salud.</p>
     <label class="block text-xs font-bold text-slate-500">Tipo de establecimiento *
       <select id="${pre}-tipo-est" class="${inp} bg-white"><option value="">— Elige —</option>${opt}</select></label>
     <div class="grid sm:grid-cols-2 gap-3">
@@ -1279,7 +1279,7 @@ function htmlDatosSanitarios(pre, d) {
         <input id="${pre}-acta-fecha" type="date" value="${esc(d.acta_fecha || "")}" max="${new Date().toISOString().slice(0, 10)}" class="${inp}"></label>
     </div>
     <label class="flex items-start gap-2 text-sm"><input type="checkbox" id="${pre}-declara" class="mt-1" ${d.declara_autorizacion ? "checked" : ""}>
-      <span>Declaro que este establecimiento cuenta con <b>autorización y concepto sanitario vigente</b> de la Secretaría de Salud, y que conozco la <a href="politica-productos-salud.html" target="_blank" class="underline text-indigo-600">Política de productos de salud</a> de MercaFree: hoy <b>no publico medicamentos</b> en mi vitrina.</span></label>
+      <span>Declaro que este establecimiento cuenta con <b>autorización y concepto sanitario vigente</b> de la Secretaría de Salud, y que conozco la <a href="politica-productos-salud.html" target="_blank" class="underline text-indigo-600">Política de productos de salud</a> de Merkap: hoy <b>no publico medicamentos</b> en mi vitrina.</span></label>
   </div>`;
 }
 // Lee y valida. Devuelve { datos } o { error }.

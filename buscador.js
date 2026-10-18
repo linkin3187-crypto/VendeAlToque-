@@ -1,4 +1,4 @@
-// ===== MercaFree · Buscador inteligente (Fase 2W) =====
+// ===== Merkap · Buscador inteligente (Fase 2W) =====
 // Entiende lo que la gente escribe aunque no ponga el nombre exacto:
 //  · sin tildes ni mayúsculas, plurales y prefijos («postre», «postres», «post…» dan lo mismo);
 //  · errores de escritura (1 letra en palabras de 5+ letras, 2 en palabras de 8+);

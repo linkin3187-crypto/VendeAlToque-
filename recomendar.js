@@ -1,4 +1,4 @@
-// ===== MercaFree · Recomendar un comercio (Fase 2X) =====
+// ===== Merkap · Recomendar un comercio (Fase 2X) =====
 // recomendar.html[?nombre=…]  ·  La gente recomienda negocios que visita y no están en el mapa.
 // Se guarda en `recomendaciones_comercio` (supabase/17_recomendaciones.sql); un moderador lo crea o lo descarta.
 

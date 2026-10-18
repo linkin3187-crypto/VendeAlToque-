@@ -600,3 +600,17 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Nombres:** Anuncios → Tiendas «Droguería y salud» → «Cuidado personal y aseo»; Belleza y salud «Salud y bienestar» → «Bienestar (sin medicamentos)»; cuadro del inicio «Farmacias» → «Droguerías».
 
 **Revertir:** PR → **Revert**. Las tablas pueden quedarse; si quieres quitar la regla de productos: `drop trigger productos_salud_requisito on public.productos_comercio;`.
+
+## Fase 2AB.2 · La marca ahora es Merkap
+
+**SQL:** `supabase/30_marca_merkap.sql` — antes o después de fusionar. Arregla el cuadro «Motos» y cambia «MercaFree» por «Merkap» si aparece en el carrusel o los cuadros. Debe mostrar `motos_viejo = 0 | textos_viejos = 0`.
+
+**Cambian:** todas las páginas (`*.html`), los textos en los `*.js`, `styles.css` (regla `.marca`), `privacidad.html`, `terminos.html`, `anuncios-comun.js`, `data.js`. Caché `?v=58`.
+
+- **Letrero nuevo:** ícono «M» amarillo con punto índigo + palabra «Merk**ap**» (blanco y amarillo, los colores de la página). Es código (SVG), no una imagen: se ve nítido en cualquier pantalla. Para cambiar el logo después basta con tocar la regla `.marca` y el ícono.
+- **Ícono de la pestaña** del navegador: la misma «M» en todas las páginas.
+- **Privacidad:** el responsable es **Skalezinc** (filial), con razón social y NIT **en trámite**. Se quitó el NIT anterior. Ver pendiente P1 del roadmap.
+- **Motos:** el cuadro lleva a Vehículos › Motos; los enlaces viejos `anuncios.html?cat=motos` (ya compartidos) también llevan ahí.
+- Lo que **no** cambió: el correo mercafree7@gmail.com (pendiente P2) y los nombres internos (`mf_…`), que no se ven.
+
+**Revertir:** PR → **Revert**.

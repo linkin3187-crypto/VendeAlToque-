@@ -1,4 +1,4 @@
-// ===== MercaFree · «Todos los anuncios» (anuncios.html) =====
+// ===== Merkap · «Todos los anuncios» (anuncios.html) =====
 // Página de búsqueda con calma: los mismos filtros del inicio, en cuadrícula y sin carrusel.
 // La lógica de filtros y la tarjeta están en anuncios-comun.js (compartida con el inicio).
 // Los filtros se guardan en el enlace (anuncios.html?ciudad=Envigado&cat=vehiculos) para poder compartirlos.
@@ -101,9 +101,9 @@ async function corazonTodos(id, btn) {
 
 async function compartirBusqueda() {
   const url = location.href;
-  const texto = "Mira estos anuncios en MercaFree";
+  const texto = "Mira estos anuncios en Merkap";
   try {
-    if (navigator.share) { await navigator.share({ title: "MercaFree", text: texto, url }); return; }
+    if (navigator.share) { await navigator.share({ title: "Merkap", text: texto, url }); return; }
     await navigator.clipboard.writeText(url);
     mostrarToast("🔗 Enlace copiado: pégalo en WhatsApp");
   } catch (err) {

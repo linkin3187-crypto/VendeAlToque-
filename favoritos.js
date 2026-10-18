@@ -1,4 +1,4 @@
-// ===== MercaFree - Mis favoritos (favoritos.html) =====
+// ===== Merkap - Mis favoritos (favoritos.html) =====
 // Solo muestra anuncios activos y vigentes; si uno venció o se eliminó, simplemente no aparece.
 
 function tarjetaFavorito(a) {

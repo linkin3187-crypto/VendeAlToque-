@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='9'%20fill='%234f46e5'/%3E%3Cpath%20d='M8.5%2023V10.5l7.5%207.5%207.5-7.5V23'%20fill='none'%20stroke='%23fde047'%20stroke-width='3.4'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='25'%20cy='7'%20r='2.6'%20fill='%23fde047'/%3E%3C/svg%3E">
   <meta name="robots" content="noindex">
-  <title>Mi tienda | MercaFree</title>
+  <title>Mi tienda | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=57">
+  <link rel="stylesheet" href="styles.css?v=58">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
     <div class="max-w-3xl mx-auto px-4 py-3.5 flex justify-between items-center">
-      <a href="index.html" class="font-black tracking-tight text-xl"><span class="text-yellow-300">MERCA</span><span class="text-white">FREE</span> <span class="text-sm font-semibold text-indigo-200">· Mi tienda</span></a>
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><svg class="marca-ico" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#fde047"/><path d="M8.5 23V10.5l7.5 7.5 7.5-7.5V23" fill="none" stroke="#4338ca" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="7" r="2.6" fill="#4338ca"/></svg><span class="marca-txt">Merk<b>ap</b></span></span> <span class="text-sm font-semibold text-indigo-200">· Mi tienda</span></a>
       <a href="index.html" class="text-sm text-indigo-100 hover:text-white">← Inicio</a>
     </div>
   </header>
@@ -50,7 +51,7 @@
 
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <h2 class="text-lg font-black text-indigo-900 mb-1">1 · Datos de tu negocio</h2>
-        <p class="text-xs text-slate-500 mb-3">Estos datos los cambias tú cuando quieras. El <b>nombre</b> y la <b>ubicación</b> los confirma MercaFree al verificarte (respaldan tu sello): para cambiarlos usa los botones de abajo.</p>
+        <p class="text-xs text-slate-500 mb-3">Estos datos los cambias tú cuando quieras. El <b>nombre</b> y la <b>ubicación</b> los confirma Merkap al verificarte (respaldan tu sello): para cambiarlos usa los botones de abajo.</p>
         <form id="form-negocio" class="space-y-3">
           <label class="block text-xs font-bold text-slate-500">Descripción corta (máx. 300)
             <textarea id="mt-desc" maxlength="300" rows="2" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej: Droguería de barrio con domicilio. Atendemos desde 1998."></textarea></label>
@@ -100,13 +101,13 @@
         </div>
       </section>
 
-      <!-- Fase 2AB.1: droguerías, farmacias y naturistas (privado: solo el dueño y MercaFree) -->
+      <!-- Fase 2AB.1: droguerías, farmacias y naturistas (privado: solo el dueño y Merkap) -->
       <section id="mt-salud" class="hidden bg-white border-2 border-emerald-200 rounded-2xl p-5 shadow-sm">
         <div class="flex flex-wrap items-center gap-2 mb-1">
           <h2 class="text-lg font-black text-emerald-900">🧾 Datos sanitarios</h2>
           <span id="mt-salud-estado" class="text-xs font-semibold px-2 py-0.5 rounded-full"></span>
         </div>
-        <p class="text-xs text-slate-500 mb-3">Obligatorios para droguerías, farmacias y tiendas naturistas antes de cargar productos. Si cambias algo, MercaFree lo vuelve a revisar.</p>
+        <p class="text-xs text-slate-500 mb-3">Obligatorios para droguerías, farmacias y tiendas naturistas antes de cargar productos. Si cambias algo, Merkap lo vuelve a revisar.</p>
         <p id="mt-salud-nota" class="hidden text-xs bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg px-3 py-2 mb-3"></p>
         <form id="form-salud" novalidate>
           <div id="mt-salud-campos"></div>
@@ -128,8 +129,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=57"></script>
-  <script src="data.js?v=57"></script>
-  <script src="mi-tienda.js?v=57"></script>
+  <script src="utils.js?v=58"></script>
+  <script src="data.js?v=58"></script>
+  <script src="mi-tienda.js?v=58"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# MercaFree
+# Merkap
 
 Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con HTML, CSS y JavaScript puro, listo para GitHub Pages.
 

@@ -1,4 +1,4 @@
-// MercaFree · Generador de códigos QR (sin librerías externas).
+// Merkap · Generador de códigos QR (sin librerías externas).
 // Modo byte (UTF-8), corrección de errores nivel M, versiones 1 a 10 (hasta ~210 caracteres).
 // Uso: qrMatriz("https://...") → matriz de booleanos · qrSvg("https://...", { px: 8, margen: 4 }) → texto SVG
 (function () {

@@ -500,3 +500,14 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 **Revertir:** PR → **Revert**. Las tablas pueden quedarse.
 
+## Fase 2Z.10b · «¿Existe aquí?» y «¿Lo encontraste?» más visibles
+
+**SQL:** ninguno. **Cambian:** `app.js`, `comercios.js`, `tienda.js`, `data.js`, `styles.css`. Caché `?v=51`.
+
+- **Ventanita del mapa (inicio):** «👥 ¿Existe aquí? 👍 Sí · 👎 No» ahora va **arriba, justo debajo del nombre**, en una franja de color (antes quedaba abajo y pasaba desapercibida). Sale en los comercios **«Ubicado»** (y en los verificados hace más de 6 meses); en los verificados recientes no se pregunta. También se arregló el botón «⭐ Calificar» de la ventanita, que salía con letra blanca casi invisible.
+- **«🧭 ¿Lo encontraste?» en cualquier página:** antes solo salía en la ficha del comercio y 10 minutos después. Ahora se anota la visita al tocar **Cómo llegar, Llamar o WhatsApp** en el **directorio, la ventanita del mapa, el inicio o la ficha**, y **2 minutos después**, al volver a la página (por ejemplo, regresando de Google Maps) o al abrir otra, aparece una **tarjeta flotante** abajo: «¿Encontraste «X»? ✅ Sí, existe / ❌ No estaba» con ✕ para cerrarla (no vuelve a preguntar por ese comercio). Al dueño nunca se le pregunta por su propio negocio.
+
+**Cómo probarlo:** en Comercios toca «Cómo llegar» de un comercio «Ubicado», espera 2 minutos y vuelve a la página (o recárgala).
+
+**Revertir:** PR → **Revert**.
+

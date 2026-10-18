@@ -167,9 +167,7 @@ function renderizarTienda(c, ps) {
     pintarAcelerar($("t-acelerar"), c);
   }
   pintarConfirmar(c);
-  ["t-wa", "t-llamar", "t-llegar", "t-mapa-llegar"].forEach(id => $(id) && $(id).addEventListener("click", () => {
-    try { localStorage.setItem("mf_fui_" + c.id, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
-  }));
+  ["t-wa", "t-llamar", "t-llegar", "t-mapa-llegar"].forEach(id => $(id) && $(id).addEventListener("click", () => registrarVisitaComercio(c)));
   pintarProductos();
   $("t-contenido").classList.remove("hidden");
 }
@@ -181,8 +179,8 @@ async function pintarConfirmar(c) {
   if (!pedirConfirmacion(c)) return;
   if (usuarioActual && c.ownerId === usuarioActual.id) return;            // el dueño no vota por su negocio
   const leer = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const fue = Number(leer("mf_fui_" + c.id)) || 0;
-  const volvio = fue && Date.now() - fue > 10 * 60000;
+  const visita = leerVisitas().find(v => v.id === c.id);
+  const volvio = !!(visita && Date.now() - visita.t > 2 * 60000);
   if (leer("mf_conf_cerrado_" + c.id) === "1" && !volvio) return;
   if (usuarioActual && await miConfirmacion(c.id)) return;                 // ya opinó
   const verificado = c.nivel >= 2;
@@ -202,7 +200,8 @@ async function pintarConfirmar(c) {
   const caja = $("t-confirmar");
   caja.addEventListener("click", async e => {
     if (e.target.closest("[data-conf-cerrar]")) {
-      try { localStorage.setItem("mf_conf_cerrado_" + c.id, "1"); localStorage.removeItem("mf_fui_" + c.id); } catch (er) { /* nada */ }
+      try { localStorage.setItem("mf_conf_cerrado_" + c.id, "1"); } catch (er) { /* nada */ }
+      olvidarVisita(c.id);
       caja.remove(); return;
     }
     const b = e.target.closest("[data-conf]");
@@ -218,7 +217,7 @@ async function pintarConfirmar(c) {
     try {
       const r = await confirmarComercio(c, b.dataset.conf);
       const n = await contarMisConfirmaciones();
-      try { localStorage.removeItem("mf_fui_" + c.id); } catch (er) { /* nada */ }
+      olvidarVisita(c.id);
       caja.innerHTML = `<p class="font-black text-green-800">🙌 ¡Gracias!</p><p class="text-sm text-slate-700">${b.dataset.conf === "existe"
         ? (r.enLugar ? "Confirmaste que existe, y estabas en el lugar: tu opinión vale doble." : "Confirmaste que existe.")
         : "Avisaste que ya no está. Un moderador lo revisará."} ${n > 1 ? `Ya ayudaste a confirmar <b>${n}</b> negocios de tu barrio.` : ""}</p>`;

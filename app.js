@@ -175,6 +175,9 @@ function popupComercioHTML(c) {
     ${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-20 object-cover rounded-lg mb-2">` : ""}
     <strong class="block">${esc(c.nombre)}</strong>
     <small class="text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</small>
+    ${pedirConfirmacion(c) && !(usuarioActual && c.ownerId === usuarioActual.id) ? `<div class="conf-pop mt-1.5" data-conf-pop="${c.id}"><span>👥 ¿Existe aquí?</span>
+      <button type="button" data-conf-voto="existe" aria-label="Sí, existe y atiende aquí" title="Sí, existe">👍 Sí</button>
+      <button type="button" data-conf-voto="no_existe" aria-label="No está o cerró" title="No está o cerró">👎 No</button></div>` : ""}
     ${esUbicacionAprox(c) ? `<div class="text-xs mt-1"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> zona aproximada</div>` : c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
     ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
     <div class="text-[11px] mt-1">${resumenCalifHTML(c)}</div>
@@ -182,15 +185,12 @@ function popupComercioHTML(c) {
     ${comercioDudoso(c) ? `<div class="text-[11px] font-semibold text-red-700 mt-1">🚩 ${c.confirmaNo} personas dicen que ya no está</div>` : ""}
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${esc((SELLOS[c.nivel] || SELLOS[1]).largo)}${c.verificado && c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</div>
     <div class="flex flex-wrap gap-1.5 mt-2">
-      ${tel ? `<a href="tel:${esc(tel)}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
-      ${esUbicacionAprox(c) ? (c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">💬 Pedir por WhatsApp</a>` : "")
-        : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>`}
+      ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">📞 Llamar</a>` : ""}
+      ${esUbicacionAprox(c) ? (c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en MercaFree.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">💬 Pedir por WhatsApp</a>` : "")
+        : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded-md no-underline">Cómo llegar</a>`}
     </div>
-    ${pedirConfirmacion(c) && !(usuarioActual && c.ownerId === usuarioActual.id) ? `<div class="conf-pop mt-2" data-conf-pop="${c.id}"><span>¿Existe aquí?</span>
-      <button type="button" data-conf-voto="existe" aria-label="Sí, existe y atiende aquí" title="Sí, existe">👍</button>
-      <button type="button" data-conf-voto="no_existe" aria-label="No está o cerró" title="No está o cerró">👎</button></div>` : ""}
     ${c.nProductos > 0 && c.nivel >= 2 ? `<a href="tienda.html?id=${c.id}" class="block mt-2 text-center bg-teal-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
-    <a href="tienda.html?id=${c.id}#opinar" class="block mt-2 text-center bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline">⭐ Calificar / ver opiniones</a>
+    <a href="tienda.html?id=${c.id}#opinar" class="block mt-2 text-center bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-md no-underline" style="color:#92400e!important">⭐ Calificar / ver opiniones</a>
     ${c.ownerId ? `<a href="comercios.html?solicitar=${c.id}" class="block mt-2 text-[11px] underline" style="color:#64748b!important">✏️ ¿Es tu negocio? Solicitar actualización</a>`
       : `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar mt-2" style="color:#1e1b4b!important">🔑 ¿Es tu negocio? Reclámalo gratis</a>`}
   </div>`;
@@ -299,7 +299,7 @@ function tarjetaComercioFeed(c) {
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${c.nivel >= 2 && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg">📞 Llamar</a>` : ""}
-        <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>
+        <a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>
         <a href="tienda.html?id=${c.id}#opinar" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold px-3 py-1.5 rounded-lg">⭐ Calificar</a>
         ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold px-3 py-1.5 rounded-lg">✏️ Editar</a>` : ""}
       </div>

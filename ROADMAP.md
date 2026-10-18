@@ -106,6 +106,7 @@ Escapado de HTML, hash de contraseñas, mapa con clusters, página de detalle, f
 | **2AA.2 Editor completo de comercios** ✅ *(hecho, sin SQL: «✏️ Editor completo» con pestañas Datos · Contacto y entrega · Ubicación (municipio, dirección, mover pin) · Foto (cámara/galería/quitar) · Dueño y visibilidad; «Guardar todo» y aviso de cambios sin guardar; texto nuevo de Anuncios y clasificados)* | ✅ |
 | **2AA.3 Clasificar por municipio y categoría** ✅ *(hecho, sin SQL: chips por categoría con conteo y verificados según municipio y filtros; vista agrupada por categoría principal con barra de avance; recuerda la vista)* | ✅ |
 | **2AA.4 Galería de fotos por comercio** ✅ *(hecho, **SQL 27**: hasta 5 fotos con portada = primera (la mantiene el servidor); gestor con ★ portada, ◀ ▶ ordenar, ✕ quitar, cámara o varias de la galería, en el editor y en Mi tienda; ficha con miniaturas y visor a pantalla completa (deslizar, flechas, Esc); productos también se amplían)* | ✅ |
+| **2AA.5 Fotos de productos** ✅ *(hecho, **SQL 28**: hasta 3 fotos por producto con el mismo gestor (dueño en Mi tienda), «📷 N» y visor en la vitrina; administrador entra a cualquier vitrina con «🛍️ Editar vitrina» (modo administrador); límites del dueño sin cambios)* | ✅ |
 | **2Q Calificación de vendedores (anuncios)** ⏳ *(después: solo cuando el vendedor marque «vendido a…», para evitar reseñas falsas)* | ⏳ |
 
 **Niveles de sello (cada uno dice exactamente qué significa y la fecha):**

@@ -287,7 +287,7 @@ function filaEditor(c) {
       <input data-dueno placeholder="correo de su cuenta" class="border border-slate-300 p-1.5 rounded-lg w-44 sm:w-56">
       <button type="button" data-acc="dueno" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-2.5 py-1.5 rounded-lg">Asignar</button>
       ${c.ownerId ? '<button type="button" data-acc="quitar-dueno" class="text-red-600 hover:underline">Quitar</button>' : ""}
-      ${c.nProductos ? `<a href="tienda.html?id=${c.id}" class="ml-auto text-indigo-600 underline">🛍️ ${c.nProductos} producto(s)</a>` : ""}
+      <a href="mi-tienda.html?id=${c.id}" class="ml-auto text-indigo-600 underline">🛍️ ${c.nProductos ? c.nProductos + " producto(s) · editar vitrina" : "Editar vitrina"}</a>
     </div>
     <div class="flex flex-wrap items-center gap-4 mt-2 text-sm">
       <label class="flex items-center gap-1.5"><input type="checkbox" data-k="activo" ${c.activo ? "checked" : ""}> Visible en el mapa</label>

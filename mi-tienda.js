@@ -83,7 +83,6 @@ async function guardarNegocio(e) {
 function filaProducto(p) {
   const nuevo = !p;
   p = p || { id: "", nombre: "", descripcion: "", precio: null, foto: "", disponible: true, oculto: false };
-  const f = urlSegura(p.foto);
   return `<article class="border border-slate-200 rounded-xl p-3 ${p.oculto ? "bg-red-50" : ""}" data-pid="${p.id}">
     ${p.oculto ? '<p class="text-xs text-red-700 font-semibold mb-2">🚫 Un moderador ocultó este producto. Revisa las reglas o escríbenos.</p>' : ""}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -93,8 +92,8 @@ function filaProducto(p) {
         <input data-k="precio" inputmode="numeric" value="${p.precio != null ? p.precio : ""}" placeholder="8500" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
       <label class="text-xs font-bold text-slate-500 sm:col-span-3">Descripción (opcional)
         <input data-k="descripcion" maxlength="200" value="${esc(p.descripcion)}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
-      <label class="text-xs font-bold text-slate-500 sm:col-span-3">Foto
-        <div class="flex items-center gap-2 mt-0.5">${f ? `<img src="${esc(f)}" alt="" class="w-12 h-12 rounded object-cover">` : ""}<input type="file" data-foto accept="image/*" class="text-xs font-normal"></div></label>
+      <div class="text-xs font-bold text-slate-500 sm:col-span-3">📷 Fotos del producto <span class="font-normal">(hasta 3; la primera es la principal)</span>
+        <div data-gal-prod class="mt-1 font-normal"></div></div>
     </div>
     <div class="flex flex-wrap items-center gap-3 mt-2 text-sm">
       <label class="flex items-center gap-1.5"><input type="checkbox" data-k="disponible" ${p.disponible ? "checked" : ""}> Disponible</label>
@@ -105,8 +104,18 @@ function filaProducto(p) {
   </article>`;
 }
 
+// Fase 2AA.5: cada producto tiene su gestor de fotos (hasta 3)
+const galeriasProd = new WeakMap();
+function iniciarGaleriasProductos() {
+  document.querySelectorAll("#mt-productos [data-pid]").forEach(fila => {
+    if (galeriasProd.has(fila)) return;
+    const p = productosMios.find(x => String(x.id) === fila.dataset.pid);
+    galeriasProd.set(fila, gestorFotos(fila.querySelector("[data-gal-prod]"), p ? p.fotos : [], null, 3));
+  });
+}
 function pintarProductosMios() {
   $("mt-productos").innerHTML = productosMios.map(filaProducto).join("");
+  iniciarGaleriasProductos();
   $("mt-vacio").classList.toggle("hidden", productosMios.length > 0);
   $("mt-cuenta").textContent = `(${productosMios.length} de ${MAX_PRODUCTOS})`;
   $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS;
@@ -131,11 +140,10 @@ async function accionProducto(e) {
       const crudo = v("precio").value.trim();
       const precio = crudo ? Number(soloDigitos(crudo)) : null;
       if (crudo && (!Number.isFinite(precio) || precio > 99999999999)) throw new Error("El precio no es válido");
-      const archivo = fila.querySelector("[data-foto]").files[0];
-      await guardarProducto(actual.id, {
-        nombre, descripcion: v("descripcion").value, precio, disponible: v("disponible").checked,
-        foto: archivo ? await comprimir(archivo) : null
-      }, pid);
+      const gal = galeriasProd.get(fila);
+      const datos = { nombre, descripcion: v("descripcion").value, precio, disponible: v("disponible").checked };
+      if (gal && (gal.cambiado || !pid)) datos.fotos = await gal.subir();
+      await guardarProducto(actual.id, datos, pid);
       mostrarToast(pid ? "✅ Guardado" : "✅ Producto agregado");
     }
     await refrescarProductos();
@@ -162,7 +170,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("mt-cargando").classList.add("hidden");
   if (!usuarioActual) { $("mt-sin-sesion").classList.remove("hidden"); return; }
-  misComercios = await cargarMisComercios();
+  // Fase 2AA.5: un moderador puede abrir la tienda de cualquier comercio (mi-tienda.html?id=ID) con todo el control
+  const idAdmin = Number(new URLSearchParams(location.search).get("id")) || 0;
+  if (idAdmin && esModerador()) {
+    const c = await cargarComercioPorId(idAdmin).catch(() => null);
+    misComercios = c ? [c] : [];
+    if (c) $("mt-panel").insertAdjacentHTML("afterbegin", `<p class="mb-4 text-sm bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-xl px-3 py-2">🛡️ <b>Modo administrador:</b> estás editando la tienda de «${esc(c.nombre)}» (dueño: ${c.ownerId ? "asignado" : "sin asignar"}). <a href="admin-comercios.html?editar=${c.id}" class="underline">Volver a Editar comercios</a></p>`);
+  } else misComercios = await cargarMisComercios();
   if (!misComercios.length) { $("mt-sin-tienda").classList.remove("hidden"); return; }
   $("mt-panel").classList.remove("hidden");
   if (misComercios.length > 1) {
@@ -180,6 +194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("mt-agregar").addEventListener("click", () => {
     if ($("mt-productos").querySelector('[data-pid=""]')) return;
     $("mt-productos").insertAdjacentHTML("afterbegin", filaProducto(null));
+    iniciarGaleriasProductos();
     $("mt-productos").querySelector('[data-pid=""] [data-k="nombre"]').focus();
   });
   await elegirComercio(misComercios[0].id);

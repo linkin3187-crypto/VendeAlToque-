@@ -826,6 +826,8 @@ function filaAProducto(r) {
   return {
     id: Number(r.id), comercioId: Number(r.comercio_id), nombre: r.nombre, descripcion: r.descripcion || "",
     precio: r.precio == null ? null : Number(r.precio), foto: r.foto_url || "",
+    fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 3),   // fase 2AA.5
+    tieneColumnaFotos: Array.isArray(r.fotos),
     disponible: !!r.disponible, oculto: !!r.oculto, actualizado: r.actualizado_en
   };
 }
@@ -1102,13 +1104,18 @@ async function guardarProducto(comercioId, d, id) {
   };
   if (d.foto) fila.foto_url = d.foto.startsWith("data:") ? await subirFotoComercio(d.foto) : d.foto;
   if (d.quitarFoto) fila.foto_url = null;
+  // Fase 2AA.5: lista de fotos (ya subidas). Con el SQL 28 se guarda la lista; sin él, solo la principal.
+  if (Array.isArray(d.fotos)) { fila.fotos = d.fotos.slice(0, 3); fila.foto_url = fila.fotos[0] || null; }
+  const sinColFotos = e => /fotos/.test((e && e.message) || "") && "fotos" in fila;   // aún sin el SQL 28: reintenta solo con la principal
   if (id) {
-    const { data, error } = await sb.from("productos_comercio").update(fila).eq("id", id).select().single();
+    let { data, error } = await sb.from("productos_comercio").update(fila).eq("id", id).select().single();
+    if (error && sinColFotos(error)) { delete fila.fotos; ({ data, error } = await sb.from("productos_comercio").update(fila).eq("id", id).select().single()); }
     if (error) throw error;
     return filaAProducto(data);
   }
   fila.comercio_id = comercioId;
-  const { data, error } = await sb.from("productos_comercio").insert(fila).select().single();
+  let { data, error } = await sb.from("productos_comercio").insert(fila).select().single();
+  if (error && sinColFotos(error)) { delete fila.fotos; ({ data, error } = await sb.from("productos_comercio").insert(fila).select().single()); }
   if (error) throw error;
   return filaAProducto(data);
 }
@@ -2179,8 +2186,9 @@ function cerrarVisorFotos() {
 // Uso: const g = gestorFotos(contenedor, fotosActuales); … const urls = await g.subir();
 // =====================================================================
 const MAX_FOTOS_COMERCIO = 5;
-function gestorFotos(cont, iniciales, alCambiar) {
-  let items = (iniciales || []).filter(Boolean).slice(0, MAX_FOTOS_COMERCIO).map(url => ({ url }));
+function gestorFotos(cont, iniciales, alCambiar, max) {
+  const MAX = max || MAX_FOTOS_COMERCIO;
+  let items = (iniciales || []).filter(Boolean).slice(0, MAX).map(url => ({ url }));
   let cambiado = false;
   const grupo = "gf" + Math.random().toString(36).slice(2, 7);
   function pintar() {
@@ -2193,11 +2201,11 @@ function gestorFotos(cont, iniciales, alCambiar) {
           ${i < items.length - 1 ? `<button type="button" data-gf-mover="1" aria-label="Mover a la derecha">▶</button>` : ""}
           <button type="button" data-gf-quitar aria-label="Quitar foto" class="gf-quitar">✕</button>
         </div></div>`).join("")}</div>
-      ${items.length < MAX_FOTOS_COMERCIO ? `<span class="foto-botones mt-2">
+      ${items.length < MAX ? `<span class="foto-botones mt-2">
         <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
         <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" multiple class="sr-only">🖼️ Galería</label>
       </span>` : ""}
-      <p class="text-[11px] text-slate-500 mt-1">${items.length} de ${MAX_FOTOS_COMERCIO} fotos. La primera es la <b>portada</b>; toca una foto para verla en grande.</p>`;
+      <p class="text-[11px] text-slate-500 mt-1">${items.length} de ${MAX} fotos. La primera es la <b>portada</b>; toca una foto para verla en grande.</p>`;
   }
   function cambio() { cambiado = true; pintar(); if (alCambiar) alCambiar(); }
   cont.addEventListener("click", e => {
@@ -2214,11 +2222,11 @@ function gestorFotos(cont, iniciales, alCambiar) {
   cont.addEventListener("change", async e => {
     const inp = e.target.closest("[data-gf-nueva]");
     if (!inp || !inp.files || !inp.files.length) return;
-    const archivos = [...inp.files].slice(0, MAX_FOTOS_COMERCIO - items.length);
+    const archivos = [...inp.files].slice(0, MAX - items.length);
     for (const f of archivos) {
       try { items.push({ data: await comprimir(f) }); } catch (err) { mostrarToast("No se pudo leer una imagen", "error"); }
     }
-    if ([...inp.files].length > archivos.length) mostrarToast("Máximo " + MAX_FOTOS_COMERCIO + " fotos por comercio", "error");
+    if ([...inp.files].length > archivos.length) mostrarToast("Máximo " + MAX + " fotos", "error");
     cambio();
   });
   pintar();

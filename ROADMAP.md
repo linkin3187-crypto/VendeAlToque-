@@ -15,6 +15,20 @@
 | P8 | **Fórmula médica (Rx) — monetización (2AB.4)** | 2AB.1 | Después de P6 y P7. |
 | P9 | **Calificación de vendedores (2Q)** | 2D | Solo al marcar «vendido a…». |
 | P10 | **Piloto G0/G1** | Estrategia | Salir a sembrar comercios y vendedores en el primer barrio. |
+| P11 | **Restos de fases viejas (pequeños)** | 2A, 2C | 2A.9 lista de palabras prohibidas anti-spam (hoy hay límite de 10 anuncios y vencimiento a 30 días); 2C.1 «Publicado hace X días», etiquetas de precio y contador de fotos; 2C.3 selector lista/cuadrícula y «Selección del día»; 2C.4 similares con distancia («a 2 km»). |
+| P12 | **2H Dominio** | 2H | Comprar el dominio de Merkap y conectarlo **antes de imprimir stickers/QR** (G1): un QR impreso con el enlace viejo no se puede cambiar. |
+
+## 🧭 ORDEN DE TRABAJO ACORDADO (oct 2026)
+1. **2AB.2b Sello sanitario aparte** — distintivo público «🧾 Datos sanitarios revisados por Merkap» (solo con tu visto bueno), vitrina de droguería pública solo después de ese visto bueno, datos sanitarios en el formulario de «Reclamar».
+2. **2AC Restos chicos (P11)** — «Publicado hace X días», etiquetas de precio, contador de fotos, similares con distancia, palabras prohibidas.
+3. **2H Dominio** *(tú compras; yo conecto)* — dominio en GitHub Pages con HTTPS, enlaces, vista previa para WhatsApp (Open Graph) y Google Search Console.
+4. **G0 Preparación del piloto** — métricas básicas, revisión general de errores y seguridad, kit del piloto (sticker QR de Merkap por comercio, guion de visita, «Programa Fundadores»). *Tú:* abogado (P6) y NIT de Skalezinc (P1).
+5. **G1 Piloto de comercios** — 15-20 tiendas verificadas en persona en un solo municipio.
+6. **G2 Beta de vendedores** — 20-50 invitados uno a uno; **2Z.11 WhatsApp oficial** cuando exista el número.
+7. **G3 Grupos de Facebook + G5 Retención** — aviso para renovar a los 25 días, «marcar como vendido», canal propio; luego **2Q** calificar vendedores.
+8. **2AB.3 Droguería autorizada + venta libre** — después del abogado; primer ingreso posible.
+9. **Fase 3 SEO**, **Fase 4 Confianza e IA**, **Fase 5 Ingresos** (destacados, planes, **2AB.4** fórmula médica), **Fase 6 Transaccional**, **Fase 7 Expansión** — cuando haya tráfico real.
+
 
 
 

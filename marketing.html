@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <meta name="robots" content="noindex">
+  <title>Centro de marketing | Merkap</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=71">
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #ref-sticker, #ref-sticker * { visibility: visible; }
+      #ref-sticker { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap gap-x-3 gap-y-1 justify-between items-center">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span> <span class="text-sm font-semibold text-indigo-200">· Marketing</span></a>
+      <nav class="flex flex-wrap gap-x-3 text-sm text-indigo-100">
+        <a href="metricas.html" class="hover:text-white">📊 Métricas</a>
+        <a href="moderacion.html" class="hover:text-white">🛡️ Moderación</a>
+        <a href="index.html" class="hover:text-white">← Inicio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <div id="rf-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+
+    <div id="rf-sin-permiso" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">🔒</div>
+      <h2 class="text-xl font-bold text-slate-700 mb-2">Solo para el administrador</h2>
+      <p id="rf-sin-permiso-txt" class="text-slate-500 text-sm mb-4"></p>
+      <a href="index.html#login" class="text-indigo-600 font-medium hover:underline">Iniciar sesión</a>
+    </div>
+
+    <section id="rf-panel" class="hidden space-y-6">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-black text-indigo-950">📣 Centro de marketing</h1>
+          <p class="text-sm text-slate-600">Arma el enlace, copia el texto, descarga la imagen y compártela en WhatsApp, grupos de Facebook o Instagram.</p>
+        </div>
+        <a id="mk-manual" href="docs/manual-marketing-merkap.pdf" download class="text-sm font-bold px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 shadow-sm">📘 Descargar manual de marketing (PDF)</a>
+      </div>
+
+      <!-- PASO 1 · El enlace -->
+      <div class="mk-caja">
+        <h2 class="mk-paso"><span>1</span> ¿A dónde quieres llevar a la gente?</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <label class="mk-etq">Destino
+            <select id="rf-destino" class="mk-campo bg-white">
+              <option value="inicio">🏠 Inicio (anuncios y comercios)</option>
+              <option value="registro">📲 Regístrate gratis</option>
+              <option value="publicar">📢 Publica un anuncio gratis</option>
+              <option value="recomendar">🤝 Recomienda un negocio</option>
+              <option value="registrar">🏪 Registra tu negocio</option>
+              <option value="directorio">📍 Directorio de comercios</option>
+              <option value="categoria">📂 Una categoría de anuncios</option>
+              <option value="tienda">🛍️ Vitrina de un comercio</option>
+              <option value="anuncio">📄 Un anuncio</option>
+              <option value="libre">✏️ Otra página de Merkap</option>
+            </select>
+          </label>
+          <label class="mk-etq">¿Dónde lo vas a compartir?
+            <select id="mk-canal" class="mk-campo bg-white">
+              <option value="whatsapp">🟢 Chat o grupo de WhatsApp</option>
+              <option value="estado">⭕ Estado de WhatsApp</option>
+              <option value="facebook">📘 Grupo o página de Facebook</option>
+              <option value="instagram">📸 Instagram</option>
+              <option value="tiktok">🎵 TikTok</option>
+              <option value="qr">🔳 Sticker o QR impreso</option>
+              <option value="volante">📄 Volante o afiche</option>
+              <option value="">Otro</option>
+            </select>
+          </label>
+          <label class="mk-etq">Código de la campaña
+            <input id="rf-codigo" maxlength="30" placeholder="grupo-envigado-1" class="mk-campo" autocomplete="off">
+          </label>
+          <label class="mk-etq">Municipio o barrio (opcional, para el texto)
+            <input id="mk-zona" maxlength="40" placeholder="Envigado" class="mk-campo" autocomplete="off">
+          </label>
+
+          <label id="mk-cat-caja" class="hidden mk-etq">Categoría
+            <select id="mk-cat" class="mk-campo bg-white"></select>
+          </label>
+          <label id="mk-tipo-caja" class="hidden mk-etq">Tipo de negocio (opcional)
+            <select id="mk-tipo" class="mk-campo bg-white"></select>
+          </label>
+          <label id="rf-id-caja" class="hidden mk-etq"><span id="rf-id-etq">Número del comercio</span>
+            <input id="rf-id" inputmode="numeric" maxlength="9" placeholder="123" class="mk-campo">
+            <span id="rf-id-nombre" class="block mt-1 text-[11px] font-semibold text-emerald-700"></span>
+          </label>
+          <label id="mk-libre-caja" class="hidden mk-etq sm:col-span-2">Página (ej.: <code>prohibidos.html</code> o <code>anuncios.html?cat=empleos</code>)
+            <input id="mk-libre" maxlength="120" placeholder="terminos.html" class="mk-campo" autocomplete="off">
+          </label>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Usa un código distinto por cada grupo, volante o sticker (ej.: <code>fb-envigado-ventas</code>, <code>wa-vecinos-sabaneta</code>). Así sabes cuál funciona: las <b>visitas</b> salen en <a href="metricas.html" class="underline">📊 Métricas → De dónde llegan</a> y las <b>cuentas nuevas</b> abajo en esta página.</p>
+
+        <div id="rf-vacio" class="mt-4 text-slate-400 text-sm">Escribe un código para ver el enlace.</div>
+        <div id="mk-enlace-caja" class="hidden mt-4 flex flex-col sm:flex-row gap-2">
+          <input id="rf-enlace" readonly class="flex-1 min-w-0 border border-slate-300 bg-slate-50 p-2.5 rounded-lg text-xs text-slate-700">
+          <div class="flex gap-2">
+            <button id="rf-copiar" type="button" class="mk-btn bg-indigo-600 hover:bg-indigo-700 text-white">🔗 Copiar solo el link</button>
+            <a id="mk-probar" target="_blank" rel="noopener" class="mk-btn bg-slate-100 hover:bg-slate-200 text-slate-700">↗️ Probar</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 items-start">
+        <!-- PASO 2 · El texto -->
+        <div class="mk-caja">
+          <h2 class="mk-paso"><span>2</span> El texto para publicar</h2>
+          <div id="mk-versiones" class="flex flex-wrap gap-1.5 mb-2" role="group" aria-label="Versión del texto"></div>
+          <textarea id="mk-texto" rows="9" class="mk-campo text-sm leading-relaxed" spellcheck="true"></textarea>
+          <p id="mk-texto-nota" class="text-[11px] text-slate-500 mt-1"></p>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button id="mk-copiar-texto" type="button" class="mk-btn bg-indigo-600 hover:bg-indigo-700 text-white">📋 Copiar texto + link</button>
+            <a id="mk-wa" target="_blank" rel="noopener" class="mk-btn bg-green-600 hover:bg-green-700 text-white">🟢 Enviar por WhatsApp</a>
+            <a id="mk-fb" target="_blank" rel="noopener" class="mk-btn bg-blue-600 hover:bg-blue-700 text-white">📘 Compartir en Facebook</a>
+          </div>
+          <div class="flex flex-wrap gap-3 mt-2 text-xs">
+            <button id="mk-guardar-texto" type="button" class="text-indigo-700 font-bold hover:underline">💾 Guardar como mi versión</button>
+            <button id="mk-restaurar-texto" type="button" class="text-slate-500 hover:underline">↺ Volver al texto original</button>
+          </div>
+        </div>
+
+        <!-- PASO 3 · La imagen -->
+        <div class="mk-caja">
+          <h2 class="mk-paso"><span>3</span> La imagen (tarjeta)</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="mk-etq">Formato
+              <select id="mk-formato" class="mk-campo bg-white">
+                <option value="cuadrado">Cuadrada 1080×1080 (post, grupos)</option>
+                <option value="historia">Vertical 1080×1920 (estados, historias)</option>
+                <option value="horizontal">Horizontal 1200×630 (Facebook, banner)</option>
+              </select>
+            </label>
+            <label class="mk-etq">Plantilla
+              <select id="mk-plantilla" class="mk-campo bg-white">
+                <option value="morado">Morado Merkap</option>
+                <option value="amarillo">Amarillo Merkap</option>
+                <option value="claro">Blanco limpio</option>
+              </select>
+            </label>
+            <label class="mk-etq col-span-2">Título
+              <input id="mk-titulo" maxlength="70" class="mk-campo">
+            </label>
+            <label class="mk-etq col-span-2">Frase de apoyo
+              <input id="mk-sub" maxlength="110" class="mk-campo">
+            </label>
+            <label class="mk-etq">Botón
+              <input id="mk-cta" maxlength="30" class="mk-campo">
+            </label>
+            <div class="mk-etq">Colores
+              <div class="flex flex-wrap gap-1.5 mt-0.5">
+                <label class="mk-color" title="Color de fondo"><input id="mk-color-fondo" type="color" value="#4c1d95"><span>Fondo</span></label>
+                <label class="mk-color" title="Color del botón"><input id="mk-color-cta" type="color" value="#f6c51a"><span>Botón</span></label>
+              </div>
+            </div>
+          </div>
+
+          <p class="mk-etq mt-3">Ícono</p>
+          <div id="mk-iconos" class="flex flex-wrap gap-1 mt-1" role="group" aria-label="Ícono"></div>
+
+          <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm">
+            <label class="mk-check"><input type="checkbox" id="mk-ver-logo" checked> Logo</label>
+            <label class="mk-check"><input type="checkbox" id="mk-ver-qr" checked> Código QR</label>
+            <label class="mk-check"><input type="checkbox" id="mk-ver-link" checked> Link escrito</label>
+            <label class="mk-check"><input type="checkbox" id="mk-ver-cta" checked> Botón «Ingresa aquí»</label>
+          </div>
+
+          <div class="mt-3 bg-violet-50 border border-violet-200 rounded-xl p-3 text-sm">
+            <p class="font-bold text-violet-900">🖼️ Fondo con tu propia imagen (o hecha con IA)</p>
+            <p class="text-xs text-violet-800 mt-0.5">Créala en ChatGPT, Gemini, Canva o Bing Image Creator y súbela aquí. Merkap le pone encima el logo, el texto, el QR y el link.</p>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <label class="mk-btn bg-violet-600 hover:bg-violet-700 text-white cursor-pointer">⬆️ Subir imagen<input id="mk-foto" type="file" accept="image/*" class="sr-only"></label>
+              <button id="mk-quitar-foto" type="button" class="hidden mk-btn bg-white border border-violet-300 text-violet-800">✖ Quitar imagen</button>
+              <button id="mk-prompt" type="button" class="mk-btn bg-white border border-violet-300 text-violet-800">🤖 Copiar idea para la IA</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista previa de la imagen -->
+      <div class="mk-caja">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="mk-paso mb-0"><span>4</span> Vista previa y descarga</h2>
+          <div class="flex flex-wrap gap-2">
+            <button id="mk-bajar" type="button" class="mk-btn bg-indigo-600 hover:bg-indigo-700 text-white">⬇️ Descargar imagen</button>
+            <button id="mk-compartir" type="button" class="hidden mk-btn bg-green-600 hover:bg-green-700 text-white">📤 Compartir imagen + texto</button>
+          </div>
+        </div>
+        <div class="mk-lienzo-caja"><canvas id="mk-lienzo" width="1080" height="1080" aria-label="Vista previa de la imagen"></canvas></div>
+        <p class="text-[11px] text-slate-500 mt-2 text-center">En el celular, «📤 Compartir» manda la imagen y el texto juntos a WhatsApp, Facebook o Instagram.</p>
+      </div>
+
+      <!-- Solo el QR (stickers e imprenta) -->
+      <details class="mk-caja">
+        <summary class="font-black text-indigo-900 cursor-pointer">🔳 Solo el QR (stickers, volantes, imprenta)</summary>
+        <div id="ref-sticker" class="text-center mt-3">
+          <div id="rf-resultado" class="hidden">
+            <div id="rf-qr" class="mx-auto w-56 h-56 sm:w-64 sm:h-64"></div>
+            <p class="font-black text-indigo-700 mt-2">Merkap · escanea y míranos</p>
+            <p id="rf-codigo-visto" class="text-xs text-slate-400"></p>
+            <div class="flex flex-wrap justify-center gap-2 mt-3 print:hidden">
+              <button id="rf-png" type="button" class="mk-btn bg-slate-100 hover:bg-slate-200 text-slate-700">⬇️ Bajar QR (PNG)</button>
+              <button id="rf-svg" type="button" class="mk-btn bg-slate-100 hover:bg-slate-200 text-slate-700">⬇️ Bajar para imprenta (SVG)</button>
+              <button id="rf-imprimir" type="button" class="mk-btn bg-slate-100 hover:bg-slate-200 text-slate-700">🖨️ Imprimir</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Medición -->
+      <div class="mk-caja">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <h2 class="text-lg font-black text-indigo-900">📈 Cuentas nuevas por código</h2>
+          <button id="rf-recargar" type="button" class="text-sm text-indigo-600 hover:underline">Actualizar</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Cuenta a quien <b>creó cuenta</b> después de entrar por ese enlace (30 días, gana el primero). «Directo» son cuentas sin código. Las visitas por canal están en <a href="metricas.html" class="underline">📊 Métricas</a>.</p>
+        <div id="rf-tabla" class="border border-slate-200 rounded-xl overflow-x-auto"></div>
+      </div>
+
+      <!-- Estrategias -->
+      <details id="mk-estrategias" class="mk-caja">
+        <summary class="font-black text-indigo-900 cursor-pointer">💡 Estrategias para sacarle el jugo (resumen del manual)</summary>
+        <ol class="mt-3 space-y-2 text-sm text-slate-700 list-decimal pl-5">
+          <li><b>Un enlace por grupo.</b> Cada grupo de Facebook o WhatsApp con su código. A las 2 semanas te quedas con los que traen gente.</li>
+          <li><b>Prueba A/B.</b> Mismo grupo, dos textos en semanas distintas. Gana el que trae más cuentas.</li>
+          <li><b>Sticker «Encuéntranos en Merkap»</b> con QR en la puerta de cada comercio piloto.</li>
+          <li><b>Estados de WhatsApp de los comercios.</b> Dales la imagen vertical lista, una vez por semana.</li>
+          <li><b>Calendario semanal:</b> lunes «Regístrate», miércoles «Publica gratis», viernes «Recomienda un negocio».</li>
+          <li><b>Programa Fundadores:</b> los primeros 50 comercios con insignia 🏅 y prioridad en destacados.</li>
+          <li><b>Reto «Recomienda 3 negocios de tu barrio»</b> para llenar el directorio con ayuda de la comunidad.</li>
+          <li><b>Volantes con QR</b> en tiendas, droguerías y veterinarias aliadas, cada uno con su código.</li>
+          <li><b>Cero spam:</b> máximo 1 publicación por grupo a la semana, respetando sus reglas.</li>
+        </ol>
+        <a href="docs/manual-marketing-merkap.pdf" download class="inline-block mt-3 text-sm font-bold text-indigo-700 hover:underline">📘 Ver el manual completo (PDF) →</a>
+      </details>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="qr.js?v=71"></script>
+  <script src="utils.js?v=71"></script>
+  <script src="data.js?v=71"></script>
+  <script src="marketing.js?v=71"></script>
+</body>
+</html>

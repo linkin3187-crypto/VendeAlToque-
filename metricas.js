@@ -7,10 +7,11 @@ let datosMe = null;
 const NOMBRE_PAGINA = {
   index: "Inicio", anuncio: "Ficha de anuncio", anuncios: "Todos los anuncios", comercios: "Directorio de comercios",
   tienda: "Ficha de tienda", buscar: "Búsqueda", post: "Publicar", favoritos: "Favoritos", vendedor: "Perfil de vendedor",
-  "mi-tienda": "Mi tienda", "registrar-negocio": "Registrar negocio", recomendar: "Recomendar comercio", referidos: "Referidos", otra: "Otras"
+  "mi-tienda": "Mi tienda", "registrar-negocio": "Registrar negocio", recomendar: "Recomendar comercio", referidos: "Referidos", marketing: "Marketing", otra: "Otras"
 };
 const NOMBRE_ORIGEN = { directo: "Directo (escribió la dirección o app)", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram",
-  google: "Google", tiktok: "TikTok", qr: "Código QR", referido: "Enlace de referido" };
+  google: "Google", tiktok: "TikTok", qr: "Código QR", referido: "Enlace de referido",
+  estado: "Estados de WhatsApp", volante: "Volante o afiche" };
 const num = n => Number(n || 0).toLocaleString("es-CO");
 const fechaCorta = iso => { const [a, m, d] = String(iso).split("-").map(Number); return `${d} ${["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][m - 1]}`; };
 function hoyCo(offset) {

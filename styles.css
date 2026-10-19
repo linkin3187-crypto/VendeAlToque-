@@ -859,3 +859,22 @@ html[data-mas18="1"] .aviso-foto-18 { display: none; }
 .modal-18 { position: fixed; inset: 0; z-index: 80; background: rgb(15 23 42 / .6); display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .modal-18-caja { background: #fff; border-radius: 1.25rem; padding: 1.5rem; max-width: 22rem; width: 100%; text-align: center; box-shadow: 0 20px 50px rgb(0 0 0 / .25); }
 .leyenda-legal { font-size: 12px; font-weight: 700; color: #7c2d12; background: #fff7ed; border: 1px solid #fed7aa; border-radius: .6rem; padding: .45rem .6rem; margin-top: .5rem; }
+
+/* ===== Fase 2AP · Centro de marketing ===== */
+.mk-caja { background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem; }
+@media (min-width: 640px) { .mk-caja { padding: 1.25rem; } }
+.mk-paso { display: flex; align-items: center; gap: .5rem; font-weight: 900; font-size: 1.05rem; color: #1e1b4b; margin-bottom: .75rem; }
+.mk-paso > span { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 999px; background: #4c1d95; color: #fff; font-size: .85rem; flex: none; }
+.mk-etq { display: block; font-size: .75rem; font-weight: 700; color: #64748b; }
+.mk-campo { margin-top: .15rem; width: 100%; border: 1px solid #cbd5e1; padding: .6rem; border-radius: .5rem; font-weight: 400; font-size: .875rem; color: #1e293b; }
+.mk-btn { display: inline-flex; align-items: center; justify-content: center; gap: .3rem; font-weight: 700; font-size: .85rem; padding: .55rem .85rem; border-radius: .6rem; text-decoration: none; white-space: nowrap; }
+.mk-check { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; color: #334155; }
+.mk-color { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .25rem .5rem; cursor: pointer; font-weight: 600; color: #334155; }
+.mk-color input { width: 1.6rem; height: 1.6rem; border: 0; padding: 0; background: none; cursor: pointer; }
+.mk-version, .mk-icono { border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; font-size: .78rem; font-weight: 700; padding: .3rem .7rem; color: #334155; }
+.mk-version[aria-pressed="true"] { background: #4c1d95; border-color: #4c1d95; color: #fff; }
+.mk-icono { font-size: 1.25rem; padding: .2rem .45rem; border-radius: .6rem; line-height: 1.2; }
+.mk-icono[aria-pressed="true"] { border-color: #4c1d95; box-shadow: 0 0 0 2px #c4b5fd; background: #f5f3ff; }
+.mk-icono-libre { width: 3.2rem; text-align: center; font-size: 1.1rem; border: 1px dashed #94a3b8; border-radius: .6rem; padding: .2rem; }
+.mk-lienzo-caja { background: repeating-conic-gradient(#f1f5f9 0 25%, #fff 0 50%) 0 0 / 20px 20px; border-radius: .75rem; padding: .75rem; display: flex; justify-content: center; }
+#mk-lienzo { max-width: 100%; max-height: 70vh; width: auto; height: auto; border-radius: .5rem; box-shadow: 0 6px 24px rgba(30, 27, 75, .18); }

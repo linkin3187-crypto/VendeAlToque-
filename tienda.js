@@ -160,6 +160,13 @@ function renderizarTienda(c, ps) {
       : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
+  // Fase 2AP-3b: el DUEÑO también comparte desde su ficha pública (antes solo desde Mi tienda)
+  if (usuarioActual && c.ownerId === usuarioActual.id && c.activo && typeof abrirCompartir === "function") {
+    const bc = $("t-compartir-dueno");
+    bc.classList.remove("hidden");
+    bc.onclick = () => abrirCompartir({ tipo: "tienda", id: c.id, nombre: c.nombre, foto: (c.fotos || [])[0] || c.foto || "",
+      icono: iconosComercio[c.tipo] || "🛍️", ciudad: c.ciudad || "" });
+  }
   // Fase 2AP-3: acceso rápido del administrador al 📣 Centro de marketing con esta tienda ya elegida
   if (esAdmin() && !$("t-admin-mk")) $("t-aviso-privado").insertAdjacentHTML("beforebegin",
     `<div id="t-admin-mk" class="mb-3 flex flex-wrap gap-2"><a href="marketing.html?destino=tienda&canal=qr&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-700 text-white no-underline">📣 Pieza de marketing / sticker QR</a>

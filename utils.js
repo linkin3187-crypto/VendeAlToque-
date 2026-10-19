@@ -7,6 +7,63 @@
     }
   } catch (e) { /* sin almacenamiento: solo el saludo corto */ }
 })();
+// ===== Fase 2AP-3b · Versión del sitio y rescate si la página no carga =====
+// Cada publicación sube VERSION_SITIO y el ?v= de todas las páginas (mismo número).
+// Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
+// código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
+// Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
+const VERSION_SITIO = 74;
+(function revisarVersion() {
+  try {
+    const src = (document.currentScript && document.currentScript.src) || "";
+    const pedida = Number((/[?&]v=(\d+)/.exec(src) || [])[1] || 0);
+    const u = new URL(location.href);
+    if (u.searchParams.has("_v")) {   // ya recargó: se limpia la dirección
+      u.searchParams.delete("_v");
+      history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+      return;
+    }
+    if (pedida && pedida < VERSION_SITIO && sessionStorage.getItem("mf_recarga_v") !== String(VERSION_SITIO)) {
+      sessionStorage.setItem("mf_recarga_v", String(VERSION_SITIO));
+      u.searchParams.set("_v", String(VERSION_SITIO));
+      location.replace(u.toString());
+    }
+  } catch (e) { /* sin sessionStorage o URL: sigue normal */ }
+})();
+// Si algo falla al cargar, en vez de quedarse «Cargando…» para siempre se muestra un aviso con
+// el error (para poder enviarlo en una captura) y un botón para recargar.
+(function rescateDeCarga() {
+  const errores = [];
+  function aviso(motivo) {
+    if (document.getElementById("aviso-carga")) return;
+    const d = document.createElement("div");
+    d.id = "aviso-carga";
+    d.setAttribute("role", "alert");
+    d.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:99998;background:#1e1b4b;color:#fff;border-radius:14px;padding:12px 14px;font:600 14px system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.35);display:flex;gap:10px;align-items:center;flex-wrap:wrap";
+    d.innerHTML = '<span style="flex:1;min-width:200px">⚠️ ' + motivo + '<small style="display:block;font-weight:400;opacity:.75;margin-top:2px;word-break:break-word"></small></span>'
+      + '<button type="button" style="background:#f6c51a;color:#1e1b4b;border:0;border-radius:10px;padding:8px 12px;font-weight:800">🔄 Recargar</button>';
+    d.querySelector("small").textContent = errores.slice(0, 2).join(" · ");
+    d.querySelector("button").onclick = () => {
+      try { sessionStorage.removeItem("mf_recarga_v"); const u = new URL(location.href); u.searchParams.set("_v", Date.now()); location.replace(u.toString()); }
+      catch (e) { location.reload(); }
+    };
+    (document.body || document.documentElement).appendChild(d);
+  }
+  function cargandoVisible() {
+    return [...document.querySelectorAll('[id$="-cargando"]')].some(el => !el.classList.contains("hidden") && el.offsetParent !== null);
+  }
+  window.addEventListener("error", e => {
+    const t = e && e.target;
+    if (t && t !== window && t.tagName === "SCRIPT") errores.push("No cargó " + String(t.src || "").split("/").pop().split("?")[0]);   // archivo que no llegó
+    else if (t && t !== window && t.tagName) return;   // una imagen rota no es un problema de carga
+    else errores.push(String((e && e.message) || "error") + (e && e.filename ? " (" + e.filename.split("/").pop().split("?")[0] + ":" + e.lineno + ")" : ""));
+    setTimeout(() => { if (cargandoVisible()) aviso("La página no terminó de cargar."); }, 1500);
+  }, true);
+  window.addEventListener("load", () => setTimeout(() => {
+    if (cargandoVisible()) aviso("Está tardando más de lo normal. Revisa tu conexión o recarga.");
+  }, 12000));
+})();
+
 // ===== Merkap - Utilidades compartidas =====
 // APRENDE: este archivo se carga PRIMERO en todas las páginas. Todo lo que
 // antes estaba copiado en varios archivos (escapar HTML, toast, modo editor,

@@ -305,14 +305,14 @@ function tarjetaComercioFeed(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
   const foto = urlSegura(c.foto);
   const sello = SELLOS[c.nivel] || SELLOS[1];
-  const abierto = estaAbierto(c.horario);
+  const hz = estadoHorario(c.horario);   // fase 2AH
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
   return `<article class="tarjeta-comercio relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
     <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
-      ${abierto === true ? '<span class="absolute top-2 right-2 bg-white/95 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded-full">🟢 Abierto ahora</span>' : ""}
+      ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
       ${!c.ownerId ? `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>` : ""}
     </div>
     <div class="p-4 flex-1 flex flex-col">
@@ -322,7 +322,7 @@ function tarjetaComercioFeed(c) {
       <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
       ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
       ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
-      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
+      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
       ${vitrinaPublica(c) && c.nProductos > 0 ? `<p class="text-xs font-bold text-teal-700 mt-1.5">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">

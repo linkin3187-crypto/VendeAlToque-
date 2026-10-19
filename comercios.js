@@ -33,14 +33,14 @@ function tarjetaComercio(c) {
   const foto = urlSegura(c.foto);
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
   const sello = SELLOS[c.nivel] || SELLOS[1];
-  const abierto = estaAbierto(c.horario);
+  const hz = estadoHorario(c.horario);   // fase 2AH: abierto / cierra pronto / abre pronto / cerrado
   const km = ubicacionCo && tieneCoords(c) ? distanciaKm(ubicacionCo, c) : null;
   return `<article class="relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
     <div class="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       <span class="absolute top-2 left-2 ${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
-      ${abierto === true ? '<span class="absolute top-2 right-2 bg-white/95 text-green-700 text-[11px] font-bold px-2 py-0.5 rounded-full">🟢 Abierto ahora</span>' : ""}
+      ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
       ${!c.ownerId ? `<button type="button" data-reclamar="${c.id}" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis para administrarla">🔑 ¿Es tu negocio? Reclámalo</button>` : ""}
     </div>
     <div class="p-4 flex-1 flex flex-col">
@@ -53,7 +53,7 @@ function tarjetaComercio(c) {
       ${esComercioSalud(c) && c.saludRevisado ? `<p class="mt-1">${BADGE_SALUD}</p>` : ""}
       ${comercioDudoso(c) ? `<p class="text-[11px] font-semibold text-red-700 mt-0.5">🚩 ${c.confirmaNo} personas dicen que ya no está aquí</p>` : ""}
       ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
-      ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>` : ""}
+      ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">

@@ -31,7 +31,7 @@ function tarjetaAnuncioBusq(a) {
     </div>
     <div class="p-2.5">
       <h3 class="font-bold text-sm text-slate-900 line-clamp-2">${esc(a.nombre)}</h3>
-      <p class="text-[11px] text-slate-500 mt-0.5">${esc(a.ciudad || a.barrio || "")}</p>
+      <p class="text-[11px] text-slate-500 mt-0.5">${esc(a.ciudad || a.barrio || "")}${a.fecha ? ` · <span class="chip-publicado ${esReciente(a.fecha) ? "reciente" : ""}">${esc(haceCuanto(a.fecha))}</span>` : ""}</p>
     </div>
   </a>`;
 }
@@ -39,7 +39,7 @@ function tarjetaAnuncioBusq(a) {
 function tarjetaComercioBusq(c) {
   const sello = SELLOS[c.nivel] || SELLOS[1];
   const foto = urlSegura(c.foto);
-  const abierto = estaAbierto(c.horario);
+  const hz = estadoHorario(c.horario);   // fase 2AH
   return `<a href="tienda.html?id=${c.id}" class="b-tarjeta bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition p-3 flex gap-3 items-start">
     <div class="relative w-16 h-16 shrink-0 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
       <span class="text-3xl">${esc(iconosComercio[c.tipo] || "🏪")}</span>
@@ -51,7 +51,7 @@ function tarjetaComercioBusq(c) {
       <p class="text-xs mt-0.5">${resumenCalifHTML(c)}</p>
       <div class="flex flex-wrap gap-1 mt-1">
         <span class="${sello.clase} text-[10px] font-semibold px-1.5 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
-        ${abierto === true ? '<span class="bg-green-50 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🟢 Abierto</span>' : ""}
+        ${badgeHorarioHTML(hz)}
         ${vitrinaPublica(c) && c.nProductos > 0 ? `<span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🛍️ Vitrina (${c.nProductos})</span>` : ""}
       </div>
     </div>

@@ -97,11 +97,11 @@ function renderizarTienda(c, ps) {
   const entrega = [c.recoge ? (aprox ? "Recoger en un punto acordado por WhatsApp" : "Recoger en el local") : "", c.domicilio ? "Domicilio" + (c.domicilioInfo ? " (" + c.domicilioInfo + ")" : "") : ""].filter(Boolean).join(" · ");
   fila("t-ent", entrega);
 
-  const ab = estaAbierto(c.horario);
-  if (ab !== null) {
+  const hz = estadoHorario(c.horario);   // fase 2AH: abierto / cierra pronto / abre pronto / cerrado + a qué hora
+  if (hz) {
     const b = $("t-abierto");
-    b.textContent = ab ? "🟢 Abierto ahora" : "🔴 Cerrado ahora";
-    b.className = "text-xs font-semibold px-2 py-0.5 rounded-full " + (ab ? "bg-green-100 text-green-800" : "bg-slate-200 text-slate-700");
+    b.textContent = ESTILO_HORARIO[hz.estado].icono + " " + hz.detalle;
+    b.className = "badge-horario " + ESTILO_HORARIO[hz.estado].clase;
   }
 
   if (c.whatsapp) {

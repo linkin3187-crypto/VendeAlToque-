@@ -482,9 +482,12 @@ function aMinutos(h, m, ampm) {
   return hh * 60 + (m ? parseInt(m, 10) : 0);
 }
 
+// Días en español («lun-sáb») o en el formato de OpenStreetMap («Mo-Fr», «Sa», «Su») que traen los importados
+const DIAS_OSM = { su: 0, mo: 1, tu: 2, we: 3, th: 4, fr: 5, sa: 6 };
 function diasDeTexto(t) {
   if (/todos los dias|diario|lunes a domingo|l-d/.test(t)) return [0, 1, 2, 3, 4, 5, 6];
-  const nombres = [...t.matchAll(/\b(dom|lun|mar|mie|jue|vie|sab)[a-z]*/g)].map(m => DIAS_ES.indexOf(m[1]));
+  let nombres = [...t.matchAll(/\b(dom|lun|mar|mie|jue|vie|sab)[a-z]*/g)].map(m => DIAS_ES.indexOf(m[1]));
+  if (!nombres.length) nombres = [...t.matchAll(/\b(mo|tu|we|th|fr|sa|su)\b/g)].map(m => DIAS_OSM[m[1]]);
   if (!nombres.length) return null;
   if (nombres.length >= 2 && /[-–]|\ba\b/.test(t.replace(/\d.*/, ""))) {      // rango «lun-sab» (da la vuelta si hace falta)
     const out = []; let d = nombres[0];
@@ -494,30 +497,103 @@ function diasDeTexto(t) {
   return [...new Set(nombres)];
 }
 
-// Devuelve true/false (abierto/cerrado ahora) o null si no se puede saber.
-function estaAbierto(horario, fecha) {
+// Convierte el horario en tramos {dias, ini, fin} (minutos del día). «24 horas» → "siempre"; si no se entiende → null.
+function tramosHorario(horario) {
   const txt = sinTildes(horario);
   if (!txt.trim()) return null;
-  const ahora = ahoraColombia(fecha);
-  if (/24 ?(h|horas)/.test(txt)) return true;
-  let entendido = false, abierto = false;
+  if (/24 ?(h|horas)|24\/7/.test(txt)) return "siempre";
+  const tramos = [];
+  let diasPrevios = null;   // «Lun-Vie 8-12, 2-6»: el segundo tramo hereda los días del primero
   for (const seg of txt.split(/[;,/\n|]+|\by\b/)) {
-    const hm = seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:[-–]|\ba\b|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    const hm = seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?\s*(?:[-–]|\ba\b|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?/);
     if (!hm) continue;
-    const dias = diasDeTexto(seg.slice(0, hm.index)) || [0, 1, 2, 3, 4, 5, 6];
-    const ini = aMinutos(hm[1], hm[2], hm[3]);
-    let fin = aMinutos(hm[4], hm[5], hm[6]);
+    const ap = x => x ? (x[0] === "p" ? "pm" : "am") : undefined;
+    const dias = diasDeTexto(seg.slice(0, hm.index)) || diasPrevios || [0, 1, 2, 3, 4, 5, 6];
+    diasPrevios = dias;
+    let ini = aMinutos(hm[1], hm[2], ap(hm[3]));
+    let fin = aMinutos(hm[4], hm[5], ap(hm[6]));
     if (!hm[3] && !hm[6] && fin < ini && ini <= 12 * 60 && fin <= 12 * 60) fin += 12 * 60;   // «8-6» = 8:00-18:00
-    entendido = true;
-    const hoy = dias.includes(ahora.dia);
-    const ayer = dias.includes((ahora.dia + 6) % 7);
-    if (fin > ini) { if (hoy && ahora.minutos >= ini && ahora.minutos < fin) abierto = true; }
-    else {                                                                      // cruza medianoche (p. ej. 18:00-02:00)
-      if (hoy && ahora.minutos >= ini) abierto = true;
-      if (ayer && ahora.minutos < fin) abierto = true;
+    if (!hm[3] && !hm[6] && ini < 7 * 60 && fin <= 12 * 60 && fin > ini && tramos.length) { ini += 12 * 60; fin += 12 * 60; }  // «…, 2-6» = 2 p. m.-6 p. m.
+    tramos.push({ dias, ini, fin });
+  }
+  return tramos.length ? tramos : null;
+}
+
+// Devuelve true/false (abierto/cerrado ahora) o null si no se puede saber.
+function estaAbierto(horario, fecha) {
+  const e = estadoHorario(horario, fecha);
+  return e ? e.abierto : null;
+}
+
+// «8 a. m.», «8:30 p. m.», «12 m.» (mediodía)
+function horaCorta(min) {
+  min = ((min % 1440) + 1440) % 1440;
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 12 && m === 0) return "12 m.";
+  if (h === 0 && m === 0) return "12 de la noche";
+  const h12 = h % 12 || 12;
+  return h12 + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? " a. m." : " p. m.");
+}
+const NOMBRE_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MIN_AVISO_HORARIO = 60;   // «Cierra pronto» / «Abre pronto» cuando falta 1 hora o menos
+
+// Fase 2AH: estado completo del horario para las tarjetas.
+// → { abierto, estado: "abierto"|"cierra"|"cerrado"|"abre", corto, detalle } o null (si no se entiende: no se muestra nada)
+function estadoHorario(horario, fecha) {
+  const tramos = tramosHorario(horario);
+  if (!tramos) return null;
+  if (tramos === "siempre") return { abierto: true, estado: "abierto", corto: "Abierto 24 h", detalle: "Abierto las 24 horas" };
+  const { dia, minutos } = ahoraColombia(fecha);
+  // ¿Abierto? → cuántos minutos faltan para cerrar
+  let cierraEn = null;
+  for (const t of tramos) {
+    const hoy = t.dias.includes(dia), ayer = t.dias.includes((dia + 6) % 7);
+    let falta = null;
+    if (t.fin > t.ini) { if (hoy && minutos >= t.ini && minutos < t.fin) falta = t.fin - minutos; }
+    else {                                                                    // cruza medianoche (p. ej. 6 p. m. - 2 a. m.)
+      if (hoy && minutos >= t.ini) falta = 1440 - minutos + t.fin;
+      if (ayer && minutos < t.fin) falta = t.fin - minutos;
+    }
+    if (falta !== null && (cierraEn === null || falta > cierraEn)) cierraEn = falta;
+  }
+  if (cierraEn !== null) {
+    const a = horaCorta(minutos + cierraEn);
+    return cierraEn <= MIN_AVISO_HORARIO
+      ? { abierto: true, estado: "cierra", corto: "Cierra pronto", detalle: `Cierra a las ${a} (en ${cierraEn} min)` }
+      : { abierto: true, estado: "abierto", corto: "Abierto ahora", detalle: `Abierto · cierra a las ${a}` };
+  }
+  // Cerrado → cuándo abre
+  let abreEn = null;
+  for (let k = 0; k <= 7 && abreEn === null; k++) {
+    const d = (dia + k) % 7;
+    for (const t of tramos) if (t.dias.includes(d) && (k > 0 || t.ini > minutos)) {
+      const en = k * 1440 + t.ini - minutos;
+      if (abreEn === null || en < abreEn) abreEn = en;
     }
   }
-  return entendido ? abierto : null;
+  if (abreEn === null) return { abierto: false, estado: "cerrado", corto: "Cerrado", detalle: "Cerrado ahora" };
+  const k = Math.floor((minutos + abreEn) / 1440), a = horaCorta(minutos + abreEn);
+  if (abreEn <= MIN_AVISO_HORARIO) return { abierto: false, estado: "abre", corto: "Abre pronto", detalle: `Abre a las ${a} (en ${abreEn} min)` };
+  const cuando = k === 0 ? `hoy a las ${a}` : k === 1 ? `mañana a las ${a}` : `el ${NOMBRE_DIA[(dia + k) % 7]} a las ${a}`;
+  return { abierto: false, estado: "cerrado", corto: "Cerrado", detalle: `Cerrado · abre ${cuando}` };
+}
+
+// Distintivos listos para las tarjetas (mismos colores en todo el sitio)
+const ESTILO_HORARIO = {
+  abierto: { icono: "🟢", clase: "hz-abierto" },
+  cierra: { icono: "🟠", clase: "hz-cierra" },
+  abre: { icono: "🟡", clase: "hz-abre" },
+  cerrado: { icono: "🔴", clase: "hz-cerrado" }
+};
+function badgeHorarioHTML(e, extra) {
+  if (!e) return "";
+  const s = ESTILO_HORARIO[e.estado];
+  return `<span class="badge-horario ${s.clase} ${extra || ""}" title="${esc(e.detalle)}">${s.icono} ${esc(e.corto)}</span>`;
+}
+function lineaHorarioHTML(e, clase) {
+  if (!e) return "";
+  const s = ESTILO_HORARIO[e.estado];
+  return `<p class="linea-horario ${s.clase} ${clase || ""}">${s.icono} ${esc(e.detalle)}</p>`;
 }
 
 // Mensaje de pedido por WhatsApp. items: [{nombre, precio, cantidad}]; modo: "recoger" | "domicilio" | ""
@@ -536,15 +612,29 @@ function urlWhatsAppTexto(numero, texto) {
   return `https://wa.me/${String(numero || "").replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
 }
 
-// «hoy», «ayer», «hace 3 días», «hace 2 semanas», «hace 1 mes» (fase 2AC)
-function haceCuanto(ms) {
+// «hace 5 min», «hace 3 h», «ayer», «hace 3 días», «hace 2 semanas», «hace 1 mes» (fase 2AC; minutos y horas desde la 2AH)
+// largo = true → «hace 3 horas», «hace 5 minutos» (para la página del anuncio)
+function haceCuanto(ms, largo) {
   if (!ms || !Number.isFinite(ms)) return "";
-  const dias = Math.floor((Date.now() - ms) / 864e5);
-  if (dias <= 0) return "hoy";
+  const min = Math.floor((Date.now() - ms) / 6e4);
+  if (min < 2) return "hace un momento";
+  if (min < 60) return largo ? `hace ${min} minutos` : `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return largo ? `hace ${h} ${h === 1 ? "hora" : "horas"}` : `hace ${h} h`;
+  const dias = Math.floor(min / 1440);
   if (dias === 1) return "ayer";
   if (dias < 7) return `hace ${dias} días`;
   if (dias < 30) { const s = Math.floor(dias / 7); return `hace ${s} ${s === 1 ? "semana" : "semanas"}`; }
   const m = Math.floor(dias / 30); return `hace ${m} ${m === 1 ? "mes" : "meses"}`;
+}
+// Publicado en las últimas 24 horas (se resalta en verde)
+const esReciente = ms => !!ms && Date.now() - ms < 864e5;
+// «18 oct. 2026, 9:15 p. m.» en hora de Colombia
+function fechaPublicacion(ms) {
+  if (!ms || !Number.isFinite(ms)) return "";
+  const p = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })
+    .formatToParts(new Date(ms)).reduce((o, x) => (o[x.type] = x.value, o), {});
+  return `${p.day} ${String(p.month).replace(".", "")} ${p.year}, ${p.hour}:${p.minute} ${/p/i.test(p.dayPeriod || "") ? "p. m." : "a. m."}`;
 }
 // «a 350 m» / «a 2,4 km»
 const distanciaCorta = km => km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1).replace(".", ",") + " km";

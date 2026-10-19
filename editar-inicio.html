@@ -8,7 +8,7 @@
   <title>Editar inicio y buscador | Merkap</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=63">
+  <link rel="stylesheet" href="styles.css?v=64">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -60,12 +60,12 @@
               <input id="logo-hasta" type="date" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-sm font-normal"></label>
           </div>
           <div class="flex flex-wrap gap-4 mt-3 text-sm">
-            <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-recortar" checked> Recortar en cuadro redondeado</label>
+            <label class="flex items-center gap-1.5" title="Solo si tu imagen es un cuadro lleno (sin fondo blanco). Si el logo tiene adornos por fuera (murciélagos, nieve…), déjalo sin marcar."><input type="checkbox" id="logo-recortar"> Recortar en cuadro redondeado <span class="text-xs text-slate-400">(solo si la imagen es un cuadro lleno)</span></label>
             <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-animar" checked> Saludo al abrir (movimiento)</label>
             <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-ahora"> Usar ahora</label>
           </div>
           <div class="flex items-center gap-3 mt-3">
-            <img id="logo-previa" alt="" class="hidden w-16 h-16 rounded-xl border border-slate-200 object-contain bg-slate-100">
+            <img id="logo-previa" alt="" class="hidden w-16 h-16 rounded-xl border border-slate-200 object-contain bg-indigo-600 p-1" title="Así se verá sobre la barra de arriba">
             <span id="logo-aviso" class="text-xs text-amber-700"></span>
             <button type="button" id="logo-agregar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-60">➕ Agregar</button>
           </div>
@@ -137,12 +137,12 @@
   <datalist id="dl-comercios"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=63"></script>
-  <script src="data.js?v=63"></script>
-  <script src="buscador.js?v=63"></script>
-  <script src="iconos.js?v=63"></script>
+  <script src="utils.js?v=64"></script>
+  <script src="data.js?v=64"></script>
+  <script src="buscador.js?v=64"></script>
+  <script src="iconos.js?v=64"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=63"></script>
+  <script src="editar-inicio.js?v=64"></script>
 </body>
 </html>

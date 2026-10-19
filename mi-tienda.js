@@ -1,11 +1,12 @@
 // ===== Merkap - Panel del dueño del comercio (mi-tienda.html) =====
-// El dueño solo puede cambiar descripción, WhatsApp, teléfono, horario, foto y entrega, y gestionar hasta 20 productos.
+// El dueño solo puede cambiar descripción, WhatsApp, teléfono, horario, foto y entrega, y gestionar sus productos (10 gratis; fase 2AG).
 // Las reglas las impone la base de datos (RLS y triggers); esta pantalla solo las hace cómodas.
 
 let misComercios = [];
 let actual = null;
 let productosMios = [];
-const MAX_PRODUCTOS = 20;
+// Fase 2AG: el cupo es de cada tienda (10 gratis); lo hace cumplir el servidor (trigger productos_limite, SQL 36)
+const maxProductos = () => (actual && actual.limiteProductos) || LIMITE_PRODUCTOS_GRATIS;
 
 let galeria = null;
 let datosSalud = null;   // fase 2AB.1: datos sanitarios del comercio actual (o null)
@@ -122,8 +123,9 @@ function pintarProductosMios() {
   $("mt-productos").innerHTML = productosMios.map(filaProducto).join("");
   iniciarGaleriasProductos();
   $("mt-vacio").classList.toggle("hidden", productosMios.length > 0);
-  $("mt-cuenta").textContent = `(${productosMios.length} de ${MAX_PRODUCTOS})`;
-  $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS;   // fase 2AC.1: los datos sanitarios ya no frenan
+  $("mt-cuenta").textContent = `(${productosMios.length} de ${maxProductos()})`;
+  $("mt-agregar").disabled = productosMios.length >= maxProductos();
+  if ($("mt-cupo")) $("mt-cupo").textContent = maxProductos();   // fase 2AC.1: los datos sanitarios ya no frenan
 }
 
 async function accionProducto(e) {

@@ -1312,6 +1312,15 @@ function leerDatosSanitarios(pre) {
   if (!datos.declara_autorizacion) return { error: "Debes declarar que cuentas con autorización de la Secretaría de Salud" };
   return { datos };
 }
+// Fase 2AC.1: los datos sanitarios son OPCIONALES. Si no escribió nada → { datos: null }; si empezó, se validan completos.
+function leerDatosSanitariosOpcional(pre) {
+  const v = id => ((document.getElementById(pre + "-" + id) || {}).value || "").trim();
+  const vacio = !v("razon") && !v("nit") && !v("director") && !v("acta") && !v("acta-fecha") && !(document.getElementById(pre + "-declara") || {}).checked;
+  return vacio ? { datos: null } : leerDatosSanitarios(pre);
+}
+// Lo que gana quien los llena (se muestra en registro, reclamo y Mi tienda)
+const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha muestra el distintivo <b>«🧾 Datos sanitarios revisados»</b> (más confianza), sales <b>primero</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
+
 async function cargarDatosSanitarios(comercioId) {
   const { data, error } = await sb.from("datos_sanitarios").select("*").eq("comercio_id", comercioId).maybeSingle();
   if (error) throw error;
@@ -1378,18 +1387,22 @@ function seleccionDelDia(lista, max) {
   const usados = new Set(elegidos.map(a => a.id));
   const dia = new Date().toISOString().slice(0, 10);
   const semilla = id => { let h = 2166136261; for (const ch of dia + ":" + id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const recientes = lista.filter(a => !usados.has(a.id) && a.imagen && ahora - a.fecha < 14 * 864e5)
-    .sort((a, b) => semilla(a.id) - semilla(b.id));
+  const resto = lista.filter(a => !usados.has(a.id)).sort((a, b) => semilla(a.id) - semilla(b.id));
+  const out = [...elegidos.slice(0, max)];
   const vendedores = new Set(elegidos.map(a => a.owner)), cats = {};
-  const relleno = [];
-  for (const a of recientes) {
-    if (elegidos.length + relleno.length >= max) break;
-    if (a.owner && vendedores.has(a.owner)) continue;
-    if ((cats[a.categoria] || 0) >= 2) continue;
-    vendedores.add(a.owner); cats[a.categoria] = (cats[a.categoria] || 0) + 1;
-    relleno.push(a);
+  const meter = a => { out.push(a); usados.add(a.id); vendedores.add(a.owner); cats[a.categoria] = (cats[a.categoria] || 0) + 1; };
+  // Fase 2AC.1: se afloja por rondas para que se vea algo aunque haya pocos anuncios.
+  // 1) recientes con foto, uno por vendedor y máx. 2 por categoría · 2) con foto, se repite vendedor · 3) cualquiera
+  const rondas = [
+    a => a.imagen && ahora - a.fecha < 14 * 864e5 && !(a.owner && vendedores.has(a.owner)) && (cats[a.categoria] || 0) < 2,
+    a => !!a.imagen,
+    () => true
+  ];
+  for (const ok of rondas) for (const a of resto) {
+    if (out.length >= max) break;
+    if (!usados.has(a.id) && ok(a)) meter(a);
   }
-  return [...elegidos.slice(0, max), ...relleno].slice(0, max).map(a => ({ ...a, elegidoMod: a.seleccionHasta > ahora }));
+  return out.slice(0, max).map(a => ({ ...a, elegidoMod: a.seleccionHasta > ahora }));
 }
 async function marcarSeleccionDia(id, horas) {
   const hasta = horas ? new Date(Date.now() + horas * 3600e3).toISOString() : null;

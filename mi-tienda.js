@@ -123,8 +123,7 @@ function pintarProductosMios() {
   iniciarGaleriasProductos();
   $("mt-vacio").classList.toggle("hidden", productosMios.length > 0);
   $("mt-cuenta").textContent = `(${productosMios.length} de ${MAX_PRODUCTOS})`;
-  $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS || (esComercioSalud(actual) && !datosSalud);
-  $("mt-agregar").title = esComercioSalud(actual) && !datosSalud ? "Primero guarda tus datos sanitarios" : "";
+  $("mt-agregar").disabled = productosMios.length >= MAX_PRODUCTOS;   // fase 2AC.1: los datos sanitarios ya no frenan
 }
 
 async function accionProducto(e) {
@@ -170,15 +169,18 @@ async function refrescarProductos() {
 async function pintarSalud() {
   const salud = esComercioSalud(actual);
   $("mt-salud").classList.toggle("hidden", !salud);
+  // Fase 2AC.1: mensaje amable, nada se bloquea por no llenar los datos sanitarios
+  const extra = (actual.tiposExtra || []).some(esTipoSalud) && !esTipoSalud(actual.tipo);
   $("mt-reglas").innerHTML = salud
-    ? "💊 <b>Droguerías y naturistas:</b> por ahora tu vitrina es solo para productos que <b>no son medicamentos</b>: aseo e higiene, cuidado personal, bebé, dermocosmética, botiquín, tapabocas… Los medicamentos (de venta libre o con fórmula) y los productos fitoterapéuticos se habilitarán más adelante, solo para establecimientos autorizados. <a href=\"politica-productos-salud.html\" class=\"underline\">Ver reglas</a>"
+    ? `💊 <b>${extra ? "Marcaste que también eres farmacia, droguería o naturista." : "Droguerías y naturistas:"}</b> Puedes vender en tu vitrina <b>todo lo que no sea medicamento</b> desde ya (aseo, cuidado personal, bebé, dermocosmética, botiquín…). <b>No se publican medicamentos</b>, ni de venta libre ni con fórmula. ${actual.saludRevisado ? "Tu ficha ya tiene el distintivo «🧾 Datos sanitarios revisados». ✔" : "Tu ficha aún no tiene el distintivo «🧾 Datos sanitarios revisados», que da más confianza: llena tus datos sanitarios abajo (3 minutos, opcional)."} <a href="politica-productos-salud.html" class="underline">Ver reglas</a>`
     : "No se permiten medicamentos (ni de venta libre ni con fórmula médica) ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan. <a href=\"politica-productos-salud.html\" class=\"underline\">Ver reglas</a>";
+  $("mt-salud-intro").innerHTML = BENEFICIOS_SALUD + " Si cambias algo, Merkap los vuelve a revisar.";
   datosSalud = null;
   if (!salud) return;
   try { datosSalud = await cargarDatosSanitarios(actual.id); }
   catch (e) { console.warn("datos sanitarios:", e); $("mt-salud-estado").textContent = ""; $("mt-salud-campos").innerHTML = '<p class="text-sm text-slate-500">Esta sección se activa en unos días.</p>'; datosSalud = {}; return; }
   const est = $("mt-salud-estado");
-  if (!datosSalud) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700"; est.textContent = "Falta llenarlos"; }
+  if (!datosSalud) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600"; est.textContent = "Sin llenar"; }
   else if (datosSalud.revisado_en) { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800"; est.textContent = "✔ Revisados por Merkap"; }
   else { est.className = "text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"; est.textContent = "⏳ En revisión"; }
   $("mt-salud-nota").classList.toggle("hidden", !(datosSalud && datosSalud.nota_moderador));

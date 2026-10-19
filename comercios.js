@@ -77,7 +77,7 @@ function leerFiltrosCo() {
     texto: normalizar($("co-buscar").value.trim()),
     depto: $("co-depto").value, muni: $("co-muni").value,
     nivel: $("co-nivel").value, calif: parseFloat($("co-calif").value) || 0,
-    abierto: $("co-abierto").checked, vitrina: $("co-vitrina").checked,
+    abierto: $("co-abierto").checked, vitrina: $("co-vitrina").checked, salud: $("co-salud").checked,
     orden: $("co-orden").value
   };
 }
@@ -92,6 +92,7 @@ function baseCo(f) {
     if (f.calif && !((c.nCalif || 0) > 0 && (c.calif || 0) >= f.calif)) return false;
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
     if (f.vitrina && !(vitrinaPublica(c) && c.nProductos > 0)) return false;
+    if (f.salud && !(esComercioSalud(c) && c.saludRevisado)) return false;   // fase 2AC.1
     if (f.texto) {
       // Buscador inteligente (buscador.js): «postres» también encuentra pastelerías y panaderías
       if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, f.texto)) return false; }
@@ -106,7 +107,9 @@ function baseCo(f) {
 
 function ordenarCo(lista, orden) {
   const dist = c => (ubicacionCo && tieneCoords(c)) ? distanciaKm(ubicacionCo, c) : Infinity;
-  const recomendados = (x, y) => (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es");
+  // Fase 2AC.1: entre droguerías y naturistas, las que tienen el distintivo 🧾 salen primero
+  const sello = c => esComercioSalud(c) && c.saludRevisado ? 1 : 0;
+  const recomendados = (x, y) => (sello(y) - sello(x)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es");
   if (orden === "cercanos" && ubicacionCo) return lista.sort((x, y) => dist(x) - dist(y));
   if (orden === "calificacion") return lista.sort((x, y) => (puntajeCalif(y) - puntajeCalif(x)) || recomendados(x, y));
   if (orden === "nombre") return lista.sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
@@ -160,6 +163,7 @@ function filtrosAQueryCo() {
   if (f.calif) p.set("calif", f.calif);
   if (f.abierto) p.set("abierto", "1");
   if (f.vitrina) p.set("vitrina", "1");
+  if (f.salud) p.set("salud", "1");
   if (f.orden && f.orden !== "recomendados" && f.orden !== "cercanos") p.set("orden", f.orden);
   return p.toString();
 }
@@ -177,7 +181,8 @@ function aplicarQueryCo(qs) {
   elegir("co-orden", p.get("orden"));
   $("co-abierto").checked = p.get("abierto") === "1";
   $("co-vitrina").checked = p.get("vitrina") === "1";
-  if (["nivel", "calif", "abierto", "vitrina"].some(k => p.get(k)) && $("co-panel").classList.contains("hidden")) $("co-btn-filtros").click();
+  $("co-salud").checked = p.get("salud") === "1";
+  if (["nivel", "calif", "abierto", "vitrina", "salud"].some(k => p.get(k)) && $("co-panel").classList.contains("hidden")) $("co-btn-filtros").click();
 }
 
 function pintarListaCo() {
@@ -210,7 +215,7 @@ function limpiarCo() {
   $("co-depto").value = ""; llenarMunisCo("");
   ["co-nivel", "co-calif"].forEach(id => { $(id).value = ""; });
   $("co-orden").value = "recomendados";
-  $("co-abierto").checked = false; $("co-vitrina").checked = false;
+  $("co-abierto").checked = false; $("co-vitrina").checked = false; $("co-salud").checked = false;
   tipoActivo = "todos";
   ubicacionCo = null;
   $("co-cerca").setAttribute("aria-pressed", "false");
@@ -271,6 +276,7 @@ function abrirSolicitud(id, tipo) {
   $("sol-nombre").value = usuarioActual.nombre || "";
   $("sol-contacto").value = ""; $("sol-mensaje").value = ""; $("sol-tipo").value = ["reclamar", "retirar"].includes(tipo) ? tipo : "actualizar";
   $("sol-salud-campos").innerHTML = esComercioSalud(c) ? htmlDatosSanitarios("sol-ds", { tipo_establecimiento: c.tipo === "naturista" ? "naturista" : "drogueria" }) : "";
+  $("sol-salud-beneficios").innerHTML = BENEFICIOS_SALUD;
   aplicarSaludSolicitud();
   abrirModal("modal-solicitud");
 }
@@ -284,7 +290,7 @@ async function enviarSolicitud(e) {
   if (!comercioSolicitud) return;
   let datosSanitarios = null;
   if (pideSaludSolicitud()) {
-    const r = leerDatosSanitarios("sol-ds");
+    const r = leerDatosSanitariosOpcional("sol-ds");
     if (r.error) { mostrarToast(r.error, "error"); return; }
     datosSanitarios = r.datos;
   }
@@ -310,7 +316,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const conRetraso = debounce(pintar, 250);
   $("co-buscar").addEventListener("input", conRetraso);
   $("co-depto").addEventListener("change", () => { llenarMunisCo(""); pintar(); });
-  ["co-muni", "co-nivel", "co-calif", "co-abierto", "co-vitrina"].forEach(id => $(id).addEventListener("change", pintar));
+  ["co-muni", "co-nivel", "co-calif", "co-abierto", "co-vitrina", "co-salud"].forEach(id => $(id).addEventListener("change", pintar));
   $("co-orden").addEventListener("change", async () => {
     if ($("co-orden").value === "cercanos" && !ubicacionCo) { $("co-orden").value = "recomendados"; await cercaDeMiCo(); return; }
     pintar();

@@ -1,3 +1,12 @@
+// Fase 2AD: la primera vez que alguien abre Merkap el logo hace una entrada más vistosa (ver styles.css)
+(function () {
+  try {
+    if (!localStorage.getItem("mf_logo_visto")) {
+      document.documentElement.classList.add("marca-primera");
+      localStorage.setItem("mf_logo_visto", "1");
+    }
+  } catch (e) { /* sin almacenamiento: solo el saludo corto */ }
+})();
 // ===== Merkap - Utilidades compartidas =====
 // APRENDE: este archivo se carga PRIMERO en todas las páginas. Todo lo que
 // antes estaba copiado en varios archivos (escapar HTML, toast, modo editor,

@@ -194,16 +194,27 @@ function renderizarAnuncio(a) {
   const tp = (a.detalles || {}).precio_tipo;
   if (a.precio && ETIQUETA_PRECIO[tp]) $("anuncio-precio").insertAdjacentHTML("beforeend", ` <span class="etq-precio ${tp}">${ETIQUETA_PRECIO[tp]}</span>`);
   $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ") + (a.fecha ? " · 🕒 Publicado " + haceCuanto(a.fecha) : "");
-  // Moderadores: «⭐ Selección del día» (24 h)
-  if (esModerador() && !$("btn-seleccion")) {
-    $("anuncio-badges").insertAdjacentHTML("afterend", `<button type="button" id="btn-seleccion" class="mb-2 text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>`);
-    const pintarSel = () => { $("btn-seleccion").textContent = a.seleccionHasta > Date.now() ? "⭐ En Selección del día · Quitar" : "⭐ Poner en Selección del día (24 h)"; };
+  // Moderadores: ⭐ fijar en la Selección del día (24 h) o 🚫 sacarlo del sorteo (fase 2AD)
+  if (esModerador() && !$("sel-botones")) {
+    $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">
+      <button type="button" id="btn-seleccion" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>
+      <button type="button" id="btn-sel-excluir" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700"></button>
+      <a href="editar-inicio.html#seleccion-editor" class="text-xs text-indigo-600 underline self-center">Panel de la Selección</a></div>`);
+    const pintarSel = () => {
+      $("btn-seleccion").textContent = a.seleccionHasta > Date.now() ? "⭐ Fijado · Quitar ⭐" : "⭐ Fijar en Selección del día (24 h)";
+      $("btn-sel-excluir").textContent = a.seleccionExcluido ? "✅ Permitir en la Selección" : "🚫 Sacar de la Selección";
+    };
     pintarSel();
     $("btn-seleccion").addEventListener("click", async () => {
-      try { await marcarSeleccionDia(a.id, a.seleccionHasta > Date.now() ? 0 : 24); pintarSel(); mostrarToast(a.seleccionHasta ? "⭐ Aparece en la Selección del día por 24 h" : "Quitado de la Selección del día"); }
+      try { await marcarSeleccionDia(a.id, a.seleccionHasta > Date.now() ? 0 : 24); pintarSel(); mostrarToast(a.seleccionHasta ? "⭐ Fijado en la Selección del día por 24 h" : "Ya no está fijado (puede salir en el sorteo)"); }
+      catch (err) { mostrarToast(mensajeError(err), "error"); }
+    });
+    $("btn-sel-excluir").addEventListener("click", async () => {
+      try { await excluirDeSeleccion(a.id, !a.seleccionExcluido); pintarSel(); mostrarToast(a.seleccionExcluido ? "🚫 No volverá a salir en la Selección del día" : "✅ Puede volver a salir en la Selección del día"); }
       catch (err) { mostrarToast(mensajeError(err), "error"); }
     });
   }
+
   $("anuncio-desc").textContent = a.desc || "Sin descripción";
 
   const badgeEstado = a.estado === "nuevo"

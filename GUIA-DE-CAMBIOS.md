@@ -755,3 +755,18 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. (Si se revierte la página pero no el SQL, lo único distinto es que un moderador ve botones que la base le rechaza.)
 
+## Fase 2AL · Reglas, artículos prohibidos, Mascotas y +18
+
+**SQL:** `supabase/39_reglas_prohibidos.sql` — **antes** de fusionar. Debe mostrar `prohibidas ≥ 170 | permitidas ≥ 65 | sanciones = true | mascotas = 11 | adultos = true`. Al correrlo revisa lo ya publicado (hoy no hay nada que ocultar).
+
+**Cambian:** `terminos.html` (§4 y §5), nuevo `prohibidos.html` (enlazado en los pies de página), `data.js`, `app.js`, `anuncios-comun.js`, `anuncio.js`, `tienda.js`, `moderacion.*`, `styles.css`, `registrar-negocio.html`; nuevo `PRUEBAS-FILTRO.md`; caché `?v=69`.
+
+- **Filtro:** «bloquear» solo lo inequívoco; lo dudoso se publica y va a «🚫 Palabras prohibidas». Entiende trucos y plurales. **Frases permitidas** (Moderación → ✅ Frases permitidas) tachan falsos positivos («pistola de silicona», «huevos pericos», «periquito australiano»…); pueden ser solo para una categoría.
+- **Pedir revisión:** si el filtro bloquea a alguien, puede pedir revisión; tú la ves en «🙋 Piden revisión» y con un toque permites la frase.
+- **Lo ya publicado:** cada vez que cambias la lista se revisa todo: lo que choca con «bloquear» se oculta solo y queda en la cola.
+- **3 reportes** de personas distintas (prohibido o estafa) ocultan el anuncio o producto hasta que lo revises.
+- **Sanciones** (solo administrador): en 👥 Equipo o en un reporte → ⚠️ Aviso · ⏸ Suspender 30 días · 🚫 Vetar (oculta sus anuncios, le quita sus comercios y bloquea su WhatsApp, teléfono y correo) · ↩️ Levantar.
+- **Mascotas:** subcategorías nuevas y declaración obligatoria. **🔞 Íntimo +18:** fotos difuminadas hasta confirmar la edad; no sale en «Todos» ni en el inicio. **Licores:** leyenda legal. **Tabaco y vapeadores:** solo en vitrinas de comercios, con advertencia.
+
+**Revertir:** PR → **Revert**. El SQL puede quedarse; para aflojar el filtro basta apagar palabras o agregar frases permitidas desde Moderación.
+

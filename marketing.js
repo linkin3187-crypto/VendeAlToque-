@@ -120,7 +120,6 @@ let sinSQL41 = false;         // falta correr supabase/41_campanas.sql
 let textosBD = null;          // tus versiones de los textos guardadas en la base
 let nombreTocado = false;     // si escribió el nombre de la campaña, no se lo cambiamos
 let productoPendiente = "";   // producto a elegir cuando termine de cargar la lista
-if (typeof alCargarLogo === "function") alCargarLogo(() => programarDibujo());
 // Si piezas.js no llegó (celular con archivos mezclados), el panel igual funciona
 const ctaCanal = c => (typeof ctaPorCanal === "function" ? ctaPorCanal(c) : "👉 Ingresa aquí");
 
@@ -291,6 +290,7 @@ function pintarTexto() {
 // ---------- Tarjeta (canvas): el dibujo vive en piezas.js ----------
 let dibujoPendiente = 0;
 function programarDibujo() { cancelAnimationFrame(dibujoPendiente); dibujoPendiente = requestAnimationFrame(() => dibujar()); }
+if (typeof alCargarLogo === "function") alCargarLogo(() => programarDibujo());   // cuando el logo esté listo, se redibuja
 function dibujar() {
   if (typeof dibujarPieza !== "function") return Promise.resolve();   // piezas.js no cargó
   return dibujarPieza($("mk-lienzo"), {

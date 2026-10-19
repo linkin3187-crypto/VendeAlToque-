@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='9'%20fill='%234f46e5'/%3E%3Cpath%20d='M8.5%2023V10.5l7.5%207.5%207.5-7.5V23'%20fill='none'%20stroke='%23fde047'%20stroke-width='3.4'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='25'%20cy='7'%20r='2.6'%20fill='%23fde047'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <title>Editar inicio y buscador | Merkap</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=61">
+  <link rel="stylesheet" href="styles.css?v=62">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
     <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
-      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><svg class="marca-ico" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#fde047"/><path d="M8.5 23V10.5l7.5 7.5 7.5-7.5V23" fill="none" stroke="#4338ca" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="7" r="2.6" fill="#4338ca"/></svg><span class="marca-txt">Merk<b>ap</b></span></span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Editar inicio</span></a>
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><svg class="marca-ico" viewBox="0 0 100 100" aria-hidden="true"><rect x="1" y="4" width="98" height="95" rx="23" fill="#D4A000"/><rect x="1" y="1" width="98" height="95" rx="23" fill="#F6C51A"/><path d="M26 73V30q0-5 5-1.5L49 50M47 47l21-17q6-3.5 9.5 1V73" fill="none" stroke="#4C1D95" stroke-width="13.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 55l10.5-8 15 19C57 47 71 30 91 19 75 33 62 52 48.5 80z" fill="#3B1577" transform="translate(-1.2 1.6)"/><path d="M21 55l10.5-8 15 19C57 47 71 30 91 19 75 33 62 52 48.5 80z" fill="#fff"/></svg><span class="marca-txt">Merk<b>ap</b></span></span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Editar inicio</span></a>
       <nav class="flex gap-3 text-sm text-indigo-100">
         <a href="moderacion.html" class="hover:text-white">🛡️ Moderación</a>
         <a href="index.html" class="hover:text-white">← Inicio</a>
@@ -32,6 +33,7 @@
       <nav class="flex flex-wrap gap-2 text-sm" aria-label="Secciones">
         <a href="#carrusel-editor" class="b-pestana">🎠 Carrusel</a>
         <a href="#accesos-editor" class="b-pestana">🧩 Cuadros de acceso</a>
+        <a href="#seleccion-editor" class="b-pestana">⭐ Selección del día</a>
         <a href="#entrenar" class="b-pestana">🧠 Entrenar el buscador</a>
       </nav>
 
@@ -53,6 +55,26 @@
       </section>
 
       <!-- 3) ENTRENAR EL BUSCADOR -->
+      <!-- 3) SELECCIÓN DEL DÍA (fase 2AD) -->
+      <section id="seleccion-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">⭐ Selección del día <span id="sel-n" class="text-sm font-semibold text-slate-500"></span></h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">Es <b>gratis</b> y nunca queda fija: cada <b>4 horas</b> el sistema sortea otros anuncios y otro orden con estas reglas: primero los que tú <b>⭐ fijes</b>; luego recientes con foto, uno por vendedor y máximo 2 por categoría (si hay pocos anuncios, las reglas se aflojan). Los que <b>🚫 saques</b> no vuelven a salir hasta que los permitas.</p>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+          <p class="text-xs font-bold text-amber-900">👀 Ahora se ve así <span id="sel-turno" class="font-normal text-amber-800"></span></p>
+          <div id="sel-vista" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <input id="sel-buscar" type="search" placeholder="🔎 Buscar anuncio…" class="flex-1 min-w-[10rem] border border-slate-300 rounded-lg px-3 py-1.5 text-sm">
+          <select id="sel-filtro" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white">
+            <option value="todos">Todos los anuncios</option><option value="ahora">En la selección ahora</option><option value="fijados">⭐ Fijados</option><option value="sacados">🚫 Sacados</option>
+          </select>
+          <select id="sel-duracion" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white" title="Cuánto tiempo queda fijado">
+            <option value="24">⭐ Fijar 24 horas</option><option value="72">⭐ Fijar 3 días</option><option value="168">⭐ Fijar 7 días</option>
+          </select>
+        </div>
+        <div id="sel-admin-lista" class="space-y-2"></div>
+      </section>
+
       <section id="entrenar" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
         <h2 class="text-xl font-black text-indigo-900">🧠 Entrenar el buscador</h2>
         <p class="text-xs text-slate-500 mt-1 mb-3">Enséñale al buscador qué categorías responden a ciertas palabras, aunque nadie las haya buscado todavía. Ej.: <i>arepas, salchichas, aguacate</i> → Frutas y verduras, Tiendas, Supermercados. Las palabras se agregan a las <b>palabras clave</b> de cada categoría marcada (también las ves y editas en los paneles de categorías). Lo que la gente busca y no encuentra sigue en <a href="moderacion.html#busquedas" class="underline text-indigo-600">Moderación</a>.</p>
@@ -80,12 +102,12 @@
   <datalist id="dl-comercios"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=61"></script>
-  <script src="data.js?v=61"></script>
-  <script src="buscador.js?v=61"></script>
-  <script src="iconos.js?v=61"></script>
+  <script src="utils.js?v=62"></script>
+  <script src="data.js?v=62"></script>
+  <script src="buscador.js?v=62"></script>
+  <script src="iconos.js?v=62"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=61"></script>
+  <script src="editar-inicio.js?v=62"></script>
 </body>
 </html>

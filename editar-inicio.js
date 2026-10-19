@@ -389,13 +389,69 @@ function probarBuscador() {
 }
 
 // ---------- Arranque ----------
+// ---------- ⭐ Selección del día (fase 2AD) ----------
+function pintarSeleccionAdmin() {
+  const ahora = Date.now();
+  const sel = seleccionDelDia(baseDatosAnuncios, 8);
+  const enSel = new Set(sel.map(a => a.id));
+  const fin = new Date(ahora); fin.setHours(Math.floor(fin.getHours() / HORAS_TURNO_SELECCION) * HORAS_TURNO_SELECCION + HORAS_TURNO_SELECCION, 0, 0, 0);
+  $("sel-turno").textContent = `· cambia a las ${fin.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" })}`;
+  $("sel-vista").innerHTML = sel.length ? sel.map((a, i) => `<span class="text-xs bg-white border border-amber-200 rounded-full px-2 py-0.5">${i + 1}. ${a.elegidoMod ? "⭐ " : ""}${esc(a.nombre)}</span>`).join("")
+    : '<span class="text-xs text-slate-500">Aún no hay anuncios suficientes (se muestra desde 2).</span>';
+  const texto = normalizar($("sel-buscar").value || ""), filtro = $("sel-filtro").value;
+  const lista = baseDatosAnuncios.filter(a => {
+    if (texto && !normalizar(a.nombre + " " + (a.ciudad || "")).includes(texto)) return false;
+    if (filtro === "ahora") return enSel.has(a.id);
+    if (filtro === "fijados") return a.seleccionHasta > ahora;
+    if (filtro === "sacados") return a.seleccionExcluido;
+    return true;
+  }).sort((x, y) => (enSel.has(y.id) - enSel.has(x.id)) || (y.fecha - x.fecha));
+  $("sel-n").textContent = `(${sel.length} en la franja · ${baseDatosAnuncios.length} anuncios activos)`;
+  $("sel-admin-lista").innerHTML = lista.length ? lista.map(a => {
+    const foto = urlSegura(a.imagen), fijado = a.seleccionHasta > ahora;
+    const chips = [enSel.has(a.id) ? '<span class="sel-chip ahora">👀 En la franja ahora</span>' : "",
+      fijado ? `<span class="sel-chip fijo">⭐ Fijado hasta ${esc(new Date(a.seleccionHasta).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</span>` : "",
+      a.seleccionExcluido ? '<span class="sel-chip fuera">🚫 Sacado</span>' : "",
+      !a.imagen ? '<span class="sel-chip">Sin foto</span>' : ""].join("");
+    return `<div class="flex flex-wrap items-center gap-2 border border-slate-200 rounded-xl p-2" data-sel-id="${a.id}">
+      <span class="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">${foto ? `<img src="${esc(foto)}" alt="" class="w-full h-full object-cover">` : (iconosCategoria[a.categoria] || "📦")}</span>
+      <span class="min-w-0 flex-1"><a href="anuncio.html?id=${a.id}" target="_blank" class="block font-semibold text-sm line-clamp-2 hover:underline">${esc(a.nombre)}</a>
+        <span class="text-[11px] text-slate-500">${esc(a.ciudad || a.barrio || "")} · ${esc(haceCuanto(a.fecha))}</span> <span class="inline-flex flex-wrap gap-1 align-middle">${chips}</span></span>
+      <span class="flex flex-wrap gap-1.5 w-full sm:w-auto justify-end">
+        ${fijado ? '<button type="button" data-sel-acc="desfijar" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-amber-300 bg-white text-amber-900">Quitar ⭐</button>'
+                 : '<button type="button" data-sel-acc="fijar" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-900">⭐ Fijar</button>'}
+        ${a.seleccionExcluido ? '<button type="button" data-sel-acc="permitir" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-green-300 bg-white text-green-800">✅ Permitir</button>'
+                              : '<button type="button" data-sel-acc="sacar" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-red-200 bg-white text-red-700">🚫 Sacar</button>'}
+      </span>
+    </div>`;
+  }).join("") : '<p class="text-sm text-slate-400 text-center py-4">No hay anuncios con ese filtro.</p>';
+}
+async function accionSeleccionAdmin(e) {
+  const b = e.target.closest("[data-sel-acc]"); const fila = e.target.closest("[data-sel-id]");
+  if (!b || !fila) return;
+  const id = Number(fila.dataset.selId), acc = b.dataset.selAcc;
+  b.disabled = true;
+  try {
+    if (acc === "fijar") await marcarSeleccionDia(id, Number($("sel-duracion").value) || 24);
+    else if (acc === "desfijar") await marcarSeleccionDia(id, 0);
+    else await excluirDeSeleccion(id, acc === "sacar");
+    mostrarToast({ fijar: "⭐ Fijado: sale primero en la franja", desfijar: "Quitado: vuelve al sorteo", sacar: "🚫 Sacado de la Selección del día", permitir: "✅ Puede volver a salir" }[acc]);
+    pintarSeleccionAdmin();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await cargarSesion();
   $("ei-cargando").classList.add("hidden");
   if (!esModerador()) { $("ei-sin-permiso").classList.remove("hidden"); return; }
   $("ei-panel").classList.remove("hidden");
-  await Promise.all([cargarComercios(), cargarCategoriasAnuncio()]);
+  await Promise.all([cargarComercios(), cargarCategoriasAnuncio(), cargarAnuncios()]);
+  // Selección del día (fase 2AD)
+  pintarSeleccionAdmin();
+  $("sel-admin-lista").addEventListener("click", accionSeleccionAdmin);
+  $("sel-buscar").addEventListener("input", pintarSeleccionAdmin);
+  $("sel-filtro").addEventListener("change", pintarSeleccionAdmin);
   $("dl-comercios").innerHTML = comercios.slice().sort((a, b) => a.nombre.localeCompare(b.nombre, "es")).map(c => `<option value="${esc(etiquetaComercio(c))}"></option>`).join("");
 
   // Carrusel

@@ -228,14 +228,26 @@ function pintarSeleccionDia() {
   const lista = seleccionDelDia(baseDatosAnuncios, 8);
   $("seleccion-dia").classList.toggle("hidden", lista.length < 2);   // fase 2AC.1: desde 2 anuncios
   if (lista.length < 2) return;
+  const mod = esModerador();
   $("sel-lista").innerHTML = lista.map(a => {
     const foto = urlSegura(a.imagen);
-    return `<a href="anuncio.html?id=${a.id}" class="sel-card" data-sel="${a.id}">
-      <span class="sel-foto">${iconosCategoria[a.categoria] || "📦"}${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${a.elegidoMod ? '<b class="sel-estrella" title="Elegido por Merkap">⭐</b>' : ""}</span>
-      <span class="sel-txt"><span class="sel-nombre">${esc(a.nombre)}</span>${a.precio ? `<span class="sel-precio">${esc(precioConSufijo(a))}</span>` : ""}<span class="sel-lugar">${esc(a.ciudad || a.barrio || "")}</span></span>
-    </a>`;
+    return `<div class="sel-item" data-sel="${a.id}">
+      <a href="anuncio.html?id=${a.id}" class="sel-card">
+        <span class="sel-foto">${iconosCategoria[a.categoria] || "📦"}${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${a.elegidoMod ? '<b class="sel-estrella" title="Elegido por Merkap">⭐</b>' : ""}</span>
+        <span class="sel-txt"><span class="sel-nombre">${esc(a.nombre)}</span>${a.precio ? `<span class="sel-precio">${esc(precioConSufijo(a))}</span>` : ""}<span class="sel-lugar">${esc(a.ciudad || a.barrio || "")}</span></span>
+      </a>
+      ${mod ? `<button type="button" class="sel-quitar" data-sel-quitar="${a.id}" title="Sacar de la Selección del día" aria-label="Sacar de la Selección del día">✕</button>` : ""}
+    </div>`;
   }).join("");
-  $("sel-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
+}
+// Fase 2AD: el moderador saca un anuncio de la franja con ✕ (se maneja todo en «Editar inicio»)
+async function quitarDeSeleccion(e) {
+  const b = e.target.closest("[data-sel-quitar]");
+  if (!b) return;
+  e.preventDefault();
+  b.disabled = true;
+  try { await excluirDeSeleccion(Number(b.dataset.selQuitar), true); mostrarToast("🚫 Sacado de la Selección del día. Puedes volver a permitirlo en «Editar inicio»"); pintarSeleccionDia(); }
+  catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
 function textoDistancia(km) {
@@ -1402,6 +1414,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
   aplicarFiltros();
   pintarSeleccionDia();
+  $("sel-lista").addEventListener("click", quitarDeSeleccion);
+  $("sel-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
   cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); });

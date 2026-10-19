@@ -656,3 +656,17 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Anuncios similares:** si no hay 4 de la misma categoría, completa con «Más anuncios cerca» (dice la categoría y la distancia).
 
 **Revertir:** PR → **Revert**.
+
+## Fase 2AD · Logo oficial y panel de la Selección del día
+
+**SQL:** `supabase/34_seleccion_panel.sql` — antes o después de fusionar (sin él no se puede «sacar» anuncios, lo demás funciona). Debe mostrar `excluir = true`.
+
+**Cambian:** todas las páginas (`*.html`, logo y pestaña), **nuevo** `img/` (logo SVG, íconos PNG y el original), `styles.css`, `utils.js`, `data.js`, `app.js`, `anuncio.js`, `editar-inicio.*`, `index.html`. Caché `?v=62`.
+
+- **Logo oficial** redibujado en vector (nítido en cualquier tamaño) en el encabezado de todas las páginas, la pestaña del navegador y el ícono al guardar la página en el celular. El archivo original queda guardado en `img/logo-merkap-original.jpg`.
+- **Saludo del logo:** la primera vez que alguien entra a Merkap, entrada vistosa (1,8 s); al abrir cada página, un saludo corto (0,9 s) y queda quieto. Si el celular tiene «reducir movimiento», no se mueve.
+- **Editar inicio → ⭐ Selección del día:** cómo se ve ahora y a qué hora cambia; lista de anuncios con buscador y filtros (en la franja, fijados, sacados); **⭐ Fijar** (24 h, 3 días o 7 días), **Quitar ⭐**, **🚫 Sacar** y **✅ Permitir**.
+- En el inicio, los moderadores ven una **✕** en cada tarjeta de la franja para sacarla al momento; en la ficha, «⭐ Fijar» y «🚫 Sacar de la Selección».
+- El sorteo cambia **cada 4 horas** (6 veces al día): otros anuncios y otro orden. Los fijados salen primero, también en orden variable.
+
+**Revertir:** PR → **Revert**.

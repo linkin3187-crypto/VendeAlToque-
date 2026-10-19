@@ -193,7 +193,8 @@ function filaAAnuncio(r) {
     ubicacionAprox: !!r.ubicacion_aprox,   // true = lat/lng públicos están desplazados (ver anuncios_ubicacion)
     detalles: (r.detalles && typeof r.detalles === "object" && !Array.isArray(r.detalles)) ? r.detalles : {},
     fecha: Date.parse(r.creado_en),
-    seleccionHasta: r.seleccion_hasta ? Date.parse(r.seleccion_hasta) : 0   // fase 2AC: «⭐ Selección del día» (la eligen los moderadores)
+    seleccionHasta: r.seleccion_hasta ? Date.parse(r.seleccion_hasta) : 0,   // fase 2AC: «⭐ Selección del día» (la eligen los moderadores)
+    seleccionExcluido: !!r.seleccion_excluido                                // fase 2AD: el moderador lo sacó del sorteo
   });
 }
 
@@ -215,12 +216,16 @@ function normalizarAnuncio(a) {
 // Columnas PÚBLICAS de un anuncio. El WhatsApp y el teléfono NO se leen de la tabla: solo con
 // contacto_anuncio(id), que exige cuenta (ver supabase/13_contacto_anuncios.sql y 13b_proteger_contacto.sql).
 // Fase 2Z.7: + detalles (inmuebles y vehículos). Si aún no se ejecutó el SQL 23, se quita sola (ver conDetalles).
-let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles, seleccion_hasta";
+let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles, seleccion_hasta, seleccion_excluido";
 let hayColumnaDetalles = true;
 const sinColumnaDetalles = e => /detalles/.test((e && e.message) || "");
 // Ejecuta una consulta de anuncios; si falla porque falta la columna «detalles», la repite sin ella
 async function conDetalles(hacer) {
   let r = await hacer(COLS_ANUNCIO);
+  if (r.error && /seleccion_excluido/.test(r.error.message || "")) {   // fase 2AD: aún sin el SQL 34
+    COLS_ANUNCIO = COLS_ANUNCIO.replace(", seleccion_excluido", "");
+    r = await hacer(COLS_ANUNCIO);
+  }
   if (r.error && /seleccion_hasta/.test(r.error.message || "")) {   // fase 2AC: aún sin el SQL 32
     COLS_ANUNCIO = COLS_ANUNCIO.replace(", seleccion_hasta", "");
     r = await hacer(COLS_ANUNCIO);
@@ -1377,22 +1382,30 @@ async function borrarPalabraProhibida(id) {
   const { error } = await sb.from("palabras_prohibidas").delete().eq("id", id);
   if (error) throw error;
 }
-// ---------- ⭐ Selección del día (fase 2AC) ----------
-// Primero los que eligió un moderador (vigentes); se completa sola con anuncios recientes con foto,
-// uno por vendedor y variando categorías. Cambia cada día (orden «al azar» fijo por fecha).
-function seleccionDelDia(lista, max) {
+// ---------- ⭐ Selección del día (fases 2AC y 2AD) ----------
+// Gratis y sin pago de por medio: primero los que fijó un moderador (⭐) y el resto lo sortea el sistema con reglas.
+// El sorteo cambia cada TURNO de 4 horas (6 veces al día): aparecen otros anuncios y en otro orden; nunca queda fijo.
+// Los que un moderador sacó (🚫 seleccion_excluido) nunca entran al sorteo.
+const HORAS_TURNO_SELECCION = 4;
+const turnoSeleccion = (ms = Date.now()) => {
+  const d = new Date(ms);
+  return d.toISOString().slice(0, 10) + "#" + Math.floor(d.getHours() / HORAS_TURNO_SELECCION);
+};
+function seleccionDelDia(lista, max, ahoraMs) {
   max = max || 8;
-  const ahora = Date.now();
-  const elegidos = lista.filter(a => a.seleccionHasta > ahora).sort((a, b) => b.fecha - a.fecha);
+  const ahora = ahoraMs || Date.now();
+  const turno = turnoSeleccion(ahora);
+  const semilla = id => { let h = 2166136261; for (const ch of turno + ":" + id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const porSemilla = (a, b) => semilla(a.id) - semilla(b.id);
+  const validos = lista.filter(a => !a.seleccionExcluido);
+  const elegidos = validos.filter(a => a.seleccionHasta > ahora).sort(porSemilla);   // los fijados también rotan de orden
   const usados = new Set(elegidos.map(a => a.id));
-  const dia = new Date().toISOString().slice(0, 10);
-  const semilla = id => { let h = 2166136261; for (const ch of dia + ":" + id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const resto = lista.filter(a => !usados.has(a.id)).sort((a, b) => semilla(a.id) - semilla(b.id));
+  const resto = validos.filter(a => !usados.has(a.id)).sort(porSemilla);
   const out = [...elegidos.slice(0, max)];
   const vendedores = new Set(elegidos.map(a => a.owner)), cats = {};
   const meter = a => { out.push(a); usados.add(a.id); vendedores.add(a.owner); cats[a.categoria] = (cats[a.categoria] || 0) + 1; };
-  // Fase 2AC.1: se afloja por rondas para que se vea algo aunque haya pocos anuncios.
-  // 1) recientes con foto, uno por vendedor y máx. 2 por categoría · 2) con foto, se repite vendedor · 3) cualquiera
+  // Se afloja por rondas para que se vea algo aunque haya pocos anuncios:
+  // 1) recientes (14 días) con foto, uno por vendedor y máx. 2 por categoría · 2) con foto · 3) cualquiera
   const rondas = [
     a => a.imagen && ahora - a.fecha < 14 * 864e5 && !(a.owner && vendedores.has(a.owner)) && (cats[a.categoria] || 0) < 2,
     a => !!a.imagen,
@@ -1404,12 +1417,24 @@ function seleccionDelDia(lista, max) {
   }
   return out.slice(0, max).map(a => ({ ...a, elegidoMod: a.seleccionHasta > ahora }));
 }
-async function marcarSeleccionDia(id, horas) {
-  const hasta = horas ? new Date(Date.now() + horas * 3600e3).toISOString() : null;
-  const { error } = await sb.from("anuncios").update({ seleccion_hasta: hasta }).eq("id", id);
+// Solo moderadores: sacar (o volver a permitir) un anuncio del sorteo
+async function excluirDeSeleccion(id, excluir) {
+  const cambios = { seleccion_excluido: !!excluir };
+  if (excluir) cambios.seleccion_hasta = null;   // si estaba fijado, también se quita
+  const { error } = await sb.from("anuncios").update(cambios).eq("id", id);
   if (error) throw error;
   const a = baseDatosAnuncios.find(x => x.id === id);
-  if (a) a.seleccionHasta = hasta ? Date.parse(hasta) : 0;
+  if (a) { a.seleccionExcluido = !!excluir; if (excluir) a.seleccionHasta = 0; }
+}
+async function marcarSeleccionDia(id, horas) {
+  const hasta = horas ? new Date(Date.now() + horas * 3600e3).toISOString() : null;
+  const cambios = { seleccion_hasta: hasta };
+  if (hasta) cambios.seleccion_excluido = false;   // fijarlo lo vuelve a permitir
+  let { error } = await sb.from("anuncios").update(cambios).eq("id", id);
+  if (error && /seleccion_excluido/.test(error.message || "")) { delete cambios.seleccion_excluido; ({ error } = await sb.from("anuncios").update(cambios).eq("id", id)); }   // sin el SQL 34
+  if (error) throw error;
+  const a = baseDatosAnuncios.find(x => x.id === id);
+  if (a) { a.seleccionHasta = hasta ? Date.parse(hasta) : 0; if (hasta) a.seleccionExcluido = false; }
 }
 async function resolverRevisionSalud(id, estado) {
   const { error } = await sb.from("revision_salud").update({ estado }).eq("id", id);

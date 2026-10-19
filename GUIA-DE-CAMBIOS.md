@@ -810,3 +810,15 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Prueba real:** tus escaneos (administrador) no cuentan. Para probar, escanea con otro celular o en una ventana de incógnito sin sesión.
 
 **Revertir:** PR → **Revert**. Las tablas pueden quedarse; sin el código nuevo, `?c=` simplemente abre el inicio.
+
+## Fase 2AP-3 · Compartir para dueños + buscador rápido
+
+**SQL:** ninguno. **Cambian:** nuevos `piezas.js` (el dibujo de las imágenes, sacado de `marketing.js`) y `compartir.js` (ventana «📣 Comparte…»), `mi-tienda.*`, `anuncio.*`, `app.js` (Mis anuncios), `index.html`, `tienda.js`, `marketing.*`, `styles.css`; caché `?v=73`.
+
+- **Dueños:** Mi tienda → **📣 Comparte tu tienda**; en su anuncio → **📣 Compartir mi anuncio** (también en «📋 Mis anuncios»). Eligen el canal (WhatsApp, Estado, Facebook, Instagram, Sticker), el texto y el color; descargan o comparten.
+- **Por qué el link lleva `ref=tienda-ID`:** así sabes qué tienda trae cuentas nuevas (sale con su nombre en «Cuentas nuevas por código»).
+- **La imagen no es un link:** el botón de la imagen ahora dice qué hacer según el canal, y la ventana recuerda mandar imagen + texto.
+- **Administrador:** en 📣 Marketing, con destino Vitrina, Producto o Anuncio, escribe el nombre en **🔎 Busca…** y elige. En la ficha de cualquier tienda o anuncio tienes **📣 Pieza de marketing**.
+- **+18:** se comparte sin foto de fondo.
+
+**Revertir:** PR → **Revert** (no hay SQL).

@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=69">
+  <link rel="stylesheet" href="styles.css?v=70">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -38,6 +38,40 @@
       <p id="mod-rol" class="mb-4 text-sm rounded-xl px-3 py-2 bg-amber-50 border border-amber-200 text-amber-900"><b class="etq-rol">🛡️ Modo moderador</b>
         <span class="solo-mod"> · Revisas reportes y contenido. Los negocios nuevos y los reclamos de fichas los <b>propones</b> y el administrador decide.</span>
         <span class="solo-admin"> · Tienes control total. Nombra o quita moderadores en <a href="#equipo" class="underline font-semibold">👥 Equipo</a>.</span></p>
+
+      <!-- Fase 2AN: 🔐 Tu seguridad (solo administrador · supabase/40_filtro_todos_clave.sql) -->
+      <section id="seguridad" class="solo-admin mb-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <div class="flex flex-wrap items-center gap-2"><h2 class="text-xl font-black text-indigo-900">🔐 Tu seguridad</h2><span id="seg-estado" class="text-xs font-bold px-2 py-0.5 rounded-full"></span></div>
+        <p class="text-xs text-slate-500 mt-1">El filtro de contenido te revisa también a ti (y a los moderadores). Si necesitas publicar algo que el filtro bloquea, desbloquéalo un rato con tu <b>clave de seguridad</b>: es distinta de la contraseña de tu cuenta y nadie más la conoce. Se vuelve a bloquear solo. 5 intentos fallidos la bloquean 1 hora.</p>
+        <div id="seg-crear" class="hidden mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p class="text-sm font-bold text-amber-900">Crea tu clave de seguridad (mínimo 6 caracteres)</p>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <input id="seg-nueva" type="password" autocomplete="new-password" placeholder="Clave nueva" class="flex-1 min-w-[10rem] border border-slate-300 p-2 rounded-lg text-sm">
+            <input id="seg-repetir" type="password" autocomplete="new-password" placeholder="Repítela" class="flex-1 min-w-[10rem] border border-slate-300 p-2 rounded-lg text-sm">
+            <button type="button" id="seg-crear-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Guardar clave</button>
+          </div>
+        </div>
+        <div id="seg-usar" class="hidden mt-3">
+          <div id="seg-desbloquear" class="flex flex-wrap gap-2">
+            <input id="seg-clave" type="password" autocomplete="off" placeholder="Tu clave de seguridad" class="flex-1 min-w-[10rem] border border-slate-300 p-2 rounded-lg text-sm">
+            <select id="seg-minutos" class="border border-slate-300 p-2 rounded-lg text-sm bg-white"><option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60">1 hora</option></select>
+            <button type="button" id="seg-desbloquear-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm">🔓 Desbloquear filtro</button>
+          </div>
+          <button type="button" id="seg-bloquear-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg text-sm">🔐 Volver a bloquear ahora</button>
+          <details class="mt-3 text-sm"><summary class="cursor-pointer font-semibold text-indigo-700">Cambiar mi clave</summary>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <input id="seg-actual" type="password" autocomplete="off" placeholder="Clave actual" class="flex-1 min-w-[9rem] border border-slate-300 p-2 rounded-lg text-sm">
+              <input id="seg-cambio" type="password" autocomplete="new-password" placeholder="Clave nueva" class="flex-1 min-w-[9rem] border border-slate-300 p-2 rounded-lg text-sm">
+              <button type="button" id="seg-cambiar-btn" class="bg-white border border-slate-300 font-bold px-4 py-2 rounded-lg text-sm">Cambiar</button>
+            </div></details>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4 mt-4">
+          <div><h3 class="text-sm font-black text-slate-700">📱 Sesiones abiertas de tu cuenta</h3>
+            <div id="seg-sesiones" class="mt-1 space-y-1 text-xs"></div>
+            <button type="button" id="seg-cerrar-otras" class="mt-2 text-xs font-bold text-red-700 underline">Cerrar sesión en todos los demás dispositivos</button></div>
+          <div><h3 class="text-sm font-black text-slate-700">🧾 Historial</h3><div id="seg-historial" class="mt-1 space-y-1 text-xs"></div></div>
+        </div>
+      </section>
 
       <!-- Fase 2AK: 👥 Equipo (solo administrador · supabase/38_admin_seguridad.sql) -->
       <section id="equipo" class="solo-admin mb-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
@@ -216,9 +250,9 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=69"></script>
-  <script src="data.js?v=69"></script>
-  <script src="iconos.js?v=69"></script>
-  <script src="moderacion.js?v=69"></script>
+  <script src="utils.js?v=70"></script>
+  <script src="data.js?v=70"></script>
+  <script src="iconos.js?v=70"></script>
+  <script src="moderacion.js?v=70"></script>
 </body>
 </html>

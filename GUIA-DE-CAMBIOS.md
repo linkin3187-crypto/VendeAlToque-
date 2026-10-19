@@ -711,3 +711,14 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2AI · «Abiertos primero»
+
+**SQL:** ninguno. **Cambian:** `utils.js`, `styles.css`, `comercios.*`, `app.js`, `mi-tienda.*`; caché `?v=66`.
+
+- **Directorio:** orden por defecto «🟢 Abiertos primero», con títulos: Abiertos ahora (incluye «cierra pronto») → Abren en menos de 1 hora → Sin horario publicado → Cerrados ahora (tarjetas más tenues). Dentro de cada grupo, el orden recomendado (verificados, con vitrina, nombre).
+- Los otros órdenes («Recomendados», «Más cercanos», «Mejor calificados», «Nombre») funcionan igual que antes, sin títulos.
+- **Inicio:** los comercios abiertos salen primero (sin títulos).
+- **Mi tienda:** bajo «Horario» el dueño ve al instante «✓ Entendido. Así se ve ahora: …», «⚠️ No entendemos este horario…» o una invitación a ponerlo.
+
+**Revertir:** PR → **Revert**.
+

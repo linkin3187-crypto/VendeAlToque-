@@ -801,3 +801,14 @@ img.marca-ico.recortar { object-fit: cover; border-radius: 24%; }
 .chip-publicado.reciente { background: #ecfdf5; color: #047857; font-weight: 800; padding: .0625rem .5rem; border-radius: 9999px; }
 .foto-publicado { position: absolute; left: .5rem; bottom: 2.1rem; background: rgb(0 0 0 / .62); color: #fff; font-size: 11px; font-weight: 700; padding: .0625rem .4rem; border-radius: .375rem; }
 .foto-publicado.reciente { background: #059669; }
+
+/* ===== Fase 2AI: «Abiertos primero» en el directorio ===== */
+.titulo-grupo-horario { grid-column: 1 / -1; display: flex; align-items: center; gap: .6rem; margin: .5rem 0 -.25rem; font-size: 15px; font-weight: 800; }
+.titulo-grupo-horario::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+.titulo-grupo-horario .cuenta { font-weight: 600; color: #94a3b8; }
+.titulo-grupo-horario.hz-abierto { color: #15803d; }
+.titulo-grupo-horario.hz-abre { color: #a16207; }
+.titulo-grupo-horario.hz-sin { color: #475569; }
+.titulo-grupo-horario.hz-cerrado { color: #64748b; }
+.tarjeta-cerrada { opacity: .78; }
+.tarjeta-cerrada:hover, .tarjeta-cerrada:focus-within { opacity: 1; }

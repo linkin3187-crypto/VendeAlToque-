@@ -6,96 +6,13 @@
   <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <meta name="robots" content="noindex">
-  <title>Enlaces y QR | Merkap</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=70">
-  <style>
-    @media print {
-      body * { visibility: hidden; }
-      #ref-sticker, #ref-sticker * { visibility: visible; }
-      #ref-sticker { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
-    }
-  </style>
+  <title>Centro de marketing | Merkap</title>
+  <!-- Fase 2AP: «Enlaces y QR» ahora es el Centro de marketing. Los enlaces viejos siguen funcionando. -->
+  <script>location.replace("marketing.html" + location.search + location.hash);</script>
+  <meta http-equiv="refresh" content="0; url=marketing.html">
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <header class="bg-indigo-600 text-white shadow-lg">
-    <div class="max-w-4xl mx-auto px-4 py-3.5 flex flex-wrap gap-x-3 gap-y-1 justify-between items-center">
-      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span> <span class="text-sm font-semibold text-indigo-200">· Enlaces y QR</span></a>
-      <nav class="flex flex-wrap gap-x-3 text-sm text-indigo-100">
-        <a href="moderacion.html" class="hover:text-white">🚩 Reportes</a>
-        <a href="admin-comercios.html" class="hover:text-white">🏪 Comercios</a>
-        <a href="index.html" class="hover:text-white">← Inicio</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="max-w-4xl mx-auto px-4 py-6">
-    <div id="rf-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
-
-    <div id="rf-sin-permiso" class="hidden text-center py-16">
-      <div class="text-5xl mb-3">🔒</div>
-      <h2 class="text-xl font-bold text-slate-700 mb-2">Solo para el administrador</h2>
-      <p id="rf-sin-permiso-txt" class="text-slate-500 text-sm mb-4"></p>
-      <a href="index.html#login" class="text-indigo-600 font-medium hover:underline">Iniciar sesión</a>
-    </div>
-
-    <section id="rf-panel" class="hidden space-y-8">
-      <div>
-        <h2 class="text-xl font-black text-indigo-900 mb-1">🔗 Crear un enlace con código</h2>
-        <p class="text-sm text-slate-600 mb-4">Pon un código distinto en cada lugar donde compartas Merkap (un grupo de Facebook, un volante, el sticker de una tienda). Cuando alguien entre por ese enlace y <b>cree su cuenta</b>, el código queda anotado y abajo ves cuántos llegaron por cada uno.</p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white border border-slate-200 rounded-2xl p-4">
-          <label class="text-xs font-bold text-slate-500">Código (solo letras, números y guiones)
-            <input id="rf-codigo" maxlength="30" placeholder="grupo-envigado-1" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" autocomplete="off">
-          </label>
-          <label class="text-xs font-bold text-slate-500">¿A qué página lleva?
-            <select id="rf-destino" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white">
-              <option value="inicio">Inicio (anuncios y comercios)</option>
-              <option value="registrar">Registrar mi negocio (para comercios)</option>
-              <option value="directorio">Directorio de comercios</option>
-              <option value="tienda">Vitrina de un comercio (por su número)</option>
-            </select>
-          </label>
-          <label id="rf-id-caja" class="hidden text-xs font-bold text-slate-500 sm:col-span-2">Número del comercio (aparece en «✏️ Editar» como ?editar=número)
-            <input id="rf-id" inputmode="numeric" maxlength="9" placeholder="123" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
-          </label>
-        </div>
-        <p class="text-xs text-slate-500 mt-2">Ideas de códigos: <code>grupo-envigado-1</code>, <code>grupo-itagui-2</code>, <code>volante-centro</code>, <code>tienda-nombre</code>. Si la persona llega por dos enlaces, cuenta el primero (30 días).</p>
-      </div>
-
-      <div id="ref-sticker" class="bg-white border border-slate-200 rounded-2xl p-5 text-center">
-        <div id="rf-vacio" class="text-slate-400 text-sm py-8">Escribe un código para ver el enlace y el QR.</div>
-        <div id="rf-resultado" class="hidden">
-          <div id="rf-qr" class="mx-auto w-56 h-56 sm:w-64 sm:h-64"></div>
-          <p class="font-black text-indigo-700 mt-2">Merkap · escanea y míranos</p>
-          <p id="rf-codigo-visto" class="text-xs text-slate-400"></p>
-          <div class="flex gap-2 mt-4 print:hidden">
-            <input id="rf-enlace" readonly class="flex-1 min-w-0 border border-slate-300 bg-slate-50 p-2.5 rounded-lg text-xs text-slate-700">
-            <button id="rf-copiar" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 rounded-lg text-sm">📋 Copiar</button>
-          </div>
-          <div class="flex flex-wrap justify-center gap-2 mt-3 print:hidden">
-            <button id="rf-png" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-lg text-sm">⬇️ Bajar imagen (PNG)</button>
-            <button id="rf-svg" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-lg text-sm">⬇️ Bajar para imprenta (SVG)</button>
-            <button id="rf-imprimir" type="button" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-lg text-sm">🖨️ Imprimir</button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between gap-3 mb-2">
-          <h2 class="text-xl font-black text-indigo-900">📈 Cuentas nuevas por código</h2>
-          <button id="rf-recargar" type="button" class="text-sm text-indigo-600 hover:underline">Actualizar</button>
-        </div>
-        <p class="text-xs text-slate-500 mb-3">Solo cuenta a quien creó cuenta. «Directo» son las cuentas sin código (o creadas antes de esta función). Aún no medimos visitas: para eso haría falta una herramienta de analítica, que se anunciaría en la política de privacidad.</p>
-        <div id="rf-tabla" class="bg-white border border-slate-200 rounded-2xl overflow-x-auto"></div>
-      </div>
-    </section>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="qr.js?v=70"></script>
-  <script src="utils.js?v=70"></script>
-  <script src="data.js?v=70"></script>
-  <script src="referidos.js?v=70"></script>
+<body style="font-family:system-ui,sans-serif;text-align:center;padding:3rem 1rem">
+  <img class="marca-ico" src="img/logo-merkap.png" alt="Merkap" width="64" height="64" onerror="this.onerror=null;this.src='img/merkap-logo.svg'">
+  <p><a href="marketing.html">Ir al Centro de marketing →</a></p>
 </body>
 </html>

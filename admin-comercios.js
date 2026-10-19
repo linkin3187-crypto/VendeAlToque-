@@ -254,7 +254,7 @@ function filaEditor(c) {
       <button type="button" data-acc="ubicacion" class=" text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">📍 Corregir ubicación</button>
       <a href="${esc(urlMapa(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
       <a href="${esc(urlMapaNombre(c))}" target="_blank" rel="noopener" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1.5 rounded-lg font-semibold">🔎 Buscar en Google</a>
-      <a href="referidos.html?destino=tienda&id=${c.id}&codigo=${esc(encodeURIComponent(slugRef("tienda-" + c.nombre)))}" class="text-xs bg-violet-100 hover:bg-violet-200 text-violet-800 px-2.5 py-1.5 rounded-lg font-semibold">🔳 QR del comercio</a>
+      <a href="marketing.html?destino=tienda&canal=qr&id=${c.id}&codigo=${esc(encodeURIComponent(slugRef("tienda-" + c.nombre)))}" class="text-xs bg-violet-100 hover:bg-violet-200 text-violet-800 px-2.5 py-1.5 rounded-lg font-semibold">🔳 QR del comercio</a>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
       ${campo("nombre", "Nombre", c.nombre, "")}

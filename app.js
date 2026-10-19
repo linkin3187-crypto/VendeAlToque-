@@ -1447,6 +1447,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)
   if (location.hash === "#login" && !usuarioActual) abrirModal("modal-auth");
+  // Enlace "#registro" (fase 2AP · «Regístrate gratis» del Centro de marketing): abre «Crear cuenta»
+  if (location.hash === "#registro") {
+    history.replaceState(null, "", location.pathname + location.search);
+    if (!usuarioActual) { document.dispatchEvent(new CustomEvent("auth:pedir", { detail: { modo: "registro" } })); abrirModal("modal-auth"); }
+  }
   revisarContactoPendiente();   // volvió del correo de confirmación con un contacto pendiente
   // Enlace "?editar=ID" (lo usan anuncio.html y anuncios.html): abre el formulario de edición de ese anuncio
   const idEditar = parseInt(new URLSearchParams(location.search).get("editar"), 10);

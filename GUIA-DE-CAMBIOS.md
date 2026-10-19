@@ -783,3 +783,16 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert** (si se revierte solo la página, el filtro sigue aplicando a todos; el desbloqueo se haría por SQL).
 
+
+## Fase 2AP-1 · Centro de marketing (antes «Enlaces y QR»)
+
+**SQL:** ninguno. **Cambian:** nuevo `marketing.html` + `marketing.js` (reemplaza `referidos.js`; `referidos.html` solo redirige), `index.html` (botón 📣 Marketing en la barra del administrador y en el menú de la cuenta), `app.js` (enlace `#registro` abre «Crear cuenta»), `moderacion.html`, `admin-comercios.*`, `metricas.*`, `editar-inicio.html`, `styles.css`; nuevos `docs/manual-marketing-merkap.pdf` y `herramientas/manual_marketing.py`; caché `?v=71`.
+
+- **Cómo se usa:** 1) destino y canal → el código se sugiere solo (cámbialo por grupo) · 2) texto (3 versiones, se adapta al canal) · 3) imagen (formato, plantilla, colores, ícono, fondo propio o de IA) · 4) descargar o compartir.
+- **Medición:** el enlace lleva `?ref=código` (cuentas nuevas, tabla de abajo) y `?o=canal` (visitas en 📊 Métricas → De dónde llegan).
+- **Por qué la imagen se hace en el navegador (canvas):** gratis, sin servidores ni servicios externos, y la foto que subes no sale de tu equipo.
+- **Por qué la página libre solo acepta páginas `.html` de Merkap:** evita usar el panel para mandar gente a otros sitios con la marca Merkap.
+- **«Mi versión» del texto** se guarda en este navegador (en otro celular no aparece). En 2AP-2 pasará a la base.
+- **Manual:** para cambiarlo, edita `herramientas/manual_marketing.py` y corre `python3 herramientas/manual_marketing.py`.
+
+**Revertir:** PR → **Revert** (no hay SQL).

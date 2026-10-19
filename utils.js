@@ -526,3 +526,18 @@ function mensajePedido(comercio, items, modo) {
 function urlWhatsAppTexto(numero, texto) {
   return `https://wa.me/${String(numero || "").replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
 }
+
+// «hoy», «ayer», «hace 3 días», «hace 2 semanas», «hace 1 mes» (fase 2AC)
+function haceCuanto(ms) {
+  if (!ms || !Number.isFinite(ms)) return "";
+  const dias = Math.floor((Date.now() - ms) / 864e5);
+  if (dias <= 0) return "hoy";
+  if (dias === 1) return "ayer";
+  if (dias < 7) return `hace ${dias} días`;
+  if (dias < 30) { const s = Math.floor(dias / 7); return `hace ${s} ${s === 1 ? "semana" : "semanas"}`; }
+  const m = Math.floor(dias / 30); return `hace ${m} ${m === 1 ? "mes" : "meses"}`;
+}
+// «a 350 m» / «a 2,4 km»
+const distanciaCorta = km => km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1).replace(".", ",") + " km";
+// Etiqueta de precio guardada en detalles.precio_tipo
+const ETIQUETA_PRECIO = { fijo: "Precio fijo", negociable: "🤝 Negociable" };

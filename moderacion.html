@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex">
   <title>Moderación | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=59">
+  <link rel="stylesheet" href="styles.css?v=60">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -95,6 +95,23 @@
       <p class="text-xs text-slate-500 mb-3">Droguerías y naturistas que llenaron o cambiaron sus datos (razón social, NIT, director técnico, acta). Revisa el NIT y la razón social en RUES y dales el visto bueno en «Editar comercios» → 🧾 Sanitario.</p>
       <div id="dsan-lista" class="space-y-2"></div>
 
+      <!-- Fase 2AC: palabras prohibidas (supabase/32_palabras_y_seleccion.sql) -->
+      <div class="mt-10 mb-3">
+        <h2 id="palabras" class="text-xl font-black text-indigo-900 scroll-mt-4">🚫 Palabras prohibidas <span id="n-palabras-cola" class="text-sm font-semibold text-slate-500"></span></h2>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Anuncios y productos que usan una palabra de tu lista marcada como <b>«revisar»</b>: se publicaron, pero decides tú. Las marcadas como <b>«bloquear»</b> ni siquiera dejan publicar (la persona ve el motivo). Se ignoran mayúsculas, tildes y signos. Solo los moderadores ven esta lista.</p>
+      <div id="palabras-cola" class="space-y-2"></div>
+      <details id="palabras-editor" class="mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <summary class="font-black text-indigo-900 cursor-pointer">✏️ Editar la lista <span id="n-palabras" class="text-sm font-semibold text-slate-500"></span></summary>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <input id="pp-palabra" maxlength="40" placeholder="Palabra o frase (ej. pague primero)" class="flex-1 min-w-[12rem] border border-slate-300 p-2 rounded-lg text-sm">
+          <select id="pp-accion" class="border border-slate-300 p-2 rounded-lg text-sm bg-white"><option value="revisar">👀 Revisar</option><option value="bloquear">⛔ Bloquear</option></select>
+          <input id="pp-nota" maxlength="120" placeholder="Nota (opcional)" class="flex-1 min-w-[10rem] border border-slate-300 p-2 rounded-lg text-sm">
+          <button type="button" id="pp-agregar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">➕ Agregar</button>
+        </div>
+        <div id="pp-lista" class="flex flex-wrap gap-2 mt-3"></div>
+      </details>
+
       <div class="mt-10 mb-3">
         <h2 id="opiniones" class="text-xl font-black text-indigo-900 scroll-mt-4">⭐ Opiniones reportadas <span id="n-rcal" class="text-sm font-semibold text-slate-500"></span></h2>
       </div>
@@ -166,9 +183,9 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=59"></script>
-  <script src="data.js?v=59"></script>
-  <script src="iconos.js?v=59"></script>
-  <script src="moderacion.js?v=59"></script>
+  <script src="utils.js?v=60"></script>
+  <script src="data.js?v=60"></script>
+  <script src="iconos.js?v=60"></script>
+  <script src="moderacion.js?v=60"></script>
 </body>
 </html>

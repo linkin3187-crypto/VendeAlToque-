@@ -317,6 +317,61 @@ async function pintarSalud() {
     </div>`;
   }).join("") : '<p class="text-sm text-slate-400 text-center py-3">No hay datos sanitarios por revisar.</p>';
 }
+// ---------- 🚫 Palabras prohibidas (fase 2AC) ----------
+function tarjetaRevision(r, etiqueta) {
+  const ver = r.tipo === "anuncio" ? `anuncio.html?id=${r.ref_id}` : `tienda.html?id=${r.comercio_id}`;
+  return `<article class="bg-white border border-slate-200 rounded-xl p-3 text-sm" data-salud="${r.id}" data-tipo="${esc(r.tipo)}" data-ref="${r.ref_id}">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${r.tipo === "anuncio" ? "bg-sky-100 text-sky-800" : "bg-violet-100 text-violet-800"}">${r.tipo === "anuncio" ? "📢 Anuncio" : "🛍️ Producto de vitrina"}</span>
+      <span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-semibold">${etiqueta} «${esc(r.coincide)}»</span>
+      <span class="text-xs text-slate-400">${esc(fechaCorta(r.creado_en))}</span>
+    </div>
+    <p class="mt-1 text-slate-700">${esc(r.texto)}</p>
+    <div class="flex flex-wrap gap-2 mt-2">
+      <a href="${ver}" target="_blank" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">👁️ Ver</a>
+      <button type="button" data-sacc="ocultado" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🚫 Ocultar</button>
+      <button type="button" data-sacc="permitido" class="text-xs bg-white border border-green-300 text-green-800 hover:bg-green-50 px-3 py-1.5 rounded-lg font-semibold">✅ Está permitido</button>
+    </div>
+  </article>`;
+}
+async function pintarPalabras() {
+  let cola = [], lista = [];
+  try { [cola, lista] = await Promise.all([cargarRevisionSalud("palabra"), cargarPalabrasProhibidas()]); }
+  catch (e) { $("palabras-cola").innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Se activa al ejecutar supabase/32_palabras_y_seleccion.sql.</p>'; return; }
+  $("n-palabras-cola").textContent = cola.length ? "(" + cola.length + ")" : "";
+  $("palabras-cola").innerHTML = cola.length ? cola.map(r => tarjetaRevision(r, "🚫")).join("") : '<p class="text-sm text-slate-400 text-center py-4">Nada con palabras de la lista. ✨</p>';
+  $("n-palabras").textContent = "(" + lista.length + ")";
+  $("pp-lista").innerHTML = lista.map(p => `<span class="pp-chip ${p.accion}${p.activo ? "" : " apagada"}" data-pp="${p.id}" title="${esc(p.nota || "")}">
+      ${p.accion === "bloquear" ? "⛔" : "👀"} ${esc(p.palabra)}
+      <button type="button" data-ppacc="accion" title="Cambiar a ${p.accion === "bloquear" ? "revisar" : "bloquear"}" aria-label="Cambiar acción">⇄</button>
+      <button type="button" data-ppacc="activo" title="${p.activo ? "Apagar" : "Encender"}" aria-label="${p.activo ? "Apagar" : "Encender"}">${p.activo ? "⏸" : "▶"}</button>
+      <button type="button" data-ppacc="borrar" title="Borrar" aria-label="Borrar">✕</button>
+    </span>`).join("");
+  palabrasCache = lista;
+}
+let palabrasCache = [];
+async function accionPalabra(e) {
+  const b = e.target.closest("[data-ppacc]"); const chip = e.target.closest("[data-pp]");
+  if (!b || !chip) return;
+  const p = palabrasCache.find(x => x.id === Number(chip.dataset.pp)); if (!p) return;
+  try {
+    if (b.dataset.ppacc === "borrar") { if (!confirm(`¿Borrar «${p.palabra}» de la lista?`)) return; await borrarPalabraProhibida(p.id); }
+    else if (b.dataset.ppacc === "accion") await guardarPalabraProhibida({ id: p.id, accion: p.accion === "bloquear" ? "revisar" : "bloquear" });
+    else await guardarPalabraProhibida({ id: p.id, activo: !p.activo });
+    await pintarPalabras();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+}
+async function agregarPalabra() {
+  const palabra = $("pp-palabra").value.trim();
+  if (palabra.length < 2) { mostrarToast("Escribe la palabra o frase", "error"); return; }
+  try {
+    await guardarPalabraProhibida({ palabra, accion: $("pp-accion").value, nota: $("pp-nota").value.trim() || null });
+    $("pp-palabra").value = ""; $("pp-nota").value = "";
+    mostrarToast("✅ Agregada. Aplica a lo que se publique o edite desde ahora");
+    await pintarPalabras();
+  } catch (err) { mostrarToast(/duplicate|unique/i.test(err.message || "") ? "Esa palabra ya está en la lista" : mensajeError(err), "error"); }
+}
+
 async function accionSalud(e) {
   const b = e.target.closest("[data-sacc]");
   const art = e.target.closest("[data-salud]");
@@ -330,7 +385,7 @@ async function accionSalud(e) {
     }
     await resolverRevisionSalud(Number(art.dataset.salud), b.dataset.sacc);
     mostrarToast(b.dataset.sacc === "ocultado" ? "🚫 Ocultado" : "✅ Marcado como permitido");
-    await pintarSalud();
+    await (art.closest("#palabras-cola") ? pintarPalabras() : pintarSalud());
   } catch (err) { art.querySelectorAll("button").forEach(x => { x.disabled = false; }); mostrarToast(mensajeError(err), "error"); }
 }
 
@@ -837,6 +892,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarReportesProducto();
   $("salud-lista").addEventListener("click", accionSalud);
   pintarSalud();
+  $("palabras-cola").addEventListener("click", accionSalud);
+  $("pp-lista").addEventListener("click", accionPalabra);
+  $("pp-agregar").addEventListener("click", agregarPalabra);
+  pintarPalabras();
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
   $("cc-lista").addEventListener("click", accionCatComercio);

@@ -628,3 +628,16 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - Si el dueño cambia sus datos, el distintivo se apaga hasta que vuelvas a revisarlos. Nadie más puede encenderlo.
 
 **Revertir:** PR → **Revert**. Para quitar la regla de la vitrina, vuelve a ejecutar la política de productos del `07_vitrina.sql`.
+
+## Fase 2AC · Palabras prohibidas, Selección del día, opción B y restos chicos
+
+**SQL:** `supabase/32_palabras_y_seleccion.sql` — **antes** de fusionar. Debe mostrar `palabras = 37 (o más) | cola_con_motivo = true | seleccion = true | vitrina_opcion_b = true`. Es repetible.
+
+**Cambian:** `data.js`, `utils.js`, `app.js`, `anuncio.*`, `anuncios-comun.js`, `index.html`, `moderacion.*`, `mi-tienda.js`, `tienda.js`, `styles.css`. Caché `?v=60`.
+
+- **Opción B (droguerías):** su vitrina solo necesita estar verificada, como cualquier comercio. Tu visto bueno sanitario enciende el distintivo 🧾 y será requisito para vender medicamentos de venta libre (2AB.3). Siguen obligatorios los datos sanitarios para cargar productos.
+- **🚫 Palabras prohibidas** (Moderación): 👀 *revisar* → se publica y cae en la cola para que decidas; ⛔ *bloquear* → no deja publicar y le dice a la persona por qué. ⇄ cambia la acción, ⏸ la apaga, ✕ la borra. Ignora mayúsculas, tildes y signos. Solo los moderadores ven la lista. Aplica a anuncios y productos de vitrina.
+- **⭐ Selección del día** (inicio): primero los que elijas tú (botón «⭐ Poner en Selección del día» en la ficha, dura 24 h) y se completa sola con anuncios recientes con foto, uno por vendedor, que cambian cada día. Con menos de 3 anuncios no se muestra.
+- **Ficha y tarjetas:** «🕒 Publicado hace X», «📷 N» fotos, contador 1/N con puntos, flechas y deslizar con el dedo; **precio fijo / 🤝 negociable** (se elige al publicar); similares con distancia y la explicación de cómo se ordenan.
+
+**Revertir:** PR → **Revert**. Las tablas pueden quedarse.

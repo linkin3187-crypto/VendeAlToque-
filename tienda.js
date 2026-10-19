@@ -140,13 +140,7 @@ function renderizarTienda(c, ps) {
   // Aviso si la tienda aún no es pública (solo la ven el dueño o un moderador)
   const publica = c.activo && c.nivel >= 2;
   const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esModerador());
-  // Fase 2AB.2b: droguería o naturista verificada pero sin visto bueno sanitario → productos aún privados
-  if (publica && saludPendiente(c) && gestiona) {
-    const av = $("t-aviso-privado");
-    av.className = "mb-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl px-3 py-2";
-    av.innerHTML = "🧾 <b>Tus productos aún no son públicos.</b> En droguerías y tiendas naturistas, la vitrina se publica cuando Merkap revisa tus <b>datos sanitarios</b> (Mi tienda → 🧾 Datos sanitarios).";
-    av.classList.remove("hidden");
-  }
+  // Opción B (fase 2AC): la vitrina de una droguería ya no espera el visto bueno sanitario; este solo enciende el distintivo 🧾
   if (!publica) {
     const av = $("t-aviso-privado");
     // Fase 2Z.9: el comercio sí es público (como los importados); explica qué significa «Ubicado»

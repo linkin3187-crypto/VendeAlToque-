@@ -769,3 +769,14 @@ html.marca-primera .marca-txt { animation: marca-texto .8s ease-out .5s 1 both; 
 .sel-quitar:hover { background: #dc2626; }
 .sel-chip { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
 .sel-chip.ahora { background: #e0e7ff; color: #3730a3; } .sel-chip.fijo { background: #fef3c7; color: #92400e; } .sel-chip.fuera { background: #fee2e2; color: #991b1b; }
+
+/* Fase 2AF: el logo es una imagen editable (oficial o de temporada) con los mismos movimientos */
+img.marca-ico { object-fit: contain; display: block; }
+img.marca-ico.recortar { object-fit: cover; border-radius: 24%; }
+.marca-ico.sin-anim, html.marca-primera .marca-ico.sin-anim { animation: none !important; }
+.logo-vista { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.logo-vista-barra { display: inline-flex; align-items: center; gap: .42em; background: #4f46e5; color: #fff; font-size: 1.5rem; padding: 10px 16px; border-radius: 14px; }
+.logo-vista-barra .marca-ico { width: 1.6em; height: 1.6em; }
+.logo-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px; }
+.logo-mini { width: 52px; height: 52px; object-fit: contain; background: #4f46e5; border-radius: 10px; padding: 4px; flex: none; }
+.logo-mini.recortar { object-fit: cover; padding: 0; border-radius: 24%; }

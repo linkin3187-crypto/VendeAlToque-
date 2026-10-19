@@ -2467,3 +2467,66 @@ function gestorFotos(cont, iniciales, alCambiar, max) {
   };
 }
 
+
+// =====================================================================
+// LOGO DE LA PÁGINA (fase 2AF, supabase/35_logos_pagina.sql)
+// =====================================================================
+const LOGO_RESPALDO = { nombre: "Oficial", imagen_url: "img/logo-merkap.png", oficial: true, recortar: false, animar: true, activo: true };
+const hoyLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+// ¿Cuál se ve hoy? 1) el marcado «usar ahora» · 2) uno de temporada vigente (el de rango más corto) · 3) el oficial
+function logoVigente(lista, hoy) {
+  hoy = hoy || hoyLocal();
+  const act = (lista || []).filter(l => l.activo !== false && l.imagen_url);
+  const ahora = act.find(l => l.usar_ahora);
+  if (ahora) return ahora;
+  const largo = l => (Date.parse(l.hasta || "2999-12-31") - Date.parse(l.desde || "2000-01-01"));
+  const temporada = act.filter(l => !l.oficial && (l.desde || l.hasta) && (!l.desde || l.desde <= hoy) && (!l.hasta || l.hasta >= hoy))
+    .sort((a, b) => largo(a) - largo(b))[0];
+  return temporada || act.find(l => l.oficial) || LOGO_RESPALDO;
+}
+async function cargarLogosPagina() {
+  const { data, error } = await sb.from("logos_pagina").select("*").order("oficial", { ascending: false }).order("desde", { ascending: true }).order("id");
+  if (error) throw error;
+  return data || [];
+}
+async function actualizarLogoPagina() {
+  try {
+    const l = logoVigente(await cargarLogosPagina());
+    try { localStorage.setItem("mf_logo", JSON.stringify({ imagen_url: l.imagen_url, recortar: l.recortar, animar: l.animar })); } catch (e) {}
+    aplicarLogoPagina(l);
+    return l;
+  } catch (e) { return null; }   // sin el SQL 35: queda el oficial
+}
+async function guardarLogoPagina(fila) {
+  const { id, ...resto } = fila;
+  const q = id ? sb.from("logos_pagina").update(resto).eq("id", id) : sb.from("logos_pagina").insert(resto);
+  const { error } = await q;
+  if (error) throw error;
+}
+async function borrarLogoPagina(id) {
+  const { error } = await sb.from("logos_pagina").delete().eq("id", id);
+  if (error) throw error;
+}
+// Prepara la imagen subida: máx. 512 px por lado, conserva la transparencia (WebP o PNG)
+function prepararImagenLogo(archivo) {
+  return new Promise((resolver, rechazar) => {
+    const lector = new FileReader();
+    lector.onerror = () => rechazar(new Error("No se pudo leer la imagen"));
+    lector.onload = () => {
+      const img = new Image();
+      img.onerror = () => rechazar(new Error("Ese archivo no es una imagen válida"));
+      img.onload = () => {
+        const k = Math.min(1, 512 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        let url = c.toDataURL("image/webp", 0.92);
+        if (!url.startsWith("data:image/webp")) url = c.toDataURL("image/png");
+        resolver({ dataUrl: url, ancho: img.width, alto: img.height });
+      };
+      img.src = lector.result;
+    };
+    lector.readAsDataURL(archivo);
+  });
+}
+if (typeof sb !== "undefined" && sb) actualizarLogoPagina();

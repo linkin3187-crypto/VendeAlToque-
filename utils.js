@@ -550,3 +550,21 @@ function haceCuanto(ms) {
 const distanciaCorta = km => km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1).replace(".", ",") + " km";
 // Etiqueta de precio guardada en detalles.precio_tipo
 const ETIQUETA_PRECIO = { fijo: "Precio fijo", negociable: "🤝 Negociable" };
+
+// ---------- Logo de la página (fase 2AF) ----------
+// El encabezado trae el logo oficial (img/logo-merkap.png). Si hay uno de temporada vigente, data.js lo
+// pide a la base y lo recuerda aquí, para que al abrir la siguiente página aparezca sin parpadeo.
+function aplicarLogoPagina(l) {
+  if (!l || !l.imagen_url) return;
+  const url = String(l.imagen_url);
+  if (!/^(https:\/\/|img\/)/.test(url)) return;
+  document.querySelectorAll("img.marca-ico").forEach(im => {
+    if (im.getAttribute("src") !== url) im.src = url;
+    im.classList.toggle("recortar", !!l.recortar);
+    im.classList.toggle("sin-anim", l.animar === false);
+    im.alt = "";
+  });
+}
+(function () {
+  try { const l = JSON.parse(localStorage.getItem("mf_logo") || "null"); if (l) aplicarLogoPagina(l); } catch (e) { /* sin memoria: queda el oficial */ }
+})();

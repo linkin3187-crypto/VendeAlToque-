@@ -41,6 +41,7 @@ function pintarDatos() {
   $("mt-wa").value = actual.whatsapp.replace(/^57/, "");
   $("mt-tel").value = actual.telefono;
   $("mt-hor").value = actual.horario;
+  revisarHorario();
   document.querySelectorAll('input[name="mt-modo"]').forEach(r => { r.checked = r.value === (actual.modoAtencion || "local"); });
   $("mt-modo-aviso").classList.add("hidden");
   $("mt-recoge").checked = actual.recoge;
@@ -212,6 +213,16 @@ async function elegirComercio(id) {
   await refrescarProductos();
 }
 
+// Fase 2AI: el dueño ve al instante si entendimos su horario (sin horario no sale en «🟢 Abiertos ahora»)
+function revisarHorario() {
+  const v = $("mt-hor").value.trim(), e = estadoHorario(v), s = $("mt-hor-estado");
+  if (!s) return;
+  if (!v) { s.className = "block mt-1 font-semibold text-amber-700"; s.textContent = "💡 Pon tu horario para salir en el grupo «🟢 Abiertos ahora» del directorio (sale primero)."; return; }
+  if (!e) { s.className = "block mt-1 font-semibold text-red-700"; s.textContent = "⚠️ No entendemos este horario: escribe días y horas, ej. «Lun-Sáb 8:00-20:00, Dom 9-14». Así no sale «Abierto ahora»."; return; }
+  s.className = "block mt-1 font-semibold text-green-700";
+  s.textContent = "✓ Entendido. Así se ve ahora: " + ESTILO_HORARIO[e.estado].icono + " " + e.detalle;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await cargarSesion();
@@ -232,6 +243,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("mt-selector-caja").classList.remove("hidden");
   }
   $("form-negocio").addEventListener("submit", guardarNegocio);
+  $("mt-hor").addEventListener("input", revisarHorario);
   $("form-salud").addEventListener("submit", guardarSalud);
   $("mt-modo").addEventListener("change", () => {
     const modo = (document.querySelector('input[name="mt-modo"]:checked') || {}).value;

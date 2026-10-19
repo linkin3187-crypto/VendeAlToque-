@@ -578,6 +578,19 @@ function estadoHorario(horario, fecha) {
   return { abierto: false, estado: "cerrado", corto: "Cerrado", detalle: `Cerrado · abre ${cuando}` };
 }
 
+// Fase 2AI: grupo para «Abiertos primero»: 0 abiertos (y «cierra pronto»), 1 abren en ≤ 1 h, 2 sin horario (o no entendible), 3 cerrados
+function grupoHorario(c, fecha) {
+  const e = estadoHorario(c && c.horario, fecha);
+  if (!e) return 2;
+  return e.abierto ? 0 : e.estado === "abre" ? 1 : 3;
+}
+const GRUPOS_HORARIO = [
+  { titulo: "🟢 Abiertos ahora", clase: "hz-abierto" },
+  { titulo: "🟡 Abren en menos de 1 hora", clase: "hz-abre" },
+  { titulo: "🕒 Sin horario publicado · llama antes de ir", clase: "hz-sin" },
+  { titulo: "🌙 Cerrados ahora", clase: "hz-cerrado" }
+];
+
 // Distintivos listos para las tarjetas (mismos colores en todo el sitio)
 const ESTILO_HORARIO = {
   abierto: { icono: "🟢", clase: "hz-abierto" },

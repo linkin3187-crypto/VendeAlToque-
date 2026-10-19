@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>Mi tienda | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=65">
+  <link rel="stylesheet" href="styles.css?v=66">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -73,7 +73,8 @@
           </div>
           <label class="block text-xs font-bold text-slate-500">Horario
             <input id="mt-hor" maxlength="120" placeholder="Lun-Sáb 8:00-20:00, Dom 9-14" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
-            <span class="font-normal text-slate-400">Con este formato mostramos «Abierto ahora» automáticamente.</span></label>
+            <span class="font-normal text-slate-400">Con este formato mostramos «Abierto ahora» automáticamente.</span>
+            <span id="mt-hor-estado" class="block mt-1 font-semibold" aria-live="polite"></span></label>
           <div class="block text-xs font-bold text-slate-500">📷 Fotos de tu negocio <span class="font-normal">(hasta 5: fachada, interior, productos; la primera es la portada)</span>
             <div id="mt-galeria" class="mt-1 font-normal"></div></div>
           <!-- Fase 2Z.8: cómo atiende (desde casa / solo domicilios = zona aproximada y sin dirección pública) -->
@@ -130,8 +131,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=65"></script>
-  <script src="data.js?v=65"></script>
-  <script src="mi-tienda.js?v=65"></script>
+  <script src="utils.js?v=66"></script>
+  <script src="data.js?v=66"></script>
+  <script src="mi-tienda.js?v=66"></script>
 </body>
 </html>

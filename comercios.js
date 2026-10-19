@@ -111,6 +111,8 @@ function ordenarCo(lista, orden) {
   const sello = c => esComercioSalud(c) && c.saludRevisado ? 1 : 0;
   const recomendados = (x, y) => (sello(y) - sello(x)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es");
   if (orden === "cercanos" && ubicacionCo) return lista.sort((x, y) => dist(x) - dist(y));
+  // Fase 2AI (por defecto): abiertos → abren pronto → sin horario → cerrados; dentro de cada grupo, el orden recomendado
+  if (orden === "abiertos") return lista.map(c => [grupoHorario(c), c]).sort((a, b) => (a[0] - b[0]) || recomendados(a[1], b[1])).map(x => x[1]);
   if (orden === "calificacion") return lista.sort((x, y) => (puntajeCalif(y) - puntajeCalif(x)) || recomendados(x, y));
   if (orden === "nombre") return lista.sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
   return lista.sort(recomendados);
@@ -164,7 +166,7 @@ function filtrosAQueryCo() {
   if (f.abierto) p.set("abierto", "1");
   if (f.vitrina) p.set("vitrina", "1");
   if (f.salud) p.set("salud", "1");
-  if (f.orden && f.orden !== "recomendados" && f.orden !== "cercanos") p.set("orden", f.orden);
+  if (f.orden && f.orden !== "abiertos" && f.orden !== "cercanos") p.set("orden", f.orden);
   return p.toString();
 }
 
@@ -187,7 +189,19 @@ function aplicarQueryCo(qs) {
 
 function pintarListaCo() {
   const visibles = listaCo.slice(0, paginaCo * POR_PAGINA_CO);
-  $("co-lista").innerHTML = visibles.map(tarjetaComercio).join("");
+  if ($("co-orden").value === "abiertos" && listaCo.length) {
+    // Fase 2AI: títulos por grupo («🟢 Abiertos ahora (3)»…) y los cerrados un poco más tenues
+    const grupos = listaCo.map(c => grupoHorario(c));
+    const cuenta = [0, 1, 2, 3].map(g => grupos.filter(x => x === g).length);
+    let previo = -1;
+    $("co-lista").innerHTML = visibles.map((c, i) => {
+      const g = grupos[i];
+      const titulo = g !== previo ? `<h2 class="titulo-grupo-horario ${GRUPOS_HORARIO[g].clase}" data-grupo="${g}"><span>${GRUPOS_HORARIO[g].titulo} <span class="cuenta">(${cuenta[g]})</span></span></h2>` : "";
+      previo = g;
+      const t = tarjetaComercio(c);
+      return titulo + (g === 3 ? t.replace('<article class="', '<article class="tarjeta-cerrada ') : t);
+    }).join("");
+  } else $("co-lista").innerHTML = visibles.map(tarjetaComercio).join("");
   const restantes = listaCo.length - visibles.length;
   $("co-mas").classList.toggle("hidden", restantes <= 0);
   if (restantes > 0) $("co-btn-mas").textContent = `Ver ${Math.min(POR_PAGINA_CO, restantes)} comercios más (${restantes} restantes)`;
@@ -214,7 +228,7 @@ function limpiarCo() {
   $("co-buscar").value = "";
   $("co-depto").value = ""; llenarMunisCo("");
   ["co-nivel", "co-calif"].forEach(id => { $(id).value = ""; });
-  $("co-orden").value = "recomendados";
+  $("co-orden").value = "abiertos";
   $("co-abierto").checked = false; $("co-vitrina").checked = false; $("co-salud").checked = false;
   tipoActivo = "todos";
   ubicacionCo = null;
@@ -227,7 +241,7 @@ async function cercaDeMiCo() {
   const b = $("co-cerca");
   if (b.getAttribute("aria-pressed") === "true") {
     ubicacionCo = null; b.setAttribute("aria-pressed", "false");
-    if ($("co-orden").value === "cercanos") $("co-orden").value = "recomendados";
+    if ($("co-orden").value === "cercanos") $("co-orden").value = "abiertos";
     $("co-nota-cerca").classList.add("hidden");
     pintar(); return;
   }
@@ -318,7 +332,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("co-depto").addEventListener("change", () => { llenarMunisCo(""); pintar(); });
   ["co-muni", "co-nivel", "co-calif", "co-abierto", "co-vitrina", "co-salud"].forEach(id => $(id).addEventListener("change", pintar));
   $("co-orden").addEventListener("change", async () => {
-    if ($("co-orden").value === "cercanos" && !ubicacionCo) { $("co-orden").value = "recomendados"; await cercaDeMiCo(); return; }
+    if ($("co-orden").value === "cercanos" && !ubicacionCo) { $("co-orden").value = "abiertos"; await cercaDeMiCo(); return; }
     pintar();
   });
   $("co-tipos").addEventListener("click", e => {

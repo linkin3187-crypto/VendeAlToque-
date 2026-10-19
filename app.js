@@ -261,7 +261,7 @@ function comerciosFiltrados() {
   // Con «Comercios cerca de mí»: los más cercanos primero. Sin él: verificados, con productos y por nombre.
   return comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio))
     .sort((x, y) => ubicacionComercios ? distanciaComercio(x) - distanciaComercio(y)
-      : (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));
+      : (grupoHorario(x) - grupoHorario(y)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));   // fase 2AI: abiertos primero
 }
 
 // Categorías (con cuántos hay) y municipios de esta sección
@@ -298,7 +298,7 @@ function pintarFiltrosComercios() {
   sel.classList.toggle("hidden", ids.length < 2);
   $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
   $("comercios-orden").textContent = ubicacionComercios ? "📍 Ordenados por cercanía a ti (de toda la zona)"
-    : "Verificados primero · toca «Comercios cerca de mí» para ordenarlos por cercanía";
+    : "🟢 Abiertos primero, luego verificados · toca «Comercios cerca de mí» para ordenarlos por cercanía";
 }
 
 function tarjetaComercioFeed(c) {

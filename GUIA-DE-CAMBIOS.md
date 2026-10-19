@@ -685,3 +685,19 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - La pestaña del navegador y el ícono del celular siguen con el oficial.
 
 **Revertir:** PR → **Revert**.
+
+## Fase 2AG · Vitrina gratis de 10 productos + logos sin fondo blanco
+
+**SQL:** `supabase/36_vitrina_10.sql` — **antes** de fusionar. Debe mostrar `cupo = true | tope_10 = true | tiendas_sobre_10 = 0`.
+
+**Cambian:** `data.js`, `mi-tienda.*`, `index.html`, `editar-inicio.*`, todas las páginas (caché `?v=64`).
+
+- **Vitrina = 10 productos gratis** (antes 20). Lo hace cumplir el **servidor** (trigger `productos_limite`), no la pantalla: aunque alguien lo intente desde la consola, el producto 11 se rechaza.
+- **Cupo por tienda:** columna `comercios.limite_productos` (10). Solo tú la cambias. Para darle 20 a una tienda (plan futuro), en el SQL Editor: `update comercios set limite_productos = 20 where id = <id>;`
+- Tiendas con más de 10 ya cargados (hoy ninguna) conservan lo suyo; no pueden agregar más.
+- Textos: inicio «muestra hasta 10 productos gratis» y Mi tienda «Hasta 10 productos gratis» + contador «N de 10».
+- **Logos con fondo blanco:** al subir (Agregar o 🖼️ Cambiar imagen) se quita el fondo claro que toca los bordes, se recorta y se centra. El blanco interno (ej. el ✔) se conserva. «Recortar» viene desmarcado y se apaga solo si se quitó el fondo. La vista previa se ve sobre el color de la barra.
+- **Logos ya subidos con fondo blanco:** vuelve a subirlos con **🖼️ Cambiar imagen** (la imagen guardada no se modifica sola).
+
+**Revertir:** PR → **Revert**. El SQL puede quedarse (10 es solo el número; para volver a 20: `alter table comercios alter column limite_productos set default 20; update comercios set limite_productos = 20;`).
+

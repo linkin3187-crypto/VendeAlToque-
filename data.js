@@ -753,7 +753,8 @@ function filaAComercio(r) {
     // Calificaciones (fase 2P): promedio y cuántas. Si aún no existen las columnas, quedan en 0.
     calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0,
     // Fase 2AB.2b: visto bueno sanitario (droguerías y naturistas). Sin el SQL 31, la columna no existe.
-    saludRevisado: r.salud_revisado_en || null, tieneSelloSalud: "salud_revisado_en" in r
+    saludRevisado: r.salud_revisado_en || null, tieneSelloSalud: "salud_revisado_en" in r,
+    limiteProductos: Number.isInteger(r.limite_productos) ? r.limite_productos : LIMITE_PRODUCTOS_GRATIS   // fase 2AG
   };
 }
 
@@ -2507,7 +2508,46 @@ async function borrarLogoPagina(id) {
   const { error } = await sb.from("logos_pagina").delete().eq("id", id);
   if (error) throw error;
 }
-// Prepara la imagen subida: máx. 512 px por lado, conserva la transparencia (WebP o PNG)
+// Fase 2AG: vitrina gratis = 10 productos (cada tienda trae su cupo en comercios.limite_productos; el servidor lo hace cumplir)
+const LIMITE_PRODUCTOS_GRATIS = 10;
+// Fase 2AG: si la imagen trae fondo blanco o gris claro (típico de logos hechos con IA), se vuelve transparente.
+// Solo se borra el fondo que TOCA los bordes: el blanco de adentro (ej. el ✔ del logo) se conserva.
+function quitarFondoClaro(ctx, w, h) {
+  const im = ctx.getImageData(0, 0, w, h), d = im.data;
+  const claro = i => d[i + 3] > 200 && Math.min(d[i], d[i + 1], d[i + 2]) > 205 && (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2])) < 28;
+  const esquinas = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + w - 1) * 4].filter(claro).length;
+  if (esquinas < 3) return false;                       // ya es transparente o el fondo no es claro: no se toca
+  const fondo = new Uint8Array(w * h), cola = new Int32Array(w * h);
+  let ini = 0, fin = 0;
+  const meter = p => { if (!fondo[p] && claro(p * 4)) { fondo[p] = 1; cola[fin++] = p; } };
+  for (let x = 0; x < w; x++) { meter(x); meter((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { meter(y * w); meter(y * w + w - 1); }
+  while (ini < fin) {
+    const p = cola[ini++], x = p % w, y = (p - x) / w;
+    if (x > 0) meter(p - 1); if (x < w - 1) meter(p + 1); if (y > 0) meter(p - w); if (y < h - 1) meter(p + w);
+  }
+  for (let p = 0; p < w * h; p++) {
+    if (fondo[p]) { d[p * 4 + 3] = 0; continue; }
+    // borde suave: un píxel claro pegado al fondo queda semitransparente
+    const x = p % w, y = (p - x) / w;
+    const vecino = (x > 0 && fondo[p - 1]) || (x < w - 1 && fondo[p + 1]) || (y > 0 && fondo[p - w]) || (y < h - 1 && fondo[p + w]);
+    if (vecino) { const m = Math.min(d[p * 4], d[p * 4 + 1], d[p * 4 + 2]); if (m > 170) d[p * 4 + 3] = Math.round(255 * (255 - m) / 85); }
+  }
+  ctx.putImageData(im, 0, 0);
+  return true;
+}
+// Recorta lo transparente que sobra alrededor y deja la imagen cuadrada y centrada
+function recortarTransparente(c) {
+  const ctx = c.getContext("2d"), { width: w, height: h } = c, d = ctx.getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 12) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return c;
+  const lado = Math.max(x1 - x0 + 1, y1 - y0 + 1), n = document.createElement("canvas");
+  n.width = n.height = lado;
+  n.getContext("2d").drawImage(c, x0, y0, x1 - x0 + 1, y1 - y0 + 1, Math.round((lado - (x1 - x0 + 1)) / 2), Math.round((lado - (y1 - y0 + 1)) / 2), x1 - x0 + 1, y1 - y0 + 1);
+  return n;
+}
+// Prepara la imagen subida: quita el fondo claro, recorta lo sobrante, máx. 512 px, conserva la transparencia (WebP o PNG)
 function prepararImagenLogo(archivo) {
   return new Promise((resolver, rechazar) => {
     const lector = new FileReader();
@@ -2517,12 +2557,15 @@ function prepararImagenLogo(archivo) {
       img.onerror = () => rechazar(new Error("Ese archivo no es una imagen válida"));
       img.onload = () => {
         const k = Math.min(1, 512 / Math.max(img.width, img.height));
-        const c = document.createElement("canvas");
+        let c = document.createElement("canvas");
         c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        const sinFondo = quitarFondoClaro(ctx, c.width, c.height);
+        c = recortarTransparente(c);
         let url = c.toDataURL("image/webp", 0.92);
         if (!url.startsWith("data:image/webp")) url = c.toDataURL("image/png");
-        resolver({ dataUrl: url, ancho: img.width, alto: img.height });
+        resolver({ dataUrl: url, ancho: c.width, alto: c.height, sinFondo });
       };
       img.src = lector.result;
     };

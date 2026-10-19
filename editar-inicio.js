@@ -431,7 +431,7 @@ async function pintarLogosAdmin() {
 async function subirImagenLogo(archivo) {
   const r = await prepararImagenLogo(archivo);
   const [url] = await subirFotos([r.dataUrl]);
-  return { url, cuadrada: Math.abs(r.ancho - r.alto) / Math.max(r.ancho, r.alto) < 0.1, chica: Math.max(r.ancho, r.alto) < 256 };
+  return { url, sinFondo: r.sinFondo, cuadrada: Math.abs(r.ancho - r.alto) / Math.max(r.ancho, r.alto) < 0.1, chica: Math.max(r.ancho, r.alto) < 256 };
 }
 async function accionLogo(e) {
   const fila = e.target.closest("[data-logo]");
@@ -459,8 +459,9 @@ async function cambiarImagenLogo(e) {
   try {
     mostrarToast("Subiendo imagen…");
     const r = await subirImagenLogo(inp.files[0]);
-    await guardarLogoPagina({ id: l.id, imagen_url: r.url });
-    mostrarToast(r.cuadrada ? "🖼️ Imagen cambiada" : "🖼️ Imagen cambiada (ojo: no es cuadrada, puede verse recortada)");
+    // Si le quitamos el fondo blanco, no tiene sentido recortarla en cuadro (cortaría adornos de los bordes)
+    await guardarLogoPagina(r.sinFondo ? { id: l.id, imagen_url: r.url, recortar: false } : { id: l.id, imagen_url: r.url });
+    mostrarToast(r.sinFondo ? "🖼️ Imagen cambiada (le quitamos el fondo blanco)" : "🖼️ Imagen cambiada");
     await pintarLogosAdmin(); await actualizarLogoPagina();
   } catch (err) { mostrarToast(mensajeError(err), "error"); }
 }
@@ -473,28 +474,27 @@ async function agregarLogo() {
   const b = $("logo-agregar"); b.disabled = true; b.textContent = "Subiendo…";
   try {
     const r = await subirImagenLogo(archivo);
-    await guardarLogoPagina({ nombre, imagen_url: r.url, desde, hasta, recortar: $("logo-recortar").checked, animar: $("logo-animar").checked, usar_ahora: $("logo-ahora").checked });
-    mostrarToast("✅ Logo agregado" + (r.cuadrada ? "" : " (no es cuadrado: revisa cómo se ve)"));
+    await guardarLogoPagina({ nombre, imagen_url: r.url, desde, hasta, recortar: $("logo-recortar").checked && !r.sinFondo, animar: $("logo-animar").checked, usar_ahora: $("logo-ahora").checked });
+    mostrarToast("✅ Logo agregado" + (r.sinFondo ? " (le quitamos el fondo blanco)" : ""));
     ["logo-nombre", "logo-archivo", "logo-desde", "logo-hasta"].forEach(id => { $(id).value = ""; });
     $("logo-ahora").checked = false; $("logo-previa").classList.add("hidden"); $("logo-aviso").textContent = "";
     await pintarLogosAdmin(); await actualizarLogoPagina();
   } catch (err) { mostrarToast(mensajeError(err), "error"); }
   finally { b.disabled = false; b.textContent = "➕ Agregar"; }
 }
-function previaLogoNuevo() {
+async function previaLogoNuevo() {
   const f = $("logo-archivo").files[0];
-  if (!f) { $("logo-previa").classList.add("hidden"); return; }
-  const url = URL.createObjectURL(f);
-  const im = new Image();
-  im.onload = () => {
+  if (!f) { $("logo-previa").classList.add("hidden"); $("logo-aviso").textContent = ""; return; }
+  try {
+    // Mostramos la imagen YA procesada: así ves cómo quedará (sin fondo blanco, centrada)
+    const r = await prepararImagenLogo(f);
     const avisos = [];
-    if (Math.abs(im.width - im.height) / Math.max(im.width, im.height) >= 0.1) avisos.push("No es cuadrada: se verá ajustada.");
-    if (Math.max(im.width, im.height) < 256) avisos.push("Es pequeña: puede verse borrosa (mejor 512 px o más).");
+    if (r.sinFondo) avisos.push("✓ Le quitamos el fondo blanco.");
+    if (Math.max(r.ancho, r.alto) < 256) avisos.push("Es pequeña: puede verse borrosa (mejor 512 px o más).");
     $("logo-aviso").textContent = avisos.join(" ");
-  };
-  im.src = url;
-  $("logo-previa").src = url; $("logo-previa").classList.remove("hidden");
-  $("logo-previa").classList.toggle("rounded-[24%]", $("logo-recortar").checked);
+    $("logo-previa").src = r.dataUrl; $("logo-previa").classList.remove("hidden");
+    $("logo-previa").classList.toggle("rounded-[24%]", $("logo-recortar").checked && !r.sinFondo);
+  } catch (err) { $("logo-aviso").textContent = mensajeError(err); }
 }
 
 // ---------- ⭐ Selección del día (fase 2AD) ----------

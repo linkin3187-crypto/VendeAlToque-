@@ -378,7 +378,7 @@ let otrosPend = { negocios: null, solicitudes: null, reportes: null, comercios: 
 function tarjetaPend(icono, n, texto, atributos, href) {
   const cls = "text-left border rounded-xl p-3 " + (n > 0 ? "border-indigo-200 bg-indigo-50 hover:border-indigo-400" : "border-slate-200 bg-slate-50 text-slate-400");
   const cuerpo = `<span class="text-xl">${icono}</span><span class="block text-2xl font-black ${n > 0 ? "text-indigo-900" : ""}">${n === null ? "…" : n}</span><span class="block text-xs font-semibold">${texto}</span>`;
-  return href ? `<a href="${href}" class="${cls} no-underline text-inherit">${cuerpo}</a>` : `<button type="button" ${atributos} class="${cls}">${cuerpo}</button>`;
+  return href ? `<a href="${href}" class="${cls} no-underline ${n > 0 ? "text-inherit" : ""}">${cuerpo}</a>` : `<button type="button" ${atributos} class="${cls}">${cuerpo}</button>`;
 }
 
 function pintarPendientes() {

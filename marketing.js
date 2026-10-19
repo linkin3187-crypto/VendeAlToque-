@@ -120,7 +120,9 @@ let sinSQL41 = false;         // falta correr supabase/41_campanas.sql
 let textosBD = null;          // tus versiones de los textos guardadas en la base
 let nombreTocado = false;     // si escribió el nombre de la campaña, no se lo cambiamos
 let productoPendiente = "";   // producto a elegir cuando termine de cargar la lista
-alCargarLogo(() => programarDibujo());
+if (typeof alCargarLogo === "function") alCargarLogo(() => programarDibujo());
+// Si piezas.js no llegó (celular con archivos mezclados), el panel igual funciona
+const ctaCanal = c => (typeof ctaPorCanal === "function" ? ctaPorCanal(c) : "👉 Ingresa aquí");
 
 // Carpeta donde vive la página (sirve igual en GitHub Pages o en un dominio propio)
 function baseSitio() { return location.origin + location.pathname.replace(/[^/]*$/, ""); }
@@ -290,6 +292,7 @@ function pintarTexto() {
 let dibujoPendiente = 0;
 function programarDibujo() { cancelAnimationFrame(dibujoPendiente); dibujoPendiente = requestAnimationFrame(() => dibujar()); }
 function dibujar() {
+  if (typeof dibujarPieza !== "function") return Promise.resolve();   // piezas.js no cargó
   return dibujarPieza($("mk-lienzo"), {
     formato: $("mk-formato").value, url: construirEnlace(), verQr: $("mk-ver-qr").checked,
     fondo: $("mk-color-fondo").value, cta: $("mk-color-cta").value, foto: fotoFondo,
@@ -314,7 +317,7 @@ function rellenarTarjeta() {
   if (destino === "directorio" && $("mk-tipo").value) titulo = nombreParaTexto().replace(/^./, c => c.toUpperCase()) + " cerca de ti";
   $("mk-titulo").value = titulo;
   $("mk-sub").value = destino === "producto" && nombreObjetivo ? "En " + nombreObjetivo + ". " + d.sub : d.sub;
-  if (!ctaTocado) $("mk-cta").value = ctaPorCanal(canalActual());
+  if (!ctaTocado) $("mk-cta").value = ctaCanal(canalActual());
   iconoElegido = "";
   pintarIconos();
 }
@@ -789,7 +792,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ["rf-destino", "mk-canal"].forEach(id => $(id).addEventListener("change", () => {
     if (!codigoTocado) $("rf-codigo").value = codigoSugerido();
     if (id === "rf-destino") { textoEditado = false; nombreObjetivo = ""; rellenarTarjeta(); buscarNombre(); }
-    else { textoEditado = false; if (!ctaTocado) $("mk-cta").value = ctaPorCanal(canalActual()); }
+    else { textoEditado = false; if (!ctaTocado) $("mk-cta").value = ctaCanal(canalActual()); }
     pintarEnlace();
   }));
   $("mk-zona").addEventListener("input", () => { if (!codigoTocado) $("rf-codigo").value = codigoSugerido(); textoEditado = false; pintarEnlace(); });
@@ -820,7 +823,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Tarjeta
   $("mk-plantilla").addEventListener("change", () => {
-    const p = PLANTILLAS[$("mk-plantilla").value] || PLANTILLAS.morado;
+    const PL = typeof PLANTILLAS !== "undefined" ? PLANTILLAS : { morado: { fondo: "#4c1d95", cta: "#f6c51a" } };
+    const p = PL[$("mk-plantilla").value] || PL.morado;
     $("mk-color-fondo").value = p.fondo; $("mk-color-cta").value = p.cta; programarDibujo();
   });
   ["mk-formato", "mk-titulo", "mk-sub", "mk-cta", "mk-color-fondo", "mk-color-cta", "mk-ver-logo", "mk-ver-qr", "mk-ver-link", "mk-ver-cta"]

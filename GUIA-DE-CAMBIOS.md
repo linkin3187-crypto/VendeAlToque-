@@ -822,3 +822,14 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **+18:** se comparte sin foto de fondo.
 
 **Revertir:** PR → **Revert** (no hay SQL).
+
+## Fase 2AP-3b · Rapidez y rescate de carga
+
+**SQL:** ninguno. **Cambian:** todas las páginas (`tw.css` en vez de `cdn.tailwindcss.com`), nuevos `tw.css`, `herramientas/tailwind_css.py` y `herramientas/tailwind-play-3.4.js`, `utils.js` (versión + rescate), `marketing.js`, `tienda.*`, `admin-comercios.js`; caché `?v=74`.
+
+- **Por qué era lento:** cada página bajaba el Tailwind «de prueba» (400 KB) y el celular armaba los estilos al abrir. Ahora los estilos ya vienen hechos en `tw.css` (43 KB, queda guardado en el celular).
+- **Regla nueva al cambiar el diseño:** si agregas clases de Tailwind nuevas, corre `python3 herramientas/tailwind_css.py` (las pruebas avisan si se olvidó).
+- **Regla nueva al publicar:** subir a la vez el `?v=` de las páginas y `VERSION_SITIO` en `utils.js` (mismo número).
+- **Por qué el Centro de marketing se quedaba «Cargando…»:** la página guardada en el celular era la anterior y pedía archivos con otro número de versión; al mezclarse, faltaba `piezas.js`. Ahora (a) el panel abre aunque falte ese archivo y (b) la página detecta la mezcla y se recarga sola.
+
+**Revertir:** PR → **Revert**.

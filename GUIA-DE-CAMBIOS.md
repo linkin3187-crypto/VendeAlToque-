@@ -670,3 +670,18 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - El sorteo cambia **cada 4 horas** (6 veces al día): otros anuncios y otro orden. Los fijados salen primero, también en orden variable.
 
 **Revertir:** PR → **Revert**.
+
+## Fase 2AF · Logo editable: oficial y de temporada
+
+**SQL:** `supabase/35_logos_pagina.sql` — antes o después de fusionar (sin él se ve el logo oficial). Debe mostrar `logos = 1 | oficial = true`.
+
+**Cambian:** todas las páginas (`*.html`), `img/` (logo oficial recortado y los íconos de celular desde tu imagen), `styles.css`, `utils.js`, `data.js`, `editar-inicio.*`. Caché `?v=63`.
+
+- **Logo oficial = tu imagen** (`img/logo-merkap.png`), recortada en su cuadro redondeado y con fondo transparente. Si alguna vez no carga, aparece el logo vectorial de respaldo.
+- **Editar inicio → 🎨 Logo de la página:** agrega logos (nombre, imagen, fechas), «Usar ahora», recortar, movimiento, encender/apagar, cambiar imagen y borrar. El oficial no se puede borrar, pero sí cambiar su imagen.
+- **Cuál se ve:** 1) el marcado «Usar ahora»; 2) uno de temporada dentro de sus fechas; 3) el oficial. Al terminar las fechas vuelve solo.
+- **Movimientos:** la entrada de la primera visita y el saludo en cada página funcionan con cualquier logo; se pueden apagar por logo.
+- La página **recuerda** el logo vigente: al abrir otra página aparece directo, sin parpadeo.
+- La pestaña del navegador y el ícono del celular siguen con el oficial.
+
+**Revertir:** PR → **Revert**.

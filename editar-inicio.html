@@ -8,12 +8,12 @@
   <title>Editar inicio y buscador | Merkap</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=62">
+  <link rel="stylesheet" href="styles.css?v=63">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
     <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
-      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><svg class="marca-ico" viewBox="0 0 100 100" aria-hidden="true"><rect x="1" y="4" width="98" height="95" rx="23" fill="#D4A000"/><rect x="1" y="1" width="98" height="95" rx="23" fill="#F6C51A"/><path d="M26 73V30q0-5 5-1.5L49 50M47 47l21-17q6-3.5 9.5 1V73" fill="none" stroke="#4C1D95" stroke-width="13.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 55l10.5-8 15 19C57 47 71 30 91 19 75 33 62 52 48.5 80z" fill="#3B1577" transform="translate(-1.2 1.6)"/><path d="M21 55l10.5-8 15 19C57 47 71 30 91 19 75 33 62 52 48.5 80z" fill="#fff"/></svg><span class="marca-txt">Merk<b>ap</b></span></span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Editar inicio</span></a>
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Editar inicio</span></a>
       <nav class="flex gap-3 text-sm text-indigo-100">
         <a href="moderacion.html" class="hover:text-white">🛡️ Moderación</a>
         <a href="index.html" class="hover:text-white">← Inicio</a>
@@ -31,11 +31,46 @@
 
     <div id="ei-panel" class="hidden space-y-8">
       <nav class="flex flex-wrap gap-2 text-sm" aria-label="Secciones">
+        <a href="#logo-editor" class="b-pestana">🎨 Logo</a>
         <a href="#carrusel-editor" class="b-pestana">🎠 Carrusel</a>
         <a href="#accesos-editor" class="b-pestana">🧩 Cuadros de acceso</a>
         <a href="#seleccion-editor" class="b-pestana">⭐ Selección del día</a>
         <a href="#entrenar" class="b-pestana">🧠 Entrenar el buscador</a>
       </nav>
+
+      <!-- 0) LOGO DE LA PÁGINA (fase 2AF) -->
+      <section id="logo-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">🎨 Logo de la página</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">El logo del encabezado de todas las páginas. Sube logos de temporada (Navidad, Halloween, Amor y amistad…) con fechas: al terminar, vuelve solo el <b>oficial</b>. «Usar ahora» lo pone ya mismo. Ideal: imagen <b>cuadrada</b> de 512 × 512 px o más, PNG con fondo transparente; si trae fondo blanco, deja marcado «Recortar».</p>
+        <div class="logo-vista mb-3">
+          <span class="logo-vista-barra"><img id="logo-vista-img" src="img/logo-merkap.png" alt="" class="marca-ico"><span class="marca-txt">Merk<b>ap</b></span></span>
+          <span id="logo-vista-txt" class="text-xs text-slate-600"></span>
+        </div>
+        <div id="logo-lista" class="space-y-2"></div>
+        <details class="mt-4 border border-indigo-200 rounded-xl p-3 bg-indigo-50/40">
+          <summary class="font-bold text-indigo-900 cursor-pointer">➕ Agregar un logo</summary>
+          <div class="grid sm:grid-cols-2 gap-3 mt-3">
+            <label class="block text-xs font-bold text-slate-500">Nombre *
+              <input id="logo-nombre" maxlength="40" placeholder="Ej. Navidad 2026" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-sm font-normal"></label>
+            <label class="block text-xs font-bold text-slate-500">Imagen *
+              <input id="logo-archivo" type="file" accept="image/png,image/webp,image/jpeg" class="mt-0.5 w-full text-sm font-normal"></label>
+            <label class="block text-xs font-bold text-slate-500">Desde (opcional)
+              <input id="logo-desde" type="date" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-sm font-normal"></label>
+            <label class="block text-xs font-bold text-slate-500">Hasta (opcional)
+              <input id="logo-hasta" type="date" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-sm font-normal"></label>
+          </div>
+          <div class="flex flex-wrap gap-4 mt-3 text-sm">
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-recortar" checked> Recortar en cuadro redondeado</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-animar" checked> Saludo al abrir (movimiento)</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="logo-ahora"> Usar ahora</label>
+          </div>
+          <div class="flex items-center gap-3 mt-3">
+            <img id="logo-previa" alt="" class="hidden w-16 h-16 rounded-xl border border-slate-200 object-contain bg-slate-100">
+            <span id="logo-aviso" class="text-xs text-amber-700"></span>
+            <button type="button" id="logo-agregar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-60">➕ Agregar</button>
+          </div>
+        </details>
+      </section>
 
       <!-- 1) CARRUSEL -->
       <section id="carrusel-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
@@ -102,12 +137,12 @@
   <datalist id="dl-comercios"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=62"></script>
-  <script src="data.js?v=62"></script>
-  <script src="buscador.js?v=62"></script>
-  <script src="iconos.js?v=62"></script>
+  <script src="utils.js?v=63"></script>
+  <script src="data.js?v=63"></script>
+  <script src="buscador.js?v=63"></script>
+  <script src="iconos.js?v=63"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=62"></script>
+  <script src="editar-inicio.js?v=63"></script>
 </body>
 </html>

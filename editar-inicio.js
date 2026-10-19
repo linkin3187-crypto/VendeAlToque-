@@ -389,6 +389,114 @@ function probarBuscador() {
 }
 
 // ---------- Arranque ----------
+// ---------- 🎨 Logo de la página (fase 2AF) ----------
+let logosAdmin = [], logoNuevo = null;
+const fechaCorta2 = f => f ? new Date(f + "T12:00:00").toLocaleDateString("es-CO", { day: "numeric", month: "short" }) : "";
+function estadoLogo(l, vig) {
+  if (vig && l.id === vig.id) return '<span class="sel-chip ahora">✅ En uso ahora</span>';
+  if (l.activo === false) return '<span class="sel-chip">⏸ Apagado</span>';
+  if (l.usar_ahora) return '<span class="sel-chip ahora">Usar ahora</span>';
+  if (l.oficial) return '<span class="sel-chip">⭐ Oficial (cuando no hay otro)</span>';
+  if (l.desde || l.hasta) return `<span class="sel-chip fijo">📅 ${fechaCorta2(l.desde) || "…"} → ${fechaCorta2(l.hasta) || "…"}</span>`;
+  return '<span class="sel-chip">Sin fechas (usa «Usar ahora» o pon fechas)</span>';
+}
+async function pintarLogosAdmin() {
+  try { logosAdmin = await cargarLogosPagina(); }
+  catch (e) { $("logo-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-3">Se activa al ejecutar supabase/35_logos_pagina.sql. Mientras tanto se ve el logo oficial.</p>'; return; }
+  const vig = logoVigente(logosAdmin);
+  $("logo-vista-img").src = vig.imagen_url;
+  $("logo-vista-img").classList.toggle("recortar", !!vig.recortar);
+  $("logo-vista-txt").textContent = `Así se ve hoy: «${vig.nombre}»`;
+  $("logo-lista").innerHTML = logosAdmin.map(l => `<div class="logo-fila" data-logo="${l.id}">
+      <img src="${esc(urlSegura(l.imagen_url) || l.imagen_url)}" alt="" class="logo-mini ${l.recortar ? "recortar" : ""}">
+      <div class="min-w-0 flex-1">
+        <p class="font-bold text-sm">${esc(l.nombre)} ${estadoLogo(l, vig)}</p>
+        <div class="flex flex-wrap items-center gap-2 mt-1 text-xs">
+          ${l.oficial ? "" : `<label>Desde <input type="date" data-l="desde" value="${esc(l.desde || "")}" class="border border-slate-300 rounded px-1 py-0.5"></label>
+          <label>Hasta <input type="date" data-l="hasta" value="${esc(l.hasta || "")}" class="border border-slate-300 rounded px-1 py-0.5"></label>`}
+          <label class="flex items-center gap-1"><input type="checkbox" data-l="recortar" ${l.recortar ? "checked" : ""}> Recortar</label>
+          <label class="flex items-center gap-1"><input type="checkbox" data-l="animar" ${l.animar !== false ? "checked" : ""}> Movimiento</label>
+          ${l.oficial ? "" : `<label class="flex items-center gap-1"><input type="checkbox" data-l="activo" ${l.activo !== false ? "checked" : ""}> Encendido</label>`}
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 justify-end w-full sm:w-auto">
+        ${l.usar_ahora ? '<button type="button" data-lacc="no-ahora" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white">Dejar de usar</button>'
+                       : (l.oficial ? "" : '<button type="button" data-lacc="ahora" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-900">Usar ahora</button>')}
+        <label class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white cursor-pointer">🖼️ Cambiar imagen<input type="file" accept="image/png,image/webp,image/jpeg" data-lacc-archivo class="sr-only"></label>
+        <button type="button" data-lacc="guardar" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">💾 Guardar</button>
+        ${l.oficial ? "" : '<button type="button" data-lacc="borrar" class="text-xs text-red-600 hover:underline px-1">Borrar</button>'}
+      </div>
+    </div>`).join("");
+}
+async function subirImagenLogo(archivo) {
+  const r = await prepararImagenLogo(archivo);
+  const [url] = await subirFotos([r.dataUrl]);
+  return { url, cuadrada: Math.abs(r.ancho - r.alto) / Math.max(r.ancho, r.alto) < 0.1, chica: Math.max(r.ancho, r.alto) < 256 };
+}
+async function accionLogo(e) {
+  const fila = e.target.closest("[data-logo]");
+  if (!fila) return;
+  const l = logosAdmin.find(x => x.id === Number(fila.dataset.logo));
+  const b = e.target.closest("[data-lacc]");
+  if (!l || !b) return;
+  const v = k => fila.querySelector(`[data-l="${k}"]`);
+  b.disabled = true;
+  try {
+    if (b.dataset.lacc === "borrar") { if (!confirm(`¿Borrar el logo «${l.nombre}»?`)) { b.disabled = false; return; } await borrarLogoPagina(l.id); mostrarToast("🗑️ Logo borrado"); }
+    else if (b.dataset.lacc === "ahora" || b.dataset.lacc === "no-ahora") { await guardarLogoPagina({ id: l.id, usar_ahora: b.dataset.lacc === "ahora", activo: true }); mostrarToast(b.dataset.lacc === "ahora" ? "✅ Este logo se ve ahora en toda la página" : "Listo: vuelve el logo según las fechas o el oficial"); }
+    else {
+      const cambios = { id: l.id, recortar: v("recortar").checked, animar: v("animar").checked };
+      if (!l.oficial) { cambios.desde = v("desde").value || null; cambios.hasta = v("hasta").value || null; cambios.activo = v("activo").checked; }
+      if (cambios.desde && cambios.hasta && cambios.hasta < cambios.desde) throw new Error("La fecha «hasta» debe ser después de «desde»");
+      await guardarLogoPagina(cambios); mostrarToast("💾 Guardado");
+    }
+    await pintarLogosAdmin(); await actualizarLogoPagina();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+async function cambiarImagenLogo(e) {
+  const inp = e.target.closest("[data-lacc-archivo]"); if (!inp || !inp.files[0]) return;
+  const l = logosAdmin.find(x => x.id === Number(e.target.closest("[data-logo]").dataset.logo));
+  try {
+    mostrarToast("Subiendo imagen…");
+    const r = await subirImagenLogo(inp.files[0]);
+    await guardarLogoPagina({ id: l.id, imagen_url: r.url });
+    mostrarToast(r.cuadrada ? "🖼️ Imagen cambiada" : "🖼️ Imagen cambiada (ojo: no es cuadrada, puede verse recortada)");
+    await pintarLogosAdmin(); await actualizarLogoPagina();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+}
+async function agregarLogo() {
+  const nombre = $("logo-nombre").value.trim(), archivo = $("logo-archivo").files[0];
+  if (nombre.length < 2) { mostrarToast("Escribe un nombre (ej. Navidad 2026)", "error"); return; }
+  if (!archivo) { mostrarToast("Elige la imagen del logo", "error"); return; }
+  const desde = $("logo-desde").value || null, hasta = $("logo-hasta").value || null;
+  if (desde && hasta && hasta < desde) { mostrarToast("La fecha «hasta» debe ser después de «desde»", "error"); return; }
+  const b = $("logo-agregar"); b.disabled = true; b.textContent = "Subiendo…";
+  try {
+    const r = await subirImagenLogo(archivo);
+    await guardarLogoPagina({ nombre, imagen_url: r.url, desde, hasta, recortar: $("logo-recortar").checked, animar: $("logo-animar").checked, usar_ahora: $("logo-ahora").checked });
+    mostrarToast("✅ Logo agregado" + (r.cuadrada ? "" : " (no es cuadrado: revisa cómo se ve)"));
+    ["logo-nombre", "logo-archivo", "logo-desde", "logo-hasta"].forEach(id => { $(id).value = ""; });
+    $("logo-ahora").checked = false; $("logo-previa").classList.add("hidden"); $("logo-aviso").textContent = "";
+    await pintarLogosAdmin(); await actualizarLogoPagina();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); }
+  finally { b.disabled = false; b.textContent = "➕ Agregar"; }
+}
+function previaLogoNuevo() {
+  const f = $("logo-archivo").files[0];
+  if (!f) { $("logo-previa").classList.add("hidden"); return; }
+  const url = URL.createObjectURL(f);
+  const im = new Image();
+  im.onload = () => {
+    const avisos = [];
+    if (Math.abs(im.width - im.height) / Math.max(im.width, im.height) >= 0.1) avisos.push("No es cuadrada: se verá ajustada.");
+    if (Math.max(im.width, im.height) < 256) avisos.push("Es pequeña: puede verse borrosa (mejor 512 px o más).");
+    $("logo-aviso").textContent = avisos.join(" ");
+  };
+  im.src = url;
+  $("logo-previa").src = url; $("logo-previa").classList.remove("hidden");
+  $("logo-previa").classList.toggle("rounded-[24%]", $("logo-recortar").checked);
+}
+
 // ---------- ⭐ Selección del día (fase 2AD) ----------
 function pintarSeleccionAdmin() {
   const ahora = Date.now();
@@ -447,6 +555,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!esModerador()) { $("ei-sin-permiso").classList.remove("hidden"); return; }
   $("ei-panel").classList.remove("hidden");
   await Promise.all([cargarComercios(), cargarCategoriasAnuncio(), cargarAnuncios()]);
+  // Logo de la página (fase 2AF)
+  pintarLogosAdmin();
+  $("logo-lista").addEventListener("click", accionLogo);
+  $("logo-lista").addEventListener("change", cambiarImagenLogo);
+  $("logo-agregar").addEventListener("click", agregarLogo);
+  $("logo-archivo").addEventListener("change", previaLogoNuevo);
   // Selección del día (fase 2AD)
   pintarSeleccionAdmin();
   $("sel-admin-lista").addEventListener("click", accionSeleccionAdmin);

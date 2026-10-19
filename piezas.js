@@ -13,7 +13,9 @@ const logoPieza = new Image();
 logoPieza.src = "img/logo-merkap-512.png";
 const _alLogo = [];
 logoPieza.onload = () => _alLogo.splice(0).forEach(f => f());
-function alCargarLogo(f) { if (logoPieza.complete && logoPieza.naturalWidth) f(); else _alLogo.push(f); }
+// Siempre «después» (nunca en el mismo instante): si el logo ya estaba guardado en el celular, llamar
+// enseguida rompía marketing.js («Cannot access 'dibujoPendiente' before initialization»)
+function alCargarLogo(f) { if (logoPieza.complete && logoPieza.naturalWidth) setTimeout(f, 0); else _alLogo.push(f); }
 
 const FUENTE = 'system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
 const EMOJI = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';

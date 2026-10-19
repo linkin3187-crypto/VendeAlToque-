@@ -833,3 +833,10 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Por qué el Centro de marketing se quedaba «Cargando…»:** la página guardada en el celular era la anterior y pedía archivos con otro número de versión; al mezclarse, faltaba `piezas.js`. Ahora (a) el panel abre aunque falte ese archivo y (b) la página detecta la mezcla y se recarga sola.
 
 **Revertir:** PR → **Revert**.
+
+## Fase 2AP-3c · Arreglo del «Cargando…» del Centro de marketing
+
+**SQL:** ninguno. **Cambian:** `piezas.js` (`alCargarLogo` siempre espera un instante), `marketing.js` (el aviso de logo se registra después de declarar lo que usa), caché `?v=75` y `VERSION_SITIO = 75`.
+
+- **Qué pasaba:** si el logo ya estaba en la memoria del celular, `alCargarLogo` llamaba enseguida a `programarDibujo()`, que usa una variable (`let dibujoPendiente`) declarada más abajo en el archivo. En JavaScript, usar un `let` antes de su línea da error y el resto del archivo no corre → «Cargando…».
+- **Lección:** el aviso «⚠️ La página no terminó de cargar» con el error escrito permitió encontrarlo en minutos. Si vuelve a salir en otra página, una captura basta.

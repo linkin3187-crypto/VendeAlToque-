@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <title>Métricas | Merkap</title>
+  <meta name="robots" content="noindex">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css?v=67">
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span> <span class="hidden sm:inline text-sm font-semibold text-indigo-200">· Métricas</span></a>
+      <nav class="flex gap-3 text-sm text-indigo-100">
+        <a href="moderacion.html" class="hover:text-white">🛡️ Moderación</a>
+        <a href="index.html" class="hover:text-white">← Inicio</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <div id="me-cargando" class="text-center py-16 text-slate-500">Cargando…</div>
+    <div id="me-sin-permiso" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">🔒</div>
+      <h1 class="text-xl font-bold text-slate-700 mb-2">Solo para moderadores</h1>
+      <a href="index.html#login" class="text-indigo-600 font-medium hover:underline">Iniciar sesión</a>
+    </div>
+    <div id="me-sin-sql" class="hidden text-center py-16 max-w-lg mx-auto">
+      <div class="text-5xl mb-3">🧩</div>
+      <h1 class="text-xl font-bold text-slate-700 mb-2">Falta activar las métricas</h1>
+      <p class="text-sm text-slate-600">Ejecuta <code>supabase/37_metricas.sql</code> en Supabase → SQL Editor. Desde ese momento la página empieza a contar.</p>
+    </div>
+
+    <div id="me-panel" class="hidden">
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+        <div>
+          <h1 class="text-2xl font-black text-indigo-950">📊 Métricas del piloto</h1>
+          <p class="text-sm text-slate-500">Personas reales, sin datos personales. Tus visitas (moderador) no se cuentan. Hora de Colombia.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="me-rangos" class="me-rangos" role="group" aria-label="Periodo">
+            <button type="button" data-dias="1">Hoy</button>
+            <button type="button" data-dias="7" aria-pressed="true">7 días</button>
+            <button type="button" data-dias="30">30 días</button>
+            <button type="button" data-dias="90">90 días</button>
+          </div>
+          <button type="button" id="me-copiar" class="text-sm font-bold px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white">📋 Copiar resumen</button>
+        </div>
+      </div>
+      <p id="me-periodo" class="text-xs font-semibold text-slate-500 mb-3"></p>
+
+      <!-- La pregunta del piloto: ¿la gente llega y contacta? -->
+      <section id="me-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Resumen"></section>
+
+      <section class="grid lg:grid-cols-2 gap-4 mt-4">
+        <div class="me-caja">
+          <h2 class="me-titulo">👥 Personas distintas por día</h2>
+          <div id="me-graf-visitantes" class="me-graf"></div>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">💬 Contactos por día <span class="me-sub">(WhatsApp + Llamar + Cómo llegar)</span></h2>
+          <div id="me-graf-contactos" class="me-graf"></div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-3 gap-4 mt-4">
+        <div class="me-caja lg:col-span-2">
+          <h2 class="me-titulo">🏪 Comercios más contactados</h2>
+          <div id="me-top-comercios"></div>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">📍 Contactos por municipio</h2>
+          <div id="me-municipios"></div>
+        </div>
+        <div class="me-caja lg:col-span-2">
+          <h2 class="me-titulo">📢 Anuncios más contactados</h2>
+          <div id="me-top-anuncios"></div>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">🧭 De dónde llegan</h2>
+          <div id="me-origenes"></div>
+          <p class="text-[11px] text-slate-400 mt-2">Tip: en los stickers y mensajes usa enlaces con <code>?o=qr</code> o <code>?o=volante</code> para saber cuál funciona.</p>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">📄 Páginas más vistas</h2>
+          <div id="me-paginas"></div>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">🔎 Buscaron y no encontraron</h2>
+          <div id="me-sin-resultados"></div>
+          <a href="editar-inicio.html#entrenar" class="inline-block mt-2 text-xs font-bold text-indigo-600 hover:underline">🧠 Enseñar al buscador →</a>
+        </div>
+        <div class="me-caja">
+          <h2 class="me-titulo">🆕 Nuevos en el periodo</h2>
+          <div id="me-nuevos"></div>
+        </div>
+      </section>
+
+      <details class="me-caja mt-4 text-sm text-slate-600">
+        <summary class="font-bold text-indigo-900 cursor-pointer">❓ Qué significa cada número</summary>
+        <ul class="list-disc pl-5 mt-2 space-y-1">
+          <li><b>Personas distintas:</b> navegadores distintos que abrieron Merkap (un código al azar por navegador; si alguien usa celular y PC cuenta 2).</li>
+          <li><b>Volvieron:</b> personas que entraron en 2 días distintos o más dentro del periodo. Es la señal de que Merkap les sirve.</li>
+          <li><b>Contactos:</b> toques en WhatsApp, Llamar o Cómo llegar de un comercio o anuncio. Es la métrica que más importa: un contacto es un posible negocio.</li>
+          <li><b>Contactos por cada 100 personas:</b> de cada 100 que entran, cuántos contactan a alguien.</li>
+          <li><b>Nuevos:</b> anuncios publicados, cuentas creadas, negocios registrados y fichas reclamadas en esas fechas.</li>
+        </ul>
+      </details>
+    </div>
+  </main>
+
+  <div id="me-tip" class="me-tip" role="tooltip" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=67"></script>
+  <script src="data.js?v=67"></script>
+  <script src="metricas.js?v=67"></script>
+</body>
+</html>

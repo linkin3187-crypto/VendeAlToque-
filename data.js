@@ -2573,3 +2573,81 @@ function prepararImagenLogo(archivo) {
   });
 }
 if (typeof sb !== "undefined" && sb) actualizarLogoPagina();
+
+// =====================================================================
+// MÉTRICAS DEL PILOTO (fase 2AJ · supabase/37_metricas.sql)
+// Cuenta visitas de página y toques en WhatsApp / Llamar / Cómo llegar / Compartir.
+// Sin nombre, correo, IP ni ubicación: solo un código al azar guardado en este navegador
+// (para saber cuántas personas distintas entran y cuántas vuelven). Lo ves en metricas.html.
+// =====================================================================
+function idVisitante() {
+  try {
+    let v = localStorage.getItem("mf_vid");
+    if (!/^[a-z0-9]{16,40}$/.test(v || "")) {
+      const a = new Uint8Array(12); crypto.getRandomValues(a);
+      v = Array.from(a, b => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem("mf_vid", v);
+    }
+    return v;
+  } catch (e) { return null; }   // sin almacenamiento (modo privado estricto): no se cuenta
+}
+const paginaMetrica = () => (location.pathname.split("/").pop() || "index.html").replace(/\.html$/, "").toLowerCase() || "index";
+// De dónde llegó (solo la primera página de la visita): ?o=qr / ?utm_source=… o el sitio anterior
+function origenVisita() {
+  const p = new URLSearchParams(location.search);
+  const o = (p.get("o") || p.get("utm_source") || p.get("ref") && "referido" || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+  if (o) return o;
+  let r = "";
+  try { r = document.referrer ? new URL(document.referrer).hostname : ""; } catch (e) { r = ""; }
+  if (!r || r === location.hostname) return null;
+  if (/whatsapp|wa\.me/.test(r)) return "whatsapp";
+  if (/facebook|fb\./.test(r)) return "facebook";
+  if (/instagram/.test(r)) return "instagram";
+  if (/google\./.test(r)) return "google";
+  if (/tiktok/.test(r)) return "tiktok";
+  return r.replace(/^www\./, "").replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+}
+const _ultimoEvento = {};
+function registrarEvento(tipo, refTipo, refId, extra) {
+  const vid = idVisitante();
+  if (!vid) return;
+  const clave = tipo + ":" + (refId || "");
+  if (tipo !== "visita" && Date.now() - (_ultimoEvento[clave] || 0) < 4000) return;   // doble toque = 1
+  _ultimoEvento[clave] = Date.now();
+  sb.rpc("registrar_evento", {
+    p_tipo: tipo, p_pagina: paginaMetrica(), p_ref_tipo: refId ? refTipo : null, p_ref_id: refId || null,
+    p_visitante: vid, p_origen: (extra && extra.origen) || null
+  }).then(() => {}, () => {});   // si falla (o falta el SQL 37) no pasa nada
+}
+// ¿De qué comercio o anuncio es este botón?
+function refDeElemento(el) {
+  const fui = el.closest("[data-fui]"); if (fui) return ["comercio", Number(fui.dataset.fui)];
+  const an = el.closest("[data-anuncio]"); if (an && Number(an.dataset.anuncio)) return ["anuncio", Number(an.dataset.anuncio)];
+  const com = el.closest("[data-comercio]"); if (com && Number(com.dataset.comercio)) return ["comercio", Number(com.dataset.comercio)];
+  const tar = el.closest(".tarjeta-anuncio[data-id]"); if (tar) return ["anuncio", Number(tar.dataset.id)];
+  const id = Number(new URLSearchParams(location.search).get("id")) || null;
+  const pag = paginaMetrica();
+  if (id && pag === "anuncio") return ["anuncio", id];
+  if (id && pag === "tienda") return ["comercio", id];
+  return [null, null];
+}
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("a, button");
+  if (!el) return;
+  const href = el.getAttribute("href") || "";
+  let tipo = null;
+  if (el.matches("[data-como-llegar], #btn-como-llegar")) tipo = "como_llegar";
+  else if (el.dataset.contacto === "whatsapp" || /wa\.me\/\d|api\.whatsapp\.com\/send\?phone=\d/.test(href)) tipo = "whatsapp";
+  else if (el.dataset.contacto === "llamar" || /^tel:/.test(href)) tipo = "llamar";
+  else if (/compartir/.test(el.id || "")) tipo = "compartir";
+  if (!tipo) return;
+  const [rt, rid] = refDeElemento(el);
+  registrarEvento(tipo, rt, rid);
+}, true);
+// Una visita por página abierta
+document.addEventListener("DOMContentLoaded", () => {
+  let origen = null;
+  try { if (!sessionStorage.getItem("mf_ses")) { sessionStorage.setItem("mf_ses", "1"); origen = origenVisita(); } } catch (e) { /* nada */ }
+  const [rt, rid] = refDeElemento(document.body);
+  registrarEvento("visita", rt, rid, { origen });
+});

@@ -2819,8 +2819,43 @@ document.addEventListener("click", e => {
   const [rt, rid] = refDeElemento(el);
   registrarEvento(tipo, rt, rid);
 }, true);
+// =====================================================================
+// CAMPAÑAS (fase 2AP-2 · supabase/41_campanas.sql): enlace corto «…/?c=codigo»
+// El QR impreso lleva solo el código; aquí se pregunta a dónde va HOY y se redirige.
+// Se agrega ?ref=codigo (para contar cuentas nuevas) y ?o=canal (para Métricas → De dónde llegan).
+// Si la campaña no existe o está pausada, la persona se queda en la página (el inicio).
+// =====================================================================
+const CAMPANA_C = (() => { try { return limpiarRef(new URLSearchParams(location.search).get("c")); } catch (e) { return ""; } })();
+function seguirCampana(r) {
+  const dest = r && typeof r.destino === "string" ? r.destino : "";
+  if (!/^[a-z0-9-]{1,40}\.html([?#][^\s<>"'\\]*)?$/.test(dest) || dest.includes("//")) return false;
+  const m = dest.match(/^([^?#]+)(\?[^#]*)?(#.*)?$/);
+  const p = new URLSearchParams((m[2] || "").slice(1));
+  p.set("ref", CAMPANA_C);
+  if (r.canal && /^[a-z0-9._-]{1,40}$/.test(r.canal)) p.set("o", r.canal);
+  location.replace(m[1] + "?" + p.toString() + (m[3] || ""));
+  return true;
+}
+async function abrirCampanaURL() {
+  if (!CAMPANA_C) return;
+  const soltar = () => document.documentElement.classList.remove("abriendo-campana");
+  const seguro = setTimeout(soltar, 6000);       // si algo tarda demasiado, se muestra la página igual
+  let r = null;
+  try {
+    const { data, error } = await sb.rpc("abrir_campana", { p_codigo: CAMPANA_C, p_visitante: idVisitante() });
+    if (!error) r = data;
+  } catch (e) { r = null; }
+  if (seguirCampana(r)) return;
+  clearTimeout(seguro);
+  soltar();
+  try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { /* nada */ }
+  registrarEvento("visita", null, null, { origen: "campana" });   // la campaña estaba pausada o no existe
+}
+abrirCampanaURL();
+
 // Una visita por página abierta
 document.addEventListener("DOMContentLoaded", () => {
+  if (CAMPANA_C) return;   // la cuenta la página de destino (o abrirCampanaURL si no hay destino)
   let origen = null;
   try { if (!sessionStorage.getItem("mf_ses")) { sessionStorage.setItem("mf_ses", "1"); origen = origenVisita(); } } catch (e) { /* nada */ }
   const [rt, rid] = refDeElemento(document.body);

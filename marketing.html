@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>Centro de marketing | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=71">
+  <link rel="stylesheet" href="styles.css?v=72">
   <style>
     @media print {
       body * { visibility: hidden; }
@@ -48,9 +48,30 @@
         <a id="mk-manual" href="docs/manual-marketing-merkap.pdf" download class="text-sm font-bold px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 shadow-sm">📘 Descargar manual de marketing (PDF)</a>
       </div>
 
+      <!-- Mis campañas (fase 2AP-2) -->
+      <div id="mk-campanas-caja" class="mk-caja">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="text-lg font-black text-indigo-900">📋 Mis campañas <span id="mk-camp-n" class="text-sm font-semibold text-slate-500"></span></h2>
+          <div class="flex flex-wrap gap-2 items-center">
+            <input id="mk-camp-buscar" type="search" placeholder="Buscar: nombre, código o tienda" class="mk-campo !mt-0 w-full sm:w-60" autocomplete="off">
+            <select id="mk-camp-dias" class="mk-campo !mt-0 !w-auto bg-white" aria-label="Periodo">
+              <option value="7">Últimos 7 días</option>
+              <option value="30" selected>Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="365">Último año</option>
+            </select>
+            <button id="mk-camp-nueva" type="button" class="mk-btn bg-violet-700 hover:bg-violet-800 text-white">➕ Nueva campaña</button>
+          </div>
+        </div>
+        <div id="mk-camp-lista" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"><p class="text-sm text-slate-500">Cargando…</p></div>
+      </div>
+
       <!-- PASO 1 · El enlace -->
       <div class="mk-caja">
-        <h2 class="mk-paso"><span>1</span> ¿A dónde quieres llevar a la gente?</h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="mk-paso"><span>1</span> <b id="mk-paso1-titulo">¿A dónde quieres llevar a la gente?</b></h2>
+          <span id="mk-editando" class="hidden mb-3 text-xs font-bold bg-violet-100 text-violet-800 px-2.5 py-1 rounded-full"></span>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <label class="mk-etq">Destino
             <select id="rf-destino" class="mk-campo bg-white">
@@ -62,6 +83,7 @@
               <option value="directorio">📍 Directorio de comercios</option>
               <option value="categoria">📂 Una categoría de anuncios</option>
               <option value="tienda">🛍️ Vitrina de un comercio</option>
+              <option value="producto">🏷️ Un producto o promoción de una vitrina</option>
               <option value="anuncio">📄 Un anuncio</option>
               <option value="libre">✏️ Otra página de Merkap</option>
             </select>
@@ -78,7 +100,7 @@
               <option value="">Otro</option>
             </select>
           </label>
-          <label class="mk-etq">Código de la campaña
+          <label class="mk-etq"><span id="mk-codigo-etq">Código de la campaña</span>
             <input id="rf-codigo" maxlength="30" placeholder="grupo-envigado-1" class="mk-campo" autocomplete="off">
           </label>
           <label class="mk-etq">Municipio o barrio (opcional, para el texto)
@@ -95,11 +117,33 @@
             <input id="rf-id" inputmode="numeric" maxlength="9" placeholder="123" class="mk-campo">
             <span id="rf-id-nombre" class="block mt-1 text-[11px] font-semibold text-emerald-700"></span>
           </label>
+          <label id="mk-prod-caja" class="hidden mk-etq sm:col-span-2">Producto o promoción de esa vitrina
+            <select id="mk-prod" class="mk-campo bg-white"><option value="">Primero escribe el número del comercio</option></select>
+            <span class="block mt-1 text-[11px] font-normal text-slate-500">💡 ¿Una promoción? Que la tienda la suba como producto en su vitrina (ej.: «Promo 2x1 pan de queso») y la eliges aquí.</span>
+          </label>
           <label id="mk-libre-caja" class="hidden mk-etq sm:col-span-2">Página (ej.: <code>prohibidos.html</code> o <code>anuncios.html?cat=empleos</code>)
             <input id="mk-libre" maxlength="120" placeholder="terminos.html" class="mk-campo" autocomplete="off">
           </label>
         </div>
         <p class="text-xs text-slate-500 mt-2">Usa un código distinto por cada grupo, volante o sticker (ej.: <code>fb-envigado-ventas</code>, <code>wa-vecinos-sabaneta</code>). Así sabes cuál funciona: las <b>visitas</b> salen en <a href="metricas.html" class="underline">📊 Métricas → De dónde llegan</a> y las <b>cuentas nuevas</b> abajo en esta página.</p>
+
+        <!-- Tipo de enlace: corto redirigible (campaña guardada) o directo -->
+        <div id="mk-camp-caja" class="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-3">
+          <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm" role="radiogroup" aria-label="Tipo de enlace">
+            <label class="mk-check"><input type="radio" name="mk-modo" id="mk-modo-corto" value="corto" checked> 🔁 Enlace corto que puedes redirigir <span class="text-xs font-normal text-violet-700">(recomendado para QR impresos)</span></label>
+            <label class="mk-check"><input type="radio" name="mk-modo" id="mk-modo-directo" value="directo"> ➡️ Enlace directo (fijo)</label>
+          </div>
+          <div id="mk-camp-campos" class="flex flex-col sm:flex-row gap-2 mt-2 sm:items-end">
+            <label class="mk-etq flex-1">Nombre de la campaña (para encontrarla en «📋 Mis campañas»)
+              <input id="mk-nombre" maxlength="80" placeholder="Sticker Panadería La Central" class="mk-campo" autocomplete="off">
+            </label>
+            <div class="flex gap-2">
+              <button id="mk-guardar-camp" type="button" class="mk-btn bg-violet-700 hover:bg-violet-800 text-white">💾 Guardar campaña</button>
+              <button id="mk-cancelar-camp" type="button" class="hidden mk-btn bg-white border border-slate-300 text-slate-700">✖ Cerrar</button>
+            </div>
+          </div>
+          <p id="mk-camp-estado" class="text-xs mt-2 text-slate-600"></p>
+        </div>
 
         <div id="rf-vacio" class="mt-4 text-slate-400 text-sm">Escribe un código para ver el enlace.</div>
         <div id="mk-enlace-caja" class="hidden mt-4 flex flex-col sm:flex-row gap-2">
@@ -246,9 +290,9 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="qr.js?v=71"></script>
-  <script src="utils.js?v=71"></script>
-  <script src="data.js?v=71"></script>
-  <script src="marketing.js?v=71"></script>
+  <script src="qr.js?v=72"></script>
+  <script src="utils.js?v=72"></script>
+  <script src="data.js?v=72"></script>
+  <script src="marketing.js?v=72"></script>
 </body>
 </html>

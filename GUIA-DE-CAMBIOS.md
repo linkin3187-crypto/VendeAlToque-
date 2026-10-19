@@ -796,3 +796,17 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Manual:** para cambiarlo, edita `herramientas/manual_marketing.py` y corre `python3 herramientas/manual_marketing.py`.
 
 **Revertir:** PR → **Revert** (no hay SQL).
+
+## Fase 2AP-2 · Campañas con enlace corto redirigible
+
+**SQL:** `supabase/41_campanas.sql` — **antes** de fusionar. Debe mostrar `tablas = 4 | abrir = true | resumen = true | seguras = true`.
+
+**Cambian:** `marketing.html` / `marketing.js` (📋 Mis campañas, enlace corto, destino «Producto o promoción», textos en la base), `data.js` (abre `?c=` y redirige), `index.html` (tapa la página mientras redirige), `metricas.js`, `styles.css`, `SEGURIDAD.md`; caché `?v=72`.
+
+- **Cómo funciona:** el QR lleva `…/?c=panaderia-lacentral`. Al escanearlo, la página pregunta a la base «¿a dónde va hoy?» (`abrir_campana`), suma el escaneo y redirige agregando `?ref=` y `?o=`.
+- **Por qué el código no se puede cambiar:** es lo que está impreso. Para otro código se crea otra campaña.
+- **Pausada o borrada:** quien escanee llega al inicio (en Métricas sale como origen «Campaña pausada o borrada»).
+- **Privacidad:** solo se guarda el código al azar del navegador que ya usan las métricas. Sin nombre, IP ni ubicación.
+- **Prueba real:** tus escaneos (administrador) no cuentan. Para probar, escanea con otro celular o en una ventana de incógnito sin sesión.
+
+**Revertir:** PR → **Revert**. Las tablas pueden quedarse; sin el código nuevo, `?c=` simplemente abre el inicio.

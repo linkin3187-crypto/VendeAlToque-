@@ -9,7 +9,7 @@
   <title>Comercios (admin) | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=67">
+  <link rel="stylesheet" href="styles.css?v=68">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -96,7 +96,7 @@
       </section>
 
       <!-- CATEGORÍAS (Fase 2V · supabase/15_categorias_comercio.sql): sin SQL, desde aquí -->
-      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm" id="ac-categorias">
+      <section class="solo-admin bg-white border border-slate-200 rounded-2xl p-5 shadow-sm" id="ac-categorias">
         <details>
           <summary class="cursor-pointer text-lg font-black text-indigo-900">🏷️ Categorías de comercio <span id="cat-n" class="text-sm font-semibold text-slate-500"></span></summary>
           <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra o desactiva categorías. Las <b>palabras clave</b> (separadas por coma) ayudan al buscador a entender lo que la gente escribe: por ejemplo, en «Pastelerías»: <i>postres, torta, ponqué, cupcake</i>. Una categoría desactivada no aparece al elegir, pero los comercios que ya la tienen la conservan.</p>
@@ -195,8 +195,8 @@
             <input id="ed-ds-nota" maxlength="300" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800" placeholder="Ej. Confirmado con la Secretaría de Salud de Antioquia"></label>
           <div class="flex flex-wrap gap-2">
             <button type="button" id="ed-ds-guardar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg text-xs">💾 Guardar datos</button>
-            <button type="button" id="ed-ds-ok" class="bg-green-700 hover:bg-green-800 text-white font-semibold px-3 py-2 rounded-lg text-xs">✅ Marcar revisado</button>
-            <button type="button" id="ed-ds-quitar" class="hidden text-red-600 hover:underline text-xs">Quitar visto bueno</button>
+            <button type="button" id="ed-ds-ok" class="solo-admin bg-green-700 hover:bg-green-800 text-white font-semibold px-3 py-2 rounded-lg text-xs">✅ Marcar revisado</button>
+            <button type="button" id="ed-ds-quitar" class="solo-admin hidden text-red-600 hover:underline text-xs">Quitar visto bueno</button>
           </div>
           <p class="text-[11px] text-slate-500">Revisa en RUES (Cámara de Comercio) la razón social y el NIT, y si puedes confirma con la Secretaría de Salud. Estos botones se aplican al momento (no esperan a «Guardar todo»). El visto bueno <b>no</b> habilita vender medicamentos.</p>
         </section>
@@ -204,7 +204,8 @@
           <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" id="ed-activo"> Visible en el mapa y el directorio</label>
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm space-y-2">
             <p>🙋 Dueño: <b id="ed-dueno-estado"></b></p>
-            <div class="flex flex-wrap gap-2">
+            <p class="solo-mod text-[11px] text-slate-500">Solo el administrador asigna o quita dueños. Si alguien reclama la ficha, propónlo desde Moderación → Solicitudes.</p>
+            <div class="solo-admin flex flex-wrap gap-2">
               <input id="ed-dueno-correo" placeholder="correo de su cuenta" class="flex-1 min-w-[12rem] border border-slate-300 p-2 rounded-lg text-sm">
               <button type="button" id="ed-dueno-asignar" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-2 rounded-lg text-xs">Asignar</button>
               <button type="button" id="ed-dueno-quitar" class="hidden text-red-600 hover:underline text-xs">Quitar dueño</button>
@@ -335,9 +336,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=67"></script>
-  <script src="data.js?v=67"></script>
-  <script src="iconos.js?v=67"></script>
-  <script src="admin-comercios.js?v=67"></script>
+  <script src="utils.js?v=68"></script>
+  <script src="data.js?v=68"></script>
+  <script src="iconos.js?v=68"></script>
+  <script src="admin-comercios.js?v=68"></script>
 </body>
 </html>

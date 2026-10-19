@@ -112,6 +112,34 @@ async function accionReporte(e) {
 }
 
 // ---------- Solicitudes de comercios ----------
+// ---------- Fase 2AK: propuestas del moderador (el administrador decide) ----------
+function propuestaHTML(x) {
+  if (!x.propuesta) return "";
+  const quien = x.proponente && x.proponente.nombre ? x.proponente.nombre : "Un moderador";
+  return `<p class="propuesta-badge ${x.propuesta === "rechazar" ? "rechazar" : ""}">🛡️ <b>${esc(quien)}</b> propone <b>${x.propuesta === "aprobar" ? "👍 aprobar" : "👎 rechazar"}</b>${x.propuesta_nota ? `: «${esc(x.propuesta_nota)}»` : ""} <span class="opacity-70">· ${esc(fechaCorta(x.propuesta_en))}</span></p>`;
+}
+function controlesPropuestaHTML(tipo, id) {
+  return `<div class="solo-mod mt-3 pt-3 border-t border-slate-100" data-prop-caja data-ptipo="${tipo}" data-pid="${id}">
+    <p class="text-xs font-bold text-slate-500 mb-1.5">Tu propuesta para el administrador:</p>
+    <input data-prop-nota maxlength="300" placeholder="Nota (obligatoria para rechazar): ej. Hablé con el dueño, existe" class="w-full border border-slate-300 p-2 rounded-lg text-sm">
+    <div class="flex flex-wrap gap-2 mt-2">
+      <button type="button" data-prop="aprobar" class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold">👍 Proponer aprobar</button>
+      <button type="button" data-prop="rechazar" class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-semibold">👎 Proponer rechazar</button>
+    </div></div>`;
+}
+async function accionPropuesta(e, repintar) {
+  const b = e.target.closest("[data-prop]");
+  if (!b) return false;
+  const caja = b.closest("[data-prop-caja]");
+  b.disabled = true;
+  try {
+    await proponerResolucion(caja.dataset.ptipo, Number(caja.dataset.pid), b.dataset.prop, caja.querySelector("[data-prop-nota]").value);
+    mostrarToast("✅ Propuesta enviada al administrador");
+    await repintar();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+  return true;
+}
+
 const TIPOS_SOLICITUD = { actualizar: "✏️ Actualizar datos", retirar: "🗑️ Retirar del directorio", reclamar: "🙋 Reclama la ficha (es el dueño)" };
 
 function tarjetaSolicitud(s) {
@@ -129,13 +157,15 @@ function tarjetaSolicitud(s) {
       ${esc(d.razon_social || "")} · NIT <b>${esc(d.nit || "")}</b> · Director técnico: ${esc(d.director_tecnico || "")}
       ${d.acta_numero || d.acta_fecha ? `<br>Acta/concepto: ${esc(d.acta_numero || "—")} ${d.acta_fecha ? "(" + esc(d.acta_fecha) + ")" : ""}` : ""}
       <br><span class="text-emerald-700">Al asignarlo como dueño, estos datos pasan solos a «🧾 Sanitario» del comercio (por revisar).</span></div>`)(s.datos_sanitarios) : ""}
-    <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+    ${s.tipo === "reclamar" ? propuestaHTML(s) : ""}
+    <div class="${s.tipo === "reclamar" ? "solo-admin " : ""}flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
       ${s.tipo === "reclamar" && s.solicitante_id && c && !c.owner_id ? `<button type="button" data-sdueno="${esc(s.solicitante_id)}" data-scom="${c.id}" class="text-xs bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg font-semibold">👤 Asignar como dueño</button>` : ""}
       ${s.tipo === "retirar" && c && c.activo ? `<button type="button" data-socultar="${c.id}" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar comercio</button>` : ""}
       ${s.tipo === "reclamar" && c && c.owner_id ? '<span class="text-xs text-teal-700 font-semibold self-center">✔ Ya tiene dueño</span>' : ""}
       <button type="button" data-sacc="atendida" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Marcar atendida</button>
       <button type="button" data-sacc="descartada" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar</button>
     </div>
+    ${s.tipo === "reclamar" ? controlesPropuestaHTML("reclamo", s.id) : ""}
   </article>`;
 }
 
@@ -149,6 +179,7 @@ async function pintarSolicitudes() {
 }
 
 async function accionSolicitud(e) {
+  if (await accionPropuesta(e, pintarSolicitudes)) return;
   const o = e.target.closest("[data-socultar]");
   if (o) {
     if (!confirm("¿Ocultar este comercio? Confirma antes que quien lo pide realmente lo representa (llámalo o escríbele). Podrás volver a mostrarlo desde Comercios.")) return;
@@ -647,10 +678,10 @@ function filaBusqueda(b) {
         <a href="buscar.html?q=${encodeURIComponent(b.termino)}" target="_blank" rel="noopener" class="text-xs font-semibold text-indigo-600 underline ml-1">probar</a></p>
       <p class="text-xs text-slate-500">${b.veces_sin_result} ${b.veces_sin_result === 1 ? "vez" : "veces"} sin resultados · buscada ${b.veces} en total · última: ${esc(fechaCorta(b.ultima_vez))}</p>
     </div>
-    <select data-busq-cat aria-label="Categoría a la que corresponde" class="basis-full sm:basis-auto min-w-0 border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white sm:max-w-[13rem]">${opcionesEnsenar()}</select>
-    <button type="button" data-bacc="ensenar" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">🧠 Enseñar</button>
-    <button type="button" data-bacc="resuelta" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg" title="Ya se resolvió (ej. agregaste el comercio)">✔ Ya está</button>
-    <button type="button" data-bacc="borrar" class="text-sm text-slate-400 hover:text-red-600 px-2" title="Borrar (spam o sin sentido)" aria-label="Borrar">🗑️</button>
+    <select data-busq-cat aria-label="Categoría a la que corresponde" class="solo-admin basis-full sm:basis-auto min-w-0 border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white sm:max-w-[13rem]">${opcionesEnsenar()}</select>
+    <button type="button" data-bacc="ensenar" class="solo-admin bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">🧠 Enseñar</button>
+    <button type="button" data-bacc="resuelta" class="solo-admin bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg" title="Ya se resolvió (ej. agregaste el comercio)">✔ Ya está</button>
+    <button type="button" data-bacc="borrar" class="solo-admin text-sm text-slate-400 hover:text-red-600 px-2" title="Borrar (spam o sin sentido)" aria-label="Borrar">🗑️</button>
   </article>`;
 }
 
@@ -728,16 +759,18 @@ function tarjetaNegocio(n) {
       ${tel ? `<a href="tel:${esc(tel)}" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">📞 Llamar</a>` : ""}
       <a href="${esc(urlGoogleMaps(n.lat, n.lng))}" target="_blank" rel="noopener" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">🗺️ Ver pin</a>
     </div>
-    <div class="mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
+    ${propuestaHTML(n)}
+    <div class="solo-admin mt-3 pt-3 border-t border-slate-100 space-y-1.5 text-xs">
       <p class="font-bold text-slate-500">Si ya hablaste con el responsable:</p>
       <label class="flex items-start gap-1.5"><input type="checkbox" data-v="nombre_dir" class="mt-0.5"> Confirmó el nombre y la dirección del negocio</label>
       <label class="flex items-start gap-1.5"><input type="checkbox" data-v="telefono_negocio" class="mt-0.5"> El número de contacto es del negocio</label>
     </div>
-    <div class="flex flex-wrap gap-2 mt-3">
+    <div class="solo-admin flex flex-wrap gap-2 mt-3">
       <button type="button" data-nacc="verificar" disabled class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold disabled:opacity-40 disabled:cursor-not-allowed">✅ Aprobar y verificar por teléfono</button>
       <button type="button" data-nacc="aprobar" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">Aprobar (sin verificar aún)</button>
       <button type="button" data-nacc="rechazar" class="text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-semibold">✖ Rechazar</button>
     </div>
+    ${controlesPropuestaHTML("negocio", n.id)}
   </article>`;
 }
 
@@ -827,6 +860,7 @@ async function pintarAprobadosSinVerificar() {
 }
 
 async function accionNegocio(e) {
+  if (e.type === "click" && await accionPropuesta(e, pintarNegocios)) return;
   const chk = e.target.closest("[data-v]");
   const art = e.target.closest("[data-neg]");
   if (!art) return;
@@ -860,6 +894,49 @@ async function accionNegocio(e) {
   }
 }
 
+// ---------- 👥 Equipo (fase 2AK; solo administrador) ----------
+const NOMBRE_ROL = { admin: "👑 Administrador", moderador: "🛡️ Moderador", usuario: "Usuario" };
+function filaPersona(p) {
+  const yo = usuarioActual && p.id === usuarioActual.id;
+  return `<div class="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" data-persona="${esc(p.id)}">
+    <b>${esc(p.nombre)}</b><span class="text-xs text-slate-500">${esc(p.correo || "")}</span>
+    <span class="text-xs font-bold px-2 py-0.5 rounded-full ${p.rol === "admin" ? "bg-amber-100 text-amber-900" : p.rol === "moderador" ? "bg-indigo-100 text-indigo-800" : "bg-slate-200 text-slate-700"}">${NOMBRE_ROL[p.rol] || p.rol}${yo ? " (tú)" : ""}</span>
+    ${p.rol === "usuario" ? `<button type="button" data-rol="moderador" class="ml-auto text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">🛡️ Nombrar moderador</button>` : ""}
+    ${p.rol === "moderador" ? `<button type="button" data-rol="usuario" class="ml-auto text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-semibold">Quitar moderador</button>` : ""}
+  </div>`;
+}
+async function pintarEquipo() {
+  if (!esAdmin()) return;
+  try {
+    const equipo = await buscarPersona("");
+    $("eq-lista").innerHTML = equipo.map(filaPersona).join("") || '<p class="text-sm text-slate-400">Solo estás tú.</p>';
+  } catch (e) { $("eq-lista").innerHTML = '<p class="text-sm text-slate-400">Se activa al ejecutar supabase/38_admin_seguridad.sql.</p>'; }
+}
+async function buscarEquipo() {
+  const t = $("eq-buscar").value.trim();
+  if (t.length < 2) { mostrarToast("Escribe al menos 2 letras del nombre o correo", "error"); return; }
+  try {
+    const r = await buscarPersona(t);
+    $("eq-resultados").innerHTML = r.map(filaPersona).join("") || '<p class="text-sm text-slate-400">Nadie con ese nombre o correo. La persona debe crear su cuenta primero.</p>';
+  } catch (e) { mostrarToast(mensajeError(e), "error"); }
+}
+async function accionEquipo(e) {
+  const b = e.target.closest("[data-rol]");
+  if (!b) return;
+  const fila = b.closest("[data-persona]"), nombre = fila.querySelector("b").textContent;
+  const msg = b.dataset.rol === "moderador"
+    ? `¿Nombrar a ${nombre} moderador? Podrá revisar reportes, ocultar contenido, verificar comercios y proponer aprobaciones.`
+    : `¿Quitarle el rol de moderador a ${nombre}?`;
+  if (!confirm(msg)) return;
+  b.disabled = true;
+  try {
+    await cambiarRol(fila.dataset.persona, b.dataset.rol);
+    mostrarToast(b.dataset.rol === "moderador" ? "🛡️ Ahora es moderador (lo verá al recargar)" : "Rol de moderador quitado");
+    await pintarEquipo();
+    if ($("eq-buscar").value.trim().length >= 2) await buscarEquipo();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("mod-cargando").classList.add("hidden");
@@ -871,6 +948,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   $("mod-panel").classList.remove("hidden");
+  // Equipo (solo administrador)
+  if (esAdmin()) {
+    pintarEquipo();
+    $("eq-btn").addEventListener("click", buscarEquipo);
+    $("eq-buscar").addEventListener("keydown", e => { if (e.key === "Enter") buscarEquipo(); });
+    ["eq-lista", "eq-resultados"].forEach(id => $(id).addEventListener("click", accionEquipo));
+  }
   $("mod-tabs").addEventListener("click", e => {
     const b = e.target.closest("[data-estado]");
     if (!b) return;

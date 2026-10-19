@@ -552,7 +552,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await cargarSesion();
   $("ei-cargando").classList.add("hidden");
-  if (!esModerador()) { $("ei-sin-permiso").classList.remove("hidden"); return; }
+  if (!esAdmin()) { $("ei-sin-permiso").classList.remove("hidden"); return; }   // fase 2AK: solo administrador
   $("ei-panel").classList.remove("hidden");
   await Promise.all([cargarComercios(), cargarCategoriasAnuncio(), cargarAnuncios()]);
   // Logo de la página (fase 2AF)

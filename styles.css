@@ -842,3 +842,11 @@ img.marca-ico.recortar { object-fit: cover; border-radius: 24%; }
 .me-lista-t { color: #334155; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .me-lista-v { font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
 .me-lista-b { position: absolute; left: 0; top: 0; bottom: 0; background: #eef2ff; border-radius: .4rem; }
+
+/* ===== Fase 2AK: administrador vs moderador =====
+   .solo-admin: solo lo ve el administrador · .solo-mod: solo lo ve un moderador (no admin).
+   Es comodidad visual: la base de datos (SQL 38) es la que de verdad lo impide. */
+html:not([data-rol="admin"]) .solo-admin { display: none !important; }
+html:not([data-rol="moderador"]) .solo-mod { display: none !important; }
+.propuesta-badge { display: block; margin-top: .5rem; font-size: 12px; background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: .6rem; padding: .4rem .6rem; }
+.propuesta-badge.rechazar { background: #fef2f2; border-color: #fecaca; color: #991b1b; }

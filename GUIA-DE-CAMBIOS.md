@@ -735,3 +735,23 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. Para dejar de contar sin revertir: `revoke execute on function registrar_evento(text,text,text,bigint,text,text) from anon, authenticated;`
 
+## Fase 2AK · Administrador ≠ moderador + revisión de seguridad
+
+**SQL:** `supabase/38_admin_seguridad.sql` — **antes** de fusionar. Debe mostrar `es_admin_existe = true | administradores = 1 | funciones_admin = 4 | topes = 7 | equipo = true`.
+
+**Cambian:** `data.js`, `styles.css`, `index.html`, `post.html`, `moderacion.*`, `admin-comercios.*`, `editar-inicio.*`, `metricas.*`, `referidos.*`, `app.js`, `anuncio.js`; nuevo `SEGURIDAD.md` (informe); caché `?v=68`.
+
+| Acción | 👑 Administrador | 🛡️ Moderador |
+|---|:-:|:-:|
+| Reportes, ocultar contenido, foro, opiniones, verificar comercios | ✅ | ✅ |
+| Negocios nuevos y reclamos de fichas | ✅ aprueba | 👍/👎 propone |
+| Editar inicio, logo, Selección del día, categorías, palabras prohibidas, entrenar buscador | ✅ | ❌ |
+| Métricas, referidos, lista de espera, cupo de productos, dueños, visto bueno sanitario, borrar comercios | ✅ | ❌ |
+| Nombrar o quitar moderadores (👥 Equipo, en Moderación) | ✅ | ❌ |
+
+- **Nombrar un moderador:** la persona crea su cuenta → Moderación → 👥 Equipo → buscar por nombre o correo → «🛡️ Nombrar moderador». Lo verá al recargar.
+- **El rol de administrador** solo se cambia en el SQL Editor: `update perfiles set rol = 'admin' where id = '<id>';`
+- **Topes nuevos:** reportes 10/hora, solicitudes 5/hora, foro 5 temas y 20 comentarios por hora, lista de espera 100/hora en total.
+
+**Revertir:** PR → **Revert**. (Si se revierte la página pero no el SQL, lo único distinto es que un moderador ve botones que la base le rechaza.)
+

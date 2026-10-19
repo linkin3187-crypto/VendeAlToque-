@@ -141,7 +141,7 @@ function tooltip(e) {
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("me-cargando").classList.add("hidden");
-  if (!esModerador()) { $("me-sin-permiso").classList.remove("hidden"); return; }
+  if (!esAdmin()) { $("me-sin-permiso").classList.remove("hidden"); return; }   // fase 2AK: solo administrador
   $("me-panel").classList.remove("hidden");
   $("me-rangos").addEventListener("click", e => {
     const b = e.target.closest("[data-dias]"); if (!b) return;

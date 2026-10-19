@@ -200,7 +200,7 @@ function renderizarAnuncio(a) {
     pub.innerHTML = `<span class="chip-publicado ${esReciente(a.fecha) ? "reciente" : ""}">🕒 Publicado ${esc(haceCuanto(a.fecha, true))}</span> <span class="text-xs text-slate-400">· ${esc(fechaPublicacion(a.fecha))}</span>`;
   }
   // Moderadores: ⭐ fijar en la Selección del día (24 h) o 🚫 sacarlo del sorteo (fase 2AD)
-  if (esModerador() && !$("sel-botones")) {
+  if (esAdmin() && !$("sel-botones")) {   // fase 2AK: solo administrador
     $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">
       <button type="button" id="btn-seleccion" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>
       <button type="button" id="btn-sel-excluir" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700"></button>

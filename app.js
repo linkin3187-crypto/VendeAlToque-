@@ -228,7 +228,7 @@ function pintarSeleccionDia() {
   const lista = seleccionDelDia(baseDatosAnuncios, 8);
   $("seleccion-dia").classList.toggle("hidden", lista.length < 2);   // fase 2AC.1: desde 2 anuncios
   if (lista.length < 2) return;
-  const mod = esModerador();
+  const mod = esAdmin();   // fase 2AK: la Selección del día la maneja el administrador
   $("sel-lista").innerHTML = lista.map(a => {
     const foto = urlSegura(a.imagen);
     return `<div class="sel-item" data-sel="${a.id}">

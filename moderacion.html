@@ -8,17 +8,17 @@
   <meta name="robots" content="noindex">
   <title>Moderación | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=67">
+  <link rel="stylesheet" href="styles.css?v=68">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
-    <div class="max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
+    <div class="max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
       <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span> <span class="text-sm font-semibold text-indigo-200">· Moderación</span></a>
-      <nav class="flex gap-3 text-sm text-indigo-100">
+      <nav class="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs sm:text-sm text-indigo-100">
         <a href="admin-comercios.html" class="hover:text-white">🏪 Comercios</a>
-        <a href="editar-inicio.html" class="hover:text-white">🎨 Inicio</a>
-        <a href="metricas.html" class="hover:text-white">📊 Métricas</a>
-        <a href="referidos.html" class="hover:text-white">📈 Referidos</a>
+        <a href="editar-inicio.html" class="solo-admin hover:text-white">🎨 Inicio</a>
+        <a href="metricas.html" class="solo-admin hover:text-white">📊 Métricas</a>
+        <a href="referidos.html" class="solo-admin hover:text-white">📈 Referidos</a>
         <a href="index.html" class="hover:text-white">← Inicio</a>
       </nav>
     </div>
@@ -35,6 +35,21 @@
     </div>
 
     <section id="mod-panel" class="hidden">
+      <p id="mod-rol" class="mb-4 text-sm rounded-xl px-3 py-2 bg-amber-50 border border-amber-200 text-amber-900"><b class="etq-rol">🛡️ Modo moderador</b>
+        <span class="solo-mod"> · Revisas reportes y contenido. Los negocios nuevos y los reclamos de fichas los <b>propones</b> y el administrador decide.</span>
+        <span class="solo-admin"> · Tienes control total. Nombra o quita moderadores en <a href="#equipo" class="underline font-semibold">👥 Equipo</a>.</span></p>
+
+      <!-- Fase 2AK: 👥 Equipo (solo administrador · supabase/38_admin_seguridad.sql) -->
+      <section id="equipo" class="solo-admin mb-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">👥 Equipo</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">Los <b>moderadores</b> revisan reportes, ocultan contenido, verifican comercios y <b>proponen</b> aprobar o rechazar negocios y reclamos. No pueden cambiar el inicio, el logo, las categorías, ver métricas ni nombrar a otros. El rol de <b>administrador</b> solo se cambia desde el SQL Editor de Supabase.</p>
+        <div id="eq-lista" class="space-y-2"></div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          <input id="eq-buscar" maxlength="60" placeholder="Buscar persona por nombre o correo (mín. 2 letras)" class="flex-1 min-w-[14rem] border border-slate-300 p-2.5 rounded-lg text-sm">
+          <button type="button" id="eq-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">🔍 Buscar</button>
+        </div>
+        <div id="eq-resultados" class="space-y-2 mt-3"></div>
+      </section>
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 class="text-xl font-black text-indigo-900">🚩 Reportes de anuncios</h2>
         <div id="mod-tabs" class="flex gap-1.5 text-sm" role="tablist">
@@ -103,7 +118,7 @@
       </div>
       <p class="text-xs text-slate-500 mb-3">Anuncios y productos que usan una palabra de tu lista marcada como <b>«revisar»</b>: se publicaron, pero decides tú. Las marcadas como <b>«bloquear»</b> ni siquiera dejan publicar (la persona ve el motivo). Se ignoran mayúsculas, tildes y signos. Solo los moderadores ven esta lista.</p>
       <div id="palabras-cola" class="space-y-2"></div>
-      <details id="palabras-editor" class="mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+      <details id="palabras-editor" class="solo-admin mt-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
         <summary class="font-black text-indigo-900 cursor-pointer">✏️ Editar la lista <span id="n-palabras" class="text-sm font-semibold text-slate-500"></span></summary>
         <div class="flex flex-wrap gap-2 mt-3">
           <input id="pp-palabra" maxlength="40" placeholder="Palabra o frase (ej. pague primero)" class="flex-1 min-w-[12rem] border border-slate-300 p-2 rounded-lg text-sm">
@@ -121,13 +136,13 @@
       <div id="rcal-lista" class="space-y-3"></div>
 
       <!-- El inicio (carrusel y cuadros) y el entrenamiento del buscador se editan en «🎨 Editar inicio» (fase 2Z.2) -->
-      <a href="editar-inicio.html" class="mt-10 flex items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 hover:border-indigo-400 rounded-2xl p-4 no-underline">
+      <a href="editar-inicio.html" class="solo-admin mt-10 flex items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 hover:border-indigo-400 rounded-2xl p-4 no-underline">
         <span><b class="text-indigo-900">🎨 Editar inicio y buscador</b><span class="block text-xs text-slate-600">Carrusel, cuadros de acceso y 🧠 entrenar el buscador con tus propias palabras</span></span>
         <span class="text-indigo-600 font-bold text-sm whitespace-nowrap">Abrir →</span>
       </a>
 
       <!-- Categorías de comercios (fase 2Z.5; tabla de supabase/15_categorias_comercio.sql). También en admin-comercios.html -->
-      <section id="categorias-comercio" class="mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+      <section id="categorias-comercio" class="solo-admin mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
         <details>
           <summary class="cursor-pointer text-lg font-black text-indigo-900">🏪 Categorías de comercios <span id="cc-n" class="text-sm font-semibold text-slate-500"></span></summary>
           <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra, ordena o desactiva las categorías del <b>directorio de comercios</b> (farmacias, panaderías, bares…). Las <b>palabras clave</b> (separadas por coma) ayudan al buscador: en «Pastelerías», <i>postres, torta, ponqué</i>. Una categoría nueva aparece de una vez al registrar o editar un comercio, en los filtros del directorio y en el menú «Lleva a» de los cuadros. Una desactivada deja de ofrecerse, pero los comercios que ya la tienen la conservan.</p>
@@ -145,7 +160,7 @@
       </section>
 
       <!-- Categorías de anuncios (fase 2Z, supabase/19_categorias_anuncio.sql) -->
-      <section id="categorias-anuncio" class="mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+      <section id="categorias-anuncio" class="solo-admin mt-10 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
         <details>
           <summary class="cursor-pointer text-lg font-black text-indigo-900">🏷️ Categorías de anuncios <span id="ca-n" class="text-sm font-semibold text-slate-500"></span></summary>
           <p class="text-xs text-slate-500 mt-2 mb-3">Agrega, renombra, ordena o desactiva las categorías de los <b>anuncios y clasificados</b>. Las <b>palabras clave</b> (separadas por coma) ayudan al buscador inteligente («guitarra» → Música). Las <b>subcategorías</b> se escriben separadas por coma (máx. 20). Una categoría desactivada no se ofrece al publicar, pero los anuncios que ya la tienen la conservan.</p>
@@ -185,9 +200,9 @@
     .mod-tab[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=67"></script>
-  <script src="data.js?v=67"></script>
-  <script src="iconos.js?v=67"></script>
-  <script src="moderacion.js?v=67"></script>
+  <script src="utils.js?v=68"></script>
+  <script src="data.js?v=68"></script>
+  <script src="iconos.js?v=68"></script>
+  <script src="moderacion.js?v=68"></script>
 </body>
 </html>

@@ -88,7 +88,7 @@ async function pintarTabla() {
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarSesion();
   $("rf-cargando").classList.add("hidden");
-  if (!esModerador()) {
+  if (!esAdmin()) {   // fase 2AK: solo administrador
     $("rf-sin-permiso-txt").textContent = usuarioActual
       ? "Tu cuenta no tiene rol de moderador."
       : "Inicia sesión con tu cuenta de administrador.";

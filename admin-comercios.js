@@ -284,15 +284,15 @@ function filaEditor(c) {
     <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
       <span class="font-bold text-slate-500">🙋 Dueño:</span>
       ${c.ownerId ? '<span class="bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-semibold">asignado</span>' : '<span class="text-slate-400">sin asignar</span>'}
-      <input data-dueno placeholder="correo de su cuenta" class="border border-slate-300 p-1.5 rounded-lg w-44 sm:w-56">
-      <button type="button" data-acc="dueno" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-2.5 py-1.5 rounded-lg">Asignar</button>
-      ${c.ownerId ? '<button type="button" data-acc="quitar-dueno" class="text-red-600 hover:underline">Quitar</button>' : ""}
+      <input data-dueno placeholder="correo de su cuenta" class="solo-admin border border-slate-300 p-1.5 rounded-lg w-44 sm:w-56">
+      <button type="button" data-acc="dueno" class="solo-admin bg-teal-600 hover:bg-teal-700 text-white font-semibold px-2.5 py-1.5 rounded-lg">Asignar</button>
+      ${c.ownerId ? '<button type="button" data-acc="quitar-dueno" class="solo-admin text-red-600 hover:underline">Quitar</button>' : ""}
       <a href="mi-tienda.html?id=${c.id}" class="ml-auto text-indigo-600 underline">🛍️ ${c.nProductos ? c.nProductos + " producto(s) · editar vitrina" : "Editar vitrina"}</a>
     </div>
     <div class="flex flex-wrap items-center gap-4 mt-2 text-sm">
       <label class="flex items-center gap-1.5"><input type="checkbox" data-k="activo" ${c.activo ? "checked" : ""}> Visible en el mapa</label>
       <button type="button" data-acc="guardar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">Guardar</button>
-      <button type="button" data-acc="borrar" class="text-red-600 hover:underline text-xs">Borrar</button>
+      <button type="button" data-acc="borrar" class="solo-admin text-red-600 hover:underline text-xs">Borrar</button>
     </div>
   </article>`;
 }

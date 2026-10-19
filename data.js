@@ -116,6 +116,15 @@ let DEPARTAMENTOS = {};            // { "Antioquia": ["Medellín", ...] } (se ar
 let errorCargaAnuncios = false;
 
 const esModerador = () => !!usuarioActual && (usuarioActual.rol === "moderador" || usuarioActual.rol === "admin");
+// Fase 2AK: el administrador (tú) tiene todo; el moderador solo modera contenido. La base de datos lo hace cumplir (SQL 38).
+const esAdmin = () => !!usuarioActual && usuarioActual.rol === "admin";
+// Marca la página con el rol: lo «solo-admin» se esconde para los demás (CSS) y la etiqueta dice 👑 o 🛡️
+function aplicarRolPagina() {
+  const rol = usuarioActual ? usuarioActual.rol : "";
+  document.documentElement.dataset.rol = rol || "visitante";
+  document.querySelectorAll(".etq-rol").forEach(e => { e.textContent = rol === "admin" ? "👑 Modo administrador" : "🛡️ Modo moderador"; });
+}
+document.addEventListener("DOMContentLoaded", aplicarRolPagina);
 
 // ---------- Errores en español ----------
 // Convierte los mensajes técnicos de Supabase en algo que un vecino entienda.
@@ -478,6 +487,7 @@ async function refrescarUsuario(sesion) {
     if (data) { nombre = data.nombre; rol = data.rol; }
     usuarioActual = { id: u.id, nombre, email: u.email, rol };
     EDITOR = esModerador();   // EDITOR (utils.js) ya no viene de la URL: viene del ROL en la base de datos
+    aplicarRolPagina();
     enviarRefSiFalta();       // cuentas creadas con Google: guarda el código ?ref= (una sola vez)
     return usuarioActual;
   } catch (e) {
@@ -1471,7 +1481,8 @@ async function cargarNegociosPendientes(estado, soloMias) {
     if (soloMias && usuarioActual) q = q.eq("solicitante_id", usuarioActual.id);
     return q;
   };
-  let { data, error } = await consulta(", modo_atencion, datos_sanitarios");
+  let { data, error } = await consulta(", modo_atencion, datos_sanitarios, propuesta, propuesta_nota, propuesta_en, proponente:perfiles!propuesta_por(nombre)");
+  if (error && /propuesta/.test(error.message || "")) ({ data, error } = await consulta(", modo_atencion, datos_sanitarios"));   // sin el SQL 38
   if (error && /datos_sanitarios/.test(error.message || "")) ({ data, error } = await consulta(", modo_atencion"));   // sin el SQL 29
   if (error && /modo_atencion/.test(error.message || "")) ({ data, error } = await consulta(""));   // sin el SQL 24
   if (error) throw error;
@@ -1604,7 +1615,8 @@ async function cargarSolicitudesComercio(estado) {
     if (estado) q = q.eq("estado", estado);
     return q;
   };
-  let { data, error } = await consulta(", datos_sanitarios");
+  let { data, error } = await consulta(", datos_sanitarios, propuesta, propuesta_nota, propuesta_en, proponente:perfiles!propuesta_por(nombre)");
+  if (error && /propuesta/.test(error.message || "")) ({ data, error } = await consulta(", datos_sanitarios"));   // sin el SQL 38
   if (error && /datos_sanitarios/.test(error.message || "")) ({ data, error } = await consulta(""));   // sin el SQL 31
   if (error) throw error;
   return data || [];
@@ -2573,6 +2585,25 @@ function prepararImagenLogo(archivo) {
   });
 }
 if (typeof sb !== "undefined" && sb) actualizarLogoPagina();
+
+// =====================================================================
+// EQUIPO Y PROPUESTAS (fase 2AK · supabase/38_admin_seguridad.sql)
+// =====================================================================
+// El moderador propone 👍 aprobar / 👎 rechazar un negocio nuevo o un reclamo de ficha; el administrador decide.
+async function proponerResolucion(tipo, id, decision, nota) {
+  const { error } = await sb.rpc("proponer_resolucion", { p_tipo: tipo, p_id: id, p_decision: decision, p_nota: nota || null });
+  if (error) throw error;
+}
+// Solo administrador: buscar personas (sin texto = el equipo actual) y nombrar o quitar moderadores
+async function buscarPersona(texto) {
+  const { data, error } = await sb.rpc("buscar_persona", { p_texto: texto || "" });
+  if (error) throw error;
+  return data || [];
+}
+async function cambiarRol(usuarioId, rol) {
+  const { error } = await sb.rpc("cambiar_rol", { p_usuario: usuarioId, p_rol: rol });
+  if (error) throw error;
+}
 
 // =====================================================================
 // MÉTRICAS DEL PILOTO (fase 2AJ · supabase/37_metricas.sql)

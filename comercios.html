@@ -7,7 +7,7 @@
   <title>Directorio de comercios | Merkap</title>
   <meta name="description" content="Directorio de comercios de tu ciudad: farmacias, panaderías, supermercados y más, con sello de verificación, horario y cómo llegar.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=60">
+  <link rel="stylesheet" href="styles.css?v=61">
 </head>
 <body class="bg-slate-50 text-slate-800" data-nav="comercios">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -87,6 +87,7 @@
         <div class="flex flex-col justify-end gap-2">
           <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="co-abierto" class="w-4 h-4"><span class="text-sm font-medium">🟢 Abierto ahora</span></label>
           <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="co-vitrina" class="w-4 h-4"><span class="text-sm font-medium">🛍️ Con vitrina (productos)</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="co-salud" class="w-4 h-4"><span class="text-sm font-medium">🧾 Droguerías con datos sanitarios revisados</span></label>
         </div>
         <div class="flex items-end">
           <button type="button" id="co-limpiar" class="text-sm text-slate-500 hover:text-slate-800 underline">Limpiar todos los filtros</button>
@@ -141,7 +142,8 @@
         </div>
         <!-- Fase 2AB.2b: si reclama una droguería o tienda naturista, deja sus datos sanitarios (privados) -->
         <div id="sol-salud" class="hidden border-2 border-emerald-200 rounded-xl p-3 space-y-2">
-          <p class="font-black text-emerald-900 text-sm">🧾 Datos sanitarios <span class="text-xs font-semibold text-emerald-700">(obligatorio para droguerías y naturistas)</span></p>
+          <p class="font-black text-emerald-900 text-sm">🧾 Datos sanitarios <span class="text-xs font-semibold text-emerald-700">(opcional · recomendado)</span></p>
+          <p id="sol-salud-beneficios" class="text-xs text-emerald-900"></p>
           <div id="sol-salud-campos"></div>
         </div>
         <button type="submit" id="sol-enviar" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl disabled:opacity-60">Enviar solicitud</button>
@@ -158,10 +160,10 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=60"></script>
-  <script src="data.js?v=60"></script>
-  <script src="navegacion.js?v=60"></script>
-  <script src="buscador.js?v=60"></script>
-  <script src="comercios.js?v=60"></script>
+  <script src="utils.js?v=61"></script>
+  <script src="data.js?v=61"></script>
+  <script src="navegacion.js?v=61"></script>
+  <script src="buscador.js?v=61"></script>
+  <script src="comercios.js?v=61"></script>
 </body>
 </html>

@@ -226,8 +226,8 @@ function comerciosBase() {
 // ---------- ⭐ Selección del día (fase 2AC) ----------
 function pintarSeleccionDia() {
   const lista = seleccionDelDia(baseDatosAnuncios, 8);
-  $("seleccion-dia").classList.toggle("hidden", lista.length < 3);   // con muy pocos anuncios no se muestra
-  if (lista.length < 3) return;
+  $("seleccion-dia").classList.toggle("hidden", lista.length < 2);   // fase 2AC.1: desde 2 anuncios
+  if (lista.length < 2) return;
   $("sel-lista").innerHTML = lista.map(a => {
     const foto = urlSegura(a.imagen);
     return `<a href="anuncio.html?id=${a.id}" class="sel-card" data-sel="${a.id}">

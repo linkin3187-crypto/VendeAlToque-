@@ -641,3 +641,18 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Ficha y tarjetas:** «🕒 Publicado hace X», «📷 N» fotos, contador 1/N con puntos, flechas y deslizar con el dedo; **precio fijo / 🤝 negociable** (se elige al publicar); similares con distancia y la explicación de cómo se ordenan.
 
 **Revertir:** PR → **Revert**. Las tablas pueden quedarse.
+
+## Fase 2AC.1 · Datos sanitarios opcionales, Selección del día con pocos anuncios y similares cercanos
+
+**SQL:** `supabase/33_salud_opcional.sql` — **antes** de fusionar. Debe mostrar `sin_requisito = true`. Es repetible.
+
+**Cambian:** `data.js`, `app.js`, `anuncio.*`, `comercios.*`, `registrar-negocio.*`, `mi-tienda.*`. Caché `?v=61`.
+
+- **Datos sanitarios opcionales** para droguerías, naturistas y tiendas que marquen farmacia como secundaria: registran, reclaman y cargan productos sin llenarlos. Si empiezan a llenarlos, se validan completos.
+- **Medicamentos:** siguen prohibidos para todos (nada de esto los habilita).
+- **Mensaje en Mi tienda:** «Puedes vender todo lo que no sea medicamento… tu ficha aún no tiene el distintivo 🧾… (opcional)».
+- **Incentivos para llenarlos:** distintivo 🧾 (con tu visto bueno), aparecer **primero** entre las droguerías del directorio, filtro «🧾 Droguerías con datos sanitarios revisados» y tener hecho el primer paso para la venta libre (2AB.3).
+- **Selección del día:** se muestra desde 2 anuncios; primero uno por vendedor con foto, si no alcanza repite vendedor y luego usa anuncios sin foto.
+- **Anuncios similares:** si no hay 4 de la misma categoría, completa con «Más anuncios cerca» (dice la categoría y la distancia).
+
+**Revertir:** PR → **Revert**.

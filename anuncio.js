@@ -134,12 +134,13 @@ async function compartir() {
 
 function renderizarSimilares(a) {
   const origen = tieneCoords(a) ? { lat: a.lat, lng: a.lng } : null;
-  const similares = baseDatosAnuncios
-    .filter(x => x.id !== a.id && x.categoria === a.categoria)
-    .sort((x, y) => (origen && tieneCoords(x) && tieneCoords(y))
-      ? distanciaKm(origen, x) - distanciaKm(origen, y) : y.fecha - x.fecha)
-    .slice(0, 8);
+  const orden = (x, y) => (origen && tieneCoords(x) && tieneCoords(y)) ? distanciaKm(origen, x) - distanciaKm(origen, y) : y.fecha - x.fecha;
+  const mismos = baseDatosAnuncios.filter(x => x.id !== a.id && x.categoria === a.categoria).sort(orden).slice(0, 8);
+  // Fase 2AC.1: si no completa 4, se rellena con otros anuncios cercanos de otras categorías
+  const cerca = mismos.length >= 4 ? [] : baseDatosAnuncios.filter(x => x.id !== a.id && x.categoria !== a.categoria).sort(orden).slice(0, 4 - mismos.length);
+  const similares = [...mismos.map(x => ({ ...x, otraCat: false })), ...cerca.map(x => ({ ...x, otraCat: true }))];
   if (!similares.length) return;
+  $("similares-titulo").textContent = mismos.length ? (cerca.length ? "Anuncios similares y cerca" : "Anuncios similares") : "Más anuncios cerca";
   $("seccion-similares").classList.remove("hidden");
   $("lista-similares").innerHTML = similares.map(s => {
     const foto = urlSegura(s.imagen);
@@ -149,13 +150,14 @@ function renderizarSimilares(a) {
         ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
       </div>
       <div class="p-3">
+        ${s.otraCat ? `<p class="text-[10px] font-semibold text-slate-400 uppercase">${esc((CATEGORIAS.find(c => c.id === s.categoria) || {}).nombre || "")}</p>` : ""}
         <p class="text-sm font-semibold line-clamp-2">${esc(s.nombre)}</p>
         ${s.precio ? `<p class="text-sm text-indigo-600 font-bold">${esc(precioConSufijo(s))}</p>` : ""}
         ${origen && tieneCoords(s) ? `<p class="text-[11px] text-slate-500">📏 ${esc(distanciaCorta(distanciaKm(origen, s)))}${s.ubicacionAprox ? " (aprox.)" : ""}</p>` : ""}
       </div>
     </a>`;
   }).join("");
-  $("similares-nota").textContent = origen ? "Misma categoría, ordenados del más cercano a este anuncio al más lejano." : "Misma categoría, los más recientes primero.";
+  $("similares-nota").textContent = (mismos.length ? "Primero los de la misma categoría" : "De otras categorías") + (cerca.length && mismos.length ? "; después, otros anuncios cerca" : "") + (origen ? ", del más cercano a este anuncio al más lejano." : ", los más recientes primero.");
   $("lista-similares").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
 }
 

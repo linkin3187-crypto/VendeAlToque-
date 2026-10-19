@@ -48,7 +48,7 @@ function validarPaso(n) {
     if (!pinFijado) return modoElegido() === "local" ? "Marca la puerta de tu negocio en el mapa (arrastra el pin o toca el mapa)" : "Marca tu casa o tu zona en el mapa (arrastra el pin o toca el mapa)";
   }
   if (n === 3) {
-    if (esTipoSalud($("rn-tipo").value)) { const r = leerDatosSanitarios("rn-ds"); if (r.error) return r.error; }
+    if (esTipoSalud($("rn-tipo").value)) { const r = leerDatosSanitariosOpcional("rn-ds"); if (r.error) return r.error; }
     if (!fotoData) return modoElegido() === "local" ? "Sube la foto de la fachada" : "Sube una foto de tus productos o tu logo";
     if (!$("rn-acepto").checked) return "Debes confirmar que eres el dueño o administrador y aceptar los términos";
   }
@@ -143,7 +143,7 @@ async function enviar(e) {
       telefono: $("rn-tel").value.trim(), whatsapp: wa ? "57" + wa : null,
       horario: $("rn-hor").value.trim(), descripcion: $("rn-desc").value.trim(),
       foto: fotoData, modo: modoElegido(),
-      datosSanitarios: esTipoSalud($("rn-tipo").value) ? leerDatosSanitarios("rn-ds").datos : null, gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
+      datosSanitarios: esTipoSalud($("rn-tipo").value) ? leerDatosSanitariosOpcional("rn-ds").datos : null, gpsCerca: !!gpsPos && distanciaKm(gpsPos, { lat: p.lat, lng: p.lng }) <= 0.15
     });
     $("rn-form-caja").classList.add("hidden");
     $("rn-exito").classList.remove("hidden");
@@ -173,6 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("rn-tipo").value = "tienda";
   // Fase 2AB.1: al elegir Farmacia/Droguería o Naturista aparecen los datos sanitarios (paso 3)
   $("rn-salud-campos").innerHTML = htmlDatosSanitarios("rn-ds", { tipo_establecimiento: "" });
+  $("rn-salud-beneficios").innerHTML = "💡 " + BENEFICIOS_SALUD;
   const aplicarSalud = () => {
     const salud = esTipoSalud($("rn-tipo").value);
     $("rn-salud").classList.toggle("hidden", !salud);

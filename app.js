@@ -223,6 +223,21 @@ function comerciosBase() {
   });
 }
 
+// ---------- ⭐ Selección del día (fase 2AC) ----------
+function pintarSeleccionDia() {
+  const lista = seleccionDelDia(baseDatosAnuncios, 8);
+  $("seleccion-dia").classList.toggle("hidden", lista.length < 3);   // con muy pocos anuncios no se muestra
+  if (lista.length < 3) return;
+  $("sel-lista").innerHTML = lista.map(a => {
+    const foto = urlSegura(a.imagen);
+    return `<a href="anuncio.html?id=${a.id}" class="sel-card" data-sel="${a.id}">
+      <span class="sel-foto">${iconosCategoria[a.categoria] || "📦"}${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${a.elegidoMod ? '<b class="sel-estrella" title="Elegido por Merkap">⭐</b>' : ""}</span>
+      <span class="sel-txt"><span class="sel-nombre">${esc(a.nombre)}</span>${a.precio ? `<span class="sel-precio">${esc(precioConSufijo(a))}</span>` : ""}<span class="sel-lugar">${esc(a.ciudad || a.barrio || "")}</span></span>
+    </a>`;
+  }).join("");
+  $("sel-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
+}
+
 function textoDistancia(km) {
   return km < 1 ? Math.max(10, Math.round(km * 100) * 10) + " m" : km.toFixed(1).replace(".", ",") + " km";
 }
@@ -1078,7 +1093,7 @@ async function registrarAnuncio(e) {
       categoria: $("form-categoria").value,
       subcategoria: $("form-subcategoria").value,
       estado: $("form-estado").value,
-      detalles: leerDetallesForm(),
+      detalles: { ...leerDetallesForm(), precio_tipo: extraerPrecio($("form-precio").value) ? ((document.querySelector('input[name="precio-tipo"]:checked') || {}).value || "fijo") : "" },
       departamento: $("form-departamento").value,
       ciudad: $("form-ciudad").value === "__otra" ? "" : $("form-ciudad").value,
       ciudadNueva: $("form-ciudad").value === "__otra" ? $("form-ciudad-nueva").value.trim() : "",
@@ -1114,6 +1129,7 @@ async function registrarAnuncio(e) {
   marcarCategoriaActiva();
   refrescarOpcionesUbicacion();
   aplicarFiltros();
+  pintarSeleccionDia();
   activarModoEditor();
   setTimeout(() => resaltarTarjeta(anuncio.id, true), 100);
 }
@@ -1132,6 +1148,7 @@ async function editarAnuncio(id) {
   $("form-estado").value = a.estado || "usado";
   actualizarSubcategoriasForm(a.subcategoria, a.detalles || {});
   $("form-precio").value = extraerPrecio(a.precio) || "";
+  document.querySelectorAll('input[name="precio-tipo"]').forEach(r => { r.checked = r.value === (((a.detalles || {}).precio_tipo) || "fijo"); });
   $("form-departamento").value = a.departamento || Object.keys(DEPARTAMENTOS)[0];
   actualizarCiudadesForm();
   $("form-ciudad").value = a.ciudad || "";
@@ -1384,6 +1401,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   refrescarMiTienda();
   await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
   aplicarFiltros();
+  pintarSeleccionDia();
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
   cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); });

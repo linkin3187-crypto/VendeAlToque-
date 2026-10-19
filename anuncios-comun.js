@@ -340,7 +340,8 @@ function tarjetaHTML(a) {
     <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
       <span class="text-5xl">${icono}</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow">${esc(precioConSufijo(a))}</div>` : ""}
+      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow text-right">${esc(precioConSufijo(a))}${(a.detalles || {}).precio_tipo === "negociable" ? '<span class="block text-[10px] font-semibold text-indigo-100">Negociable</span>' : ""}</div>` : ""}
+      ${a.fotos && a.fotos.length > 1 ? `<span class="absolute bottom-8 right-2 bg-black/60 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md" aria-label="${a.fotos.length} fotos">📷 ${a.fotos.length}</span>` : ""}
       <span class="cinta-ver absolute bottom-0 inset-x-0 text-center text-xs font-bold text-white py-1.5">👆 Toca para ver el anuncio completo</span>
     </a>
     <div class="p-4 flex flex-col flex-1">
@@ -349,6 +350,7 @@ function tarjetaHTML(a) {
         ${nombreSubcategoria(a.categoria, a.subcategoria) ? `<span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(nombreSubcategoria(a.categoria, a.subcategoria))}</span>` : ""}
         ${badgeEstado}
         ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
+        ${a.fecha ? `<span class="text-xs text-slate-400" title="Fecha de publicación">🕒 ${esc(haceCuanto(a.fecha))}</span>` : ""}
       </div>
       <h3 class="font-bold text-slate-900 mb-1 line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
       ${(() => { const r = resumenDetalles(a); return r.length ? `<div class="det-chips">${r.slice(0, 5).map((t, i) => `<span class="det-chip ${i === 0 && a.detalles && a.detalles.operacion ? "op" : ""}">${esc(t)}</span>`).join("")}</div>` : ""; })()}

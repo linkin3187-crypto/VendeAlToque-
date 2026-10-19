@@ -192,7 +192,8 @@ function filaAAnuncio(r) {
     owner: r.owner_id,
     ubicacionAprox: !!r.ubicacion_aprox,   // true = lat/lng públicos están desplazados (ver anuncios_ubicacion)
     detalles: (r.detalles && typeof r.detalles === "object" && !Array.isArray(r.detalles)) ? r.detalles : {},
-    fecha: Date.parse(r.creado_en)
+    fecha: Date.parse(r.creado_en),
+    seleccionHasta: r.seleccion_hasta ? Date.parse(r.seleccion_hasta) : 0   // fase 2AC: «⭐ Selección del día» (la eligen los moderadores)
   });
 }
 
@@ -214,12 +215,16 @@ function normalizarAnuncio(a) {
 // Columnas PÚBLICAS de un anuncio. El WhatsApp y el teléfono NO se leen de la tabla: solo con
 // contacto_anuncio(id), que exige cuenta (ver supabase/13_contacto_anuncios.sql y 13b_proteger_contacto.sql).
 // Fase 2Z.7: + detalles (inmuebles y vehículos). Si aún no se ejecutó el SQL 23, se quita sola (ver conDetalles).
-let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles";
+let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles, seleccion_hasta";
 let hayColumnaDetalles = true;
 const sinColumnaDetalles = e => /detalles/.test((e && e.message) || "");
 // Ejecuta una consulta de anuncios; si falla porque falta la columna «detalles», la repite sin ella
 async function conDetalles(hacer) {
   let r = await hacer(COLS_ANUNCIO);
+  if (r.error && /seleccion_hasta/.test(r.error.message || "")) {   // fase 2AC: aún sin el SQL 32
+    COLS_ANUNCIO = COLS_ANUNCIO.replace(", seleccion_hasta", "");
+    r = await hacer(COLS_ANUNCIO);
+  }
   if (r.error && hayColumnaDetalles && sinColumnaDetalles(r.error)) {
     hayColumnaDetalles = false;
     COLS_ANUNCIO = COLS_ANUNCIO.replace(", detalles", "");
@@ -1239,8 +1244,10 @@ const TIPOS_SALUD = ["farmacia", "naturista"];
 const esTipoSalud = t => TIPOS_SALUD.includes(t);
 const esComercioSalud = c => !!c && (esTipoSalud(c.tipo) || (c.tiposExtra || []).some(esTipoSalud));
 // Fase 2AB.2b: ¿la vitrina se ve en público? Verificado (teléfono o en persona) y, si es de salud, con visto bueno sanitario.
+// Opción B (fase 2AC): la vitrina de una droguería solo necesita estar verificada, como cualquier comercio.
+// El visto bueno sanitario enciende el distintivo 🧾 y será requisito para vender medicamentos de venta libre (2AB.3).
 const saludPendiente = c => esComercioSalud(c) && c.tieneSelloSalud && !c.saludRevisado;
-const vitrinaPublica = c => !!c && c.activo !== false && c.nivel >= 2 && !saludPendiente(c);
+const vitrinaPublica = c => !!c && c.activo !== false && c.nivel >= 2;
 const BADGE_SALUD = '<span class="badge-salud" title="Merkap revisó su razón social, NIT y director técnico. No significa que venda medicamentos por Merkap.">🧾 Datos sanitarios revisados</span>';
 const TIPOS_ESTABLECIMIENTO_SALUD = {
   drogueria: "Droguería (director técnico o regente)",
@@ -1330,10 +1337,66 @@ async function cargarDatosSanitariosPorRevisar() {
   return data || [];
 }
 // Cola «💊 Posibles medicamentos» (solo moderadores)
-async function cargarRevisionSalud() {
-  const { data, error } = await sb.from("revision_salud").select("*").eq("estado", "pendiente").order("creado_en", { ascending: true }).limit(200);
+// motivo: 'salud' (medicamentos) o 'palabra' (palabras prohibidas, SQL 32). Sin el SQL 32 todo es 'salud'.
+async function cargarRevisionSalud(motivo) {
+  const consulta = conMotivo => {
+    let q = sb.from("revision_salud").select("*").eq("estado", "pendiente").order("creado_en", { ascending: true }).limit(200);
+    if (conMotivo) q = q.eq("motivo", motivo || "salud");
+    return q;
+  };
+  let { data, error } = await consulta(true);
+  if (error && /motivo/.test(error.message || "")) {
+    if (motivo === "palabra") throw new Error("Se activa al ejecutar supabase/32_palabras_y_seleccion.sql");
+    ({ data, error } = await consulta(false));
+  }
+  if (error) throw error;
+  return (data || []).filter(r => !r.motivo || r.motivo === (motivo || "salud"));
+}
+// ---------- 🚫 Palabras prohibidas (fase 2AC, solo moderadores) ----------
+async function cargarPalabrasProhibidas() {
+  const { data, error } = await sb.from("palabras_prohibidas").select("*").order("accion").order("palabra");
   if (error) throw error;
   return data || [];
+}
+async function guardarPalabraProhibida(fila) {
+  const { id, ...resto } = fila;
+  const q = id ? sb.from("palabras_prohibidas").update(resto).eq("id", id) : sb.from("palabras_prohibidas").insert(resto);
+  const { error } = await q;
+  if (error) throw error;
+}
+async function borrarPalabraProhibida(id) {
+  const { error } = await sb.from("palabras_prohibidas").delete().eq("id", id);
+  if (error) throw error;
+}
+// ---------- ⭐ Selección del día (fase 2AC) ----------
+// Primero los que eligió un moderador (vigentes); se completa sola con anuncios recientes con foto,
+// uno por vendedor y variando categorías. Cambia cada día (orden «al azar» fijo por fecha).
+function seleccionDelDia(lista, max) {
+  max = max || 8;
+  const ahora = Date.now();
+  const elegidos = lista.filter(a => a.seleccionHasta > ahora).sort((a, b) => b.fecha - a.fecha);
+  const usados = new Set(elegidos.map(a => a.id));
+  const dia = new Date().toISOString().slice(0, 10);
+  const semilla = id => { let h = 2166136261; for (const ch of dia + ":" + id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const recientes = lista.filter(a => !usados.has(a.id) && a.imagen && ahora - a.fecha < 14 * 864e5)
+    .sort((a, b) => semilla(a.id) - semilla(b.id));
+  const vendedores = new Set(elegidos.map(a => a.owner)), cats = {};
+  const relleno = [];
+  for (const a of recientes) {
+    if (elegidos.length + relleno.length >= max) break;
+    if (a.owner && vendedores.has(a.owner)) continue;
+    if ((cats[a.categoria] || 0) >= 2) continue;
+    vendedores.add(a.owner); cats[a.categoria] = (cats[a.categoria] || 0) + 1;
+    relleno.push(a);
+  }
+  return [...elegidos.slice(0, max), ...relleno].slice(0, max).map(a => ({ ...a, elegidoMod: a.seleccionHasta > ahora }));
+}
+async function marcarSeleccionDia(id, horas) {
+  const hasta = horas ? new Date(Date.now() + horas * 3600e3).toISOString() : null;
+  const { error } = await sb.from("anuncios").update({ seleccion_hasta: hasta }).eq("id", id);
+  if (error) throw error;
+  const a = baseDatosAnuncios.find(x => x.id === id);
+  if (a) a.seleccionHasta = hasta ? Date.parse(hasta) : 0;
 }
 async function resolverRevisionSalud(id, estado) {
   const { error } = await sb.from("revision_salud").update({ estado }).eq("id", id);
@@ -1962,6 +2025,7 @@ function limpiarDetalles(cat, sub, d) {
     if (c.tipo === "sel") { if (c.op.some(([val]) => val === String(v))) out[c.k] = String(v); return; }
     out[c.k] = String(v).trim().slice(0, c.max || 60);
   });
+  if (d.precio_tipo === "fijo" || d.precio_tipo === "negociable") out.precio_tipo = d.precio_tipo;   // fase 2AC: cualquier categoría
   return out;
 }
 

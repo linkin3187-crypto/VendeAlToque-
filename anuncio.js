@@ -29,6 +29,10 @@ function mostrarFoto(i) {
   }
   document.querySelectorAll(".miniatura").forEach((m, idx) =>
     m.setAttribute("aria-current", idx === fotoActiva ? "true" : "false"));
+  if ($("gal-contador")) {
+    $("gal-contador").textContent = `📷 ${fotoActiva + 1}/${fotos.length}`;
+    $("gal-puntos").querySelectorAll("i").forEach((p, idx) => p.classList.toggle("on", idx === fotoActiva));
+  }
 }
 
 // ---------- Foto completa (visor) ----------
@@ -88,6 +92,20 @@ function renderizarGaleria(a) {
       if (b) mostrarFoto(Number(b.dataset.foto));
     });
   }
+  if (a.fotos.length > 1) {   // fase 2AC: contador «1/5», puntos y flechas sobre la foto
+    $("galeria-principal").insertAdjacentHTML("beforeend", `<button type="button" id="gal-ant" class="gal-flecha izq" aria-label="Foto anterior">‹</button>
+      <button type="button" id="gal-sig" class="gal-flecha der" aria-label="Foto siguiente">›</button>
+      <span id="gal-contador" class="gal-contador" aria-live="polite"></span>
+      <span id="gal-puntos" class="gal-puntos" aria-hidden="true">${a.fotos.map(() => "<i></i>").join("")}</span>`);
+    $("gal-ant").addEventListener("click", e => { e.stopPropagation(); mostrarFoto(fotoActiva - 1); });
+    $("gal-sig").addEventListener("click", e => { e.stopPropagation(); mostrarFoto(fotoActiva + 1); });
+    let x0 = null;   // deslizar con el dedo
+    $("galeria-principal").addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+    $("galeria-principal").addEventListener("touchend", e => {
+      if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) mostrarFoto(fotoActiva + (dx < 0 ? 1 : -1));
+    });
+  }
   if (a.fotos.length) {
     mostrarFoto(0);
     $("galeria-principal").addEventListener("click", e => { if (e.target.tagName === "IMG") abrirVisor(); });
@@ -120,7 +138,7 @@ function renderizarSimilares(a) {
     .filter(x => x.id !== a.id && x.categoria === a.categoria)
     .sort((x, y) => (origen && tieneCoords(x) && tieneCoords(y))
       ? distanciaKm(origen, x) - distanciaKm(origen, y) : y.fecha - x.fecha)
-    .slice(0, 4);
+    .slice(0, 8);
   if (!similares.length) return;
   $("seccion-similares").classList.remove("hidden");
   $("lista-similares").innerHTML = similares.map(s => {
@@ -132,10 +150,12 @@ function renderizarSimilares(a) {
       </div>
       <div class="p-3">
         <p class="text-sm font-semibold line-clamp-2">${esc(s.nombre)}</p>
-        ${s.precio ? `<p class="text-sm text-indigo-600 font-bold">${esc(s.precio)}</p>` : ""}
+        ${s.precio ? `<p class="text-sm text-indigo-600 font-bold">${esc(precioConSufijo(s))}</p>` : ""}
+        ${origen && tieneCoords(s) ? `<p class="text-[11px] text-slate-500">📏 ${esc(distanciaCorta(distanciaKm(origen, s)))}${s.ubicacionAprox ? " (aprox.)" : ""}</p>` : ""}
       </div>
     </a>`;
   }).join("");
+  $("similares-nota").textContent = origen ? "Misma categoría, ordenados del más cercano a este anuncio al más lejano." : "Misma categoría, los más recientes primero.";
   $("lista-similares").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
 }
 
@@ -168,7 +188,20 @@ function renderizarAnuncio(a) {
   const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
   if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }
   $("anuncio-precio").textContent = a.precio ? precioConSufijo(a) : "Precio a convenir";
-  $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ");
+  // Fase 2AC: precio fijo o negociable + «Publicado hace X»
+  const tp = (a.detalles || {}).precio_tipo;
+  if (a.precio && ETIQUETA_PRECIO[tp]) $("anuncio-precio").insertAdjacentHTML("beforeend", ` <span class="etq-precio ${tp}">${ETIQUETA_PRECIO[tp]}</span>`);
+  $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ") + (a.fecha ? " · 🕒 Publicado " + haceCuanto(a.fecha) : "");
+  // Moderadores: «⭐ Selección del día» (24 h)
+  if (esModerador() && !$("btn-seleccion")) {
+    $("anuncio-badges").insertAdjacentHTML("afterend", `<button type="button" id="btn-seleccion" class="mb-2 text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>`);
+    const pintarSel = () => { $("btn-seleccion").textContent = a.seleccionHasta > Date.now() ? "⭐ En Selección del día · Quitar" : "⭐ Poner en Selección del día (24 h)"; };
+    pintarSel();
+    $("btn-seleccion").addEventListener("click", async () => {
+      try { await marcarSeleccionDia(a.id, a.seleccionHasta > Date.now() ? 0 : 24); pintarSel(); mostrarToast(a.seleccionHasta ? "⭐ Aparece en la Selección del día por 24 h" : "Quitado de la Selección del día"); }
+      catch (err) { mostrarToast(mensajeError(err), "error"); }
+    });
+  }
   $("anuncio-desc").textContent = a.desc || "Sin descripción";
 
   const badgeEstado = a.estado === "nuevo"

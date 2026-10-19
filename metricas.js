@@ -11,7 +11,7 @@ const NOMBRE_PAGINA = {
 };
 const NOMBRE_ORIGEN = { directo: "Directo (escribió la dirección o app)", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram",
   google: "Google", tiktok: "TikTok", qr: "Código QR", referido: "Enlace de referido",
-  estado: "Estados de WhatsApp", volante: "Volante o afiche" };
+  estado: "Estados de WhatsApp", volante: "Volante o afiche", campana: "Campaña pausada o borrada" };
 const num = n => Number(n || 0).toLocaleString("es-CO");
 const fechaCorta = iso => { const [a, m, d] = String(iso).split("-").map(Number); return `${d} ${["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][m - 1]}`; };
 function hoyCo(offset) {

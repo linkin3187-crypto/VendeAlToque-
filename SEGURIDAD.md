@@ -28,8 +28,8 @@
 ## 3. Avisos del revisor que se dejan a propósito
 | Aviso | Por qué está bien |
 |---|---|
-| `contactos_anuncio`, `municipios_alta`, `metricas_eventos`: «RLS sin reglas» | Son privadas a propósito: solo las usan funciones del servidor. Quedó anotado en cada tabla. |
-| `es_moderador()`, `perfil_publico()`, `registrar_busqueda()`, `registrar_evento()` llamables sin sesión | Las necesita la página pública; no devuelven datos privados y tienen topes. |
+| `contactos_anuncio`, `municipios_alta`, `metricas_eventos`, `campanas_escaneos` (SQL 41): «RLS sin reglas» | Son privadas a propósito: solo las usan funciones del servidor. Quedó anotado en cada tabla. |
+| `es_moderador()`, `perfil_publico()`, `registrar_busqueda()`, `registrar_evento()`, `abrir_campana()` (SQL 41) llamables sin sesión | Las necesita la página pública; no devuelven datos privados y tienen topes. |
 | Funciones `SECURITY DEFINER` llamables con sesión (asignar dueño, resolver negocio, métricas, equipo…) | Cada una revisa adentro el rol o el dueño antes de actuar. Revisadas una por una. |
 
 ## 4. Pendiente (cuando pases a Supabase Pro, antes del piloto G1)

@@ -516,7 +516,8 @@ function pintarCamposDetalle(valores) {
   if (ayuda) ayuda.textContent = v.operacion === "arriendo" ? (tipo === "inmueble" ? "· valor del arriendo mensual" : "· valor por día") : v.operacion === "arriendo_dias" ? "· valor por noche" : "";
   caja.classList.toggle("hidden", !campos.length);
   if (!campos.length) { caja.innerHTML = ""; return; }
-  const titulo = { inmueble: "🏡 Datos del inmueble", carro: "🚗 Datos del vehículo", moto: "🏍️ Datos de la moto", repuesto: "🔧 Datos del repuesto", vehiculo: "🚜 Datos del vehículo" }[tipo] || "Datos";
+  const titulo = { inmueble: "🏡 Datos del inmueble", carro: "🚗 Datos del vehículo", moto: "🏍️ Datos de la moto", repuesto: "🔧 Datos del repuesto", vehiculo: "🚜 Datos del vehículo",
+    mascota: "🐾 Sobre el animal", adultos: "🔞 Producto para mayores de 18" }[tipo] || "Datos";
   const id = k => "det-" + k;
   const etiqueta = c => `<label for="${id(c.k)}" class="block text-xs font-bold text-slate-600 mb-1">${esc(c.t)}${c.obligatorio ? " *" : ""}</label>`;
   const control = c => {
@@ -530,7 +531,9 @@ function pintarCamposDetalle(valores) {
   const casillas = campos.filter(c => c.tipo === "si");
   caja.innerHTML = `<p class="text-sm font-black text-indigo-900 mb-2">${titulo}</p>
     <div class="grid grid-cols-2 gap-3">${campos.filter(c => c.tipo !== "si").map(c => `<div class="${c.k === "operacion" || c.k === "requisitos" || c.k === "compatible" ? "col-span-2" : ""}">${control(c)}</div>`).join("")}</div>
-    ${casillas.length ? `<div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${casillas.map(c => `<label class="text-sm flex items-center gap-1.5"><input type="checkbox" id="${id(c.k)}" data-det="${c.k}" ${v[c.k] === true ? "checked" : ""}> ${esc(c.t)}</label>`).join("")}</div>` : ""}
+    ${casillas.length ? `<div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">${casillas.map(c => `<label class="text-sm flex items-${c.obligatorio ? "start font-semibold" : "center"} gap-1.5"><input type="checkbox" id="${id(c.k)}" data-det="${c.k}" ${v[c.k] === true ? "checked" : ""} ${c.obligatorio ? "required" : ""} class="${c.obligatorio ? "mt-0.5" : ""}"> ${esc(c.t)}${c.obligatorio ? " *" : ""}</label>`).join("")}</div>` : ""}
+    ${tipo === "mascota" ? `<p class="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-3">🌿 <b>Solo animales domésticos o de criadero.</b> No se permite fauna silvestre (loros, guacamayas, pericos nativos o tortugas sin certificado, micos, iguanas, babillas…). Quien la publique pierde su cuenta. <a href="prohibidos.html#mascotas" target="_blank" class="underline">Ver qué sí se puede</a></p>` : ""}
+    ${tipo === "adultos" ? `<p class="text-xs text-rose-900 bg-rose-50 border border-rose-200 rounded-lg p-2 mt-3">🔞 Solo productos (juguetes, lencería, cuidado íntimo). Fotos del producto o el empaque, <b>sin desnudos</b>. Prohibidos los servicios sexuales y cualquier cosa con menores: cuenta eliminada. <a href="prohibidos.html#adultos" target="_blank" class="underline">Reglas</a></p>` : ""}
     ${avisoFraude({ categoria: cat, subcategoria: sub }) ? `<p class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-3">${avisoFraude({ categoria: cat, subcategoria: sub })}</p>` : ""}`;
 }
 
@@ -1121,7 +1124,8 @@ async function registrarAnuncio(e) {
       fotos: [...fotosForm]
     }, previo ? previo.id : null);
   } catch (err) {
-    mostrarToast(mensajeError(err), "error");
+    // Fase 2AL: si el filtro lo bloqueó, la persona puede pedir revisión (no se queda sin salida)
+    if (!(await ofrecerRevision(err, $("form-nombre").value.trim() + " · " + $("form-descripcion").value.trim()))) mostrarToast(mensajeError(err), "error");
     return;
   } finally {
     btn.disabled = false;

@@ -54,6 +54,7 @@ function tarjetaReporte(g) {
       ${a && !oculto ? `<button type="button" data-acc="ocultar" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-lg font-semibold">🙈 Ocultar anuncio</button>` : ""}
       ${a && oculto ? `<button type="button" data-acc="reactivar" class="text-xs bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1.5 rounded-lg font-semibold">↩️ Reactivar</button>` : ""}
       ${a ? `<button type="button" data-acc="eliminar" class="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded-lg font-semibold">🗑️ Eliminar anuncio</button>` : ""}
+      ${a && a.owner_id ? botonesSancionHTML(a.owner_id) : ""}
       ${estadoVista === "pendiente" ? `
         <button type="button" data-acc="revisado" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">✔ Marcar revisado</button>
         <button type="button" data-acc="descartar" class="text-xs bg-white border border-slate-300 hover:border-slate-400 px-3 py-1.5 rounded-lg font-semibold">Descartar reporte</button>` : ""}
@@ -402,6 +403,77 @@ async function agregarPalabra() {
     await pintarPalabras();
   } catch (err) { mostrarToast(/duplicate|unique/i.test(err.message || "") ? "Esa palabra ya está en la lista" : mensajeError(err), "error"); }
 }
+
+// ---------- Fase 2AL: frases permitidas y pedidos de revisión ----------
+let permitidasCache = [];
+async function pintarPermitidas() {
+  if (!esAdmin()) return;
+  try {
+    permitidasCache = await cargarPalabrasPermitidas();
+    $("n-permitidas").textContent = "(" + permitidasCache.filter(p => p.activo).length + ")";
+    $("pf-lista").innerHTML = permitidasCache.map(p => `<span class="pp-chip revisar${p.activo ? "" : " apagada"}" data-pf="${p.id}" title="${esc(p.nota || "")}">✅ ${esc(p.frase)}${p.categoria ? ` <small class="opacity-70">(${esc(p.categoria)})</small>` : ""}
+        <button type="button" data-pfacc="borrar" title="Borrar" aria-label="Borrar">✕</button></span>`).join("");
+    if ($("pf-cat").options.length < 2) $("pf-cat").insertAdjacentHTML("beforeend", CATEGORIAS.filter(c => c.id !== "todos").map(c => `<option value="${c.id}">${esc(c.icono + " " + c.nombre)}</option>`).join(""));
+  } catch (e) { $("pf-lista").innerHTML = '<p class="text-sm text-slate-400">Se activa al ejecutar supabase/39_reglas_prohibidos.sql.</p>'; }
+  try {
+    const sr = await cargarSolicitudesRevision();
+    $("n-solrev").textContent = sr.length ? "(" + sr.length + ")" : "";
+    $("solrev-lista").innerHTML = sr.length ? sr.map(r => `<div class="bg-white border border-slate-200 rounded-xl p-3 text-sm" data-solrev="${r.id}">
+        <p><b>${esc((r.usuario && r.usuario.nombre) || "Alguien")}</b> · <span class="text-xs text-slate-400">${esc(fechaCorta(r.creado_en))}</span> · bloqueado por «<b>${esc(r.palabra || "?")}</b>»</p>
+        <p class="text-slate-600 mt-1">“${esc(r.texto)}”</p>
+        <div class="flex flex-wrap gap-2 mt-2"><input data-sr-frase maxlength="60" value="${esc(r.palabra || "")}" class="flex-1 min-w-[10rem] border border-slate-300 p-1.5 rounded-lg text-xs" aria-label="Frase a permitir">
+          <button type="button" data-sracc="permitir" class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold">✅ Permitir esta frase</button>
+          <button type="button" data-sracc="rechazar" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-semibold">Rechazar</button></div>
+      </div>`).join("") : '<p class="text-sm text-slate-400">Nadie ha pedido revisión. ✨</p>';
+  } catch (e) { $("solrev-lista").innerHTML = ""; }
+}
+async function accionPermitidas(e) {
+  const b = e.target.closest("[data-pfacc]"), chip = e.target.closest("[data-pf]");
+  if (b && chip) {
+    const p = permitidasCache.find(x => x.id === Number(chip.dataset.pf));
+    if (!p || !confirm(`¿Quitar «${p.frase}» de las frases permitidas?`)) return;
+    try { await borrarPalabraPermitida(p.id); await pintarPermitidas(); } catch (err) { mostrarToast(mensajeError(err), "error"); }
+  }
+}
+async function agregarPermitida(frase, categoria) {
+  frase = (frase || "").trim();
+  if (frase.length < 2) { mostrarToast("Escribe la frase", "error"); return false; }
+  try {
+    await guardarPalabraPermitida({ frase, categoria: categoria || null });
+    mostrarToast("✅ Permitida. Lo publicado se volvió a revisar"); await pintarPermitidas(); await pintarPalabras(); return true;
+  } catch (err) { mostrarToast(/duplicate|unique/i.test(err.message || "") ? "Esa frase ya está permitida" : mensajeError(err), "error"); return false; }
+}
+async function accionSolicitudRevision(e) {
+  const b = e.target.closest("[data-sracc]"), fila = e.target.closest("[data-solrev]");
+  if (!b || !fila) return;
+  b.disabled = true;
+  try {
+    if (b.dataset.sracc === "permitir") {
+      const frase = fila.querySelector("[data-sr-frase]").value;
+      if (!confirm(`¿Permitir «${frase}»? Escribe la frase completa (ej. «pistola de pegamento»), no solo la palabra, para no abrir la puerta a lo prohibido.`)) { b.disabled = false; return; }
+      if (!(await agregarPermitida(frase, null))) { b.disabled = false; return; }
+    }
+    await resolverSolicitudRevision(Number(fila.dataset.solrev), b.dataset.sracc === "permitir" ? "permitida" : "rechazada");
+    await pintarPermitidas();
+  } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+}
+// ---------- Fase 2AL: sanciones (solo administrador) ----------
+async function sancionarDesdeBoton(b) {
+  const tipo = b.dataset.sancion, usuario = b.dataset.usuario;
+  const etiqueta = { aviso: "un AVISO", suspension: "una SUSPENSIÓN de 30 días", veto: "el BLOQUEO DEFINITIVO (veto)", levantar: "levantar la sanción" }[tipo];
+  const motivo = prompt(`Vas a aplicar ${etiqueta}. Escribe el motivo (la persona lo verá):`, tipo === "veto" ? "Publicó contenido prohibido (tolerancia cero)" : tipo === "levantar" ? "Revisado: se levanta la sanción" : "Incumplió los Términos de Merkap");
+  if (motivo === null) return false;
+  if (tipo === "veto" && !confirm("El veto oculta todos sus anuncios, le quita sus comercios y bloquea su WhatsApp, teléfono y correo. ¿Continuar?")) return false;
+  b.disabled = true;
+  try { await sancionarUsuario(usuario, tipo, motivo); mostrarToast("⚖️ Listo: " + etiqueta); return true; }
+  catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); return false; }
+}
+const botonesSancionHTML = (usuarioId, p) => `<span class="solo-admin inline-flex flex-wrap gap-1.5">
+  ${p && (p.vetado || p.suspendido_hasta && Date.parse(p.suspendido_hasta) > Date.now())
+    ? `<button type="button" data-sancion="levantar" data-usuario="${esc(usuarioId)}" class="text-xs bg-white border border-green-300 text-green-800 px-2.5 py-1.5 rounded-lg font-semibold">↩️ Levantar sanción</button>`
+    : `<button type="button" data-sancion="aviso" data-usuario="${esc(usuarioId)}" class="text-xs bg-white border border-amber-300 text-amber-800 px-2.5 py-1.5 rounded-lg font-semibold">⚠️ Aviso</button>
+       <button type="button" data-sancion="suspension" data-usuario="${esc(usuarioId)}" class="text-xs bg-white border border-orange-300 text-orange-800 px-2.5 py-1.5 rounded-lg font-semibold">⏸ Suspender 30 días</button>
+       <button type="button" data-sancion="veto" data-usuario="${esc(usuarioId)}" class="text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg font-semibold">🚫 Vetar</button>`}</span>`;
 
 async function accionSalud(e) {
   const b = e.target.closest("[data-sacc]");
@@ -901,6 +973,9 @@ function filaPersona(p) {
   return `<div class="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" data-persona="${esc(p.id)}">
     <b>${esc(p.nombre)}</b><span class="text-xs text-slate-500">${esc(p.correo || "")}</span>
     <span class="text-xs font-bold px-2 py-0.5 rounded-full ${p.rol === "admin" ? "bg-amber-100 text-amber-900" : p.rol === "moderador" ? "bg-indigo-100 text-indigo-800" : "bg-slate-200 text-slate-700"}">${NOMBRE_ROL[p.rol] || p.rol}${yo ? " (tú)" : ""}</span>
+    ${p.vetado ? '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800">🚫 Vetado</span>' : p.suspendido_hasta && Date.parse(p.suspendido_hasta) > Date.now() ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">⏸ Suspendido hasta ${esc(fechaCorta(p.suspendido_hasta))}</span>` : ""}
+    ${p.sanciones ? `<span class="text-[11px] text-slate-500">${p.sanciones} sanción(es)</span>` : ""}
+    ${p.rol !== "admin" ? botonesSancionHTML(p.id, p) : ""}
     ${p.rol === "usuario" ? `<button type="button" data-rol="moderador" class="ml-auto text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-semibold">🛡️ Nombrar moderador</button>` : ""}
     ${p.rol === "moderador" ? `<button type="button" data-rol="usuario" class="ml-auto text-xs bg-white border border-red-300 text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg font-semibold">Quitar moderador</button>` : ""}
   </div>`;
@@ -921,6 +996,8 @@ async function buscarEquipo() {
   } catch (e) { mostrarToast(mensajeError(e), "error"); }
 }
 async function accionEquipo(e) {
+  const s = e.target.closest("[data-sancion]");
+  if (s) { if (await sancionarDesdeBoton(s)) { await pintarEquipo(); if ($("eq-buscar").value.trim().length >= 2) await buscarEquipo(); } return; }
   const b = e.target.closest("[data-rol]");
   if (!b) return;
   const fila = b.closest("[data-persona]"), nombre = fila.querySelector("b").textContent;
@@ -961,7 +1038,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     estadoVista = b.dataset.estado;
     pintarReportes();
   });
-  $("mod-lista").addEventListener("click", accionReporte);
+  $("mod-lista").addEventListener("click", async e => { const s = e.target.closest("[data-sancion]"); if (s) { await sancionarDesdeBoton(s); return; } accionReporte(e); });
   $("mod-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("sol-lista").addEventListener("click", accionSolicitud);
   $("rprod-lista").addEventListener("click", accionReporteProducto);
@@ -980,6 +1057,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("pp-lista").addEventListener("click", accionPalabra);
   $("pp-agregar").addEventListener("click", agregarPalabra);
   pintarPalabras();
+  if (esAdmin()) {   // fase 2AL
+    pintarPermitidas();
+    $("pf-lista").addEventListener("click", accionPermitidas);
+    $("pf-agregar").addEventListener("click", async () => { if (await agregarPermitida($("pf-frase").value, $("pf-cat").value)) $("pf-frase").value = ""; });
+    $("solrev-lista").addEventListener("click", accionSolicitudRevision);
+  }
   $("rcal-lista").addEventListener("click", accionReporteCalificacion);
   pintarReportesCalificacion();
   $("cc-lista").addEventListener("click", accionCatComercio);

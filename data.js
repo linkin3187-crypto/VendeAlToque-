@@ -30,6 +30,7 @@ const CATEGORIAS = [
   { id: "mascotas",   nombre: "Mascotas",    icono: "🐕", foro: false },
   { id: "empleos",    nombre: "Empleos",     icono: "💼", foro: false },
   { id: "ropa",       nombre: "Ropa",        icono: "👕", foro: false },
+  { id: "adultos",    nombre: "Íntimo +18",  icono: "🔞", foro: false },   // fase 2AL: solo se ve al entrar a la categoría
   { id: "otros",      nombre: "Otros",       icono: "📦", foro: true  }
 ];
 
@@ -44,7 +45,9 @@ const SUBCATEGORIAS = {
   servicios:  [["plomeria", "Plomería"], ["electricidad", "Electricidad"], ["mecanica", "Mecánica"], ["belleza", "Belleza y peluquería"], ["aseo_hogar", "Aseo y hogar"], ["construccion", "Construcción y arreglos"], ["mudanzas_transporte", "Mudanzas y transporte"], ["clases", "Clases y tutorías"], ["tecnicos", "Técnicos (electrodomésticos, PC)"], ["otros", "Otros"]],
   ferreteria: [["herramientas", "Herramientas"], ["materiales", "Materiales de construcción"], ["pinturas", "Pinturas"], ["electricos_plomeria", "Eléctricos y plomería"], ["tornilleria", "Tornillería"], ["otros", "Otros"]],
   hogar:      [["muebles", "Muebles"], ["electrodomesticos", "Electrodomésticos"], ["decoracion", "Decoración"], ["jardin", "Jardín"], ["cocina", "Cocina y menaje"], ["bebes", "Bebés y niños"], ["otros", "Otros"]],
-  mascotas:   [["perros", "Perros"], ["gatos", "Gatos"], ["alimentos_mascotas", "Alimentos"], ["accesorios_mascotas", "Accesorios"], ["veterinaria", "Veterinaria"], ["adopcion", "Adopción"], ["otros", "Otros"]],
+  // Fase 2AL: solo animales domésticos o de criadero (sin «Otros»: era la puerta a la fauna silvestre)
+  mascotas:   [["perros", "Perros"], ["gatos", "Gatos"], ["conejos_roedores", "Conejos y roedores"], ["aves_ornato", "Aves de ornato"], ["peces", "Peces y acuarios"], ["aves_corral", "Aves de corral y granja"], ["animales_finca", "Animales de finca"], ["alimentos_mascotas", "Alimentos"], ["accesorios_mascotas", "Accesorios"], ["veterinaria", "Veterinaria"], ["adopcion", "Adopción"]],
+  adultos:    [["juguetes_intimos", "Juguetes íntimos"], ["lenceria", "Lencería"], ["cuidado_intimo", "Cuidado íntimo y preservativos"], ["juegos_pareja", "Juegos para parejas"]],
   empleos:    [["ofertas", "Ofertas de empleo"], ["busco_empleo", "Busco empleo"], ["medio_tiempo", "Medio tiempo"], ["freelance", "Independiente / por días"], ["otros", "Otros"]],
   ropa:       [["hombre", "Hombre"], ["mujer", "Mujer"], ["ninos", "Niños"], ["calzado", "Calzado"], ["deportiva", "Deportiva"], ["accesorios_ropa", "Accesorios"], ["otros", "Otros"]]
 };
@@ -680,6 +683,7 @@ const TIPOS_COMERCIO = [
   { id: "belleza",       nombre: "Belleza y peluquerías", icono: "💈", osm: [] },
   { id: "ferreteria",    nombre: "Ferreterías",           icono: "🔧", osm: [] },
   { id: "ropa",          nombre: "Ropa y calzado",        icono: "👕", osm: [] },
+  { id: "intimo",        nombre: "Tienda íntima (+18)",   icono: "🔞", osm: [] },
   { id: "otro",          nombre: "Otros negocios",        icono: "🛍️", osm: [] }
 ];
 const TIPOS_IMPORTABLES = TIPOS_COMERCIO.filter(t => t.osm.length);
@@ -1408,7 +1412,7 @@ function seleccionDelDia(lista, max, ahoraMs) {
   const turno = turnoSeleccion(ahora);
   const semilla = id => { let h = 2166136261; for (const ch of turno + ":" + id) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const porSemilla = (a, b) => semilla(a.id) - semilla(b.id);
-  const validos = lista.filter(a => !a.seleccionExcluido);
+  const validos = lista.filter(a => !a.seleccionExcluido && !esAdultos(a));   // fase 2AL: «Íntimo +18» nunca sale en el inicio
   const elegidos = validos.filter(a => a.seleccionHasta > ahora).sort(porSemilla);   // los fijados también rotan de orden
   const usados = new Set(elegidos.map(a => a.id));
   const resto = validos.filter(a => !usados.has(a.id)).sort(porSemilla);
@@ -1989,12 +1993,15 @@ const OPERACIONES = { venta: "Venta", arriendo: "Arriendo", arriendo_dias: "Arri
 const SUBS_CARRO = ["carros", "camionetas", "camiones"];
 const SUBS_SIN_HAB = ["locales_oficinas", "bodegas"];
 const SUBS_VIVIENDA = ["apartamentos", "casas", "apartaestudios"];
+const SUBS_ANIMAL = ["perros", "gatos", "conejos_roedores", "aves_ornato", "peces", "aves_corral", "animales_finca", "otros", ""];
 const MARCAS_CARRO = ["Chevrolet", "Renault", "Mazda", "Kia", "Toyota", "Nissan", "Hyundai", "Ford", "Volkswagen", "Suzuki", "BYD", "Mitsubishi", "Mercedes-Benz", "BMW", "Jeep", "Fiat", "Peugeot", "Citroën", "Dodge", "JAC", "Foton", "Hino", "Isuzu"];
 const MARCAS_MOTO = ["Yamaha", "Honda", "Suzuki", "AKT", "Bajaj", "Kawasaki", "TVS", "Hero", "Victory", "KTM", "Royal Enfield", "Kymco", "Auteco", "Benelli", "Ducati", "BMW"];
 
 // "inmueble" | "carro" | "moto" | "repuesto" | "vehiculo" (otros) | null (sin campos extra)
 function tipoDetalle(cat, sub) {
   if (cat === "inmuebles") return "inmueble";
+  if (cat === "mascotas" && SUBS_ANIMAL.includes(sub || "")) return "mascota";   // fase 2AL
+  if (cat === "adultos") return "adultos";
   if (cat === "autos" || cat === "motos") {
     if (SUBS_CARRO.includes(sub)) return "carro";
     if (sub === "motos" || (cat === "motos" && (!sub || sub === "motos"))) return "moto";
@@ -2008,6 +2015,14 @@ function tipoDetalle(cat, sub) {
 // tipo: sel (opciones [valor, texto]) · num (min/max) · txt (max, lista = sugerencias) · si (casilla)
 const ANIO_MAX = new Date().getFullYear() + 1;
 const CAMPOS_DETALLE = {
+  // Fase 2AL: la base de datos exige la declaración (supabase/39_reglas_prohibidos.sql)
+  mascota: [
+    { k: "declara_domestico", t: "Declaro que es un animal doméstico o de criadero (no silvestre ni protegido)", tipo: "si", req: () => true },
+    { k: "certificado", t: "Certificado de zoocriadero (solo loros, guacamayas o pericos nativos)", tipo: "txt", max: 40, ver: x => x.sub === "aves_ornato" }
+  ],
+  adultos: [
+    { k: "mayor18", t: "Confirmo que es un producto legal y que lo vendo solo a mayores de 18 años", tipo: "si", req: () => true }
+  ],
   inmueble: [
     { k: "operacion", t: "¿Venta o arriendo?", tipo: "sel", op: Object.entries(OPERACIONES), req: () => true },
     { k: "habitaciones", t: "Habitaciones", tipo: "num", min: 0, max: 30, ver: x => !SUBS_SIN_HAB.includes(x.sub) && x.sub !== "habitaciones", req: x => SUBS_VIVIENDA.includes(x.sub) || !x.sub },
@@ -2099,6 +2114,11 @@ function resumenDetalles(a) {
     if (d.banos != null) r.push(d.banos + (d.banos === 1 ? " baño" : " baños"));
     if (d.area) r.push(fmtMiles(d.area) + " m²");
     if (d.estrato) r.push("Estrato " + d.estrato);
+  } else if (tipo === "mascota") {
+    if (d.declara_domestico) r.push("Doméstico o de criadero");
+    if (d.certificado) r.push("Con certificado");
+  } else if (tipo === "adultos") {
+    r.push("+18");
   } else if (tipo) {
     if (d.marca) r.push(d.marca);
     if (d.modelo) r.push(String(d.modelo));
@@ -2585,6 +2605,95 @@ function prepararImagenLogo(archivo) {
   });
 }
 if (typeof sb !== "undefined" && sb) actualizarLogoPagina();
+
+// =====================================================================
+// +18, LEYENDAS LEGALES Y «PEDIR REVISIÓN» (fase 2AL)
+// =====================================================================
+const esAdultos = a => !!a && a.categoria === "adultos";
+const esLicorAnuncio = a => !!a && ((a.categoria === "tienda" && a.subcategoria === "licores") || RX_LICOR.test(a.nombre || ""));   // solo el título: «vino» también es verbo
+const RX_LICOR = /\b(aguardiente|ron|whisky|whiskey|vodka|tequila|cervezas?|vinos?|licor(es)?|ginebra|brandy|champa(n|ña)|viche|chirrinchi|sangr[ií]a|c[oó]cteles?|mezcal|guaro)\b/i;
+const RX_TABACO = /\b(cigarrill\w*|tabacos?|vapes?|vapeador\w*|hookah|narguil\w*|elf ?bar|pods? desechables?|puffs)\b/i;
+const LEYENDA_ALCOHOL = "🔞 Venta solo a mayores de 18 años. Prohíbese el expendio de bebidas embriagantes a menores de edad. El exceso de alcohol es perjudicial para la salud.";
+const LEYENDA_TABACO = "🔞 Venta solo a mayores de 18 años. Fumar y vapear perjudican tu salud.";
+const LEYENDA_ADULTOS = "🔞 Producto para mayores de 18 años. Merkap no permite servicios sexuales ni contenido con menores.";
+const TIPOS_MAS18 = ["intimo", "licorera"];
+function mayorConfirmado() { try { return localStorage.getItem("mf_18") === "1"; } catch (e) { return false; } }
+function marcarMayor() {
+  try { localStorage.setItem("mf_18", "1"); } catch (e) { /* nada */ }
+  document.documentElement.dataset.mas18 = "1";
+}
+// Pregunta «¿Eres mayor de 18?» (como Rappi). Devuelve una promesa true/false.
+function confirmarMayorDeEdad(texto) {
+  if (mayorConfirmado()) { document.documentElement.dataset.mas18 = "1"; return Promise.resolve(true); }
+  return new Promise(ok => {
+    const v = document.createElement("div");
+    v.id = "modal-18"; v.className = "modal-18"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true");
+    v.innerHTML = `<div class="modal-18-caja"><p class="text-4xl">🔞</p><h2 class="text-lg font-black text-slate-900 mt-1">¿Eres mayor de 18 años?</h2>
+      <p class="text-sm text-slate-600 mt-1">${esc(texto || "Este contenido es solo para mayores de edad.")}</p>
+      <div class="flex gap-2 justify-center mt-4"><button type="button" data-18="si" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl">Sí, soy mayor de 18</button>
+      <button type="button" data-18="no" class="bg-white border border-slate-300 font-semibold px-5 py-2.5 rounded-xl">No</button></div></div>`;
+    document.body.appendChild(v);
+    v.addEventListener("click", e => {
+      const b = e.target.closest("[data-18]"); if (!b) return;
+      v.remove();
+      if (b.dataset["18"] === "si") { marcarMayor(); ok(true); } else ok(false);
+    });
+  });
+}
+document.addEventListener("DOMContentLoaded", () => { if (mayorConfirmado()) document.documentElement.dataset.mas18 = "1"; });
+// En las tarjetas, las fotos de «Íntimo +18» van difuminadas hasta confirmar la edad
+document.addEventListener("click", async e => {
+  const f = e.target.closest && e.target.closest("[data-foto18]");
+  if (!f || mayorConfirmado()) return;
+  e.preventDefault(); e.stopPropagation();
+  await confirmarMayorDeEdad("Las fotos de productos íntimos se muestran solo a mayores de edad.");
+}, true);
+function leyendaHTML(texto) { return `<p class="leyenda-legal">${esc(texto)}</p>`; }
+
+// «Creo que es un error»: cuando el filtro bloquea, la persona puede pedir que el administrador lo revise
+async function pedirRevisionBloqueo(texto, mensajeError) {
+  const m = /«([^»]{1,60})»/.exec(mensajeError || "");
+  const { error } = await sb.from("solicitudes_revision").insert({ texto: String(texto || "").slice(0, 400), palabra: m ? m[1] : null });
+  if (error) throw error;
+}
+const esBloqueoFiltro = err => /no está permitido en Merkap/.test((err && err.message) || "");
+async function ofrecerRevision(err, texto) {
+  if (!esBloqueoFiltro(err)) return false;
+  if (!confirm(mensajeError(err) + "\n\n¿Crees que es un error? Toca «Aceptar» para pedir que lo revisemos (te respondemos en tu correo). Mientras tanto, puedes cambiar esa palabra y publicar.")) return true;
+  try { await pedirRevisionBloqueo(texto, err.message); mostrarToast("📨 Enviado a revisión. Gracias por avisarnos"); }
+  catch (e) { mostrarToast(mensajeError(e), "error"); }
+  return true;
+}
+// Sanciones (solo administrador; supabase/39)
+async function sancionarUsuario(usuarioId, tipo, motivo) {
+  const { error } = await sb.rpc("sancionar", { p_usuario: usuarioId, p_tipo: tipo, p_motivo: motivo });
+  if (error) throw error;
+}
+// Frases permitidas y pedidos de revisión (Moderación)
+async function cargarPalabrasPermitidas() {
+  const { data, error } = await sb.from("palabras_permitidas").select("*").order("frase");
+  if (error) throw error;
+  return data || [];
+}
+async function guardarPalabraPermitida(fila) {
+  const { id, ...resto } = fila;
+  const q = id ? sb.from("palabras_permitidas").update(resto).eq("id", id) : sb.from("palabras_permitidas").insert(resto);
+  const { error } = await q;
+  if (error) throw error;
+}
+async function borrarPalabraPermitida(id) {
+  const { error } = await sb.from("palabras_permitidas").delete().eq("id", id);
+  if (error) throw error;
+}
+async function cargarSolicitudesRevision() {
+  const { data, error } = await sb.from("solicitudes_revision").select("id, texto, palabra, estado, creado_en, usuario:perfiles!usuario_id(nombre)").eq("estado", "pendiente").order("creado_en", { ascending: false }).limit(50);
+  if (error) throw error;
+  return data || [];
+}
+async function resolverSolicitudRevision(id, estado) {
+  const { error } = await sb.from("solicitudes_revision").update({ estado }).eq("id", id);
+  if (error) throw error;
+}
 
 // =====================================================================
 // EQUIPO Y PROPUESTAS (fase 2AK · supabase/38_admin_seguridad.sql)

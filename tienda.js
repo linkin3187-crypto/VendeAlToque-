@@ -33,6 +33,7 @@ function tarjetaProducto(p) {
       <p class="text-sm font-semibold line-clamp-2">${esc(p.nombre)}</p>
       ${p.descripcion ? `<p class="text-xs text-slate-500 line-clamp-2 mt-0.5">${esc(p.descripcion)}</p>` : ""}
       <p class="text-sm text-indigo-600 font-bold mt-1">${p.precio != null ? peso(p.precio) : "Consultar precio"}</p>
+      ${RX_TABACO.test(p.nombre || "") ? `<p class="text-[10px] font-semibold text-orange-800 mt-1">${esc(LEYENDA_TABACO)}</p>` : RX_LICOR.test(p.nombre || "") ? `<p class="text-[10px] font-semibold text-orange-800 mt-1">${esc(LEYENDA_ALCOHOL)}</p>` : ""}
       <div class="mt-auto pt-2 flex items-center justify-between gap-2">${control}
         <button type="button" data-reportar="${p.id}" class="text-[11px] text-slate-400 hover:text-red-600 underline">Reportar</button></div>
     </div>
@@ -97,6 +98,13 @@ function renderizarTienda(c, ps) {
   const entrega = [c.recoge ? (aprox ? "Recoger en un punto acordado por WhatsApp" : "Recoger en el local") : "", c.domicilio ? "Domicilio" + (c.domicilioInfo ? " (" + c.domicilioInfo + ")" : "") : ""].filter(Boolean).join(" · ");
   fila("t-ent", entrega);
 
+  // Fase 2AL: tiendas íntimas y licoreras piden confirmar la edad y muestran la leyenda legal
+  const tipos18 = [c.tipo, ...(c.tiposExtra || [])].filter(t => TIPOS_MAS18.includes(t));
+  if (tipos18.length) {
+    const ley = tipos18.includes("intimo") ? LEYENDA_ADULTOS : LEYENDA_ALCOHOL;
+    if (!$("t-leyenda")) $("t-abierto").closest("div").insertAdjacentHTML("afterend", `<div id="t-leyenda">${leyendaHTML(ley)}</div>`);
+    if (!mayorConfirmado()) confirmarMayorDeEdad(tipos18.includes("intimo") ? "Esta tienda vende productos íntimos para mayores de edad." : "Esta tienda vende licores.").then(ok => { if (!ok) location.href = "comercios.html"; });
+  }
   const hz = estadoHorario(c.horario);   // fase 2AH: abierto / cierra pronto / abre pronto / cerrado + a qué hora
   if (hz) {
     const b = $("t-abierto");

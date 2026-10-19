@@ -148,6 +148,7 @@ function leerCriterios() {
 function filtrarAnuncios(c, limites) {
   const lista = baseDatosAnuncios.filter(a => {
     if (c.categoria !== "todos" && a.categoria !== c.categoria) return false;
+    if (a.categoria === "adultos" && c.categoria !== "adultos") return false;   // fase 2AL: solo quien entra a «Íntimo +18»
     if (c.subcategoria && a.subcategoria !== c.subcategoria) return false;
     if (tipoFiltroDet() && !cumpleFiltroDet(a)) return false;
     if (c.texto) {
@@ -339,7 +340,8 @@ function tarjetaHTML(a) {
     <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${guardado ? "❤️" : "🤍"}</button>
     <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
       <span class="text-5xl">${icono}</span>
-      ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover">` : ""}
+      ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover${esAdultos(a) ? " foto-18" : ""}">` : ""}
+      ${esAdultos(a) ? '<span class="aviso-foto-18" data-foto18>🔞 Toca para ver (+18)</span>' : ""}
       ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow text-right">${esc(precioConSufijo(a))}${(a.detalles || {}).precio_tipo === "negociable" ? '<span class="block text-[10px] font-semibold text-indigo-100">Negociable</span>' : ""}</div>` : ""}
       ${a.fecha ? `<span class="foto-publicado ${esReciente(a.fecha) ? "reciente" : ""}" title="Publicado el ${esc(fechaPublicacion(a.fecha))}">🕒 ${esc(haceCuanto(a.fecha))}</span>` : ""}
       ${a.fotos && a.fotos.length > 1 ? `<span class="absolute bottom-8 right-2 bg-black/60 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md" aria-label="${a.fotos.length} fotos">📷 ${a.fotos.length}</span>` : ""}

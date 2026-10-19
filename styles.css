@@ -850,3 +850,12 @@ html:not([data-rol="admin"]) .solo-admin { display: none !important; }
 html:not([data-rol="moderador"]) .solo-mod { display: none !important; }
 .propuesta-badge { display: block; margin-top: .5rem; font-size: 12px; background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: .6rem; padding: .4rem .6rem; }
 .propuesta-badge.rechazar { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+/* ===== Fase 2AL: +18, leyendas legales ===== */
+.foto-18 { filter: blur(18px) saturate(.6); clip-path: inset(0); }
+html[data-mas18="1"] .foto-18 { filter: none; clip-path: none; }
+.aviso-foto-18 { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: max-content; background: rgb(15 23 42 / .78); color: #fff; font-size: 12px; font-weight: 800; padding: .3rem .7rem; border-radius: 9999px; cursor: pointer; z-index: 2; }
+html[data-mas18="1"] .aviso-foto-18 { display: none; }
+.modal-18 { position: fixed; inset: 0; z-index: 80; background: rgb(15 23 42 / .6); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal-18-caja { background: #fff; border-radius: 1.25rem; padding: 1.5rem; max-width: 22rem; width: 100%; text-align: center; box-shadow: 0 20px 50px rgb(0 0 0 / .25); }
+.leyenda-legal { font-size: 12px; font-weight: 700; color: #7c2d12; background: #fff7ed; border: 1px solid #fed7aa; border-radius: .6rem; padding: .45rem .6rem; margin-top: .5rem; }

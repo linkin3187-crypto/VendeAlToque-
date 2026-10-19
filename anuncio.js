@@ -136,8 +136,9 @@ function renderizarSimilares(a) {
   const origen = tieneCoords(a) ? { lat: a.lat, lng: a.lng } : null;
   const orden = (x, y) => (origen && tieneCoords(x) && tieneCoords(y)) ? distanciaKm(origen, x) - distanciaKm(origen, y) : y.fecha - x.fecha;
   const mismos = baseDatosAnuncios.filter(x => x.id !== a.id && x.categoria === a.categoria).sort(orden).slice(0, 8);
+  // (fase 2AL: «Íntimo +18» no se cuela como «más anuncios cerca» en otras categorías)
   // Fase 2AC.1: si no completa 4, se rellena con otros anuncios cercanos de otras categorías
-  const cerca = mismos.length >= 4 ? [] : baseDatosAnuncios.filter(x => x.id !== a.id && x.categoria !== a.categoria).sort(orden).slice(0, 4 - mismos.length);
+  const cerca = mismos.length >= 4 ? [] : baseDatosAnuncios.filter(x => x.id !== a.id && x.categoria !== a.categoria && !esAdultos(x)).sort(orden).slice(0, 4 - mismos.length);
   const similares = [...mismos.map(x => ({ ...x, otraCat: false })), ...cerca.map(x => ({ ...x, otraCat: true }))];
   if (!similares.length) return;
   $("similares-titulo").textContent = mismos.length ? (cerca.length ? "Anuncios similares y cerca" : "Anuncios similares") : "Más anuncios cerca";
@@ -199,6 +200,11 @@ function renderizarAnuncio(a) {
     const pub = $("anuncio-publicado") || (() => { $("anuncio-ubicacion").insertAdjacentHTML("afterend", '<p id="anuncio-publicado" class="text-sm mt-0.5"></p>'); return $("anuncio-publicado"); })();
     pub.innerHTML = `<span class="chip-publicado ${esReciente(a.fecha) ? "reciente" : ""}">🕒 Publicado ${esc(haceCuanto(a.fecha, true))}</span> <span class="text-xs text-slate-400">· ${esc(fechaPublicacion(a.fecha))}</span>`;
   }
+  // Fase 2AL: leyendas legales (+18 alcohol, tabaco, íntimo) y pregunta de edad
+  const leyendas = [esAdultos(a) && LEYENDA_ADULTOS, esLicorAnuncio(a) && LEYENDA_ALCOHOL, RX_TABACO.test(a.nombre || "") && LEYENDA_TABACO].filter(Boolean);
+  const cajaLey = $("anuncio-leyendas") || (() => { ($("anuncio-publicado") || $("anuncio-ubicacion")).insertAdjacentHTML("afterend", '<div id="anuncio-leyendas"></div>'); return $("anuncio-leyendas"); })();
+  cajaLey.innerHTML = leyendas.map(leyendaHTML).join("");
+  if (esAdultos(a) && !mayorConfirmado()) confirmarMayorDeEdad("Este anuncio es de un producto íntimo para mayores de edad.").then(ok => { if (!ok) location.href = "index.html"; });
   // Moderadores: ⭐ fijar en la Selección del día (24 h) o 🚫 sacarlo del sorteo (fase 2AD)
   if (esAdmin() && !$("sel-botones")) {   // fase 2AK: solo administrador
     $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">

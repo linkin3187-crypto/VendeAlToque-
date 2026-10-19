@@ -966,6 +966,53 @@ async function accionNegocio(e) {
   }
 }
 
+// ---------- 🔐 Tu seguridad (fase 2AN; solo administrador) ----------
+const ACCION_SEG = { clave_creada: "🔑 Clave creada", clave_cambiada: "🔑 Clave cambiada", desbloquear: "🔓 Filtro desbloqueado", bloquear: "🔐 Filtro bloqueado", clave_fallida: "⚠️ Clave equivocada", clave_bloqueada: "⛔ Clave bloqueada 1 hora (5 intentos)" };
+async function pintarSeguridad() {
+  if (!esAdmin()) return;
+  let e;
+  try { e = await estadoSeguridad(); }
+  catch (err) { $("seg-estado").textContent = "Se activa al ejecutar supabase/40_filtro_todos_clave.sql"; return; }
+  const libre = !!e.desbloqueado_hasta;
+  $("seg-estado").className = "text-xs font-bold px-2 py-0.5 rounded-full " + (libre ? "bg-red-600 text-white" : "bg-green-100 text-green-800");
+  $("seg-estado").textContent = e.bloqueada_hasta ? "⛔ Clave bloqueada hasta " + horaCo(e.bloqueada_hasta) : libre ? "🔓 Filtro desbloqueado hasta " + horaCo(e.desbloqueado_hasta) : "🔐 Filtro activo";
+  $("seg-crear").classList.toggle("hidden", e.tiene_clave);
+  $("seg-usar").classList.toggle("hidden", !e.tiene_clave);
+  $("seg-desbloquear").classList.toggle("hidden", libre);
+  $("seg-bloquear-btn").classList.toggle("hidden", !libre);
+  $("seg-sesiones").innerHTML = (e.sesiones || []).map(s => `<p class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5"><b>${esc(dispositivoActual(s.dispositivo))}</b> · IP ${esc(s.ip || "—")}<br><span class="text-slate-500">Inició ${esc(fechaCorta(s.inicio))} · última actividad ${esc(fechaCorta(s.ultima))}</span></p>`).join("") || '<p class="text-slate-400">—</p>';
+  $("seg-historial").innerHTML = (e.historial || []).map(h => `<p class="${h.accion === "clave_fallida" || h.accion === "clave_bloqueada" ? "text-red-700 font-semibold" : "text-slate-600"}">${esc(ACCION_SEG[h.accion] || h.accion)} · ${esc(fechaCorta(h.creado_en))}${h.dispositivo ? " · " + esc(h.dispositivo) : ""}</p>`).join("") || '<p class="text-slate-400">Sin movimientos.</p>';
+  if (e.intentos_fallidos) $("seg-historial").insertAdjacentHTML("afterbegin", `<p class="text-red-700 font-bold">⚠️ ${e.intentos_fallidos} intento(s) fallido(s) seguidos</p>`);
+}
+async function accionSeguridad(e) {
+  const id = e.target.id;
+  try {
+    if (id === "seg-crear-btn") {
+      const a = $("seg-nueva").value, b = $("seg-repetir").value;
+      if (a.length < 6) { mostrarToast("La clave debe tener al menos 6 caracteres", "error"); return; }
+      if (a !== b) { mostrarToast("Las dos claves no coinciden", "error"); return; }
+      await guardarClaveSeguridad(a); $("seg-nueva").value = $("seg-repetir").value = "";
+      mostrarToast("🔑 Clave guardada. Guárdala en un lugar seguro: no se puede recuperar desde la página");
+    } else if (id === "seg-desbloquear-btn") {
+      const hasta = await desbloquearFiltro($("seg-clave").value, Number($("seg-minutos").value));
+      $("seg-clave").value = "";
+      if (!hasta) mostrarToast("Clave incorrecta", "error");
+      else mostrarToast("🔓 Filtro desbloqueado hasta " + horaCo(hasta) + ". Se bloquea solo");
+    } else if (id === "seg-bloquear-btn") {
+      await bloquearFiltro(); mostrarToast("🔐 Filtro bloqueado");
+    } else if (id === "seg-cambiar-btn") {
+      if ($("seg-cambio").value.length < 6) { mostrarToast("La clave nueva debe tener al menos 6 caracteres", "error"); return; }
+      await guardarClaveSeguridad($("seg-cambio").value, $("seg-actual").value);
+      $("seg-actual").value = $("seg-cambio").value = ""; mostrarToast("🔑 Clave cambiada");
+    } else if (id === "seg-cerrar-otras") {
+      if (!confirm("¿Cerrar tu sesión en todos los demás celulares y computadores? Aquí sigues dentro.")) return;
+      const { error } = await sb.auth.signOut({ scope: "others" }); if (error) throw error;
+      mostrarToast("✅ Sesiones cerradas en los demás dispositivos");
+    } else return;
+    await pintarSeguridad();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); await pintarSeguridad(); }
+}
+
 // ---------- 👥 Equipo (fase 2AK; solo administrador) ----------
 const NOMBRE_ROL = { admin: "👑 Administrador", moderador: "🛡️ Moderador", usuario: "Usuario" };
 function filaPersona(p) {
@@ -1025,8 +1072,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
   $("mod-panel").classList.remove("hidden");
-  // Equipo (solo administrador)
+  // Equipo y seguridad (solo administrador)
   if (esAdmin()) {
+    pintarSeguridad();
+    $("seguridad").addEventListener("click", accionSeguridad);
     pintarEquipo();
     $("eq-btn").addEventListener("click", buscarEquipo);
     $("eq-buscar").addEventListener("keydown", e => { if (e.key === "Enter") buscarEquipo(); });

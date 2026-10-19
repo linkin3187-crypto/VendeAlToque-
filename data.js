@@ -2659,6 +2659,10 @@ async function pedirRevisionBloqueo(texto, mensajeError) {
 const esBloqueoFiltro = err => /no está permitido en Merkap/.test((err && err.message) || "");
 async function ofrecerRevision(err, texto) {
   if (!esBloqueoFiltro(err)) return false;
+  if (esAdmin()) {   // fase 2AN: al administrador también lo revisa el filtro, salvo que lo desbloquee con su clave
+    if (confirm(mensajeError(err) + "\n\n🔐 El filtro también te revisa a ti. Si necesitas publicarlo, desbloquéalo con tu clave de seguridad. ¿Ir a «Tu seguridad»?")) location.href = "moderacion.html#seguridad";
+    return true;
+  }
   if (!confirm(mensajeError(err) + "\n\n¿Crees que es un error? Toca «Aceptar» para pedir que lo revisemos (te respondemos en tu correo). Mientras tanto, puedes cambiar esa palabra y publicar.")) return true;
   try { await pedirRevisionBloqueo(texto, err.message); mostrarToast("📨 Enviado a revisión. Gracias por avisarnos"); }
   catch (e) { mostrarToast(mensajeError(e), "error"); }
@@ -2694,6 +2698,37 @@ async function resolverSolicitudRevision(id, estado) {
   const { error } = await sb.from("solicitudes_revision").update({ estado }).eq("id", id);
   if (error) throw error;
 }
+
+// =====================================================================
+// CLAVE DE SEGURIDAD DEL ADMINISTRADOR (fase 2AN · supabase/40_filtro_todos_clave.sql)
+// El filtro aplica a todos; el administrador lo desbloquea un rato con una clave aparte.
+// =====================================================================
+function dispositivoActual(ua) {
+  ua = ua || navigator.userAgent || "";
+  const so = /iPhone|iPad/.test(ua) ? "iPhone/iPad" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "Otro";
+  const nav = /SamsungBrowser/.test(ua) ? "Samsung Internet" : /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Navegador";
+  return so + " · " + nav;
+}
+async function estadoSeguridad() {
+  const { data, error } = await sb.rpc("estado_seguridad");
+  if (error) throw error;
+  return data;
+}
+async function guardarClaveSeguridad(clave, actual) {
+  const { error } = await sb.rpc("guardar_clave_seguridad", { p_clave: clave, p_clave_actual: actual || null, p_dispositivo: dispositivoActual() });
+  if (error) throw error;
+}
+// Devuelve la hora hasta la que queda desbloqueado, o null si la clave no es correcta
+async function desbloquearFiltro(clave, minutos) {
+  const { data, error } = await sb.rpc("desbloquear_filtro", { p_clave: clave, p_minutos: minutos || 15, p_dispositivo: dispositivoActual() });
+  if (error) throw error;
+  return data;
+}
+async function bloquearFiltro() {
+  const { error } = await sb.rpc("bloquear_filtro", { p_dispositivo: dispositivoActual() });
+  if (error) throw error;
+}
+const horaCo = iso => new Date(iso).toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric", minute: "2-digit" });
 
 // =====================================================================
 // EQUIPO Y PROPUESTAS (fase 2AK · supabase/38_admin_seguridad.sql)

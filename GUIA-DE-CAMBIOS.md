@@ -770,3 +770,16 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. El SQL puede quedarse; para aflojar el filtro basta apagar palabras o agregar frases permitidas desde Moderación.
 
+## Fase 2AN · El filtro aplica a todos + clave de seguridad del administrador
+
+**SQL:** `supabase/40_filtro_todos_clave.sql` — **antes** de fusionar. Debe mostrar `clave = true | filtro_todos = true | cola_todos = true`. Al correrlo oculta el anuncio de prueba «Cocaina» y lo deja en la cola.
+
+**Cambian:** `data.js`, `app.js`, `index.html` (aviso en la barra), `moderacion.*` (🔐 Tu seguridad); caché `?v=70`.
+
+- **Moderadores:** el filtro les aplica siempre. Para quitar algo prohibido de un anuncio ajeno, lo ocultan o lo eliminan.
+- **Administrador:** también le aplica. Para publicar algo que el filtro bloquea: Moderación → **🔐 Tu seguridad** → clave → «🔓 Desbloquear filtro» (15, 30 o 60 min). Se bloquea solo o con «Volver a bloquear ahora».
+- **Clave de seguridad:** distinta de la contraseña de la cuenta, guardada cifrada (nadie la puede leer, ni desde la base). 5 intentos fallidos la bloquean 1 hora. Para cambiarla hay que saber la actual. **Si la olvidas:** en el SQL Editor `delete from seguridad_admin;` y la creas de nuevo.
+- **Aviso de sesión:** la barra muestra si el filtro está activo y cuántas sesiones tiene abierta tu cuenta; en «Tu seguridad» ves cada dispositivo con su IP y puedes cerrar todas las demás.
+
+**Revertir:** PR → **Revert** (si se revierte solo la página, el filtro sigue aplicando a todos; el desbloqueo se haría por SQL).
+

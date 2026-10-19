@@ -1207,9 +1207,21 @@ async function eliminarAnuncio(id, esAdmin) {
 // =====================================================================
 // MODO MODERADOR (se activa por el ROL de tu cuenta, no por la URL)
 // =====================================================================
+// Fase 2AN: el administrador ve si el filtro está activo o desbloqueado, y cuántas sesiones tiene abiertas
+async function pintarAvisoFiltro() {
+  const el = $("ebar-filtro"); if (!el) return;
+  try {
+    const e = await estadoSeguridad();
+    const ses = (e.sesiones || []).length;
+    el.classList.remove("hidden");
+    el.className = "solo-admin text-xs font-bold px-2 py-0.5 rounded-full no-underline " + (e.desbloqueado_hasta ? "bg-red-600 text-white" : "bg-green-100 text-green-800");
+    el.textContent = (e.desbloqueado_hasta ? "🔓 Filtro desbloqueado hasta " + horaCo(e.desbloqueado_hasta) : !e.tiene_clave ? "🔐 Crea tu clave de seguridad" : "🔐 Filtro activo") + (ses > 1 ? " · 📱 " + ses + " sesiones abiertas" : "");
+  } catch (err) { el.classList.add("hidden"); }   // sin el SQL 40
+}
 function activarModoEditor() {
   $("ebar").classList.toggle("hidden", !EDITOR);
   if (EDITOR) $("ecount").textContent = " · " + baseDatosAnuncios.length + " anuncios activos";
+  if (esAdmin()) pintarAvisoFiltro();
   pintarComerciosFeed();   // el botón «Editar» de cada comercio solo lo ven los moderadores
 }
 

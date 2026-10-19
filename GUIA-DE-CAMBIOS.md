@@ -722,3 +722,16 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**.
 
+## Fase 2AJ · Métricas del piloto (G0)
+
+**SQL:** `supabase/37_metricas.sql` — antes o después de fusionar (sin él la página funciona igual, solo no cuenta). Debe mostrar `tabla = true | registrar = true | resumen = true`.
+
+**Cambian:** `data.js` (contador), `metricas.html` + `metricas.js` (nuevo panel), `index.html` y `moderacion.html` (enlace 📊 Métricas), `privacidad.html`, `styles.css`; caché `?v=67`.
+
+- **Qué se cuenta:** cada página abierta y cada toque en WhatsApp, Llamar, Cómo llegar y Compartir (con el comercio o anuncio). De dónde llegó: WhatsApp, Facebook, Instagram, Google, TikTok o lo que diga `?o=` en el enlace (ej. `?o=qr`, `?o=volante`).
+- **Qué NO se guarda:** nombre, correo, teléfono, IP ni ubicación. Solo un código al azar por navegador. Tus visitas de moderador no cuentan. Se borra a los 13 meses.
+- **Dónde se ve:** `metricas.html` → botón **📊 Métricas** en la barra amarilla de moderador del inicio, o en el menú de **Moderación**.
+- **Copiar resumen:** arma un texto corto para pegar en WhatsApp (socios, comercios, inversionistas).
+
+**Revertir:** PR → **Revert**. Para dejar de contar sin revertir: `revoke execute on function registrar_evento(text,text,text,bigint,text,text) from anon, authenticated;`
+

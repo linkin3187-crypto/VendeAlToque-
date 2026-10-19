@@ -812,3 +812,33 @@ img.marca-ico.recortar { object-fit: cover; border-radius: 24%; }
 .titulo-grupo-horario.hz-cerrado { color: #64748b; }
 .tarjeta-cerrada { opacity: .78; }
 .tarjeta-cerrada:hover, .tarjeta-cerrada:focus-within { opacity: 1; }
+
+/* ===== Fase 2AJ: panel 📊 Métricas ===== */
+.me-rangos { display: inline-flex; background: #e0e7ff; border-radius: .75rem; padding: 3px; }
+.me-rangos button { font-size: 13px; font-weight: 700; color: #3730a3; padding: .4rem .75rem; border-radius: .6rem; }
+.me-rangos button[aria-pressed="true"] { background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .12); color: #1e1b4b; }
+.me-kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: .9rem 1rem; box-shadow: 0 1px 2px rgb(0 0 0 / .04); }
+.me-kpi.destacado { border-color: #86efac; background: #f0fdf4; }
+.me-kpi-t { font-size: 12px; font-weight: 700; color: #64748b; }
+.me-kpi-v { font-size: 30px; line-height: 1.15; font-weight: 900; color: #0f172a; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+.me-kpi-n { font-size: 11px; color: #64748b; margin-top: .15rem; }
+.me-caja { background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem; box-shadow: 0 1px 2px rgb(0 0 0 / .04); min-width: 0; }
+.me-titulo { font-size: 14px; font-weight: 800; color: #1e1b4b; margin-bottom: .6rem; }
+.me-sub { font-weight: 500; color: #94a3b8; font-size: 12px; }
+.me-graf svg { display: block; overflow: visible; }
+.me-grid { stroke: #f1f5f9; stroke-width: 1; }
+.me-base { stroke: #cbd5e1; stroke-width: 1; }
+.me-eje { font-size: 10px; fill: #94a3b8; font-variant-numeric: tabular-nums; }
+.me-barra:hover path { filter: brightness(1.12); }
+.me-tip { position: fixed; z-index: 60; background: #0f172a; color: #fff; font-size: 12px; font-weight: 700; padding: .3rem .55rem; border-radius: .4rem; pointer-events: none; white-space: nowrap; }
+.me-vacio { font-size: 13px; color: #94a3b8; padding: .5rem 0; }
+.me-tabla { width: 100%; font-size: 13px; border-collapse: collapse; }
+.me-tabla th { text-align: left; font-size: 11px; color: #64748b; font-weight: 700; padding: .3rem .4rem; border-bottom: 1px solid #e2e8f0; }
+.me-tabla td { padding: .45rem .4rem; border-bottom: 1px solid #f1f5f9; }
+.me-tabla .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.me-lista { list-style: none; margin: 0; padding: 0; }
+.me-lista li { position: relative; display: flex; justify-content: space-between; gap: .5rem; font-size: 13px; padding: .35rem .5rem; margin-bottom: 3px; border-radius: .4rem; overflow: hidden; }
+.me-lista-t, .me-lista-v { position: relative; z-index: 1; }
+.me-lista-t { color: #334155; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-lista-v { font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+.me-lista-b { position: absolute; left: 0; top: 0; bottom: 0; background: #eef2ff; border-radius: .4rem; }

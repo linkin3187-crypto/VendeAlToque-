@@ -160,6 +160,10 @@ function renderizarTienda(c, ps) {
       : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
     av.classList.remove("hidden");
   }
+  // Fase 2AP-3: acceso rápido del administrador al 📣 Centro de marketing con esta tienda ya elegida
+  if (esAdmin() && !$("t-admin-mk")) $("t-aviso-privado").insertAdjacentHTML("beforebegin",
+    `<div id="t-admin-mk" class="mb-3 flex flex-wrap gap-2"><a href="marketing.html?destino=tienda&canal=qr&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-700 text-white no-underline">📣 Pieza de marketing / sticker QR</a>
+      <a href="marketing.html?destino=producto&canal=whatsapp&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-100 text-violet-800 no-underline">🏷️ Promocionar un producto</a></div>`);
   // Fase 2Z.10: lo que dice la comunidad + «⚡ Acelerar mi verificación» (dueño)
   if (confirmadoPorVecinos(c) && c.nivel < 2) $("t-sello").insertAdjacentHTML("afterend", ` <span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span>`);
   if (comercioDudoso(c) && !gestiona) {

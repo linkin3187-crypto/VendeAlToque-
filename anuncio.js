@@ -190,6 +190,12 @@ function renderizarAnuncio(a) {
   // El dueño (o un moderador) ve «Editar mi publicación»: abre el formulario de edición del inicio
   const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
   if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }
+  // Fase 2AP-3: el dueño comparte su anuncio con imagen, texto y QR
+  if (puedeEditar && typeof abrirCompartir === "function") {
+    const b = $("btn-compartir-mio");
+    b.classList.remove("hidden");
+    b.onclick = () => abrirCompartir(datosCompartirAnuncio(a));
+  }
   $("anuncio-precio").textContent = a.precio ? precioConSufijo(a) : "Precio a convenir";
   // Fase 2AC: precio fijo o negociable + «Publicado hace X»
   const tp = (a.detalles || {}).precio_tipo;
@@ -210,7 +216,8 @@ function renderizarAnuncio(a) {
     $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">
       <button type="button" id="btn-seleccion" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>
       <button type="button" id="btn-sel-excluir" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700"></button>
-      <a href="editar-inicio.html#seleccion-editor" class="text-xs text-indigo-600 underline self-center">Panel de la Selección</a></div>`);
+      <a href="editar-inicio.html#seleccion-editor" class="text-xs text-indigo-600 underline self-center">Panel de la Selección</a>
+      <a href="marketing.html?destino=anuncio&canal=whatsapp&id=${a.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-700 text-white no-underline">📣 Pieza de marketing / QR</a></div>`);
     const pintarSel = () => {
       $("btn-seleccion").textContent = a.seleccionHasta > Date.now() ? "⭐ Fijado · Quitar ⭐" : "⭐ Fijar en Selección del día (24 h)";
       $("btn-sel-excluir").textContent = a.seleccionExcluido ? "✅ Permitir en la Selección" : "🚫 Sacar de la Selección";

@@ -28,6 +28,9 @@ function pintarCabecera() {
     : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
     : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando Merkap confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
   $("mt-ver").href = "tienda.html?id=" + actual.id;
+  // Fase 2AP-3: «📣 Comparte tu tienda» (si está activa en el mapa)
+  $("mt-compartir").classList.toggle("hidden", !actual.activo);
+  $("mt-compartir-nota").classList.toggle("hidden", !actual.activo);
   pintarAcelerar($("mt-acelerar"), actual);   // fase 2Z.10: «⚡ Acelerar mi verificación» (solo si está «Ubicado»)
 }
 
@@ -224,6 +227,11 @@ function revisarHorario() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  $("mt-compartir").addEventListener("click", () => {
+    if (!actual) return;
+    const t = (typeof TIPOS_COMERCIO !== "undefined" && TIPOS_COMERCIO.find(x => x.id === actual.tipo)) || {};
+    abrirCompartir({ tipo: "tienda", id: actual.id, nombre: actual.nombre, foto: (actual.fotos || [])[0] || actual.foto || "", icono: t.icono || "🛍️", ciudad: actual.ciudad || "" });
+  });
   await cargarMunicipios();
   await cargarSesion();
   $("mt-cargando").classList.add("hidden");

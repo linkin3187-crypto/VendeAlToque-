@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>Centro de marketing | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=72">
+  <link rel="stylesheet" href="styles.css?v=73">
   <style>
     @media print {
       body * { visibility: hidden; }
@@ -113,10 +113,19 @@
           <label id="mk-tipo-caja" class="hidden mk-etq">Tipo de negocio (opcional)
             <select id="mk-tipo" class="mk-campo bg-white"></select>
           </label>
-          <label id="rf-id-caja" class="hidden mk-etq"><span id="rf-id-etq">Número del comercio</span>
-            <input id="rf-id" inputmode="numeric" maxlength="9" placeholder="123" class="mk-campo">
+          <div id="rf-id-caja" class="hidden mk-etq sm:col-span-2">
+            <span id="rf-id-etq">Busca el comercio</span>
+            <div class="flex gap-2">
+              <div class="relative flex-1 min-w-0">
+                <input id="mk-buscar-obj" type="search" placeholder="🔎 Escribe el nombre (ej.: panadería)" class="mk-campo" autocomplete="off" aria-autocomplete="list" aria-controls="mk-obj-res">
+                <div id="mk-obj-res" role="listbox" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-72 overflow-y-auto"></div>
+              </div>
+              <label class="w-24 shrink-0 font-normal text-[11px] text-slate-500">o el número
+                <input id="rf-id" inputmode="numeric" maxlength="9" placeholder="123" class="mk-campo !mt-0" aria-label="Número">
+              </label>
+            </div>
             <span id="rf-id-nombre" class="block mt-1 text-[11px] font-semibold text-emerald-700"></span>
-          </label>
+          </div>
           <label id="mk-prod-caja" class="hidden mk-etq sm:col-span-2">Producto o promoción de esa vitrina
             <select id="mk-prod" class="mk-campo bg-white"><option value="">Primero escribe el número del comercio</option></select>
             <span class="block mt-1 text-[11px] font-normal text-slate-500">💡 ¿Una promoción? Que la tienda la suba como producto en su vitrina (ej.: «Promo 2x1 pan de queso») y la eliges aquí.</span>
@@ -182,6 +191,7 @@
                 <option value="cuadrado">Cuadrada 1080×1080 (post, grupos)</option>
                 <option value="historia">Vertical 1080×1920 (estados, historias)</option>
                 <option value="horizontal">Horizontal 1200×630 (Facebook, banner)</option>
+                <option value="sticker">Sticker para la puerta 1080×1080 (QR grande)</option>
               </select>
             </label>
             <label class="mk-etq">Plantilla
@@ -197,7 +207,7 @@
             <label class="mk-etq col-span-2">Frase de apoyo
               <input id="mk-sub" maxlength="110" class="mk-campo">
             </label>
-            <label class="mk-etq">Botón
+            <label class="mk-etq">Botón (la imagen no es un link: cambia según el canal)
               <input id="mk-cta" maxlength="30" class="mk-campo">
             </label>
             <div class="mk-etq">Colores
@@ -290,9 +300,10 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="qr.js?v=72"></script>
-  <script src="utils.js?v=72"></script>
-  <script src="data.js?v=72"></script>
-  <script src="marketing.js?v=72"></script>
+  <script src="qr.js?v=73"></script>
+  <script src="utils.js?v=73"></script>
+  <script src="data.js?v=73"></script>
+  <script src="piezas.js?v=73"></script>
+  <script src="marketing.js?v=73"></script>
 </body>
 </html>

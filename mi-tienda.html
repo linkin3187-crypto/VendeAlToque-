@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex">
   <title>Mi tienda | Merkap</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=72">
+  <link rel="stylesheet" href="styles.css?v=73">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -47,7 +47,11 @@
         </div>
         <p id="mt-estado" class="text-sm rounded-lg px-3 py-2 mt-2"></p>
         <div id="mt-acelerar"></div>
-        <a id="mt-ver" class="inline-block mt-2 text-sm text-indigo-600 underline">👁️ Ver mi tienda como la ve el público</a>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
+          <button id="mt-compartir" type="button" class="hidden btn-compartir-dueno inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm">📣 Comparte tu tienda</button>
+          <a id="mt-ver" class="inline-block text-sm text-indigo-600 underline">👁️ Ver mi tienda como la ve el público</a>
+        </div>
+        <p id="mt-compartir-nota" class="hidden text-xs text-slate-500 mt-1.5">Texto listo, imagen con tu QR para WhatsApp y estados, y un sticker para tu puerta.</p>
       </section>
 
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -131,8 +135,11 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=72"></script>
-  <script src="data.js?v=72"></script>
-  <script src="mi-tienda.js?v=72"></script>
+  <script src="utils.js?v=73"></script>
+  <script src="data.js?v=73"></script>
+  <script src="qr.js?v=73"></script>
+  <script src="piezas.js?v=73"></script>
+  <script src="compartir.js?v=73"></script>
+  <script src="mi-tienda.js?v=73"></script>
 </body>
 </html>

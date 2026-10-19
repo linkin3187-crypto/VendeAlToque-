@@ -803,6 +803,7 @@ function renderizarMisAnuncios() {
     `<div data-id="${a.id}" class="flex justify-between items-center bg-white rounded-lg px-3 py-2 border">
       <a href="anuncio.html?id=${a.id}" class="text-sm font-medium truncate hover:text-indigo-600">${esc(a.nombre)}</a>
       <div class="flex gap-2 shrink-0 ml-2">
+        <button type="button" data-accion="compartir-mio" class="text-xs bg-violet-100 text-violet-800 font-semibold px-2 py-1 rounded" title="Imagen, texto y QR para WhatsApp y estados">📣 Compartir</button>
         <button type="button" data-accion="editar" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Editar</button>
         <button type="button" data-accion="eliminar" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Eliminar</button>
       </div>
@@ -1289,6 +1290,7 @@ function iniciarEventos() {
     if (b.dataset.accion === "ver-mapa") verEnMapa(id);
     else if (b.dataset.accion === "favorito") alternarCorazon(id, b);
     else if (b.dataset.accion === "editar") editarAnuncio(id);
+    else if (b.dataset.accion === "compartir-mio") { const a = baseDatosAnuncios.find(x => x.id === id); if (a && typeof abrirCompartir === "function") abrirCompartir(datosCompartirAnuncio(a)); }
     else if (b.dataset.accion === "eliminar") eliminarAnuncio(id, false);
     else if (b.dataset.accion === "eliminar-admin") eliminarAnuncio(id, true);
   };

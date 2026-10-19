@@ -701,3 +701,13 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 **Revertir:** PR → **Revert**. El SQL puede quedarse (10 es solo el número; para volver a 20: `alter table comercios alter column limite_productos set default 20; update comercios set limite_productos = 20;`).
 
+## Fase 2AH · Horario en vivo y «publicado hace…»
+
+**SQL:** ninguno. **Cambian:** `utils.js`, `styles.css`, `comercios.js`, `app.js`, `buscar.js`, `tienda.js`, `anuncios-comun.js`, `anuncio.js`, `favoritos.js`; caché `?v=65`.
+
+- **Comercios con horario:** 🟢 Abierto ahora (+ «cierra a las 8 p. m.»), 🟠 Cierra pronto (falta 1 hora o menos), 🟡 Abre pronto, 🔴 Cerrado (+ «abre mañana a las 8 a. m.»). Arriba a la derecha de la foto y en una línea bajo el horario. Siempre en hora de Colombia.
+- Si el horario está escrito de forma que no se entiende, **no se muestra** estado (mejor callar que equivocarse). Para que salga, el horario debe tener días y horas, ej. «Lun-Sáb 8:00-20:00, Dom 9-14».
+- **Anuncios:** «🕒 hace X» sobre la foto (verde las primeras 24 h); dentro: «Publicado hace 3 horas · fecha y hora exacta».
+
+**Revertir:** PR → **Revert**.
+

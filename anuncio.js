@@ -193,7 +193,12 @@ function renderizarAnuncio(a) {
   // Fase 2AC: precio fijo o negociable + «Publicado hace X»
   const tp = (a.detalles || {}).precio_tipo;
   if (a.precio && ETIQUETA_PRECIO[tp]) $("anuncio-precio").insertAdjacentHTML("beforeend", ` <span class="etq-precio ${tp}">${ETIQUETA_PRECIO[tp]}</span>`);
-  $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ") + (a.fecha ? " · 🕒 Publicado " + haceCuanto(a.fecha) : "");
+  $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ");
+  // Fase 2AH: «🕒 Publicado hace 3 horas · 18 oct 2026, 9:15 p. m.»
+  if (a.fecha) {
+    const pub = $("anuncio-publicado") || (() => { $("anuncio-ubicacion").insertAdjacentHTML("afterend", '<p id="anuncio-publicado" class="text-sm mt-0.5"></p>'); return $("anuncio-publicado"); })();
+    pub.innerHTML = `<span class="chip-publicado ${esReciente(a.fecha) ? "reciente" : ""}">🕒 Publicado ${esc(haceCuanto(a.fecha, true))}</span> <span class="text-xs text-slate-400">· ${esc(fechaPublicacion(a.fecha))}</span>`;
+  }
   // Moderadores: ⭐ fijar en la Selección del día (24 h) o 🚫 sacarlo del sorteo (fase 2AD)
   if (esModerador() && !$("sel-botones")) {
     $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">

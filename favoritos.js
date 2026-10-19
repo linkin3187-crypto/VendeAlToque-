@@ -13,7 +13,7 @@ function tarjetaFavorito(a) {
       <div class="p-3">
         <p class="text-sm font-semibold line-clamp-2">${esc(a.nombre)}</p>
         ${a.precio ? `<p class="text-sm text-indigo-600 font-bold">${esc(precioConSufijo(a))}</p>` : ""}
-        <p class="text-xs text-slate-400">${esc([a.barrio, a.ciudad].filter(Boolean).join(", "))}</p>
+        <p class="text-xs text-slate-400">${esc([a.barrio, a.ciudad].filter(Boolean).join(", "))}${a.fecha ? " · " + esc(haceCuanto(a.fecha)) : ""}</p>
       </div>
     </a>
   </article>`;

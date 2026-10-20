@@ -199,6 +199,9 @@ function filaAAnuncio(r) {
     tieneWhatsapp: r.tiene_whatsapp != null ? !!r.tiene_whatsapp : !!r.whatsapp,
     tieneTelefono: r.tiene_telefono != null ? !!r.tiene_telefono : !!r.telefono,
     precio: formatearPrecio(r.precio),
+    precioValor: r.precio == null ? null : Number(r.precio),                          // número (para rebajas)
+    precioAnterior: r.precio_anterior == null ? null : Number(r.precio_anterior),     // fase 2AP-4a
+    rebajadoEn: r.rebajado_en ? Date.parse(r.rebajado_en) : 0,
     desc: r.descripcion,
     fotos: r.fotos || [],
     owner: r.owner_id,
@@ -228,12 +231,16 @@ function normalizarAnuncio(a) {
 // Columnas PÚBLICAS de un anuncio. El WhatsApp y el teléfono NO se leen de la tabla: solo con
 // contacto_anuncio(id), que exige cuenta (ver supabase/13_contacto_anuncios.sql y 13b_proteger_contacto.sql).
 // Fase 2Z.7: + detalles (inmuebles y vehículos). Si aún no se ejecutó el SQL 23, se quita sola (ver conDetalles).
-let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles, seleccion_hasta, seleccion_excluido";
+let COLS_ANUNCIO = "id, owner_id, nombre, descripcion, categoria, subcategoria, estado, precio, municipio_id, barrio, lat, lng, fotos, estado_publicacion, creado_en, expira_en, ubicacion_aprox, tiene_whatsapp, tiene_telefono, detalles, seleccion_hasta, seleccion_excluido, precio_anterior, rebajado_en";
 let hayColumnaDetalles = true;
 const sinColumnaDetalles = e => /detalles/.test((e && e.message) || "");
 // Ejecuta una consulta de anuncios; si falla porque falta la columna «detalles», la repite sin ella
 async function conDetalles(hacer) {
   let r = await hacer(COLS_ANUNCIO);
+  if (r.error && /precio_anterior|rebajado_en/.test(r.error.message || "")) {   // fase 2AP-4a: aún sin el SQL 42
+    COLS_ANUNCIO = COLS_ANUNCIO.replace(", precio_anterior, rebajado_en", "");
+    r = await hacer(COLS_ANUNCIO);
+  }
   if (r.error && /seleccion_excluido/.test(r.error.message || "")) {   // fase 2AD: aún sin el SQL 34
     COLS_ANUNCIO = COLS_ANUNCIO.replace(", seleccion_excluido", "");
     r = await hacer(COLS_ANUNCIO);
@@ -802,6 +809,8 @@ async function cargarComercios() {
   const { data, error } = await sb.from("comercios").select("*").eq("activo", true).limit(2000);
   if (error) { console.error("comercios:", error); comercios = []; return comercios; }
   comercios = (data || []).map(filaAComercio);
+  await cargarPromosVigentes();   // fase 2AP-4a: 🔥 en las tarjetas
+  comercios.forEach(c => { c.promos = promosDeComercio(c.id); });
   return comercios;
 }
 
@@ -2104,6 +2113,153 @@ function sufijoPrecio(a) {
   return "";
 }
 const precioConSufijo = a => a.precio ? a.precio + sufijoPrecio(a) : "";
+
+// =====================================================================
+// REBAJAS (fase 2AP-4a · SQL 42): si el dueño baja el precio, se muestra «antes tachado + ahora + −%»
+// durante 15 días. El «antes» lo pone el servidor (no se puede inventar).
+// =====================================================================
+const DIAS_REBAJA = 15;
+function rebajaDe(a) {
+  if (!a || !a.precioAnterior || !a.precioValor || a.precioAnterior <= a.precioValor) return null;
+  if (!a.rebajadoEn || Date.now() - a.rebajadoEn > DIAS_REBAJA * 864e5) return null;
+  const pct = Math.round((1 - a.precioValor / a.precioAnterior) * 100);
+  return pct >= 1 ? { antes: a.precioAnterior, ahora: a.precioValor, pct } : null;
+}
+// Para las tarjetas: «$900.000 −10 %» con el anterior tachado
+function precioRebajaHTML(a) {
+  const r = rebajaDe(a);
+  if (!r) return "";
+  return `<span class="rebaja-antes">${esc(formatearPrecio(r.antes) + sufijoPrecio(a))}</span><span class="rebaja-pct">−${r.pct} %</span>`;
+}
+
+// =====================================================================
+// PROMOCIONES DE LAS TIENDAS (fase 2AP-4a · SQL 42). Máximo 2 por tienda y 15 días.
+// =====================================================================
+const MAX_PROMOS = 2, DIAS_PROMO = 15;
+let promosVigentes = [];   // las que el público ve hoy (de todas las tiendas)
+const hoyBogota = () => new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10);
+function filaAPromo(r) {
+  return { id: Number(r.id), comercioId: Number(r.comercio_id), titulo: r.titulo, descripcion: r.descripcion || "", tipo: r.tipo,
+    precioAntes: r.precio_antes == null ? null : Number(r.precio_antes), precioPromo: r.precio_promo == null ? null : Number(r.precio_promo),
+    descuento: r.descuento == null ? null : Number(r.descuento), productoId: r.producto_id ? Number(r.producto_id) : null, foto: r.foto_url || "",
+    desde: r.desde, hasta: r.hasta, cantidad: r.cantidad == null ? null : Number(r.cantidad), condiciones: r.condiciones || "", oculta: !!r.oculta };
+}
+const promoVigente = p => !p.oculta && p.desde <= hoyBogota() && p.hasta >= hoyBogota();
+function pctPromo(p) {
+  if (p.tipo === "porcentaje") return p.descuento || 0;
+  if (p.tipo === "precio" && p.precioAntes && p.precioPromo != null && p.precioAntes > p.precioPromo) return Math.round((1 - p.precioPromo / p.precioAntes) * 100);
+  return 0;
+}
+// «Termina hoy», «Termina mañana», «Quedan 5 días», «Empieza el 25 oct»
+function plazoPromo(p) {
+  const d = s => new Date(s + "T12:00:00-05:00");
+  const hoy = d(hoyBogota());
+  if (p.desde > hoyBogota()) return "Empieza el " + d(p.desde).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+  const dias = Math.round((d(p.hasta) - hoy) / 864e5);
+  return dias <= 0 ? "Termina hoy" : dias === 1 ? "Termina mañana" : `Quedan ${dias + 1} días`;
+}
+async function cargarPromosVigentes(comercioId) {
+  try {
+    let q = sb.from("promociones").select("*").order("hasta");
+    if (comercioId) q = q.eq("comercio_id", comercioId);
+    const { data, error } = await q;
+    if (error) return [];
+    const lista = (data || []).map(filaAPromo);
+    if (!comercioId) promosVigentes = lista.filter(promoVigente);
+    return lista;
+  } catch (e) { return []; }
+}
+const promosDeComercio = id => promosVigentes.filter(p => p.comercioId === id);
+// Línea corta para las tarjetas del directorio, el inicio y el buscador
+function lineaPromoHTML(c, clase) {
+  const p = (c.promos || [])[0];
+  if (!p) return "";
+  const pct = pctPromo(p);
+  return `<p class="linea-promo ${clase || ""}">🔥 <b>${esc(p.titulo)}</b>${pct ? ` <span class="rebaja-pct">−${pct} %</span>` : ""} <span class="linea-promo-plazo">· ${esc(plazoPromo(p))}</span></p>`;
+}
+// Tarjeta completa (ficha de la tienda)
+function tarjetaPromoHTML(p, c) {
+  const pct = pctPromo(p);
+  const precio = p.tipo === "precio" ? `<span class="rebaja-antes">${esc(formatearPrecio(p.precioAntes))}</span> <b class="promo-ahora">${esc(formatearPrecio(p.precioPromo))}</b>` : "";
+  const msg = `Hola, vi la promoción «${p.titulo}» de ${c.nombre} en Merkap. ¿Sigue disponible?`;
+  return `<article class="promo-tarjeta" id="promo-${p.id}">
+    <div class="flex items-start justify-between gap-2">
+      <p class="promo-titulo">🔥 ${esc(p.titulo)}</p>
+      ${pct ? `<span class="promo-pct">−${pct} %</span>` : p.tipo === "combo" ? '<span class="promo-pct">COMBO</span>' : ""}
+    </div>
+    ${precio ? `<p class="mt-1">${precio}</p>` : ""}
+    ${p.descripcion ? `<p class="text-sm text-slate-700 mt-1">${esc(p.descripcion)}</p>` : ""}
+    <p class="promo-plazo">⏳ ${esc(plazoPromo(p))} · hasta el ${esc(new Date(p.hasta + "T12:00:00-05:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" }))}${p.cantidad ? ` · hasta agotar ${p.cantidad} und.` : ""}</p>
+    ${p.condiciones ? `<p class="text-xs text-slate-500 mt-0.5">Condiciones: ${esc(p.condiciones)}</p>` : ""}
+    ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, msg))}" target="_blank" rel="noopener" data-fui="${c.id}" class="inline-block mt-2 text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg">💬 Pedir esta promo</a>` : ""}
+  </article>`;
+}
+// Ventana «📉 Rebajar precio» del dueño. alGuardar(anuncioNuevo) se llama al terminar.
+function abrirRebaja(a, alGuardar) {
+  if (!$("modal-rebaja")) {
+    document.body.insertAdjacentHTML("beforeend", `<div id="modal-rebaja" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="rb-titulo">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl relative modal-enter">
+        <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+        <h3 id="rb-titulo" class="text-xl font-black text-indigo-900 pr-8">📉 Rebajar precio</h3>
+        <p id="rb-nombre" class="text-sm text-slate-600 truncate"></p>
+        <p class="text-sm mt-3">Precio actual: <b id="rb-actual"></b></p>
+        <label class="block text-xs font-bold text-slate-500 mt-2">Nuevo precio (más bajo)
+          <input id="rb-nuevo" inputmode="numeric" class="mt-1 w-full border border-slate-300 p-3 rounded-xl text-lg font-bold"></label>
+        <p id="rb-vista" class="text-sm mt-2 min-h-[1.5rem]" aria-live="polite"></p>
+        <div class="mt-promo-ayuda text-xs text-slate-700 mt-3">
+          <b>💡 ¿Para qué sirve?</b> Durante 15 días tu anuncio sale con el precio anterior tachado y la etiqueta <span class="rebaja-pct">📉 −%</span>: llama la atención de quien ya lo había visto y de los nuevos. Después de rebajar, <b>compártelo otra vez</b> en tus grupos.
+          <span class="block mt-1 text-slate-500">El precio anterior lo pone Merkap automáticamente (no se puede inventar). Si subes el precio, la etiqueta se quita.</span>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          <button type="button" id="rb-guardar" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm">📉 Rebajar</button>
+          <button type="button" id="rb-quitar" class="hidden bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm">Quitar la etiqueta de rebaja</button>
+        </div>
+      </div></div>`);
+  }
+  const actualV = a.precioValor || extraerPrecio(a.precio);
+  const rb = rebajaDe(a);
+  $("rb-nombre").textContent = a.nombre;
+  $("rb-actual").innerHTML = (rb ? `<span class="rebaja-antes">${esc(formatearPrecio(rb.antes))}</span> ` : "") + esc(formatearPrecio(actualV));
+  $("rb-nuevo").value = "";
+  $("rb-quitar").classList.toggle("hidden", !rb);
+  const vista = () => {
+    const n = extraerPrecio($("rb-nuevo").value), base = rb ? rb.antes : actualV;
+    $("rb-vista").innerHTML = !n ? "" : n >= actualV ? '<span class="text-red-700 font-semibold">⚠️ Debe ser menor que el precio actual</span>'
+      : `Así se verá: <span class="rebaja-antes">${esc(formatearPrecio(base))}</span> <b class="text-indigo-700">${esc(formatearPrecio(n))}</b> <span class="rebaja-pct">📉 −${Math.round((1 - n / base) * 100)} %</span>`;
+  };
+  $("rb-nuevo").oninput = vista;
+  const guardar = async cambio => {
+    const { data, error } = await sb.from("anuncios").update(cambio).eq("id", a.id).select(COLS_ANUNCIO).single();
+    if (error) throw new Error(mensajeError(error));
+    return filaAAnuncio(data);
+  };
+  $("rb-guardar").onclick = async () => {
+    const n = extraerPrecio($("rb-nuevo").value);
+    if (!n || n >= actualV) { mostrarToast("Escribe un precio menor que el actual", "error"); return; }
+    try {
+      const nuevo = await guardar({ precio: n });
+      cerrarModal("modal-rebaja");
+      mostrarToast("📉 ¡Rebajado! Compártelo para que más gente lo vea");
+      if (alGuardar) alGuardar(nuevo);
+    } catch (e) { mostrarToast(e.message, "error"); }
+  };
+  $("rb-quitar").onclick = async () => {
+    try { const nuevo = await guardar({ precio_anterior: null }); cerrarModal("modal-rebaja"); mostrarToast("Etiqueta de rebaja quitada"); if (alGuardar) alGuardar(nuevo); }
+    catch (e) { mostrarToast(e.message, "error"); }
+  };
+  abrirModal("modal-rebaja");
+  setTimeout(() => $("rb-nuevo").focus(), 50);
+}
+
+async function guardarPromoDB(id, fila) {
+  const { data, error } = await (id ? sb.from("promociones").update(fila).eq("id", id) : sb.from("promociones").insert(fila)).select().single();
+  if (error) throw new Error(mensajeError(error));
+  return filaAPromo(data);
+}
+async function borrarPromoDB(id) {
+  const { error } = await sb.from("promociones").delete().eq("id", id);
+  if (error) throw new Error(mensajeError(error));
+}
 // Lo más importante en pocas palabras (tarjetas): ["Arriendo", "3 hab", "2 baños", "72 m²"]
 function resumenDetalles(a) {
   const d = a.detalles || {}, tipo = tipoDetalle(a.categoria, a.subcategoria);

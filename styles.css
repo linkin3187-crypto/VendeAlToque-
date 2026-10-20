@@ -903,3 +903,17 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 .btn-compartir-dueno:hover { filter: brightness(1.1); }
 #cmp-lienzo { max-width: 100%; max-height: 52vh; width: auto; height: auto; border-radius: .5rem; box-shadow: 0 6px 24px rgba(30, 27, 75, .18); }
 #modal-compartir .grid > div { min-width: 0; }
+/* 2AP-4a · Rebajas y promociones */
+.rebaja-antes { text-decoration: line-through; opacity: .7; margin-right: .3rem; font-weight: 600; }
+.rebaja-pct { display: inline-block; background: #dc2626; color: #fff !important; border-radius: 999px; padding: 0 .45rem; font-weight: 800; font-size: .7rem; line-height: 1.35rem; white-space: nowrap; }
+.linea-promo { font-size: .75rem; color: #9f1239; background: #fff1f2; border: 1px solid #fecdd3; border-radius: .6rem; padding: .3rem .5rem; line-height: 1.35; }
+.linea-promo .rebaja-pct { font-size: .65rem; line-height: 1.1rem; }
+.linea-promo-plazo { color: #be123c; font-weight: 600; }
+.promo-tarjeta { background: linear-gradient(135deg, #fff1f2, #fff); border: 2px solid #fda4af; border-radius: 1rem; padding: .9rem; }
+.promo-titulo { font-weight: 900; color: #881337; line-height: 1.2; }
+.promo-pct { background: #e11d48; color: #fff; font-weight: 900; border-radius: .6rem; padding: .15rem .5rem; font-size: .85rem; white-space: nowrap; }
+.promo-ahora { font-size: 1.25rem; color: #be123c; }
+.promo-plazo { font-size: .75rem; font-weight: 700; color: #be123c; margin-top: .35rem; }
+.mt-promo-ayuda { background: linear-gradient(135deg, #fff7ed, #fff1f2); border: 1px solid #fed7aa; border-radius: .9rem; padding: .8rem .9rem; }
+.novedad { background: linear-gradient(135deg, #4c1d95, #6d28d9); color: #fff; border-radius: 1rem; padding: .9rem 1rem; box-shadow: 0 8px 24px rgba(76, 29, 149, .25); }
+.novedad a, .novedad button { color: inherit; }

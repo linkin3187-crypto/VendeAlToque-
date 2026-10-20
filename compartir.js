@@ -13,6 +13,11 @@ const TEXTOS_COMPARTIR = {
     "📍 *{nombre}* ahora está en Merkap\n\n📦 Nuestros productos y precios\n🕒 Horario\n💬 Pedidos por WhatsApp\n🗺️ Cómo llegar\n\nEntra aquí 👇\n{link}",
     "¿Ya viste nuestra vitrina? 👀 Pídenos fácil por WhatsApp desde Merkap 👉 {link}"
   ],
+  promo: [
+    "🔥 *{nombre}* en {tienda}{precio}. {plazo}. Míralo aquí 👉 {link}",
+    "🔥 *PROMO en {tienda}*\n\n🛍️ {nombre}{precio}\n⏳ {plazo}\n💬 Pídela por WhatsApp\n\n👇\n{link}",
+    "¿Ya viste la promo de {tienda}? 👀 *{nombre}*{precio} · {plazo} → {link}"
+  ],
   anuncio: [
     "📢 Vendo *{nombre}*{precio}. Mira fotos y detalles aquí 👉 {link}",
     "🔥 *{nombre}*{precio}\n\n📸 Fotos y detalles en Merkap\n💬 Escríbeme por WhatsApp desde el anuncio\n\n👇\n{link}",
@@ -107,12 +112,12 @@ function baseCompartir() { return location.origin + location.pathname.replace(/[
 // Enlace directo con código del comercio o del anuncio (así se ve en Métricas quién trae gente)
 function enlaceCompartir() {
   const d = cmp.datos; if (!d) return "";
-  const pagina = d.tipo === "tienda" ? "tienda.html" : "anuncio.html";
-  return baseCompartir() + pagina + "?id=" + d.id + "&ref=" + (d.tipo === "tienda" ? "tienda-" : "anuncio-") + d.id + "&o=" + cmp.canal;
+  const tienda = d.tipo === "tienda" || d.tipo === "promo";
+  return baseCompartir() + (tienda ? "tienda.html" : "anuncio.html") + "?id=" + d.id + "&ref=" + (tienda ? "tienda-" : "anuncio-") + d.id + "&o=" + cmp.canal + (d.tipo === "promo" ? "#promos" : "");
 }
 function archivoCompartir() { return "merkap-" + slugRef(cmp.datos.nombre || cmp.datos.tipo).slice(0, 24) + "-" + (cmp.canal === "qr" ? "sticker" : cmp.canal) + ".png"; }
 function anotarCompartido() {
-  try { if (typeof registrarEvento === "function") registrarEvento("compartir", cmp.datos.tipo === "tienda" ? "comercio" : "anuncio", cmp.datos.id); } catch (e) { /* nada */ }
+  try { if (typeof registrarEvento === "function") registrarEvento("compartir", cmp.datos.tipo === "anuncio" ? "anuncio" : "comercio", cmp.datos.id); } catch (e) { /* nada */ }
 }
 async function copiarCompartir(texto, ok) {
   try { await navigator.clipboard.writeText(texto); mostrarToast(ok); anotarCompartido(); }
@@ -126,7 +131,7 @@ function textoCompartir() {
   if (canal !== "whatsapp" && canal !== "estado") t = t.replace(/\*([^*\n]+)\*/g, "$1");
   if (canal === "instagram") t = t.replace(/\{link\}/g, "🔗 link en mi perfil") + "\n\n#Merkap #ComprasLocales" + (d.ciudad ? " #" + slugRef(d.ciudad).replace(/-/g, "") : "");
   if (canal === "facebook") t += "\n\n#Merkap #ComprasLocales";
-  return t.replace(/\{nombre\}/g, d.nombre || "")
+  return t.replace(/\{nombre\}/g, d.nombre || "").replace(/\{tienda\}/g, d.tienda || "").replace(/\{plazo\}/g, d.plazo || "")
     .replace(/\{precio\}/g, d.precio ? " — " + d.precio : "")
     .replace(/\{link\}/g, enlaceCompartir());
 }
@@ -141,7 +146,8 @@ function opcionesPieza() {
     ctaTexto: sticker ? (d.tipo === "tienda" ? "📷 Escanea y mira nuestros productos" : "📷 Escanea y mira el anuncio") : ctaPorCanal(cmp.canal),
     icono: sticker ? "" : d.icono || (d.tipo === "tienda" ? "🛍️" : "📢"),
     titulo: sticker ? "Encuéntranos en Merkap" : d.nombre,
-    sub: sticker ? d.nombre : d.tipo === "tienda" ? "Mira nuestros productos, horario y pídenos por WhatsApp."
+    sub: sticker ? d.nombre : d.tipo === "promo" ? [d.tienda, d.plazo].filter(Boolean).join(" · ") + (d.precio ? "\n" + d.precio.replace(/^ — /, "") : "")
+      : d.tipo === "tienda" ? "Mira nuestros productos, horario y pídenos por WhatsApp."
       : [d.precio, d.ciudad].filter(Boolean).join(" · ") || "Mira fotos y detalles en Merkap."
   };
 }
@@ -164,8 +170,9 @@ async function imagenCompartir() {
 
 function pintarCompartir() {
   const d = cmp.datos;
-  $("cmp-titulo").textContent = d.tipo === "tienda" ? "📣 Comparte tu tienda" : "📣 Comparte tu anuncio";
-  $("cmp-intro").textContent = d.tipo === "tienda"
+  $("cmp-titulo").textContent = d.tipo === "tienda" ? "📣 Comparte tu tienda" : d.tipo === "promo" ? "📣 Comparte tu promoción" : "📣 Comparte tu anuncio";
+  $("cmp-intro").textContent = d.intro ? d.intro : d.tipo === "promo" ? "Una promo compartida en tus estados y grupos trae clientes esta misma semana. La imagen lleva tu oferta, el logo de Merkap y tu QR."
+    : d.tipo === "tienda"
     ? "Mientras más la compartas, más clientes te encuentran. La imagen lleva tu nombre, el logo de Merkap y tu QR."
     : "Compártelo en tus grupos y estados para vender más rápido. La imagen lleva tu foto, el logo de Merkap y el QR del anuncio.";
   const canales = CANALES_COMPARTIR.filter(c => d.tipo === "tienda" || c[0] !== "qr");
@@ -199,7 +206,9 @@ function abrirCompartir(datos) {
 // Datos de un anuncio para la pieza (lo usan anuncio.js y «📋 Mis anuncios» del inicio)
 function datosCompartirAnuncio(a) {
   const cat = (typeof CATEGORIAS !== "undefined" && CATEGORIAS.find(c => c.id === a.categoria)) || {};
-  const precio = a.precio ? (typeof precioConSufijo === "function" ? precioConSufijo(a) : "$" + Number(a.precio).toLocaleString("es-CO")) : "";
+  let precio = a.precio ? (typeof precioConSufijo === "function" ? precioConSufijo(a) : "$" + Number(a.precio).toLocaleString("es-CO")) : "";
+  const rb = typeof rebajaDe === "function" ? rebajaDe(a) : null;   // fase 2AP-4a: «📉 −20 % (antes $X)»
+  if (rb) precio += ` 📉 −${rb.pct} % (antes ${formatearPrecio(rb.antes)})`;
   const adultos = a.categoria === "adultos";   // +18: nunca con foto en redes
   return { tipo: "anuncio", id: a.id, nombre: a.nombre, foto: adultos ? "" : a.imagen || (a.fotos || [])[0] || "", precio, icono: a.categoria === "adultos" ? "📢" : cat.icono || "📢", ciudad: a.ciudad || "" };
 }

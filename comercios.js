@@ -55,6 +55,7 @@ function tarjetaComercio(c) {
       ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
       ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
+      ${lineaPromoHTML(c, "mt-2")}
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">
         ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}

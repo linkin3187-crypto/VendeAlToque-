@@ -148,7 +148,7 @@ function popupHTML(a) {
     <strong class="block">${esc(a.nombre)}</strong>
     <small class="text-slate-500">${esc(a.barrio || "")}${a.ciudad ? ", " + esc(a.ciudad) : ""}</small>
     ${a.ubicacionAprox ? '<small class="block text-slate-400">📍 Zona aproximada</small>' : ""}
-    ${a.precio ? `<div class="font-semibold text-indigo-600">${esc(a.precio)}</div>` : ""}
+    ${a.precio ? `<div class="font-semibold text-indigo-600">${precioRebajaHTML(a)}${esc(a.precio)}</div>` : ""}
     <div class="flex flex-wrap gap-1.5 mt-2">
       <a href="anuncio.html?id=${a.id}" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md no-underline">Ver anuncio completo →</a>
       ${botonesContactoHTML(a, true)}
@@ -181,6 +181,7 @@ function popupComercioHTML(c) {
     ${esUbicacionAprox(c) ? `<div class="text-xs mt-1"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> zona aproximada</div>` : c.direccion ? `<div class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</div>` : ""}
     ${c.horario ? `<div class="text-xs text-slate-600">🕒 ${esc(c.horario)}</div>` : ""}
     <div class="text-[11px] mt-1">${resumenCalifHTML(c)}</div>
+    ${lineaPromoHTML(c, "mt-1")}
     ${confirmadoPorVecinos(c) && c.nivel < 2 ? `<div class="mt-1"><span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span></div>` : ""}
     ${comercioDudoso(c) ? `<div class="text-[11px] font-semibold text-red-700 mt-1">🚩 ${c.confirmaNo} personas dicen que ya no está</div>` : ""}
     <div class="text-[11px] mt-1 ${c.verificado ? "text-green-700 font-semibold" : "text-slate-400"}">${esc((SELLOS[c.nivel] || SELLOS[1]).largo)}${c.verificado && c.verificadoEn ? " · " + esc(fechaSello(c)) : ""}</div>
@@ -234,7 +235,7 @@ function pintarSeleccionDia() {
     return `<div class="sel-item" data-sel="${a.id}">
       <a href="anuncio.html?id=${a.id}" class="sel-card">
         <span class="sel-foto">${iconosCategoria[a.categoria] || "📦"}${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${a.elegidoMod ? '<b class="sel-estrella" title="Elegido por Merkap">⭐</b>' : ""}</span>
-        <span class="sel-txt"><span class="sel-nombre">${esc(a.nombre)}</span>${a.precio ? `<span class="sel-precio">${esc(precioConSufijo(a))}</span>` : ""}<span class="sel-lugar">${esc(a.ciudad || a.barrio || "")}</span></span>
+        <span class="sel-txt"><span class="sel-nombre">${esc(a.nombre)}</span>${a.precio ? `<span class="sel-precio">${esc(precioConSufijo(a))}${rebajaDe(a) ? ` <span class="rebaja-pct">−${rebajaDe(a).pct}%</span>` : ""}</span>` : ""}<span class="sel-lugar">${esc(a.ciudad || a.barrio || "")}</span></span>
       </a>
       ${mod ? `<button type="button" class="sel-quitar" data-sel-quitar="${a.id}" title="Sacar de la Selección del día" aria-label="Sacar de la Selección del día">✕</button>` : ""}
     </div>`;
@@ -324,6 +325,7 @@ function tarjetaComercioFeed(c) {
       ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
       ${vitrinaPublica(c) && c.nProductos > 0 ? `<p class="text-xs font-bold text-teal-700 mt-1.5">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
+      ${lineaPromoHTML(c, "mt-1.5")}
       <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
       <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
         ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg">💬 WhatsApp</a>` : ""}
@@ -785,7 +787,41 @@ async function refrescarMiTienda() {
   const mis = usuarioActual ? await cargarMisComercios() : [];
   $("link-mi-tienda").classList.toggle("hidden", !mis.length);
   $("menu-mi-tienda").classList.toggle("hidden", !mis.length);
+  pintarNovedad(mis);
 }
+
+// =====================================================================
+// Fase 2AP-4a · Novedades: cómo se ENTERAN los dueños de las herramientas nuevas.
+// Una tarjeta, una sola vez por persona y por novedad, con un botón que lleva directo a usarla.
+// =====================================================================
+const NOVEDAD = "2ap4";
+function pintarNovedad(misTiendas) {
+  const caja = $("novedad-caja"); if (!caja) return;
+  let visto = false;
+  try { visto = !usuarioActual || localStorage.getItem("mf_novedad_" + NOVEDAD + "_" + usuarioActual.id) === "1"; } catch (e) { visto = true; }
+  const misAnuncios = usuarioActual ? baseDatosAnuncios.filter(a => a.owner === usuarioActual.id) : [];
+  if (visto || (!misTiendas.length && !misAnuncios.length)) { caja.classList.add("hidden"); return; }
+  const tienda = misTiendas.length > 0;
+  caja.innerHTML = `<div class="novedad flex flex-col sm:flex-row sm:items-center gap-3">
+    <div class="flex-1"><p class="font-black">${tienda ? "🔥 Nuevo para tu tienda: promociones" : "📉 Nuevo: rebaja el precio de tu anuncio"}</p>
+      <p class="text-sm text-violet-100 mt-0.5">${tienda
+        ? "Publica una oferta (2x1, −10 %, combo) y tu tienda sale con 🔥 en el directorio y el inicio. Luego compártela con imagen y QR en tus estados."
+        : "Si bajas el precio, tu anuncio sale con el precio anterior tachado y −% durante 15 días. Y con 📣 Compartir lo mandas con foto y QR a tus grupos."}</p></div>
+    <div class="flex gap-2 shrink-0">
+      <a href="${tienda ? "mi-tienda.html#promos" : "#mis-anuncios"}" data-novedad="ir" class="bg-amber-400 hover:bg-amber-300 !text-slate-900 font-bold px-4 py-2 rounded-xl text-sm no-underline">${tienda ? "🔥 Crear mi promo" : "📋 Ver mis anuncios"}</a>
+      <button type="button" data-novedad="cerrar" class="bg-white/15 hover:bg-white/25 font-semibold px-3 py-2 rounded-xl text-sm">Ahora no</button>
+    </div></div>`;
+  caja.classList.remove("hidden");
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-novedad]"); if (!b) return;
+  try { localStorage.setItem("mf_novedad_" + NOVEDAD + "_" + usuarioActual.id, "1"); } catch (err) { /* nada */ }
+  $("novedad-caja").classList.add("hidden");
+  if (b.dataset.novedad === "ir" && b.getAttribute("href") === "#mis-anuncios") {
+    e.preventDefault();
+    $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
 
 async function refrescarCorazones() {
   await cargarFavoritos();
@@ -795,14 +831,31 @@ async function refrescarCorazones() {
   });
 }
 
+// Fase 2AP-4a: si al EDITAR baja el precio, se avisa que saldrá como rebaja
+function avisoRebajaForm() {
+  const rbF = $("form-precio-rebaja"); if (!rbF) return;
+  const prev = modoEdicionId ? baseDatosAnuncios.find(a => a.id === modoEdicionId) : null, nuevoP = extraerPrecio($("form-precio").value);
+  const base = prev ? ((rebajaDe(prev) || {}).antes || prev.precioValor) : 0;
+  const ok = !!(prev && prev.precioValor && nuevoP && nuevoP < prev.precioValor);
+  rbF.textContent = ok ? `📉 Tu anuncio saldrá como rebaja: −${Math.round((1 - nuevoP / base) * 100)} % (el precio anterior se verá tachado 15 días)` : "";
+  rbF.classList.toggle("hidden", !ok);
+}
+document.addEventListener("input", e => { if (e.target && e.target.id === "form-precio") avisoRebajaForm(); });
+
 function renderizarMisAnuncios() {
   const cont = $("lista-mis-anuncios");
   const mis = baseDatosAnuncios.filter(a => a.owner === usuarioActual.id);
   if (!mis.length) { cont.innerHTML = '<p class="text-sm text-slate-500">Aún no tienes anuncios.</p>'; return; }
-  cont.innerHTML = mis.map(a =>
+  // Fase 2AP-4a: pista para que el dueño descubra «Rebajar» y «Compartir» (una línea, sin molestar)
+  const viejo = mis.find(a => a.precio && !rebajaDe(a) && Date.now() - a.fecha > 7 * 864e5);
+  const pista = `<p class="text-xs text-slate-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 mb-2">💡 ${viejo
+    ? `¿«${esc(viejo.nombre)}» aún no se vende? Toca <b>📉 Rebajar</b>: sale con el precio anterior tachado y llama más la atención.`
+    : "Toca <b>📣 Compartir</b> para mandar tu anuncio con foto y QR a tus grupos y estados de WhatsApp: es la forma más rápida de vender."}</p>`;
+  cont.innerHTML = pista + mis.map(a =>
     `<div data-id="${a.id}" class="flex justify-between items-center bg-white rounded-lg px-3 py-2 border">
-      <a href="anuncio.html?id=${a.id}" class="text-sm font-medium truncate hover:text-indigo-600">${esc(a.nombre)}</a>
-      <div class="flex gap-2 shrink-0 ml-2">
+      <a href="anuncio.html?id=${a.id}" class="text-sm font-medium truncate hover:text-indigo-600">${esc(a.nombre)}${rebajaDe(a) ? ` <span class="rebaja-pct">📉 −${rebajaDe(a).pct} %</span>` : ""}</a>
+      <div class="flex flex-wrap justify-end gap-2 shrink-0 ml-2">
+        ${a.precio ? `<button type="button" data-accion="rebajar" class="text-xs bg-rose-100 text-rose-800 font-semibold px-2 py-1 rounded" title="Baja el precio y tu anuncio sale con la etiqueta 📉 −% durante 15 días">📉 Rebajar</button>` : ""}
         <button type="button" data-accion="compartir-mio" class="text-xs bg-violet-100 text-violet-800 font-semibold px-2 py-1 rounded" title="Imagen, texto y QR para WhatsApp y estados">📣 Compartir</button>
         <button type="button" data-accion="editar" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Editar</button>
         <button type="button" data-accion="eliminar" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Eliminar</button>
@@ -852,6 +905,7 @@ function validarPaso(n) {
 
 function resetFormulario() {
   $("formulario-registro").reset();
+  if ($("form-precio-rebaja")) $("form-precio-rebaja").classList.add("hidden");
   pinManual = false; pinConfirmado = false; geoSeq++; avisoGeo(null);
   ubicacionExactaCargada = null;
   $("form-aprox").disabled = false; $("form-aprox-nota").classList.add("hidden");
@@ -1137,6 +1191,10 @@ async function registrarAnuncio(e) {
   else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
+  // Fase 2AP-4a: al publicar uno NUEVO se ofrece compartirlo enseguida (así se descubre el botón)
+  if (!previo && typeof abrirCompartir === "function" && !esAdultos(anuncio)) {
+    setTimeout(() => abrirCompartir(Object.assign(datosCompartirAnuncio(anuncio), { intro: "✅ ¡Tu anuncio ya está publicado! Compártelo ahora en tus grupos y estados: es la forma más rápida de vender." })), 700);
+  }
   if (anuncio.avisoUbicacion) mostrarToast("Se guardó el anuncio, pero no pudimos guardar tu punto exacto. Ábrelo con «Editar» y guarda de nuevo.", "error");
   cerrarModal("modal-publicar");
   // Quita filtros de categoría/búsqueda para que el usuario VEA su anuncio
@@ -1165,6 +1223,7 @@ async function editarAnuncio(id) {
   $("form-estado").value = a.estado || "usado";
   actualizarSubcategoriasForm(a.subcategoria, a.detalles || {});
   $("form-precio").value = extraerPrecio(a.precio) || "";
+  avisoRebajaForm();
   document.querySelectorAll('input[name="precio-tipo"]').forEach(r => { r.checked = r.value === (((a.detalles || {}).precio_tipo) || "fijo"); });
   $("form-departamento").value = a.departamento || Object.keys(DEPARTAMENTOS)[0];
   actualizarCiudadesForm();
@@ -1290,6 +1349,7 @@ function iniciarEventos() {
     if (b.dataset.accion === "ver-mapa") verEnMapa(id);
     else if (b.dataset.accion === "favorito") alternarCorazon(id, b);
     else if (b.dataset.accion === "editar") editarAnuncio(id);
+    else if (b.dataset.accion === "rebajar") { const a = baseDatosAnuncios.find(x => x.id === id); if (a) abrirRebaja(a, nuevo => { baseDatosAnuncios = baseDatosAnuncios.map(x => (x.id === nuevo.id ? nuevo : x)); renderizarMisAnuncios(); aplicarFiltros(); }); }
     else if (b.dataset.accion === "compartir-mio") { const a = baseDatosAnuncios.find(x => x.id === id); if (a && typeof abrirCompartir === "function") abrirCompartir(datosCompartirAnuncio(a)); }
     else if (b.dataset.accion === "eliminar") eliminarAnuncio(id, false);
     else if (b.dataset.accion === "eliminar-admin") eliminarAnuncio(id, true);

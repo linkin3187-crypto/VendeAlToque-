@@ -196,10 +196,17 @@ function renderizarAnuncio(a) {
     b.classList.remove("hidden");
     b.onclick = () => abrirCompartir(datosCompartirAnuncio(a));
   }
+  if (puedeEditar && a.precio) {   // fase 2AP-4a
+    $("btn-rebajar-mio").classList.remove("hidden");
+    $("btn-rebajar-mio").onclick = () => abrirRebaja(a, nuevo => { renderizarAnuncio(nuevo); if (typeof abrirCompartir === "function") setTimeout(() => abrirCompartir(datosCompartirAnuncio(nuevo)), 400); });
+  }
   $("anuncio-precio").textContent = a.precio ? precioConSufijo(a) : "Precio a convenir";
   // Fase 2AC: precio fijo o negociable + «Publicado hace X»
   const tp = (a.detalles || {}).precio_tipo;
   if (a.precio && ETIQUETA_PRECIO[tp]) $("anuncio-precio").insertAdjacentHTML("beforeend", ` <span class="etq-precio ${tp}">${ETIQUETA_PRECIO[tp]}</span>`);
+  // Fase 2AP-4a: «📉 Rebajado» con el precio anterior tachado (15 días)
+  const rb = rebajaDe(a);
+  if (rb) $("anuncio-precio").insertAdjacentHTML("afterbegin", `<span class="block text-base font-semibold"><span class="rebaja-antes">${esc(formatearPrecio(rb.antes) + sufijoPrecio(a))}</span> <span class="rebaja-pct">📉 Rebajado −${rb.pct} %</span></span>`);
   $("anuncio-ubicacion").textContent = [a.barrio, a.ciudad, a.departamento].filter(Boolean).join(", ");
   // Fase 2AH: «🕒 Publicado hace 3 horas · 18 oct 2026, 9:15 p. m.»
   if (a.fecha) {

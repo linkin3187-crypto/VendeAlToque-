@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <meta name="robots" content="noindex">
   <title>Mi tienda | Merkap</title>
-  <link rel="stylesheet" href="styles.css?v=75">
-  <link rel="stylesheet" href="tw.css?v=75">
+  <link rel="stylesheet" href="styles.css?v=76">
+  <link rel="stylesheet" href="tw.css?v=76">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -52,6 +52,60 @@
           <a id="mt-ver" class="inline-block text-sm text-indigo-600 underline">👁️ Ver mi tienda como la ve el público</a>
         </div>
         <p id="mt-compartir-nota" class="hidden text-xs text-slate-500 mt-1.5">Texto listo, imagen con tu QR para WhatsApp y estados, y un sticker para tu puerta.</p>
+      </section>
+
+      <!-- Fase 2AP-4a: promociones de la tienda -->
+      <section id="promos" class="bg-white border-2 border-rose-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <h2 class="text-lg font-black text-rose-700">🔥 Mis promociones <span id="mt-promos-cuenta" class="text-sm font-semibold text-slate-500"></span></h2>
+          <button type="button" id="mt-promo-nueva" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-sm">➕ Nueva promoción</button>
+        </div>
+        <details id="mt-promo-ayuda" class="mt-promo-ayuda">
+          <summary class="font-bold text-orange-900 cursor-pointer">💡 ¿Para qué sirve una promoción?</summary>
+          <ul class="text-sm text-slate-700 mt-2 space-y-1">
+            <li>🔥 Tu tienda sale con la etiqueta <b>«Promo»</b> en el directorio, el inicio y el buscador: te ven primero los que no te conocían.</li>
+            <li>💬 La gente te escribe directo con el botón <b>«Pedir esta promo»</b> por WhatsApp.</li>
+            <li>📣 Con <b>«Compartir promo»</b> te damos la imagen y el texto listos para tus estados y grupos.</li>
+            <li>⏳ Dura <b>máximo 15 días</b> y puedes tener <b>2 a la vez</b>: así siempre hay algo nuevo para mostrar.</li>
+          </ul>
+          <p class="text-xs text-slate-600 mt-2"><b>Ideas:</b> 2x1 el fin de semana · −10 % en tu primera compra · combo del día · domicilio gratis los martes · lo que no se vende a mitad de precio.</p>
+          <p class="text-[11px] text-slate-500 mt-1">Usa precios reales y pon fechas y condiciones claras: así lo pide el Estatuto del Consumidor (Ley 1480) y así te creen los clientes.</p>
+        </details>
+
+        <form id="mt-promo-form" class="hidden mt-3 border border-rose-200 rounded-xl p-3 bg-rose-50/40 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label class="text-xs font-bold text-slate-500 sm:col-span-2">¿Qué ofreces? (título)
+            <input id="pr-titulo" required maxlength="80" placeholder="2x1 en pan de queso" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <fieldset class="text-xs font-bold text-slate-500 sm:col-span-2">Tipo de promoción
+            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 font-normal text-sm text-slate-800">
+              <label><input type="radio" name="pr-tipo" value="precio" checked> 💲 Precio especial</label>
+              <label><input type="radio" name="pr-tipo" value="porcentaje"> % Descuento</label>
+              <label><input type="radio" name="pr-tipo" value="combo"> 🎁 2x1 / combo / regalo</label>
+            </div></fieldset>
+          <label class="text-xs font-bold text-slate-500 sm:col-span-2">Producto de tu vitrina (opcional)
+            <select id="pr-producto" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800 bg-white"></select></label>
+          <label id="pr-antes-caja" class="text-xs font-bold text-slate-500">Precio normal (antes)
+            <input id="pr-antes" inputmode="numeric" placeholder="2500" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label id="pr-ahora-caja" class="text-xs font-bold text-slate-500">Precio de promo (ahora)
+            <input id="pr-ahora" inputmode="numeric" placeholder="1250" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label id="pr-desc-caja" class="hidden text-xs font-bold text-slate-500">Descuento (%)
+            <input id="pr-desc" inputmode="numeric" maxlength="2" placeholder="10" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <p id="pr-pct" class="text-sm font-black text-rose-700 sm:col-span-2" aria-live="polite"></p>
+          <label class="text-xs font-bold text-slate-500">Desde
+            <input id="pr-desde" type="date" required class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label class="text-xs font-bold text-slate-500">Hasta (máximo 15 días)
+            <input id="pr-hasta" type="date" required class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label class="text-xs font-bold text-slate-500">Cantidad (opcional)
+            <input id="pr-cantidad" inputmode="numeric" maxlength="6" placeholder="Ej: 50 (hasta agotar)" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label class="text-xs font-bold text-slate-500">Condiciones (opcional)
+            <input id="pr-condiciones" maxlength="200" placeholder="Solo en el local, no aplica a domicilio" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
+          <label class="text-xs font-bold text-slate-500 sm:col-span-2">Detalle (opcional)
+            <textarea id="pr-descripcion" maxlength="300" rows="2" placeholder="Pan de queso recién horneado, todo el fin de semana" class="mt-1 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></textarea></label>
+          <div class="sm:col-span-2 flex flex-wrap gap-2">
+            <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm">💾 Publicar promo</button>
+            <button type="button" id="pr-cancelar" class="bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm">Cancelar</button>
+          </div>
+        </form>
+        <div id="mt-promos" class="space-y-3 mt-3"></div>
       </section>
 
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -135,11 +189,11 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=75"></script>
-  <script src="data.js?v=75"></script>
-  <script src="qr.js?v=75"></script>
-  <script src="piezas.js?v=75"></script>
-  <script src="compartir.js?v=75"></script>
-  <script src="mi-tienda.js?v=75"></script>
+  <script src="utils.js?v=76"></script>
+  <script src="data.js?v=76"></script>
+  <script src="qr.js?v=76"></script>
+  <script src="piezas.js?v=76"></script>
+  <script src="compartir.js?v=76"></script>
+  <script src="mi-tienda.js?v=76"></script>
 </body>
 </html>

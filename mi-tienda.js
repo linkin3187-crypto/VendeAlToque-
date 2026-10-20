@@ -18,13 +18,13 @@ function pintarCabecera() {
   $("mt-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + s.clase;
   $("mt-sello").textContent = (actual.nivel >= 2 ? "✔ " : "") + s.corto;
   const bs = $("mt-badge-salud"); if (bs) bs.remove();
-  if (esComercioSalud(actual) && actual.saludRevisado) $("mt-sello").insertAdjacentHTML("afterend", '<span id="mt-badge-salud"> ' + BADGE_SALUD + "</span>");
+  if (muestraSelloSalud(actual)) $("mt-sello").insertAdjacentHTML("afterend", '<span id="mt-badge-salud"> ' + BADGE_SALUD + "</span>");
   const e = $("mt-estado");
   const publica = actual.activo && actual.nivel >= 2;
   e.className = "text-sm rounded-lg px-3 py-2 mt-2 " + (publica ? "bg-green-50 text-green-900 border border-green-200" : "bg-amber-50 text-amber-900 border border-amber-200");
   // Fase 2Z.9: «Ubicado» SÍ aparece en el mapa y el directorio (igual que los importados); lo que espera la verificación son los productos
   e.innerHTML = publica ? "✅ Tu tienda es pública. Los clientes pueden verla y pedirte por WhatsApp."
-      + (saludPendiente(actual) ? " Cuando Merkap revise tus <b>datos sanitarios</b>, tu ficha mostrará el distintivo «🧾 Datos sanitarios revisados»." : "")
+      + (saludPendiente(actual) ? " Cuando Merkap revise tus <b>datos sanitarios</b>, tu ficha verificada mostrará el distintivo «🧾 NIT y director técnico declarados»." : "")
     : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
     : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando Merkap confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
   $("mt-ver").href = "tienda.html?id=" + actual.id;
@@ -178,7 +178,7 @@ async function pintarSalud() {
   // Fase 2AC.1: mensaje amable, nada se bloquea por no llenar los datos sanitarios
   const extra = (actual.tiposExtra || []).some(esTipoSalud) && !esTipoSalud(actual.tipo);
   $("mt-reglas").innerHTML = salud
-    ? `💊 <b>${extra ? "Marcaste que también eres farmacia, droguería o naturista." : "Droguerías y naturistas:"}</b> Puedes vender en tu vitrina <b>todo lo que no sea medicamento</b> desde ya (aseo, cuidado personal, bebé, dermocosmética, botiquín…). <b>No se publican medicamentos</b>, ni de venta libre ni con fórmula. ${actual.saludRevisado ? "Tu ficha ya tiene el distintivo «🧾 Datos sanitarios revisados». ✔" : "Tu ficha aún no tiene el distintivo «🧾 Datos sanitarios revisados», que da más confianza: llena tus datos sanitarios abajo (3 minutos, opcional)."} <a href="politica-productos-salud.html" class="underline">Ver reglas</a>`
+    ? `💊 <b>${extra ? "Marcaste que también eres farmacia, droguería o naturista." : "Droguerías y naturistas:"}</b> Puedes vender en tu vitrina <b>todo lo que no sea medicamento</b> desde ya (aseo, cuidado personal, bebé, dermocosmética, botiquín…). <b>No se publican medicamentos</b>, ni de venta libre ni con fórmula. ${actual.saludRevisado ? (muestraSelloSalud(actual) ? "Tu ficha ya tiene el distintivo «🧾 NIT y director técnico declarados». ✔" : actual.nivel >= 2 ? "Tus datos están revisados, pero tienen más de 12 meses: actualízalos abajo para recuperar el distintivo «🧾 NIT y director técnico declarados»." : "Tus datos están revisados; el distintivo «🧾 NIT y director técnico declarados» aparecerá cuando Merkap verifique tu negocio.") : "Tu ficha aún no tiene el distintivo «🧾 NIT y director técnico declarados», que da más confianza: llena tus datos sanitarios abajo (3 minutos, opcional)."} <a href="politica-productos-salud.html" class="underline">Ver reglas</a>`
     : "No se permiten medicamentos (ni de venta libre ni con fórmula médica) ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan. <a href=\"politica-productos-salud.html\" class=\"underline\">Ver reglas</a>";
   $("mt-salud-intro").innerHTML = BENEFICIOS_SALUD + " Si cambias algo, Merkap los vuelve a revisar.";
   datosSalud = null;

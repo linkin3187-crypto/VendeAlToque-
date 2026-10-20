@@ -936,3 +936,26 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 .mt-promo-ayuda { background: linear-gradient(135deg, #fff7ed, #fff1f2); border: 1px solid #fed7aa; border-radius: .9rem; padding: .8rem .9rem; }
 .novedad { background: linear-gradient(135deg, #4c1d95, #6d28d9); color: #fff; border-radius: 1rem; padding: .9rem 1rem; box-shadow: 0 8px 24px rgba(76, 29, 149, .25); }
 .novedad a, .novedad button { color: inherit; }
+
+/* ===== Fase 2AR · Avisos y novedades editables ===== */
+.aviso { display: flex; gap: 12px; align-items: center; border-radius: 16px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(15, 23, 42, .08); flex-wrap: wrap; }
+.aviso-cuerpo { flex: 1 1 220px; min-width: 0; }
+.aviso-tit { font-weight: 900; line-height: 1.3; margin: 0; }
+.aviso-txt { font-size: .875rem; margin: 2px 0 0; opacity: .92; line-height: 1.45; }
+.aviso-ico { font-size: 1.8rem; line-height: 1; flex: none; }
+.aviso-acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: none; }
+.aviso-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 800; font-size: .875rem; text-decoration: none !important; border: 0; cursor: pointer; }
+.aviso-btn:hover { filter: brightness(1.08); }
+.aviso-ahora { min-height: 40px; padding: 0 12px; border-radius: 12px; font-weight: 600; font-size: .875rem; background: rgba(127, 127, 127, .16); color: inherit; }
+.aviso-x { width: 36px; height: 36px; border-radius: 999px; background: rgba(127, 127, 127, .16); color: inherit; font-weight: 800; flex: none; }
+.aviso-patro { display: inline-block; margin-left: 8px; vertical-align: middle; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: rgba(127, 127, 127, .2); }
+.aviso-franja { padding: 8px 10px 8px 14px; border-radius: 12px; flex-wrap: nowrap; }
+.aviso-franja .aviso-tit { font-size: .875rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aviso-franja .aviso-cuerpo { flex: 1 1 auto; }
+.aviso-franja .aviso-btn { min-height: 36px; padding: 0 12px; font-size: .8rem; }
+.aviso-grande { padding: 20px 22px; border-radius: 20px; }
+.aviso-grande .aviso-tit { font-size: 1.35rem; }
+.aviso-grande .aviso-txt { font-size: 1rem; }
+.aviso-grande .aviso-ico { font-size: 2.6rem; }
+.aviso-grande .aviso-btn { min-height: 48px; padding: 0 22px; font-size: 1rem; }
+.car-patro { display: inline-block; margin-left: 8px; font-size: .6rem; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, .22); color: #fff; vertical-align: middle; }

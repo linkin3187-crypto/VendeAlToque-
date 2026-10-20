@@ -336,7 +336,7 @@ function tarjetaComercioFeed(c) {
     <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
+      <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
       ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
       ${!c.ownerId ? `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>` : ""}
     </div>
@@ -811,8 +811,56 @@ async function refrescarMiTienda() {
   const mis = usuarioActual ? await cargarMisComercios() : [];
   $("link-mi-tienda").classList.toggle("hidden", !mis.length);
   $("menu-mi-tienda").classList.toggle("hidden", !mis.length);
-  pintarNovedad(mis);
+  pintarAvisosInicio(mis);
 }
+
+// =====================================================================
+// Fase 2AR · Avisos y novedades editables (SQL 44). Sin la tabla, sigue la novedad fija de abajo.
+// En cada lugar del inicio se muestra 1 aviso (el de menor «orden» que le toque a esta persona).
+// =====================================================================
+let avisosPromesa = null, avisosCache = null;
+const claveAviso = a => "mf_aviso_" + a.id + "_v" + (a.version || 1);
+function avisoCerrado(a) { try { return localStorage.getItem(claveAviso(a)) === "1"; } catch (e) { return false; } }
+function avisoParaMi(a, misTiendas) {
+  const misAnuncios = usuarioActual ? baseDatosAnuncios.filter(x => x.owner === usuarioActual.id).length : 0;
+  switch (a.publico) {
+    case "visitantes": return !usuarioActual;
+    case "con_cuenta": return !!usuarioActual;
+    case "tiendas": return !!usuarioActual && misTiendas.length > 0;
+    case "anunciantes": return !!usuarioActual && misAnuncios > 0;
+    default: return true;
+  }
+}
+async function pintarAvisosInicio(misTiendas) {
+  if (!$("avisos-arriba")) return pintarNovedad(misTiendas);
+  if (!avisosPromesa) avisosPromesa = cargarAvisos().then(l => (avisosCache = l));
+  const lista = await avisosPromesa;
+  if (lista === null) return pintarNovedad(misTiendas);      // sin SQL 44: la novedad de siempre
+  $("novedad-caja").classList.add("hidden");
+  Object.keys(UBICACIONES_AVISO).forEach(u => {
+    const slot = $("avisos-" + u); if (!slot) return;
+    const a = lista.find(x => x.ubicacion === u && x.activo !== false && fechaVigente(x.desde, x.hasta) && !avisoCerrado(x) && avisoParaMi(x, misTiendas));
+    slot.classList.toggle("hidden", !a);
+    slot.innerHTML = a ? avisoHTML(a) : "";
+    if (a) {
+      let visto = false; try { visto = sessionStorage.getItem("mf_av_v_" + a.id) === "1"; sessionStorage.setItem("mf_av_v_" + a.id, "1"); } catch (e) { /* nada */ }
+      if (!visto) contarAviso(a.id, "vista");
+    }
+  });
+}
+document.addEventListener("click", e => {
+  const ir = e.target.closest("[data-aviso-ir]"), x = e.target.closest("[data-aviso-cerrar]");
+  const b = ir || x; if (!b) return;
+  const id = Number(b.dataset.avisoIr || b.dataset.avisoCerrar);
+  const a = (avisosCache || []).find(z => z.id === id);
+  if (a && (x || a.cerrable !== false)) { try { localStorage.setItem(claveAviso(a), "1"); } catch (err) { /* nada */ } }
+  if (ir) contarAviso(id, "clic");
+  if (x || (a && a.cerrable !== false && !b.hasAttribute("data-abrir"))) { const s = b.closest(".avisos-slot"); if (s) s.classList.add("hidden"); }
+  if (ir && b.getAttribute("href") === "#mis-anuncios") {
+    e.preventDefault();
+    const s = $("seccion-mis-anuncios"); if (s) s.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
 
 // =====================================================================
 // Fase 2AP-4a · Novedades: cómo se ENTERAN los dueños de las herramientas nuevas.

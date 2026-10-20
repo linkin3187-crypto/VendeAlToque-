@@ -39,7 +39,7 @@ function tarjetaComercio(c) {
     <div class="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
       <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
       ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      <span class="absolute top-2 left-2 ${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
+      <span class="absolute top-2 left-2 ${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
       ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
       ${!c.ownerId ? `<button type="button" data-reclamar="${c.id}" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis para administrarla">🔑 ¿Es tu negocio? Reclámalo</button>` : ""}
     </div>

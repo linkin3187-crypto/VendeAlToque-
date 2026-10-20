@@ -9,7 +9,10 @@ const TIPOS_DESTINO = [
   ["recomendar", "🤝 Recomendar un comercio"], ["registrar", "🏪 Registrar mi negocio"],
   ["directorio", "Directorio de comercios"], ["anuncios", "Todos los anuncios"], ["otra", "Otra página del sitio"]
 ];
-const DESTINO_FIJO = { publicar: "#publicar", contenido: "#contenido", recomendar: "recomendar.html", registrar: "registrar-negocio.html", directorio: "comercios.html", anuncios: "anuncios.html" };
+const DESTINO_FIJO = { publicar: "#publicar", contenido: "#contenido", recomendar: "recomendar.html", registrar: "registrar-negocio.html", directorio: "comercios.html", anuncios: "anuncios.html",
+  mitienda: "mi-tienda.html", mispromos: "mi-tienda.html#promos", misanuncios: "#mis-anuncios" };
+// Fase 2AR: destinos extra que solo usan los avisos
+const DESTINOS_AVISO = [["misanuncios", "📋 Mis anuncios (baja a ellos)"], ["mitienda", "🏪 Mi tienda"], ["mispromos", "🔥 Mis promociones"]];
 
 function analizarDestino(d) {
   d = String(d || "");
@@ -24,14 +27,15 @@ function analizarDestino(d) {
 
 const etiquetaComercio = c => `${c.nombre} · ${c.ciudad || ""} (#${c.id})`;
 
-function selectorDestinoHTML(destino) {
+function selectorDestinoHTML(destino, extras) {
   const a = analizarDestino(destino);
+  const tipos = extras ? TIPOS_DESTINO.concat(DESTINOS_AVISO) : TIPOS_DESTINO;
   // Si el destino guardado usa una categoría que no está en la lista (desactivada o borrada), se conserva igual
   const opt = (lista, actual) => (actual && !lista.some(([v]) => v === actual) ? [[actual, "⚠️ " + actual]] : []).concat(lista)
     .map(([v, t]) => `<option value="${esc(v)}" ${v === actual ? "selected" : ""}>${t}</option>`).join("");
   const comercio = a.tipo === "comercio" ? comercios.find(c => String(c.id) === String(a.valor)) : null;
   return `<div class="dest grid gap-1.5" data-dest>
-    <select data-d="tipo" class="w-full border border-slate-300 p-1.5 rounded-lg text-sm bg-white">${opt(TIPOS_DESTINO, a.tipo)}</select>
+    <select data-d="tipo" class="w-full border border-slate-300 p-1.5 rounded-lg text-sm bg-white">${opt(tipos, a.tipo)}</select>
     <select data-d="ccat" class="w-full border border-slate-300 p-1.5 rounded-lg text-sm bg-white">${opt(TIPOS_COMERCIO.map(t => [t.id, t.icono + " " + t.nombre]), a.tipo === "ccat" ? a.valor : "")}</select>
     <select data-d="acat" class="w-full border border-slate-300 p-1.5 rounded-lg text-sm bg-white">${opt(CATEGORIAS.filter(c => c.id !== "todos").map(c => [c.id, c.icono + " " + c.nombre]), a.tipo === "acat" ? a.valor : "")}</select>
     <input data-d="comercio" list="dl-comercios" placeholder="Escribe el nombre del comercio…" value="${esc(comercio ? etiquetaComercio(comercio) : (a.tipo === "comercio" ? "#" + a.valor : ""))}" class="w-full border border-slate-300 p-1.5 rounded-lg text-sm">
@@ -66,8 +70,8 @@ function refrescarDestino(cont) {
   ["ccat", "acat", "comercio", "busqueda", "otra"].forEach(k => cont.querySelector(`[data-d="${k}"]`).classList.toggle("hidden", k !== tipo));
   const d = leerDestino(cont);
   const vista = cont.querySelector('[data-d="vista"]');
-  vista.textContent = d ? "→ " + d + (destinoAccesoValido(d) ? "" : "  ⚠️ no válido") : "→ (elige el destino)";
-  vista.classList.toggle("text-red-600", !!d && !destinoAccesoValido(d));
+  vista.textContent = d ? "→ " + d + (destinoAvisoValido(d) ? "" : "  ⚠️ no válido") : "→ (elige el destino)";
+  vista.classList.toggle("text-red-600", !!d && !destinoAvisoValido(d));
 }
 
 // ---------- 1) Carrusel ----------
@@ -100,8 +104,12 @@ function filaBanner(b) {
           <button type="button" data-ban-quitar-img class="${b.imagen_url ? "" : "hidden"} underline text-red-600">Quitar imagen</button>
         </span><input type="hidden" data-c="imagen_url" value="${esc(b.imagen_url || "")}">`, "sm:col-span-2")}
       <div class="flex flex-wrap items-end gap-3 sm:col-span-2">
+        ${campo("Desde (opcional)", `<input data-c="desde" type="date" value="${esc(b.desde || "")}" class="mt-0.5 block border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
+        ${campo("Hasta (opcional)", `<input data-c="hasta" type="date" value="${esc(b.hasta || "")}" class="mt-0.5 block border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
         ${campo("Orden", `<input data-c="orden" type="number" value="${Number(b.orden) || 100}" class="mt-0.5 w-20 border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
         <label class="text-xs flex items-center gap-1 pb-2"><input type="checkbox" data-c="activo" ${b.activo === false ? "" : "checked"}> Visible</label>
+        <label class="text-xs flex items-center gap-1 pb-2" title="Si un comercio paga por esta diapositiva"><input type="checkbox" data-c="patrocinado" ${b.patrocinado ? "checked" : ""}> Patrocinado</label>
+        ${b.id ? `<span class="text-[11px] text-slate-500 pb-2 w-full">${esc(estadoFechas(b.desde, b.hasta))}</span>` : ""}
         <button type="button" data-ban-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Guardar</button>
         ${b.id ? '<button type="button" data-ban-borrar class="text-sm text-slate-400 hover:text-red-600 pb-2">🗑️ Borrar</button>' : ""}
       </div>
@@ -119,7 +127,8 @@ function leerBanner(f) {
     paleta: v("paleta").value, color1: v("color1").value, color2: v("color2").value,
     icono1: v("icono1").value.trim() || "⭐", icono2: v("icono2").value.trim(),
     imagen_url: imagenesPendientes.get(f) || v("imagen_url").value || null, imagen_modo: modo ? modo.value : "lado",
-    orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked
+    orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked,
+    ...(v("desde") ? { desde: v("desde").value || null, hasta: v("hasta").value || null, patrocinado: v("patrocinado").checked } : {})
   };
 }
 
@@ -178,6 +187,7 @@ async function accionBanner(e) {
   if (fila.titulo.length < 2) { mostrarToast("Escribe el título", "error"); return; }
   if (fila.boton.length < 2) { mostrarToast("Escribe el texto del botón", "error"); return; }
   if (!destinoAccesoValido(fila.destino)) { mostrarToast("Elige a dónde lleva el botón", "error"); return; }
+  if (fila.desde && fila.hasta && fila.hasta < fila.desde) { mostrarToast("La fecha «hasta» debe ser después de «desde»", "error"); return; }
   if (fila.paleta !== "personal") { fila.color1 = null; fila.color2 = null; }
   b.disabled = true; b.textContent = "Guardando…";
   try {
@@ -187,6 +197,108 @@ async function accionBanner(e) {
     imagenesPendientes.delete(f);
     mostrarToast("✅ Diapositiva guardada: ya se ve en el inicio");
     await pintarBannersAdmin();
+  } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; b.textContent = "Guardar"; }
+}
+
+// ---------- 1b) Avisos y novedades (fase 2AR · SQL 44) ----------
+let avisosAdmin = [];
+function filaAviso(a) {
+  const est = ESTILOS_AVISO[a.estilo] ? a.estilo : "morado";
+  const campo = (etq, html, extra = "") => `<label class="text-[11px] font-bold text-slate-500 ${extra}">${etq}${html}</label>`;
+  const inp = (k, v, max, ph = "") => `<input data-c="${k}" maxlength="${max}" value="${esc(v || "")}" placeholder="${esc(ph)}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`;
+  const sel = (k, mapa, actual) => `<select data-c="${k}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm bg-white">${Object.entries(mapa).map(([v, t]) => `<option value="${v}" ${v === actual ? "selected" : ""}>${esc(typeof t === "string" ? t : t.nombre)}</option>`).join("")}</select>`;
+  const nom = "tam-" + (a.id || Math.random().toString(36).slice(2));
+  const ctr = a.vistas ? Math.round((a.clics || 0) / a.vistas * 1000) / 10 : 0;
+  return `<div class="border border-slate-200 rounded-2xl p-3 ${a.activo === false ? "opacity-60" : ""}" data-av="${a.id || ""}">
+    <div class="mb-3 rounded-2xl bg-slate-100 p-3" data-vista aria-label="Vista previa" style="pointer-events:none"></div>
+    ${a.id ? `<p class="text-[11px] text-slate-500 mb-2">${esc(estadoFechas(a.desde, a.hasta))} · 👀 ${Number(a.vistas) || 0} vistas · 👆 ${Number(a.clics) || 0} clics${a.vistas ? " (" + ctr + " %)" : ""}</p>` : ""}
+    <div class="grid sm:grid-cols-2 gap-2">
+      ${campo("Nombre interno (solo lo ves tú)", inp("nombre", a.nombre, 60, "Ej. Lanzamiento promociones"))}
+      <div class="text-[11px] font-bold text-slate-500">Ícono<div class="mt-0.5 flex items-center"><input data-c="icono" data-emoji maxlength="8" aria-label="Ícono" value="${esc(a.icono || "📣")}" class="w-14 border border-slate-300 p-1.5 rounded-lg text-center text-lg">${typeof BOTON_EMOJI === "string" ? BOTON_EMOJI : ""}</div></div>
+      ${campo("Título *", inp("titulo", a.titulo, 90, "Ej. Nuevo: crea promociones en tu tienda"), "sm:col-span-2")}
+      ${campo("Texto (no sale en «franja»)", `<textarea data-c="texto" maxlength="240" rows="2" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm">${esc(a.texto || "")}</textarea>`, "sm:col-span-2")}
+      ${campo("Texto del botón (vacío = sin botón)", inp("boton", a.boton, 30, "Ej. Probar ahora"))}
+      ${campo("El botón lleva a", selectorDestinoHTML(a.destino || "", true))}
+      ${campo("Color", sel("estilo", ESTILOS_AVISO, est) + `<span data-colores class="${est === "personal" ? "" : "hidden"} mt-1 flex items-center gap-2 text-[11px] font-normal">Fondo <input type="color" data-c="color_fondo" value="${esColorHex(a.color_fondo) ? a.color_fondo : "#4c1d95"}"> Letra <input type="color" data-c="color_texto" value="${esColorHex(a.color_texto) ? a.color_texto : "#ffffff"}"></span>`)}
+      <fieldset class="text-[11px] font-bold text-slate-500"><legend>Tamaño</legend><div class="mt-1 flex flex-wrap gap-3 font-normal text-xs">
+        ${[["franja", "Franja (1 línea)"], ["tarjeta", "Tarjeta"], ["grande", "Grande"]].map(([v, t]) => `<label class="flex items-center gap-1"><input type="radio" name="${nom}" data-c="tamano" value="${v}" ${(a.tamano || "tarjeta") === v ? "checked" : ""}> ${t}</label>`).join("")}</div></fieldset>
+      ${campo("Dónde aparece", sel("ubicacion", UBICACIONES_AVISO, a.ubicacion || "arriba"))}
+      ${campo("A quién se le muestra", sel("publico", PUBLICOS_AVISO, a.publico || "todos"))}
+      ${campo("Desde (opcional)", `<input data-c="desde" type="date" value="${esc(a.desde || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
+      ${campo("Hasta (opcional)", `<input data-c="hasta" type="date" value="${esc(a.hasta || "")}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
+      <div class="flex flex-wrap items-end gap-3 sm:col-span-2">
+        ${campo("Orden", `<input data-c="orden" type="number" value="${Number(a.orden) || 100}" class="mt-0.5 w-20 border border-slate-300 p-1.5 rounded-lg font-normal text-sm">`)}
+        <label class="text-xs flex items-center gap-1 pb-2"><input type="checkbox" data-c="activo" ${a.activo === false ? "" : "checked"}> Visible</label>
+        <label class="text-xs flex items-center gap-1 pb-2"><input type="checkbox" data-c="cerrable" ${a.cerrable === false ? "" : "checked"}> Se puede cerrar</label>
+        <label class="text-xs flex items-center gap-1 pb-2" title="Si un comercio paga por este aviso"><input type="checkbox" data-c="patrocinado" ${a.patrocinado ? "checked" : ""}> Patrocinado</label>
+        <button type="button" data-av-guardar class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Guardar</button>
+        ${a.id ? '<button type="button" data-av-duplicar class="text-sm text-indigo-600 font-semibold pb-2">⧉ Duplicar</button><button type="button" data-av-borrar class="text-sm text-slate-400 hover:text-red-600 pb-2">🗑️ Borrar</button>' : ""}
+      </div>
+    </div>
+  </div>`;
+}
+function leerAviso(f) {
+  const v = k => f.querySelector(`[data-c="${k}"]`);
+  const tam = f.querySelector('[data-c="tamano"]:checked');
+  const boton = v("boton").value.trim();
+  return {
+    id: Number(f.dataset.av) || null,
+    nombre: v("nombre").value.trim(), titulo: v("titulo").value.trim(), texto: v("texto").value.trim(),
+    icono: v("icono").value.trim() || "📣", boton: boton || null,
+    destino: boton ? leerDestino(f.querySelector("[data-dest]")) || null : null,
+    estilo: v("estilo").value, color_fondo: v("color_fondo").value, color_texto: v("color_texto").value,
+    tamano: tam ? tam.value : "tarjeta", ubicacion: v("ubicacion").value, publico: v("publico").value,
+    desde: v("desde").value || null, hasta: v("hasta").value || null,
+    orden: parseInt(v("orden").value, 10) || 100, activo: v("activo").checked,
+    cerrable: v("cerrable").checked, patrocinado: v("patrocinado").checked
+  };
+}
+function vistaAviso(f) {
+  const a = leerAviso(f);
+  f.querySelector("[data-vista]").innerHTML = avisoHTML({ ...a, id: "", titulo: a.titulo || "Título del aviso" });
+  f.querySelector("[data-colores]").classList.toggle("hidden", a.estilo !== "personal");
+  refrescarDestino(f.querySelector("[data-dest]"));
+}
+async function pintarAvisosAdmin() {
+  try {
+    avisosAdmin = await cargarAvisosAdmin();
+    $("av-n").textContent = "(" + avisosAdmin.length + ")";
+    $("av-lista").innerHTML = avisosAdmin.length ? avisosAdmin.map(filaAviso).join("")
+      : '<p class="text-sm text-slate-400 text-center py-4">No hay avisos: en el inicio no sale ninguno. Crea uno con «➕ Nuevo aviso».</p>';
+    $("av-lista").querySelectorAll("[data-av]").forEach(vistaAviso);
+  } catch (e) {
+    $("av-lista").innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Se activa al ejecutar supabase/44_avisos_inicio.sql.</p>';
+    $("av-nuevo").classList.add("hidden");
+  }
+}
+function nuevoAviso(base) {
+  const vacio = $("av-lista").querySelector("p.text-center"); if (vacio) vacio.remove();
+  $("av-lista").insertAdjacentHTML("afterbegin", filaAviso(Object.assign({ titulo: "", texto: "", icono: "📣", boton: "", destino: "", estilo: "morado", tamano: "tarjeta",
+    ubicacion: "arriba", publico: "todos", orden: 50, activo: true, cerrable: true, patrocinado: false }, base || {}, { id: null, vistas: 0, clics: 0 })));
+  const f = $("av-lista").firstElementChild; vistaAviso(f); f.querySelector('[data-c="titulo"]').focus();
+}
+async function accionAviso(e) {
+  const f = e.target.closest("[data-av]");
+  if (!f) return;
+  if (e.target.closest("[data-av-duplicar]")) { nuevoAviso({ ...leerAviso(f), nombre: (leerAviso(f).nombre + " (copia)").slice(0, 60), activo: false }); return; }
+  if (e.target.closest("[data-av-borrar]")) {
+    if (!confirm("¿Borrar este aviso? (Para esconderlo sin borrar, quita «Visible»)")) return;
+    try { await borrarAvisoDB(Number(f.dataset.av)); mostrarToast("🗑️ Aviso borrado"); await pintarAvisosAdmin(); } catch (err) { mostrarToast(mensajeError(err), "error"); }
+    return;
+  }
+  const b = e.target.closest("[data-av-guardar]");
+  if (!b) return;
+  const fila = leerAviso(f);
+  if (fila.titulo.length < 2) { mostrarToast("Escribe el título", "error"); return; }
+  if (fila.boton && fila.boton.length < 2) { mostrarToast("El texto del botón es muy corto", "error"); return; }
+  if (fila.boton && !destinoAvisoValido(fila.destino)) { mostrarToast("Elige a dónde lleva el botón", "error"); return; }
+  if (fila.desde && fila.hasta && fila.hasta < fila.desde) { mostrarToast("La fecha «hasta» debe ser después de «desde»", "error"); return; }
+  if (fila.estilo !== "personal") { fila.color_fondo = null; fila.color_texto = null; }
+  b.disabled = true; b.textContent = "Guardando…";
+  try {
+    await guardarAvisoDB(fila);
+    mostrarToast(fila.activo && fechaVigente(fila.desde, fila.hasta) ? "✅ Aviso guardado: ya se ve en el inicio" : "✅ Aviso guardado");
+    await pintarAvisosAdmin();
   } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; b.textContent = "Guardar"; }
 }
 
@@ -584,6 +696,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("ban-lista").insertAdjacentHTML("beforeend", filaBanner({ titulo: "", boton: "", destino: "#publicar", paleta: "indigo", icono1: "⭐", icono2: "", orden: 500, activo: true }));
     const f = $("ban-lista").lastElementChild; vistaBanner(f); f.querySelector('[data-c="titulo"]').focus();
   });
+
+  // Avisos y novedades (fase 2AR)
+  pintarAvisosAdmin();
+  $("av-lista").addEventListener("click", accionAviso);
+  ["input", "change"].forEach(ev => $("av-lista").addEventListener(ev, e => { const f = e.target.closest("[data-av]"); if (f) vistaAviso(f); }));
+  $("av-nuevo").addEventListener("click", () => nuevoAviso());
 
   // Cuadros
   pintarAccesosAdmin();

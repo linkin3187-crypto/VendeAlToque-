@@ -248,6 +248,34 @@ Perfiles/catálogo de tienda, planes para negocios (cobro con Wompi, PSE o Nequi
 
 **Transporte y mensajería:** alianzas con mensajerías y servicios de transporte **ya habilitados** (comisión o enlace de referido), cuando haya tráfico. **No** se crea una empresa propia de transporte: en Colombia el transporte de pasajeros exige habilitación del Ministerio de Transporte, y los domicilios traen temas laborales, de seguros y de responsabilidad. Antes se consulta con un abogado.
 
+### 💳 Monetización: documentos y fases de construcción (M-1 … M-14)
+Documentos de referencia (oct 2026):
+- **Estrategia de monetización por fases** (qué se cobra, métricas, lecciones de OLX y otras plataformas): https://claude.ai/code/artifact/ecfe87af-f031-436f-877c-9f04d14384cc
+- **Plan operativo de fases** (qué se vende, dónde, cuándo, qué tenemos y qué falta): https://claude.ai/code/artifact/6b9e0d3e-a128-417b-ad1b-759e19a53fd4
+- **Panel de monetización · Fase 2** (bocetos del panel y de lo que ve el usuario + guía paso a paso): https://claude.ai/artifact/KohrsXSN3dxttABMzUHmgp
+
+Fases de negocio: **0** tracción gratis (hoy) → **1** preparación → **2** micropagos → **3** planes mensuales → **4** transacciones → **5** datos y alianzas. Ninguna arranca por fecha: arranca cuando la anterior cumple su puerta de métricas.
+
+| Fase | Qué se construye | Habilita | ¿SQL? | Estado |
+|---|---|---|---|---|
+| **M-1** | Panel de métricas del administrador (anuncios activos, tiendas, contactos, escaneos, uso de herramientas) | Medir la puerta 0 → 1 | Probable | 🔜 |
+| **M-2** | Botones «Próximamente» que cuentan toques + lista de espera | Prueba de interés (Fase 1) | Sí | ⏳ |
+| **M-3** | Página «Planes y precios» informativa | Fase 1 | No | ⏳ |
+| **M-4** | Tablas de cobro (productos, compras, derechos, historial) + pestañas **Productos y precios**, **Espacios** y **Ventas** con activación manual | Fase 2 en modo manual | Sí | ⏳ |
+| **M-5** | Impulso y destacado reales: fecha de impulso y fin del destacado en anuncios y comercios (**con su grant de lectura**, lección SQL 43), franja «Destacados», orden y cupos | Fase 2 | Sí | ⏳ |
+| **M-6** | Botones de compra y hoja de pago (Mis anuncios, Mi tienda, aviso al publicar) | Fase 2 | No | ⏳ |
+| **M-7** | Cupos pagados en «Promos cerca de ti» (Promo destacada) | Fase 2 | Sí | ⏳ |
+| **M-8** | Pasarela (Wompi u otra) con confirmación automática | Fase 2 automática | Sí | ⏳ |
+| **M-9** | Planes Pro / Pro Plus con límites aplicados por el servidor; campañas propias para dueños | Fase 3 | Sí | ⏳ |
+| **M-10** | Estadísticas de la tienda (amplía 2AP-4c) | Fase 3 | Sí | ⏳ |
+| **M-11** | Formatos premium en Marketing y pieza mensual Pro Plus | Fase 3 | No | ⏳ |
+| **M-12** | Verticales: inmobiliario, vehículos, empleo | Fase 3 | Sí | ⏳ |
+| **M-13** | Banners locales con cupos y clics | Fase 3 | Sí | ⏳ |
+| **M-14** | Cobro recurrente: aviso, renovación y bajada a gratis sin borrar datos | Fase 3 | Sí | ⏳ |
+
+**Quién compra qué en la Fase 2:** anunciantes (particulares o tiendas con anuncios) → Impulso, Renovación automática, Destacado 7 días, Combo; tiendas → Destacado en el directorio, Promo destacada, Verificación express, Kit QR.
+**Decisión pendiente:** la propuesta del panel (oct 2026) es que la **⭐ Selección del día siga siempre gratis** y lo pagado vaya a una franja aparte «Destacados»; esto reemplaza la idea anterior de «Selección del día patrocinada» (arriba) si la confirmas.
+
 ## Fase 6: Marketplace transaccional
 Pagos protegidos, pedidos, domicilios para tiendas, calificaciones y disputas, WhatsApp Business API. Es lo más complejo y regulado: solo cuando haya usuarios que lo pidan.
 

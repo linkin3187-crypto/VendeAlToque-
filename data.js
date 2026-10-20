@@ -956,7 +956,8 @@ async function cargarBanners() {
   try {
     const { data, error } = await sb.from("banners_inicio").select("*").eq("activo", true).order("orden").order("id");
     if (error || !data || !data.length) return null;           // null = se queda el carrusel de siempre
-    return data.filter(b => destinoAccesoValido(b.destino));
+    const lista = data.filter(b => destinoAccesoValido(b.destino) && fechaVigente(b.desde, b.hasta));   // fase 2AR: fechas
+    return lista.length ? lista : null;
   } catch (e) { return null; }
 }
 async function cargarBannersAdmin() {
@@ -973,6 +974,85 @@ async function guardarBannerDB(fila) {
 async function borrarBannerDB(id) {
   const { error } = await sb.from("banners_inicio").delete().eq("id", id);
   if (error) throw error;
+}
+// Fase 2AR: ¿está en fechas? (desde/hasta en días de Bogotá; vacío = sin límite)
+function fechaVigente(desde, hasta) {
+  const hoy = new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10);
+  return (!desde || desde <= hoy) && (!hasta || hasta >= hoy);
+}
+function estadoFechas(desde, hasta) {
+  const hoy = new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10);
+  if (desde && desde > hoy) return "⏳ Programado desde el " + desde;
+  if (hasta && hasta < hoy) return "⌛ Venció el " + hasta;
+  return hasta ? "🟢 Se ve hasta el " + hasta : "🟢 Se ve sin fecha de fin";
+}
+
+// =====================================================================
+// Fase 2AR · Avisos y novedades del inicio (SQL 44): los edita el administrador en «🎨 Editar inicio»
+// =====================================================================
+const ESTILOS_AVISO = {
+  morado:   { nombre: "Morado Merkap", fondo: "#4c1d95", texto: "#ffffff", boton: "#f6c51a", botonTxt: "#1e1b4b" },
+  amarillo: { nombre: "Amarillo",      fondo: "#fef3c7", texto: "#78350f", boton: "#4c1d95", botonTxt: "#ffffff" },
+  verde:    { nombre: "Verde",         fondo: "#dcfce7", texto: "#14532d", boton: "#15803d", botonTxt: "#ffffff" },
+  azul:     { nombre: "Azul",          fondo: "#dbeafe", texto: "#1e3a8a", boton: "#1d4ed8", botonTxt: "#ffffff" },
+  rosa:     { nombre: "Rosa promo",    fondo: "#ffe4e6", texto: "#9f1239", boton: "#be123c", botonTxt: "#ffffff" },
+  oscuro:   { nombre: "Oscuro",        fondo: "#1e1b4b", texto: "#ffffff", boton: "#f6c51a", botonTxt: "#1e1b4b" },
+  claro:    { nombre: "Blanco",        fondo: "#ffffff", texto: "#1e1b4b", boton: "#4c1d95", botonTxt: "#ffffff" },
+  personal: { nombre: "Mis colores",   fondo: "", texto: "", boton: "", botonTxt: "" }
+};
+const UBICACIONES_AVISO = { arriba: "Arriba, debajo de la barra", despues_carrusel: "Después del carrusel", antes_comercios: "Antes de los comercios", final: "Al final de la página" };
+const PUBLICOS_AVISO = { todos: "Todos", visitantes: "Visitantes sin cuenta", con_cuenta: "Personas con cuenta", tiendas: "Dueños de tiendas", anunciantes: "Quienes tienen anuncios" };
+const destinoAvisoValido = d => d === "#mis-anuncios" || destinoAccesoValido(d);
+
+function coloresAviso(a) {
+  if (a.estilo === "personal" && esColorHex(a.color_fondo) && esColorHex(a.color_texto))
+    return { fondo: a.color_fondo, texto: a.color_texto, boton: a.color_texto, botonTxt: a.color_fondo };
+  return ESTILOS_AVISO[a.estilo] && a.estilo !== "personal" ? ESTILOS_AVISO[a.estilo] : ESTILOS_AVISO.morado;
+}
+// La caja tal como se ve en el inicio (y en la vista previa del editor)
+function avisoHTML(a) {
+  const c = coloresAviso(a), tam = ["franja", "tarjeta", "grande"].includes(a.tamano) ? a.tamano : "tarjeta";
+  const d = a.boton && destinoAvisoValido(a.destino) ? a.destino : "";
+  const btnEst = `background:${c.boton};color:${c.botonTxt}`;
+  const boton = !d ? "" : d === "#publicar"
+    ? `<button type="button" data-aviso-ir="${a.id || ""}" data-abrir="modal-publicar" data-requiere-login data-texto-fijo class="aviso-btn" style="${btnEst}">${esc(a.boton)}</button>`
+    : `<a href="${esc(d)}" data-aviso-ir="${a.id || ""}" class="aviso-btn" style="${btnEst}">${esc(a.boton)}</a>`;
+  const patro = a.patrocinado ? '<span class="aviso-patro">Patrocinado</span>' : "";
+  const cerrar = a.cerrable === false ? "" : tam === "franja"
+    ? `<button type="button" data-aviso-cerrar="${a.id || ""}" class="aviso-x" aria-label="Cerrar aviso">✕</button>`
+    : `<button type="button" data-aviso-cerrar="${a.id || ""}" class="aviso-ahora">Ahora no</button>`;
+  return `<div class="aviso aviso-${tam}" data-aviso="${a.id || ""}" style="background:${c.fondo};color:${c.texto}" role="region" aria-label="Aviso">
+    ${a.icono && tam !== "franja" ? `<span class="aviso-ico" aria-hidden="true">${esc(a.icono)}</span>` : ""}
+    <div class="aviso-cuerpo"><p class="aviso-tit">${tam === "franja" && a.icono ? esc(a.icono) + " " : ""}${esc(a.titulo)}${patro}</p>
+      ${a.texto && tam !== "franja" ? `<p class="aviso-txt">${esc(a.texto)}</p>` : ""}</div>
+    <div class="aviso-acciones">${boton}${cerrar}</div>
+  </div>`;
+}
+async function cargarAvisos() {
+  try {
+    const { data, error } = await sb.from("avisos_inicio").select("*").order("orden").order("id");
+    if (error) return null;                  // null = aún no corre el SQL 44 (se usa la novedad de respaldo)
+    return data || [];
+  } catch (e) { return null; }
+}
+async function cargarAvisosAdmin() {
+  const { data, error } = await sb.from("avisos_inicio").select("*").order("orden").order("id");
+  if (error) throw error;
+  return data || [];
+}
+async function guardarAvisoDB(fila) {
+  if (fila.boton && !destinoAvisoValido(fila.destino)) throw new Error("El botón debe llevar a una página del sitio, a Publicar, a los anuncios o a Mis anuncios");
+  const { id, ...resto } = fila;
+  const { error } = id ? await sb.from("avisos_inicio").update(resto).eq("id", id) : await sb.from("avisos_inicio").insert(resto);
+  if (error) throw error;
+}
+async function borrarAvisoDB(id) {
+  const { error } = await sb.from("avisos_inicio").delete().eq("id", id);
+  if (error) throw error;
+}
+function contarAviso(id, tipo) {
+  if (!id || !sb) return;
+  try { sb.rpc("aviso_contar", { p_id: Number(id), p_tipo: tipo }).then(() => {}, () => {}); } catch (e) { /* nada */ }
 }
 
 // Una diapositiva con el MISMO diseño del carrusel de siempre (sirve al inicio y a la vista previa del editor)
@@ -992,7 +1072,7 @@ function bannerHTML(b, i, total) {
     : `<div class="car-arte" aria-hidden="true"><div class="car-tarjeta"><span class="car-e1">${esc(b.icono1 || "⭐")}</span>${b.icono2 ? `<span class="car-e2">${esc(b.icono2)}</span>` : ""}</div></div>`;
   return `<article class="car-slide ${clase} ${fondo ? "car-con-fondo" : ""}" ${estilos.length ? `style="${estilos.join(";")}"` : ""} role="group" aria-roledescription="diapositiva" aria-label="${i + 1} de ${total}">
     <div class="car-texto">
-      ${b.etiqueta ? `<p class="car-etiqueta">${esc(b.etiqueta)}</p>` : ""}
+      ${b.etiqueta || b.patrocinado ? `<p class="car-etiqueta">${esc(b.etiqueta || "")}${b.patrocinado ? `<span class="car-patro">Patrocinado</span>` : ""}</p>` : ""}
       <h3 class="car-titulo">${esc(b.titulo)}</h3>
       ${b.texto ? `<p class="car-sub">${esc(b.texto)}</p>` : ""}
       ${cta}
@@ -1538,8 +1618,8 @@ function puntajeNegocio(n, s) {
 // Cada nivel dice exactamente qué significa; así el sello nunca promete más de lo comprobado.
 const SELLOS = {
   1: { corto: "Ubicado", largo: "Dato de OpenStreetMap · sin verificar", clase: "bg-amber-100 text-amber-800" },
-  2: { corto: "Verificado por teléfono", largo: "✔ Verificado por teléfono", clase: "bg-green-100 text-green-800" },
-  3: { corto: "Ubicación confirmada en persona", largo: "✔ Ubicación confirmada en persona", clase: "bg-green-600 text-white" }
+  2: { corto: "Verificado por teléfono", mini: "Verificado por tel.", largo: "✔ Verificado por teléfono", clase: "bg-green-100 text-green-800" },
+  3: { corto: "Ubicación confirmada en persona", mini: "Ubicación confirmada", largo: "✔ Ubicación confirmada en persona", clase: "bg-green-600 text-white" }
 };
 const MESES_VIGENCIA = 12;
 

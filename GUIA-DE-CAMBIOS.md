@@ -84,6 +84,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.js`: `#promo-ID` resalta esa promo; `#promos` sin promos vigentes avisa y deja la vitrina.
 - `marketing.html/js`: destino `promo` (`CON_ID`, `promosObjetivo`, `llenarPromos`, `precioPieza`); `piezas.js` dibuja `o.precio` (antes tachado · ahora · −%). Caché v82.
 
+### Fase 2AR · Avisos y novedades editables (SQL 44)
+- `supabase/44_avisos_inicio.sql`: tabla `avisos_inicio` (RLS: el público ve los visibles y vigentes; solo `es_admin()` escribe), `aviso_contar()` para vistas y clics, `version` que sube al cambiar el texto, y `desde/hasta/patrocinado` en `banners_inicio`.
+- `data.js`: `ESTILOS_AVISO`, `UBICACIONES_AVISO`, `PUBLICOS_AVISO`, `avisoHTML`, `cargarAvisos`, `guardarAvisoDB`, `fechaVigente`, `estadoFechas`; el carrusel filtra por fechas y muestra «Patrocinado».
+- `app.js`: `pintarAvisosInicio` (1 aviso por lugar; sin la tabla vuelve `pintarNovedad`). `index.html`: 4 lugares `#avisos-*` y el bloque de promos antes de los anuncios.
+- `editar-inicio.html/js`: sección «📣 Avisos y novedades» y fechas/«Patrocinado» en el carrusel. Caché v83.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

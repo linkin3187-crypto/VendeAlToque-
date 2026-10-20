@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <title>Editar inicio y buscador | Merkap</title>
   <meta name="robots" content="noindex">
-  <link rel="stylesheet" href="styles.css?v=82">
-  <link rel="stylesheet" href="tw.css?v=82">
+  <link rel="stylesheet" href="styles.css?v=83">
+  <link rel="stylesheet" href="tw.css?v=83">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -34,6 +34,7 @@
       <nav class="flex flex-wrap gap-2 text-sm" aria-label="Secciones">
         <a href="#logo-editor" class="b-pestana">🎨 Logo</a>
         <a href="#carrusel-editor" class="b-pestana">🎠 Carrusel</a>
+        <a href="#avisos-editor" class="b-pestana">📣 Avisos y novedades</a>
         <a href="#accesos-editor" class="b-pestana">🧩 Cuadros de acceso</a>
         <a href="#seleccion-editor" class="b-pestana">⭐ Selección del día</a>
         <a href="#entrenar" class="b-pestana">🧠 Entrenar el buscador</a>
@@ -79,6 +80,24 @@
         <p class="text-xs text-slate-500 mt-1 mb-4">Cada diapositiva tiene una <b>vista previa en vivo</b>. El diseño es el mismo de siempre; aquí cambias textos, el botón y <b>a dónde lleva</b>, los colores (paletas listas o tus dos colores), los íconos y, si quieres, una <b>imagen</b> (por ejemplo, hecha con IA): <i>al lado</i> (reemplaza el arte de la derecha; mejor PNG o WebP con fondo transparente) o <i>de fondo</i> (cubre toda la diapositiva y se oscurece para que el texto se lea). Máx. 1 MB después de comprimir.</p>
         <div id="ban-lista" class="space-y-5"></div>
         <button type="button" id="ban-nuevo" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">➕ Nueva diapositiva</button>
+      </section>
+
+      <!-- 1b) AVISOS Y NOVEDADES (fase 2AR · SQL 44) -->
+      <section id="avisos-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">📣 Avisos y novedades <span id="av-n" class="text-sm font-semibold text-slate-500"></span></h2>
+        <p class="text-xs text-slate-500 mt-1 mb-2">Cajas para anunciar funciones nuevas, campañas o temporadas (y, más adelante, avisos pagados). Cada una tiene <b>vista previa en vivo</b>. Eliges el texto, el botón y a dónde lleva, el color, el <b>tamaño</b> (franja, tarjeta o grande), <b>dónde aparece</b>, <b>a quién</b> se le muestra y las <b>fechas</b>. En cada lugar se ve un solo aviso a la vez: el de menor orden que le toque a esa persona. Quien lo cierra no lo vuelve a ver… hasta que cambies su texto.</p>
+        <details class="mb-4 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <summary class="font-bold cursor-pointer">💡 Recomendaciones</summary>
+          <ul class="list-disc pl-5 mt-2 space-y-1">
+            <li><b>Arriba</b> es el lugar más visto: úsalo para lo importante y por pocos días.</li>
+            <li><b>Franja</b> para recordatorios cortos; <b>Tarjeta</b> para explicar una función; <b>Grande</b> solo para lanzamientos o temporadas.</li>
+            <li>Ponle <b>fecha de fin</b>: un aviso viejo hace ver la página abandonada.</li>
+            <li>Si es pagado por un comercio, marca <b>Patrocinado</b> (lo exige la publicidad veraz) y mira sus <b>vistas y clics</b> para mostrárselos.</li>
+            <li>Si borras o apagas todos, no sale ningún aviso.</li>
+          </ul>
+        </details>
+        <div id="av-lista" class="space-y-5"></div>
+        <button type="button" id="av-nuevo" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">➕ Nuevo aviso</button>
       </section>
 
       <!-- 2) CUADROS DE ACCESO -->
@@ -138,12 +157,12 @@
   <datalist id="dl-comercios"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=82"></script>
-  <script src="data.js?v=82"></script>
-  <script src="buscador.js?v=82"></script>
-  <script src="iconos.js?v=82"></script>
+  <script src="utils.js?v=83"></script>
+  <script src="data.js?v=83"></script>
+  <script src="buscador.js?v=83"></script>
+  <script src="iconos.js?v=83"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=82"></script>
+  <script src="editar-inicio.js?v=83"></script>
 </body>
 </html>

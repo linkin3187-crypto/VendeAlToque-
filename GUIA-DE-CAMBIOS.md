@@ -59,6 +59,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Fotos del iPhone (salía una moto) y de las empanadas (samosas): se dejaron vacías. **Tarea para ti:** sube fotos reales con "Editar" o cambia las URLs en `data.js`.
 - Código muerto eliminado: `modal-foro-ver`, `enviarRespuesta`, `anuncioExpandido`, `_loadOriginal`, `actualizarCiudadesForm` vacía (ahora llena una lista de sugerencias de ciudad).
 
+### Fase 2AQ · El sello dice exactamente qué se comprobó
+- `tienda.html` / `tienda.js`: nuevo aviso `#t-aviso-sello` (clase `aviso-verificado` en `styles.css`) para comercios verificados; distingue «en persona» y «por teléfono», avisa si el sello pasó los 12 meses y enlaza a `terminos.html#sellos`. El aviso «Ubicado» no cambia (solo gana el enlace).
+- `terminos.html`: sección **4A.1 Sellos de verificación** (qué es y qué NO es el sello) y referencias a ella.
+- `registrar-negocio.html`: línea de responsabilidad del dueño. Versión de caché 78.
+- Por qué: un sello sin explicación se puede leer como «negocio legal y confiable»; el aviso claro y visible protege al usuario y a Merkap (sin reemplazar la revisión del abogado).
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

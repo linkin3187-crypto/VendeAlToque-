@@ -164,6 +164,7 @@ function renderizarTienda(c, ps) {
   if (usuarioActual && c.ownerId === usuarioActual.id && c.activo && typeof abrirCompartir === "function") {
     const bc = $("t-compartir-dueno");
     bc.classList.remove("hidden");
+    $("t-compartir").classList.add("hidden");   // fase 2AP-4a.1: el dueño ve solo el «Compartir» morado
     bc.onclick = () => abrirCompartir({ tipo: "tienda", id: c.id, nombre: c.nombre, foto: (c.fotos || [])[0] || c.foto || "",
       icono: iconosComercio[c.tipo] || "🛍️", ciudad: c.ciudad || "" });
   }

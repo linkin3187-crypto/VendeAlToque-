@@ -118,7 +118,9 @@ function renderizarGaleria(a) {
   }
 }
 
+let compartirDueno = null;   // fase 2AP-4a.1: si es el dueño, «Compartir» abre la versión morada (imagen + texto + QR)
 async function compartir() {
+  if (compartirDueno) { compartirDueno(); return; }
   const datos = { title: anuncioActual.nombre, text: `${anuncioActual.nombre} en Merkap`, url: location.href };
   if (navigator.share) {
     try { await navigator.share(datos); } catch (e) { /* el usuario canceló */ }
@@ -195,6 +197,12 @@ function renderizarAnuncio(a) {
     const b = $("btn-compartir-mio");
     b.classList.remove("hidden");
     b.onclick = () => abrirCompartir(datosCompartirAnuncio(a));
+    // Fase 2AP-4a.1: el dueño ve un solo «Compartir» (el morado): se quita el blanco y la barra de abajo abre el morado
+    compartirDueno = b.onclick;
+    $("btn-compartir").classList.add("hidden"); $("btn-compartir").classList.remove("md:block");
+    const bb = $("barra-compartir");
+    bb.textContent = "📣"; bb.setAttribute("aria-label", "Compartir mi anuncio (imagen, texto y QR)");
+    bb.classList.add("btn-compartir-dueno"); bb.classList.remove("border", "border-slate-300");
   }
   if (puedeEditar && a.precio) {   // fase 2AP-4a
     $("btn-rebajar-mio").classList.remove("hidden");

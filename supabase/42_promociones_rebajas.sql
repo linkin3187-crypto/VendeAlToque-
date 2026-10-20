@@ -19,6 +19,8 @@
 -- ---------- 1) Rebajas en anuncios ----------
 alter table public.anuncios add column if not exists precio_anterior bigint check (precio_anterior is null or precio_anterior > 0);
 alter table public.anuncios add column if not exists rebajado_en timestamptz;
+-- La lectura de anuncios se da columna por columna (SQL 13b): las nuevas también deben poder leerse (ver SQL 43)
+grant select (precio_anterior, rebajado_en) on public.anuncios to anon, authenticated;
 
 create or replace function public.anuncios_rebaja()
 returns trigger language plpgsql security definer set search_path = public as $$

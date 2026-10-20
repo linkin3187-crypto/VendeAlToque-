@@ -274,7 +274,7 @@ Fases de negocio: **0** tracción gratis (hoy) → **1** preparación → **2** 
 | **M-14** | Cobro recurrente: aviso, renovación y bajada a gratis sin borrar datos | Fase 3 | Sí | ⏳ |
 
 **Quién compra qué en la Fase 2:** anunciantes (particulares o tiendas con anuncios) → Impulso, Renovación automática, Destacado 7 días, Combo; tiendas → Destacado en el directorio, Promo destacada, Verificación express, Kit QR.
-**Decisión pendiente:** la propuesta del panel (oct 2026) es que la **⭐ Selección del día siga siempre gratis** y lo pagado vaya a una franja aparte «Destacados»; esto reemplaza la idea anterior de «Selección del día patrocinada» (arriba) si la confirmas.
+**Decisión (20 oct 2026):** la **⭐ Selección del día sigue siempre gratis**; lo pagado va a una franja aparte «Destacados». Se descarta la «Selección del día patrocinada» de arriba. Revisión de lo que falta (prueba de valor, costos, reembolsos, antifraude, comunicación, calendario y fases M-0, M-3b, M-4b, M-5b, M-8b, M-8c): https://claude.ai/code/artifact/98be7f9e-fcc2-4122-96a5-800571c0b8f9
 
 ## Fase 6: Marketplace transaccional
 Pagos protegidos, pedidos, domicilios para tiendas, calificaciones y disputas, WhatsApp Business API. Es lo más complejo y regulado: solo cuando haya usuarios que lo pidan.

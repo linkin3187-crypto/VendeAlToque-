@@ -2255,6 +2255,33 @@ async function cargarPromosVigentes(comercioId) {
   } catch (e) { return []; }
 }
 const promosDeComercio = id => promosVigentes.filter(p => p.comercioId === id);
+// Fase 2AP-4c (SQL 45): números de cada promo. vista · inicio · whatsapp (1 por persona y día; el dueño no cuenta)
+function registrarPromoEvento(promoId, tipo) {
+  const v = typeof idVisitante === "function" ? idVisitante() : null;
+  if (!v || !promoId || !sb) return;
+  try {
+    const k = "mf_pe_" + promoId + "_" + tipo;
+    if (sessionStorage.getItem(k) === "1") return;
+    sessionStorage.setItem(k, "1");
+  } catch (e) { /* igual se manda: la base no deja contar dos veces el mismo día */ }
+  try { sb.rpc("registrar_promo_evento", { p_promo: Number(promoId), p_tipo: tipo, p_visitante: v }).then(() => {}, () => {}); } catch (e) { /* nada */ }
+}
+// { promoId: {vistas, inicio, whatsapp} } o null si aún no corre el SQL 45
+async function cargarNumerosPromos(comercioId) {
+  try {
+    const { data, error } = await sb.rpc("promo_resumen", { p_comercio: Number(comercioId) });
+    if (error) return null;
+    const r = {};
+    (data || []).forEach(x => { r[Number(x.promo_id)] = { vistas: Number(x.vistas) || 0, inicio: Number(x.desde_inicio) || 0, whatsapp: Number(x.whatsapp) || 0 }; });
+    return r;
+  } catch (e) { return null; }
+}
+function numerosPromoHTML(n, terminada) {
+  if (!n) return "";
+  return `<p class="promo-numeros">${terminada ? "<b>Resultado:</b> " : ""}<span title="Personas que vieron la promo en tu tienda">👀 ${n.vistas} ${n.vistas === 1 ? "persona la vio" : "personas la vieron"}</span>
+    <span title="Llegaron tocándola en «Promos cerca de ti» del inicio">🏠 ${n.inicio} desde el inicio</span>
+    <span title="Tocaron «Pedir esta promo»">💬 ${n.whatsapp} ${n.whatsapp === 1 ? "pidió" : "pidieron"} por WhatsApp</span></p>`;
+}
 // Línea corta para las tarjetas del directorio, el inicio y el buscador
 function lineaPromoHTML(c, clase) {
   const p = (c.promos || [])[0];
@@ -2276,7 +2303,7 @@ function tarjetaPromoHTML(p, c) {
     ${p.descripcion ? `<p class="text-sm text-slate-700 mt-1">${esc(p.descripcion)}</p>` : ""}
     <p class="promo-plazo">⏳ ${esc(plazoPromo(p))} · hasta el ${esc(new Date(p.hasta + "T12:00:00-05:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" }))}${p.cantidad ? ` · hasta agotar ${p.cantidad} und.` : ""}</p>
     ${p.condiciones ? `<p class="text-xs text-slate-500 mt-0.5">Condiciones: ${esc(p.condiciones)}</p>` : ""}
-    ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, msg))}" target="_blank" rel="noopener" data-fui="${c.id}" class="inline-block mt-2 text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg">💬 Pedir esta promo</a>` : ""}
+    ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, msg))}" target="_blank" rel="noopener" data-fui="${c.id}" data-promo-wa="${p.id}" class="inline-block mt-2 text-xs bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg">💬 Pedir esta promo</a>` : ""}
   </article>`;
 }
 // Ventana «📉 Rebajar precio» del dueño. alGuardar(anuncioNuevo) se llama al terminar.

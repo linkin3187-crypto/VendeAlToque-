@@ -65,6 +65,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `registrar-negocio.html`: línea de responsabilidad del dueño. Versión de caché 78.
 - Por qué: un sello sin explicación se puede leer como «negocio legal y confiable»; el aviso claro y visible protege al usuario y a Merkap (sin reemplazar la revisión del abogado).
 
+### Fase 2AQ.1 · El sello en persona solo promete la ubicación
+- `data.js` (`SELLOS[3]`), `tienda.js`, `terminos.html`, `comercios.html/js`, `admin-comercios.html`: «Verificado en persona» → «Ubicación confirmada en persona»; sin «y atendiendo». Pruebas actualizadas. Caché v79.
+- Por qué: el sello debe afirmar solo lo mínimo que siempre se comprueba en la visita.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

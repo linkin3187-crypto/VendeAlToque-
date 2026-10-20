@@ -1535,7 +1535,7 @@ function puntajeNegocio(n, s) {
 const SELLOS = {
   1: { corto: "Ubicado", largo: "Dato de OpenStreetMap · sin verificar", clase: "bg-amber-100 text-amber-800" },
   2: { corto: "Verificado por teléfono", largo: "✔ Verificado por teléfono", clase: "bg-green-100 text-green-800" },
-  3: { corto: "Verificado en persona", largo: "✔ Verificado en persona", clase: "bg-green-600 text-white" }
+  3: { corto: "Ubicación confirmada en persona", largo: "✔ Ubicación confirmada en persona", clase: "bg-green-600 text-white" }
 };
 const MESES_VIGENCIA = 12;
 

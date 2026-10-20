@@ -69,6 +69,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `data.js` (`SELLOS[3]`), `tienda.js`, `terminos.html`, `comercios.html/js`, `admin-comercios.html`: «Verificado en persona» → «Ubicación confirmada en persona»; sin «y atendiendo». Pruebas actualizadas. Caché v79.
 - Por qué: el sello debe afirmar solo lo mínimo que siempre se comprueba en la visita.
 
+### Fase 2AQ.2 · El 🧾 de droguerías dice «declarados» y no contradice al sello
+- `data.js`: `BADGE_SALUD` con el nombre nuevo, `saludVencido`, `muestraSelloSalud` (salud + datos + nivel ≥ 2 + menos de 12 meses) y `AVISO_SALUD`.
+- `tienda.js`, `comercios.js`, `mi-tienda.js`: usan `muestraSelloSalud`; el dueño ve por qué no aparece (falta verificar o venció). `comercios.html` y `terminos.html` con el texto nuevo. Pruebas nuevas. Caché v80.
+- Por qué: un distintivo «sanitario» al lado de «Ubicado» se contradecía y prometía una revisión que Merkap no hace.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

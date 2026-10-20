@@ -50,7 +50,7 @@ function tarjetaComercio(c) {
       ${califHTML(c)}
       ${c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
       ${c.nivel < 2 ? (confirmadoPorVecinos(c) ? `<p class="mt-1"><span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span></p>` : '<p class="text-[11px] text-amber-700 mt-0.5">⚠️ Aún sin verificar que exista aquí: confirma antes de ir</p>') : ""}
-      ${esComercioSalud(c) && c.saludRevisado ? `<p class="mt-1">${BADGE_SALUD}</p>` : ""}
+      ${muestraSelloSalud(c) ? `<p class="mt-1">${BADGE_SALUD}</p>` : ""}
       ${comercioDudoso(c) ? `<p class="text-[11px] font-semibold text-red-700 mt-0.5">🚩 ${c.confirmaNo} personas dicen que ya no está aquí</p>` : ""}
       ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
       ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
@@ -93,7 +93,7 @@ function baseCo(f) {
     if (f.calif && !((c.nCalif || 0) > 0 && (c.calif || 0) >= f.calif)) return false;
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
     if (f.vitrina && !(vitrinaPublica(c) && c.nProductos > 0)) return false;
-    if (f.salud && !(esComercioSalud(c) && c.saludRevisado)) return false;   // fase 2AC.1
+    if (f.salud && !muestraSelloSalud(c)) return false;   // fase 2AC.1
     if (f.texto) {
       // Buscador inteligente (buscador.js): «postres» también encuentra pastelerías y panaderías
       if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, f.texto)) return false; }
@@ -109,7 +109,7 @@ function baseCo(f) {
 function ordenarCo(lista, orden) {
   const dist = c => (ubicacionCo && tieneCoords(c)) ? distanciaKm(ubicacionCo, c) : Infinity;
   // Fase 2AC.1: entre droguerías y naturistas, las que tienen el distintivo 🧾 salen primero
-  const sello = c => esComercioSalud(c) && c.saludRevisado ? 1 : 0;
+  const sello = c => muestraSelloSalud(c) ? 1 : 0;
   const recomendados = (x, y) => (sello(y) - sello(x)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es");
   if (orden === "cercanos" && ubicacionCo) return lista.sort((x, y) => dist(x) - dist(y));
   // Fase 2AI (por defecto): abiertos → abren pronto → sin horario → cerrados; dentro de cada grupo, el orden recomendado

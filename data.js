@@ -1278,7 +1278,11 @@ const esComercioSalud = c => !!c && (esTipoSalud(c.tipo) || (c.tiposExtra || [])
 // El visto bueno sanitario enciende el distintivo 🧾 y será requisito para vender medicamentos de venta libre (2AB.3).
 const saludPendiente = c => esComercioSalud(c) && c.tieneSelloSalud && !c.saludRevisado;
 const vitrinaPublica = c => !!c && c.activo !== false && c.nivel >= 2;
-const BADGE_SALUD = '<span class="badge-salud" title="Merkap revisó su razón social, NIT y director técnico. No significa que venda medicamentos por Merkap.">🧾 Datos sanitarios revisados</span>';
+const BADGE_SALUD = '<span class="badge-salud" title="El establecimiento declaró su razón social, NIT y director técnico. Merkap no ha comprobado estos datos; no es un concepto sanitario. Merkap no vende medicamentos.">🧾 NIT y director técnico declarados</span>';
+// Fase 2AQ.2: el 🧾 solo se muestra si el comercio ya tiene sello verificado (nunca junto a «Ubicado») y vence a los 12 meses
+const saludVencido = c => !!c.saludRevisado && (Date.now() - new Date(c.saludRevisado).getTime()) > 365 * 864e5;
+const muestraSelloSalud = c => esComercioSalud(c) && !!c.saludRevisado && c.nivel >= 2 && !saludVencido(c);
+const AVISO_SALUD = "🧾 El establecimiento <b>declaró</b> su razón social, NIT y director técnico. Merkap no ha comprobado estos datos; no es un concepto sanitario ni reemplaza la vigilancia de la Secretaría de Salud. Merkap no vende medicamentos.";
 const TIPOS_ESTABLECIMIENTO_SALUD = {
   drogueria: "Droguería (director técnico o regente)",
   farmacia_drogueria: "Farmacia-droguería (químico farmacéutico)",
@@ -1349,7 +1353,7 @@ function leerDatosSanitariosOpcional(pre) {
   return vacio ? { datos: null } : leerDatosSanitarios(pre);
 }
 // Lo que gana quien los llena (se muestra en registro, reclamo y Mi tienda)
-const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha muestra el distintivo <b>«🧾 Datos sanitarios revisados»</b> (más confianza), sales <b>primero</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
+const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha verificada muestra el distintivo <b>«🧾 NIT y director técnico declarados»</b> (más confianza), sales <b>primero</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
 
 async function cargarDatosSanitarios(comercioId) {
   const { data, error } = await sb.from("datos_sanitarios").select("*").eq("comercio_id", comercioId).maybeSingle();

@@ -84,7 +84,7 @@ function renderizarTienda(c, ps) {
   const sello = SELLOS[c.nivel] || SELLOS[1];
   $("t-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + sello.clase;
   $("t-sello").textContent = (c.nivel >= 2 ? "✔ " : "") + sello.corto + (c.verificadoEn ? " · " + fechaSello(c) : "");
-  if (esComercioSalud(c) && c.saludRevisado) $("t-sello").insertAdjacentHTML("afterend", " " + BADGE_SALUD);   // fase 2AB.2b
+  if (muestraSelloSalud(c)) $("t-sello").insertAdjacentHTML("afterend", " " + BADGE_SALUD);   // fase 2AB.2b
   pintarGaleriaComercio(c);   // fase 2AA.4: hasta 5 fotos, tocar para ver en grande
   if (c.descripcion) { $("t-desc").textContent = c.descripcion; $("t-desc").classList.remove("hidden"); }
   const fila = (id, txt) => { if (txt) { $(id).querySelector("span").textContent = txt; $(id).classList.remove("hidden"); } };
@@ -167,7 +167,8 @@ function renderizarTienda(c, ps) {
       : `<b>✅ Verificado por teléfono${fecha ? " el " + esc(fecha) : ""}.</b> Merkap habló con el negocio y este confirmó sus datos de contacto y ubicación (no visitamos el local).`;
     const as = $("t-aviso-sello");
     as.innerHTML = que + (selloVencido(c) ? " <b>Sello en revisión:</b> tiene más de " + MESES_VIGENCIA + " meses." : "") +
-      " El sello <b>no certifica</b> permisos, licencias, registro mercantil, calidad ni normas sanitarias, y <b>no garantiza</b> sus productos o precios; los datos pueden cambiar. ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>";
+      " El sello <b>no certifica</b> permisos, licencias, registro mercantil, calidad ni normas sanitarias, y <b>no garantiza</b> sus productos o precios; los datos pueden cambiar. ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>" +
+      (muestraSelloSalud(c) ? "<span class=\"block mt-2\">" + AVISO_SALUD + "</span>" : "");
     as.classList.remove("hidden");
   }
   // Fase 2AP-3b: el DUEÑO también comparte desde su ficha pública (antes solo desde Mi tienda)

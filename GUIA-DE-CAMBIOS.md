@@ -90,6 +90,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `app.js`: `pintarAvisosInicio` (1 aviso por lugar; sin la tabla vuelve `pintarNovedad`). `index.html`: 4 lugares `#avisos-*` y el bloque de promos antes de los anuncios.
 - `editar-inicio.html/js`: sección «📣 Avisos y novedades» y fechas/«Patrocinado» en el carrusel. Caché v83.
 
+### Fase 2AP-4c · Números de cada promo (SQL 45)
+- `supabase/45_numeros_promos.sql`: `promo_eventos` (cerrada, 1 por persona/tipo/día), `registrar_promo_evento()` (no cuenta al dueño ni al administrador) y `promo_resumen()` (solo dueño o administrador).
+- `data.js`: `registrarPromoEvento`, `cargarNumerosPromos`, `numerosPromoHTML`; «Pedir esta promo» lleva `data-promo-wa`.
+- `tienda.js` anota vista / inicio / whatsapp; `mi-tienda.js` muestra números, resultado y el aviso de fin; `app.js` `pintarFinPromoInicio`. Caché v84.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

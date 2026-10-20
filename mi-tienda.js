@@ -285,12 +285,14 @@ function estadoPromo(p) {
   return ["🟢 Activa", "bg-emerald-100 text-emerald-800"];
 }
 const promoCuenta = p => !p.oculta && p.hasta >= hoyBogota();
+let numerosPromos = null;   // fase 2AP-4c: {promoId: {vistas, inicio, whatsapp}} o null sin SQL 45
 
 async function refrescarPromos() {
   if (!actual) return;
   const lista = await cargarPromosVigentes(actual.id);
   // las terminadas se muestran solo los últimos 30 días (historial)
   promosMias = lista.filter(p => p.hasta >= fechaMas(hoyBogota(), -30)).sort((a, b) => (promoCuenta(b) - promoCuenta(a)) || b.hasta.localeCompare(a.hasta));
+  numerosPromos = promosMias.length ? await cargarNumerosPromos(actual.id) : null;   // fase 2AP-4c
   pintarPromos();
 }
 
@@ -302,7 +304,12 @@ function pintarPromos() {
   $("mt-promo-nueva").title = activas >= MAX_PROMOS ? "Ya tienes 2 promociones: borra una o espera a que termine" : "";
   $("mt-promo-ayuda").open = !promosMias.length;   // la primera vez se ve la explicación abierta
   if (!actual.activo) { $("mt-promos").innerHTML = '<p class="text-sm text-amber-800">Tu tienda debe estar activa en el mapa para publicar promociones.</p>'; return; }
-  $("mt-promos").innerHTML = promosMias.length ? promosMias.map(p => {
+  // Fase 2AP-4c: aviso «tu promo termina hoy/mañana» con sus números, para que cree la siguiente a tiempo
+  const fin = promosMias.find(p => promoCuenta(p) && p.desde <= hoyBogota() && p.hasta <= fechaMas(hoyBogota(), 1));
+  const nFin = fin && numerosPromos ? numerosPromos[fin.id] : null;
+  const avisoFin = fin ? `<div class="promo-fin" role="status">⏳ <b>Tu promo «${esc(fin.titulo)}» ${fin.hasta === hoyBogota() ? "termina hoy" : "termina mañana"}.</b>
+    ${nFin ? `Hasta ahora: ${nFin.vistas} la vieron y ${nFin.whatsapp} pidieron por WhatsApp. ` : ""}Prepara la siguiente para no quedarte sin 🔥 en el inicio${activas >= MAX_PROMOS ? " (cuando esta termine se libera el cupo)" : ""}.</div>` : "";
+  $("mt-promos").innerHTML = avisoFin + (promosMias.length ? promosMias.map(p => {
     const [txt, cls] = estadoPromo(p), pct = pctPromo(p), vive = promoCuenta(p);
     return `<div class="border border-slate-200 rounded-xl p-3 ${vive ? "" : "opacity-70"}" data-promo="${p.id}">
       <div class="flex flex-wrap items-start justify-between gap-2">
@@ -310,13 +317,14 @@ function pintarPromos() {
         <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>
       </div>
       <p class="text-xs text-slate-600 mt-0.5">${p.tipo === "precio" ? `<span class="rebaja-antes">${esc(formatearPrecio(p.precioAntes))}</span> <b>${esc(formatearPrecio(p.precioPromo))}</b> · ` : ""}${esc(fechaPromoCorta(p.desde))} → ${esc(fechaPromoCorta(p.hasta))}${vive ? " · " + esc(plazoPromo(p)) : ""}${p.cantidad ? ` · ${p.cantidad} und.` : ""}</p>
+      ${numerosPromos && p.desde <= hoyBogota() ? numerosPromoHTML(numerosPromos[p.id] || { vistas: 0, inicio: 0, whatsapp: 0 }, !vive) : ""}
       <div class="flex flex-wrap gap-2 mt-2">
         ${vive && !p.oculta ? `<button type="button" data-promo-acc="compartir" class="btn-compartir-dueno text-xs font-bold px-3 py-1.5 rounded-lg">📣 Compartir promo</button>` : ""}
         ${vive ? `<button type="button" data-promo-acc="editar" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">✏️ Editar</button>` : ""}
         <button type="button" data-promo-acc="borrar" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700">🗑 Borrar</button>
       </div>
     </div>`;
-  }).join("") : '<p class="text-sm text-slate-500">Aún no tienes promociones. Toca «➕ Nueva promoción»: en 1 minuto tu tienda sale con 🔥 en el directorio.</p>';
+  }).join("") : '<p class="text-sm text-slate-500">Aún no tienes promociones. Toca «➕ Nueva promoción»: en 1 minuto tu tienda sale con 🔥 en el directorio.</p>');
 }
 
 function tipoPromoForm() { return (document.querySelector('input[name="pr-tipo"]:checked') || {}).value || "precio"; }

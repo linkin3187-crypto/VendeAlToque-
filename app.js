@@ -812,6 +812,26 @@ async function refrescarMiTienda() {
   $("link-mi-tienda").classList.toggle("hidden", !mis.length);
   $("menu-mi-tienda").classList.toggle("hidden", !mis.length);
   pintarAvisosInicio(mis);
+  misTiendasInicio = mis; pintarFinPromoInicio();
+}
+
+// Fase 2AP-4c: «Tu promo termina mañana» en el inicio, solo para el dueño (se puede cerrar; 1 vez por promo y día)
+let misTiendasInicio = [];
+function pintarFinPromoInicio() {
+  const caja = $("aviso-fin-promo"); if (!caja) return;
+  const ids = new Set(misTiendasInicio.map(c => Number(c.id)));
+  const manana = new Date(Date.now() - 5 * 3600e3 + 864e5).toISOString().slice(0, 10);
+  const p = promosVigentes.find(x => ids.has(x.comercioId) && x.hasta <= manana);
+  let cerrado = false; try { cerrado = !!p && localStorage.getItem("mf_finpromo_" + p.id + "_" + hoyBogota()) === "1"; } catch (e) { /* nada */ }
+  if (!p || cerrado) { caja.classList.add("hidden"); return; }
+  caja.innerHTML = avisoHTML({ id: "", titulo: `Tu promo ${p.hasta === hoyBogota() ? "termina hoy" : "termina mañana"}: «${p.titulo}». Mira sus números y prepara la siguiente`,
+    icono: "⏳", boton: "Ver mis promos", destino: "mi-tienda.html#promos", estilo: "amarillo", tamano: "franja", cerrable: true });
+  caja.querySelector("[data-aviso-cerrar]").addEventListener("click", ev => {
+    ev.stopPropagation();
+    try { localStorage.setItem("mf_finpromo_" + p.id + "_" + hoyBogota(), "1"); } catch (e) { /* nada */ }
+    caja.classList.add("hidden");
+  });
+  caja.classList.remove("hidden");
 }
 
 // =====================================================================
@@ -1568,7 +1588,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("sel-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
-  cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); pintarPromosInicio(); });
+  cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); pintarPromosInicio(); pintarFinPromoInicio(); });
   $("filtro-ciudad").addEventListener("change", () => pintarPromosInicio());
   $("pi-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("comercios-cats").addEventListener("click", e => { const b = e.target.closest("[data-cat-com]"); if (b) { catComercio = b.dataset.catCom; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); } });

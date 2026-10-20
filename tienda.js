@@ -335,6 +335,13 @@ async function pintarPromosTienda(c) {
   $("t-promos").innerHTML = lista.length ? lista.map(p => tarjetaPromoHTML(p, c)).join("")
     : '<p class="text-sm text-slate-500 sm:col-span-2">Aún no tienes promociones activas. Una promo atrae clientes nuevos: créala en 1 minuto desde «✏️ Gestionar mis promos».</p>';
   $("promos").classList.remove("hidden");
+  // Fase 2AP-4c: contar (el dueño y el administrador no cuentan; lo decide también la base)
+  if (!gestiona) {
+    lista.forEach(p => registrarPromoEvento(p.id, "vista"));
+    const mi = location.hash.match(/^#promo-(\d+)$/);
+    if (mi && lista.some(p => p.id === Number(mi[1]))) registrarPromoEvento(Number(mi[1]), "inicio");
+    $("t-promos").addEventListener("click", e => { const w = e.target.closest("[data-promo-wa]"); if (w) registrarPromoEvento(Number(w.dataset.promoWa), "whatsapp"); });
+  }
   const m = location.hash.match(/^#promo-(\d+)$/);
   const una = m && $("promo-" + m[1]);
   if (una) { una.scrollIntoView({ block: "center" }); una.classList.add("promo-resaltada"); }

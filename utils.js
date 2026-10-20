@@ -12,7 +12,7 @@
 // Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
 // código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
 // Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
-const VERSION_SITIO = 80;
+const VERSION_SITIO = 81;
 (function revisarVersion() {
   try {
     const src = (document.currentScript && document.currentScript.src) || "";

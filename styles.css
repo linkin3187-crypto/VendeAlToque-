@@ -966,3 +966,27 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 /* Fase 2AS: «Ordenar por» visible */
 .ordenar-caja { display: flex; align-items: center; gap: 8px; }
 .ordenar-etq { font-size: 12px; font-weight: 700; color: #64748b; white-space: nowrap; }
+
+/* ===== Fase 2AT · Mis anuncios (página propia) ===== */
+.ma-atajo { display: flex; flex-direction: column; gap: 2px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px 12px; text-decoration: none; color: #1e1b4b; min-height: 44px; }
+.ma-atajo:hover { border-color: #a5b4fc; box-shadow: 0 2px 8px rgba(79, 70, 229, .08); }
+.ma-atajo span { font-size: 1.25rem; line-height: 1; }
+.ma-atajo b { font-size: .85rem; }
+.ma-atajo small { font-size: .72rem; color: #64748b; }
+.ma-herr { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; align-items: center; }
+.ma-b { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 12px; border-radius: 10px; font-size: .8rem; font-weight: 700; text-decoration: none !important; }
+.ma-b-violeta { background: #ede9fe; color: #5b21b6; } .ma-b-rosa { background: #ffe4e6; color: #9f1239; }
+.ma-b-indigo { background: #e0e7ff; color: #3730a3; } .ma-b-gris { background: #f1f5f9; color: #334155; } .ma-b-rojo { background: #fee2e2; color: #b91c1c; }
+.ma-b:hover { filter: brightness(.96); }
+.ma-nota { font-size: .75rem; color: #64748b; flex: 1 1 160px; }
+/* Fase 2AT: con «🏪 Mi tienda» arriba, en celular angosto todo cabe en una fila */
+@media (max-width: 440px) {
+  #encabezado.con-tienda #btn-mi-tienda-enc { padding: .5rem .55rem; }
+  #encabezado.con-tienda #btn-auth { max-width: 5rem; padding-left: .55rem; padding-right: .55rem; }
+  #encabezado.con-tienda #btn-publicar-header { padding-left: .55rem; padding-right: .55rem; }
+  #encabezado.con-tienda .enc-acciones { gap: .25rem !important; }
+}
+@media (max-width: 380px) {
+  #encabezado.con-tienda .enc-nombre { display: none; }
+  #encabezado.con-tienda .marca-txt { font-size: 1.15rem; }
+}

@@ -157,8 +157,18 @@ function renderizarTienda(c, ps) {
       ? (c.activo
         ? "📍 <b>Este negocio ya aparece en el mapa y el directorio</b> como «Ubicado». Los <b>productos</b> de esta vitrina solo los ves tú hasta que Merkap lo verifique por WhatsApp o llamada."
         : "🙈 Este negocio está oculto: solo lo ves tú (o un moderador).")
-      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros.";
+      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>";
     av.classList.remove("hidden");
+  } else {
+    // Fase 2AQ: qué significa (y qué NO) el sello de un comercio verificado
+    const fecha = fechaSello(c);
+    const que = c.nivel >= 3
+      ? `<b>✅ Verificado en persona${fecha ? " el " + esc(fecha) : ""}.</b> El equipo de Merkap visitó el local y confirmó que estaba en esta dirección y atendiendo en esa fecha.`
+      : `<b>✅ Verificado por teléfono${fecha ? " el " + esc(fecha) : ""}.</b> Merkap habló con el negocio y este confirmó sus datos de contacto y ubicación (no visitamos el local).`;
+    const as = $("t-aviso-sello");
+    as.innerHTML = que + (selloVencido(c) ? " <b>Sello en revisión:</b> tiene más de " + MESES_VIGENCIA + " meses." : "") +
+      " El sello <b>no certifica</b> permisos, licencias, registro mercantil, calidad ni normas sanitarias, y <b>no garantiza</b> sus productos o precios; los datos pueden cambiar. ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>";
+    as.classList.remove("hidden");
   }
   // Fase 2AP-3b: el DUEÑO también comparte desde su ficha pública (antes solo desde Mi tienda)
   if (usuarioActual && c.ownerId === usuarioActual.id && c.activo && typeof abrirCompartir === "function") {

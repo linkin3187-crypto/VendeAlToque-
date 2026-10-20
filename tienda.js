@@ -330,11 +330,15 @@ async function pintarPromosTienda(c) {
   const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esAdmin());
   $("t-promos-gestionar").href = esAdmin() && c.ownerId !== (usuarioActual || {}).id ? "mi-tienda.html?id=" + c.id + "#promos" : "mi-tienda.html#promos";
   $("t-promos-gestionar").classList.toggle("hidden", !gestiona);
-  if (!lista.length && !gestiona) return;
+  // Fase 2AP-4b: el QR de «promo vigente» llega con #promos; si hoy no hay, se queda en la vitrina y lo dice
+  if (!lista.length && !gestiona) { if (/^#promo/.test(location.hash)) mostrarToast("Esta tienda no tiene promociones activas hoy. Mira sus productos 👇"); return; }
   $("t-promos").innerHTML = lista.length ? lista.map(p => tarjetaPromoHTML(p, c)).join("")
     : '<p class="text-sm text-slate-500 sm:col-span-2">Aún no tienes promociones activas. Una promo atrae clientes nuevos: créala en 1 minuto desde «✏️ Gestionar mis promos».</p>';
   $("promos").classList.remove("hidden");
-  if (/^#promos?$/.test(location.hash)) $("promos").scrollIntoView({ block: "start" });
+  const m = location.hash.match(/^#promo-(\d+)$/);
+  const una = m && $("promo-" + m[1]);
+  if (una) { una.scrollIntoView({ block: "center" }); una.classList.add("promo-resaltada"); }
+  else if (/^#promo/.test(location.hash)) $("promos").scrollIntoView({ block: "start" });
 }
 
 function manejarClicks(e) {

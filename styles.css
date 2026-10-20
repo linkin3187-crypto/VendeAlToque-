@@ -743,6 +743,14 @@ a:hover > .marca .marca-ico, .marca:hover .marca-ico { transform: rotate(-8deg) 
 .sel-precio { font-size: 12.5px; font-weight: 800; color: #4f46e5; }
 .sel-lugar { font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: reduce) { .sel-card { transition: none; } }
+/* Fase 2AP-4b: 🔥 Promos cerca de ti */
+.pi-card { border-color: #fecdd3; }
+.pi-card:hover { box-shadow: 0 6px 16px rgba(225, 29, 72, .15); }
+.pi-foto { background: linear-gradient(135deg, #ffe4e6, #fef3c7); }
+.pi-pct { position: absolute; top: 5px; right: 5px; z-index: 1; background: #e11d48; color: #fff; font-size: 11.5px; font-weight: 900; border-radius: 8px; padding: 1px 6px; }
+.pi-precio { color: #be123c; }
+.pi-precio s { color: #94a3b8; font-weight: 600; font-size: 11px; }
+.pi-plazo { font-size: 10.5px; color: #be123c; font-weight: 700; }
 /* Fase 2AC: lista de palabras prohibidas */
 .pp-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; padding: 3px 4px 3px 10px; border-radius: 999px; border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; }
 .pp-chip.revisar { border-color: #fde68a; background: #fffbeb; color: #92400e; }
@@ -921,6 +929,9 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 .promo-titulo { font-weight: 900; color: #881337; line-height: 1.2; }
 .promo-pct { background: #e11d48; color: #fff; font-weight: 900; border-radius: .6rem; padding: .15rem .5rem; font-size: .85rem; white-space: nowrap; }
 .promo-ahora { font-size: 1.25rem; color: #be123c; }
+.promo-resaltada { box-shadow: 0 0 0 4px #fecdd3; animation: promo-latido 1.2s ease-out 2; }   /* fase 2AP-4b */
+@keyframes promo-latido { 50% { box-shadow: 0 0 0 8px #fda4af; } }
+@media (prefers-reduced-motion: reduce) { .promo-resaltada { animation: none; } }
 .promo-plazo { font-size: .75rem; font-weight: 700; color: #be123c; margin-top: .35rem; }
 .mt-promo-ayuda { background: linear-gradient(135deg, #fff7ed, #fff1f2); border: 1px solid #fed7aa; border-radius: .9rem; padding: .8rem .9rem; }
 .novedad { background: linear-gradient(135deg, #4c1d95, #6d28d9); color: #fff; border-radius: 1rem; padding: .9rem 1rem; box-shadow: 0 8px 24px rgba(76, 29, 149, .25); }

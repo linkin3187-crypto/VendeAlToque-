@@ -78,6 +78,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.js`: `avisoPlegable(resumen, detalle)` usa `<details>`/`<summary>` (accesible, sin JavaScript extra); `styles.css`: `.aviso-plegable` y el botón `ico-info` (ⓘ cerrado, ✕ abierto). Caché v81.
 - Por qué: el aviso completo ocupaba media pantalla en el celular; lo esencial (sello, fecha y «Llama o escribe antes de ir») sigue siempre visible.
 
+### Fase 2AP-4b · Promociones en el inicio y en campañas
+- `index.html` + `app.js` (`pintarPromosInicio`): carrusel `#promos-inicio` con `promosVigentes` de comercios con `vitrinaPublica`; reusa el estilo `sel-*` de la Selección del día (`pi-*` en `styles.css`).
+- `comercios.html/js`: filtro `co-promo` y parámetro `?promo=1`.
+- `tienda.js`: `#promo-ID` resalta esa promo; `#promos` sin promos vigentes avisa y deja la vitrina.
+- `marketing.html/js`: destino `promo` (`CON_ID`, `promosObjetivo`, `llenarPromos`, `precioPieza`); `piezas.js` dibuja `o.precio` (antes tachado · ahora · −%). Caché v82.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

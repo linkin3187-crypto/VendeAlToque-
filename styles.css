@@ -962,3 +962,7 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 /* Fase 2AP-4c: números de cada promo */
 .promo-numeros { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .75rem; color: #334155; background: #f8fafc; border-radius: .6rem; padding: .35rem .6rem; }
 .promo-fin { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; border-radius: .9rem; padding: .7rem .9rem; font-size: .85rem; line-height: 1.45; margin-bottom: .6rem; }
+
+/* Fase 2AS: «Ordenar por» visible */
+.ordenar-caja { display: flex; align-items: center; gap: 8px; }
+.ordenar-etq { font-size: 12px; font-weight: 700; color: #64748b; white-space: nowrap; }

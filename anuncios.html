@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=84" />
-  <link rel="stylesheet" href="tw.css?v=84">
+  <link rel="stylesheet" href="styles.css?v=85" />
+  <link rel="stylesheet" href="tw.css?v=85">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -38,14 +38,21 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
         </button>
       </div>
-      <div id="chips-categorias" class="flex gap-2 overflow-x-auto pb-2 custom-scrollbar"></div>
-      <div id="chips-subcategorias" class="hidden flex gap-2 overflow-x-auto pb-1 pt-1 custom-scrollbar" aria-label="Subcategorías"></div>
     </div>
   </section>
 
   <!-- FILTROS (mismos id que el inicio: el código es compartido en anuncios-comun.js) -->
   <div class="max-w-7xl mx-auto px-4 pt-5">
     <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+      <!-- Fase 2AS: categoría y subcategoría como un filtro más (antes eran botones sueltos arriba) -->
+      <p class="text-xs font-bold text-slate-500 mb-1.5">🔎 Filtra los anuncios por categoría, lugar y orden</p>
+      <div id="fila-categoria" class="grid grid-cols-2 gap-2 mb-2">
+        <label for="filtro-categoria" class="sr-only">Categoría</label>
+        <select id="filtro-categoria" class="filtro-sel col-span-2" title="Categoría"></select>
+        <label for="filtro-subcategoria" class="sr-only">Subcategoría</label>
+        <select id="filtro-subcategoria" class="filtro-sel hidden" title="Subcategoría"></select>
+      </div>
+      <div id="filtros-detalle" class="filtros-detalle hidden mb-2" aria-label="Filtros de inmuebles y vehículos"></div>
       <!-- Compactos (fase 2W.1): fila 1 = dónde · fila 2 = cerca, orden y más filtros · luego los filtros activos con ✕.
            En computador todo cabe en una sola fila. Los id no cambian: el código es el mismo. -->
       <div class="flex flex-col lg:flex-row gap-2">
@@ -59,16 +66,17 @@
             <option value="">🏘️ Ciudad</option>
           </select>
         </div>
-        <div class="flex gap-2 lg:flex-[3]">
-          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca btn-cerca-pill whitespace-nowrap">📡 Cerca de mí</button>
-          <label for="ordenar-por" class="sr-only">Ordenar por</label>
+        <div class="flex flex-wrap lg:flex-nowrap gap-2 lg:flex-[3]">
+          <!-- Fase 2AS: «Ordenar por» se ve escrito (en celular va en su propia fila) -->
+          <label for="ordenar-por" class="ordenar-caja w-full lg:w-auto lg:flex-1 min-w-0"><span class="ordenar-etq">↕️ Ordenar por</span>
           <select id="ordenar-por" class="filtro-sel flex-1 min-w-0" title="Ordenar por">
-            <option value="recientes">↕️ Recientes</option>
-            <option value="cercanos">↕️ Cercanos a mí</option>
-            <option value="precio-asc">↕️ Menor precio</option>
-            <option value="precio-desc">↕️ Mayor precio</option>
-            <option value="nombre">↕️ Nombre A-Z</option>
-          </select>
+            <option value="recientes">Más recientes</option>
+            <option value="cercanos">Más cerca de mí</option>
+            <option value="precio-asc">Menor precio</option>
+            <option value="precio-desc">Mayor precio</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select></label>
+          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca btn-cerca-pill whitespace-nowrap flex-1 lg:flex-none">📡 Cerca de mí</button>
           <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" title="Más filtros: precio, estado, distancia, solo con foto…" class="btn-mas-filtros">
             ⚙️<span class="hidden min-[400px]:inline"> Filtros</span> <span aria-hidden="true" id="flecha-filtros">▾</span>
           </button>
@@ -153,11 +161,11 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=84"></script>
-  <script src="data.js?v=84"></script>
-  <script src="navegacion.js?v=84"></script>
-  <script src="buscador.js?v=84"></script>
-  <script src="anuncios-comun.js?v=84"></script>
-  <script src="anuncios.js?v=84"></script>
+  <script src="utils.js?v=85"></script>
+  <script src="data.js?v=85"></script>
+  <script src="navegacion.js?v=85"></script>
+  <script src="buscador.js?v=85"></script>
+  <script src="anuncios-comun.js?v=85"></script>
+  <script src="anuncios.js?v=85"></script>
 </body>
 </html>

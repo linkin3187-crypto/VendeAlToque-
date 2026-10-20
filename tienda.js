@@ -163,7 +163,7 @@ function renderizarTienda(c, ps) {
     // Fase 2AQ: qué significa (y qué NO) el sello de un comercio verificado
     const fecha = fechaSello(c);
     const que = c.nivel >= 3
-      ? `<b>✅ Verificado en persona${fecha ? " el " + esc(fecha) : ""}.</b> El equipo de Merkap visitó el local y confirmó que estaba en esta dirección y atendiendo en esa fecha.`
+      ? `<b>✅ Ubicación confirmada en persona${fecha ? " el " + esc(fecha) : ""}.</b> El equipo de Merkap visitó la dirección y vio el local en ese lugar en esa fecha.`
       : `<b>✅ Verificado por teléfono${fecha ? " el " + esc(fecha) : ""}.</b> Merkap habló con el negocio y este confirmó sus datos de contacto y ubicación (no visitamos el local).`;
     const as = $("t-aviso-sello");
     as.innerHTML = que + (selloVencido(c) ? " <b>Sello en revisión:</b> tiene más de " + MESES_VIGENCIA + " meses." : "") +

@@ -1,6 +1,6 @@
 // ===== Merkap - Directorio de comercios (comercios.html) =====
 // Muestra TODOS los comercios activos (verificados y sin verificar). Cada tarjeta lleva su sello honesto:
-// «Ubicado» (dato de mapa sin verificar), «Verificado por teléfono» o «Verificado en persona».
+// «Ubicado» (dato de mapa sin verificar), «Verificado por teléfono» o «Ubicación confirmada en persona».
 // Los filtros quedan en el enlace (comercios.html?tipo=farmacia&muni=4) para compartir la búsqueda.
 
 const POR_PAGINA_CO = 24;

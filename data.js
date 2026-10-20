@@ -237,7 +237,8 @@ const sinColumnaDetalles = e => /detalles/.test((e && e.message) || "");
 // Ejecuta una consulta de anuncios; si falla porque falta la columna «detalles», la repite sin ella
 async function conDetalles(hacer) {
   let r = await hacer(COLS_ANUNCIO);
-  if (r.error && /precio_anterior|rebajado_en/.test(r.error.message || "")) {   // fase 2AP-4a: aún sin el SQL 42
+  // fase 2AP-4a: sin el SQL 42, o sin permiso de leer esas columnas (SQL 43) → se piden los anuncios sin ellas
+  if (r.error && COLS_ANUNCIO.includes("precio_anterior") && /precio_anterior|rebajado_en|permission denied/i.test(r.error.message || "")) {
     COLS_ANUNCIO = COLS_ANUNCIO.replace(", precio_anterior, rebajado_en", "");
     r = await hacer(COLS_ANUNCIO);
   }

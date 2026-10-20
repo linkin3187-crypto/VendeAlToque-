@@ -852,3 +852,19 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 - **Descubrimiento:** «💡 ¿Para qué sirve?» abierta la primera vez, tarjeta de Novedades una sola vez por persona (se cierra con «Ahora no»), pista en Mis anuncios y oferta de compartir al publicar.
 
 **Revertir:** PR → **Revert**. El SQL puede quedarse (sin la página nueva, nadie ve promociones; los anuncios rebajados se ven con su precio nuevo).
+
+## Fase 2AP-4a.1 · Un solo «Compartir» para el dueño
+
+**SQL:** ninguno. **Cambian:** `anuncio.js`, `tienda.js`; caché `?v=77`.
+
+- **Dueño** (de su anuncio o su tienda): solo el botón morado «📣 Compartir…». El blanco se oculta y, en el celular, la barra de abajo (📣) abre el morado.
+- **Visitante:** el «🔗 Compartir» blanco de siempre (comparte el enlace con el menú del celular).
+- **Por qué:** dos botones «Compartir» confundían al dueño; el morado es el que le sirve (imagen, texto y QR con su código).
+
+## Fase 2AP-4a.2 · Arreglo: anuncios que no cargaban después del SQL 42
+
+**SQL:** `supabase/43_permiso_rebajas.sql` (una línea: `grant select (precio_anterior, rebajado_en) on anuncios`). Debe mostrar `lectura = true`.
+
+- **Qué pasó:** desde el SQL 13b la lectura de `anuncios` se da **columna por columna** (para que nadie lea el WhatsApp o el teléfono directo). Las columnas nuevas nacen **sin** permiso de lectura. La página las pedía → «permission denied» → lista vacía y publicar fallaba al devolver el anuncio guardado.
+- **Lección para próximas fases:** cada columna nueva en `anuncios` necesita su `grant select (...)`. Las pruebas locales no lo vieron porque la base de prueba no tiene esos permisos por columna.
+- **Red de seguridad:** si una columna nueva no se puede leer, `data.js` repite la consulta sin ella (la página se ve, solo sin la etiqueta de rebaja).

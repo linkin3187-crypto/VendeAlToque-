@@ -95,6 +95,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `data.js`: `registrarPromoEvento`, `cargarNumerosPromos`, `numerosPromoHTML`; «Pedir esta promo» lleva `data-promo-wa`.
 - `tienda.js` anota vista / inicio / whatsapp; `mi-tienda.js` muestra números, resultado y el aviso de fin; `app.js` `pintarFinPromoInicio`. Caché v84.
 
+### Fase 2AS · Categorías en la barra de filtros
+- `index.html` y `anuncios.html`: `#filtro-categoria`, `#filtro-subcategoria` y `#filtros-detalle` dentro de la caja de filtros; «Ordenar por» visible (`.ordenar-caja`).
+- `anuncios-comun.js`: `chipsCategoriasHTML` ahora da `<option>`s, `pintarCategoriasSelect`, `conectarSelectCategorias`; `app.js` y `anuncios.js` usan los desplegables. Caché v85.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

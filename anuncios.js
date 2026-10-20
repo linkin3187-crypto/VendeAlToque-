@@ -140,21 +140,7 @@ function iniciarEventosTodos() {
   $("btn-cerca-anuncios").addEventListener("click", cercaDeMiTodos);
   $("btn-compartir-busqueda").addEventListener("click", compartirBusqueda);
 
-  $("chips-categorias").addEventListener("click", e => {
-    const b = e.target.closest("[data-cat]");
-    if (!b) return;
-    categoriaActiva = b.dataset.cat;
-    subcategoriaActiva = "";
-    marcarCategoriaActiva();
-    aplicarTodos();
-  });
-  $("chips-subcategorias").addEventListener("click", e => {
-    const b = e.target.closest("[data-subcat]");
-    if (!b) return;
-    subcategoriaActiva = b.dataset.subcat;
-    pintarSubcategorias();
-    aplicarTodos();
-  });
+  conectarSelectCategorias(() => aplicarTodos());   // fase 2AS
 
   // Botones de cada tarjeta (delegación de eventos)
   $("contenedor-anuncios").addEventListener("click", e => {
@@ -180,12 +166,12 @@ function iniciarEventosTodos() {
 
 // Llegaron las categorías de la base (fase 2Z): se repintan los chips
 document.addEventListener("categorias:anuncio", () => {
-  $("chips-categorias").innerHTML = chipsCategoriasHTML();
+  pintarCategoriasSelect();
   marcarCategoriaActiva();
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
-  $("chips-categorias").innerHTML = chipsCategoriasHTML();
+  pintarCategoriasSelect();
   marcarCategoriaActiva();
   iniciarEventosTodos();
   conectarBuscadorGlobal(() => ({ anuncios: baseDatosAnuncios, comercios: [] }));

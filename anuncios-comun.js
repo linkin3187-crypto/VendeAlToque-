@@ -8,20 +8,41 @@ let ubicacionUsuario = null;              // {lat,lng}; solo si el usuario la au
 let categoriaActiva = "todos";
 let subcategoriaActiva = "";               // "" = todas las de la categoría
 
+// Fase 2AS: las categorías son una lista desplegable más de la barra de filtros
 function chipsCategoriasHTML() {
   return categoriasAnuncioVisibles().map(c =>
-    `<button type="button" data-cat="${esc(c.id)}" aria-pressed="false" class="categoria-btn px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap">${c.icono} ${esc(c.nombre)}</button>`
+    `<option value="${esc(c.id)}">${c.id === "todos" ? "📂 Categoría: todas" : c.icono + " " + esc(c.nombre)}</option>`
   ).join("");
+}
+function pintarCategoriasSelect() {
+  const sel = $("filtro-categoria"); if (!sel) return;
+  sel.innerHTML = chipsCategoriasHTML();
+  if (![...sel.options].some(o => o.value === categoriaActiva)) sel.insertAdjacentHTML("beforeend", `<option value="${esc(categoriaActiva)}">${esc(categoriaActiva)}</option>`);
+  sel.value = categoriaActiva;
 }
 
 // Subcategorías: chips bajo las categorías (solo si la categoría elegida tiene) y lista del formulario
 function pintarSubcategorias() {
-  const cont = $("chips-subcategorias");
+  const cont = $("filtro-subcategoria"); if (!cont) return;
   const subs = SUBCATEGORIAS[categoriaActiva] || [];
   cont.classList.toggle("hidden", !subs.length);
+  $("filtro-categoria").classList.toggle("col-span-2", !subs.length);
   if (!subs.length) { cont.innerHTML = ""; return; }
-  const chip = (id, texto, activa) => `<button type="button" data-subcat="${esc(id)}" aria-pressed="${activa}" class="subcat-btn px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${activa ? "bg-yellow-300 text-indigo-900" : "bg-white/15 text-white hover:bg-white/25"}">${esc(texto)}</button>`;
-  cont.innerHTML = chip("", "Todas", subcategoriaActiva === "") + subs.map(([id, n]) => chip(id, n, subcategoriaActiva === id)).join("");
+  cont.innerHTML = `<option value="">↳ Subcategoría</option>` + subs.map(([id, n]) => `<option value="${esc(id)}">↳ ${esc(n)}</option>`).join("");
+  cont.value = subcategoriaActiva;
+}
+// Fase 2AS: los dos desplegables llaman a la misma función que antes usaban los botones
+function conectarSelectCategorias(alCambiar) {
+  $("filtro-categoria").addEventListener("change", e => {
+    categoriaActiva = e.target.value;
+    subcategoriaActiva = "";                  // al cambiar de categoría se vuelve a «Todas»
+    marcarCategoriaActiva();
+    alCambiar();
+  });
+  $("filtro-subcategoria").addEventListener("change", e => {
+    subcategoriaActiva = e.target.value;
+    alCambiar();
+  });
 }
 
 // ---------- Filtros de Inmuebles y Vehículos (fase 2Z.7) ----------
@@ -31,12 +52,10 @@ let catFiltroDet = "todos";
 const tipoFiltroDet = () => categoriaActiva === "inmuebles" ? "inmueble" : (categoriaActiva === "autos" || categoriaActiva === "motos") ? "vehiculo" : null;
 function limpiarFiltroDet() { filtroDet = { op: "", hab: "", estrato: "", anio: "", km: "" }; }
 function pintarFiltrosDetalle() {
-  const sub = $("chips-subcategorias");
-  if (!sub) return;
-  let caja = $("filtros-detalle");
-  if (!caja) {
-    sub.insertAdjacentHTML("afterend", '<div id="filtros-detalle" class="filtros-detalle hidden" aria-label="Filtros de inmuebles y vehículos"></div>');
-    caja = $("filtros-detalle");
+  const caja = $("filtros-detalle");
+  if (!caja) return;
+  if (!caja.dataset.conectado) {
+    caja.dataset.conectado = "1";
     caja.addEventListener("change", e => {
       const k = e.target.dataset.fdet;
       if (!k) return;
@@ -71,16 +90,8 @@ function cumpleFiltroDet(a) {
 function marcarCategoriaActiva() {
   pintarSubcategorias();
   pintarFiltrosDetalle();
-  document.querySelectorAll(".categoria-btn").forEach(btn => {
-    const activa = btn.dataset.cat === categoriaActiva;
-    btn.setAttribute("aria-pressed", String(activa));
-    btn.classList.toggle("bg-white", activa);
-    btn.classList.toggle("text-indigo-700", activa);
-    btn.classList.toggle("shadow-sm", activa);
-    btn.classList.toggle("bg-white/15", !activa);
-    btn.classList.toggle("hover:bg-white/25", !activa);
-    btn.setAttribute("aria-pressed", activa ? "true" : "false");
-  });
+  const sel = $("filtro-categoria");
+  if (sel && sel.value !== categoriaActiva) sel.value = categoriaActiva;
 }
 
 // ---------- Filtros dinámicos ----------

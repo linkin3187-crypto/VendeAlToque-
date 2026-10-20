@@ -475,7 +475,7 @@ function quitarZona() {
 // CATEGORÍAS (dibujadas desde CATEGORIAS de data.js)
 // =====================================================================
 function renderizarCategorias() {
-  $("chips-categorias").innerHTML = chipsCategoriasHTML();
+  pintarCategoriasSelect();
 
   const elegida = $("form-categoria").value;
   $("form-categoria").innerHTML = CATEGORIAS.filter(c => c.id !== "todos" && (c.activo !== false || c.id === elegida)).map(c =>
@@ -1413,21 +1413,7 @@ function iniciarEventos() {
 
   // Delegación de eventos: UN listener en el contenedor sirve para todas las
   // tarjetas, incluso las que se crean después.
-  $("chips-categorias").addEventListener("click", e => {
-    const b = e.target.closest("[data-cat]");
-    if (!b) return;
-    categoriaActiva = b.dataset.cat;
-    subcategoriaActiva = "";                  // al cambiar de categoría se vuelve a «Todas»
-    marcarCategoriaActiva();
-    aplicarFiltros();
-  });
-  $("chips-subcategorias").addEventListener("click", e => {
-    const b = e.target.closest("[data-subcat]");
-    if (!b) return;
-    subcategoriaActiva = b.dataset.subcat;
-    pintarSubcategorias();
-    aplicarFiltros();
-  });
+  conectarSelectCategorias(() => aplicarFiltros());   // fase 2AS
   $("form-subcategoria").addEventListener("change", () => pintarCamposDetalle());
   $("form-estado").addEventListener("change", () => pintarCamposDetalle());
   $("caja-detalles").addEventListener("change", e => { if (e.target.dataset.det === "operacion") pintarCamposDetalle(); });

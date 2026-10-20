@@ -580,7 +580,6 @@ function aplicarFiltros({ ajustarMapa = true } = {}) {
   paginaActual = 1;
   renderizarLista();
   renderizarMarcadores(ajustarMapa && !limitesZona);
-  if (usuarioActual) renderizarMisAnuncios();
   pintarChipsActivos();
 }
 
@@ -759,19 +758,17 @@ function actualizarUIAuth() {
   $("btn-publicar-header").classList.toggle("btn-parpadeo", !usuarioActual);
   document.querySelectorAll(".car-cta[data-auth-modo]:not([data-texto-fijo])").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
   if (usuarioActual) {
-    btn.textContent = "👤 " + usuarioActual.nombre.split(" ")[0] + " ▾";
+    btn.innerHTML = '👤 <span class="enc-nombre">' + esc(usuarioActual.nombre.split(" ")[0]) + "</span> ▾";   // fase 2AT: el nombre se oculta en celulares angostos con «Mi tienda»
     btn.title = usuarioActual.nombre;
     btn.removeAttribute("data-abrir");            // con sesión, el botón abre el menú de la cuenta
     $("menu-cuenta-nombre").textContent = usuarioActual.nombre + (usuarioActual.email ? " · " + usuarioActual.email : "");
     $("menu-mi-perfil").href = "vendedor.html?id=" + encodeURIComponent(usuarioActual.id);   // fase 2C.5
     $("encabezado").classList.add("con-sesion");
-    $("seccion-mis-anuncios").classList.remove("hidden");
     $("link-favoritos").classList.remove("hidden");
-    renderizarMisAnuncios();
   } else {
     btn.innerHTML = '<span class="sm:hidden">Entrar</span><span class="hidden sm:inline">Iniciar sesión</span>';   // corto en celular
     btn.setAttribute("data-abrir", "modal-auth");
-    $("seccion-mis-anuncios").classList.add("hidden");
+    $("btn-mi-tienda-enc").classList.add("hidden");
     $("link-favoritos").classList.add("hidden");
     $("encabezado").classList.remove("con-sesion");
     cerrarMenuCuenta();
@@ -809,7 +806,8 @@ async function alternarCorazon(id, btn) {
 // Al entrar/salir alguien: pone cada corazón de la pantalla en su estado correcto (sin repintar la lista).
 async function refrescarMiTienda() {
   const mis = usuarioActual ? await cargarMisComercios() : [];
-  $("link-mi-tienda").classList.toggle("hidden", !mis.length);
+  $("btn-mi-tienda-enc").classList.toggle("hidden", !mis.length);   // fase 2AT: arriba, al lado del perfil
+  $("encabezado").classList.toggle("con-tienda", mis.length > 0);
   $("menu-mi-tienda").classList.toggle("hidden", !mis.length);
   pintarAvisosInicio(mis);
   misTiendasInicio = mis; pintarFinPromoInicio();
@@ -876,10 +874,7 @@ document.addEventListener("click", e => {
   if (a && (x || a.cerrable !== false)) { try { localStorage.setItem(claveAviso(a), "1"); } catch (err) { /* nada */ } }
   if (ir) contarAviso(id, "clic");
   if (x || (a && a.cerrable !== false && !b.hasAttribute("data-abrir"))) { const s = b.closest(".avisos-slot"); if (s) s.classList.add("hidden"); }
-  if (ir && b.getAttribute("href") === "#mis-anuncios") {
-    e.preventDefault();
-    const s = $("seccion-mis-anuncios"); if (s) s.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  if (ir && b.getAttribute("href") === "#mis-anuncios") { e.preventDefault(); location.href = "mis-anuncios.html"; }   // fase 2AT
 });
 
 // =====================================================================
@@ -900,7 +895,7 @@ function pintarNovedad(misTiendas) {
         ? "Publica una oferta (2x1, −10 %, combo) y tu tienda sale con 🔥 en el directorio y el inicio. Luego compártela con imagen y QR en tus estados."
         : "Si bajas el precio, tu anuncio sale con el precio anterior tachado y −% durante 15 días. Y con 📣 Compartir lo mandas con foto y QR a tus grupos."}</p></div>
     <div class="flex gap-2 shrink-0">
-      <a href="${tienda ? "mi-tienda.html#promos" : "#mis-anuncios"}" data-novedad="ir" class="bg-amber-400 hover:bg-amber-300 !text-slate-900 font-bold px-4 py-2 rounded-xl text-sm no-underline">${tienda ? "🔥 Crear mi promo" : "📋 Ver mis anuncios"}</a>
+      <a href="${tienda ? "mi-tienda.html#promos" : "mis-anuncios.html"}" data-novedad="ir" class="bg-amber-400 hover:bg-amber-300 !text-slate-900 font-bold px-4 py-2 rounded-xl text-sm no-underline">${tienda ? "🔥 Crear mi promo" : "📋 Ver mis anuncios"}</a>
       <button type="button" data-novedad="cerrar" class="bg-white/15 hover:bg-white/25 font-semibold px-3 py-2 rounded-xl text-sm">Ahora no</button>
     </div></div>`;
   caja.classList.remove("hidden");
@@ -909,10 +904,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-novedad]"); if (!b) return;
   try { localStorage.setItem("mf_novedad_" + NOVEDAD + "_" + usuarioActual.id, "1"); } catch (err) { /* nada */ }
   $("novedad-caja").classList.add("hidden");
-  if (b.dataset.novedad === "ir" && b.getAttribute("href") === "#mis-anuncios") {
-    e.preventDefault();
-    $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+
 });
 
 async function refrescarCorazones() {
@@ -934,27 +926,6 @@ function avisoRebajaForm() {
 }
 document.addEventListener("input", e => { if (e.target && e.target.id === "form-precio") avisoRebajaForm(); });
 
-function renderizarMisAnuncios() {
-  const cont = $("lista-mis-anuncios");
-  const mis = baseDatosAnuncios.filter(a => a.owner === usuarioActual.id);
-  if (!mis.length) { cont.innerHTML = '<p class="text-sm text-slate-500">Aún no tienes anuncios.</p>'; return; }
-  // Fase 2AP-4a: pista para que el dueño descubra «Rebajar» y «Compartir» (una línea, sin molestar)
-  const viejo = mis.find(a => a.precio && !rebajaDe(a) && Date.now() - a.fecha > 7 * 864e5);
-  const pista = `<p class="text-xs text-slate-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 mb-2">💡 ${viejo
-    ? `¿«${esc(viejo.nombre)}» aún no se vende? Toca <b>📉 Rebajar</b>: sale con el precio anterior tachado y llama más la atención.`
-    : "Toca <b>📣 Compartir</b> para mandar tu anuncio con foto y QR a tus grupos y estados de WhatsApp: es la forma más rápida de vender."}</p>`;
-  cont.innerHTML = pista + mis.map(a =>
-    `<div data-id="${a.id}" class="flex justify-between items-center bg-white rounded-lg px-3 py-2 border">
-      <a href="anuncio.html?id=${a.id}" class="text-sm font-medium truncate hover:text-indigo-600">${esc(a.nombre)}${rebajaDe(a) ? ` <span class="rebaja-pct">📉 −${rebajaDe(a).pct} %</span>` : ""}</a>
-      <div class="flex flex-wrap justify-end gap-2 shrink-0 ml-2">
-        ${a.precio ? `<button type="button" data-accion="rebajar" class="text-xs bg-rose-100 text-rose-800 font-semibold px-2 py-1 rounded" title="Baja el precio y tu anuncio sale con la etiqueta 📉 −% durante 15 días">📉 Rebajar</button>` : ""}
-        <button type="button" data-accion="compartir-mio" class="text-xs bg-violet-100 text-violet-800 font-semibold px-2 py-1 rounded" title="Imagen, texto y QR para WhatsApp y estados">📣 Compartir</button>
-        <button type="button" data-accion="editar" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Editar</button>
-        <button type="button" data-accion="eliminar" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Eliminar</button>
-      </div>
-    </div>`
-  ).join("");
-}
 
 // =====================================================================
 // FORMULARIO PUBLICAR / EDITAR (por pasos)
@@ -1283,6 +1254,8 @@ async function registrarAnuncio(e) {
   else baseDatosAnuncios = [anuncio, ...baseDatosAnuncios];
 
   mostrarToast(previo ? "✅ Anuncio actualizado" : "✅ ¡Anuncio publicado!");
+  // Fase 2AT: si vino a editar desde «Mis anuncios», vuelve allá
+  try { if (previo && sessionStorage.getItem("mf_tras_editar") === "mis-anuncios") { sessionStorage.removeItem("mf_tras_editar"); setTimeout(() => { location.href = "mis-anuncios.html"; }, 900); } } catch (e) { /* nada */ }
   // Fase 2AP-4a: al publicar uno NUEVO se ofrece compartirlo enseguida (así se descubre el botón)
   if (!previo && typeof abrirCompartir === "function" && !esAdultos(anuncio)) {
     setTimeout(() => abrirCompartir(Object.assign(datosCompartirAnuncio(anuncio), { intro: "✅ ¡Tu anuncio ya está publicado! Compártelo ahora en tus grupos y estados: es la forma más rápida de vender." })), 700);
@@ -1427,13 +1400,12 @@ function iniciarEventos() {
     if (b.dataset.accion === "ver-mapa") verEnMapa(id);
     else if (b.dataset.accion === "favorito") alternarCorazon(id, b);
     else if (b.dataset.accion === "editar") editarAnuncio(id);
-    else if (b.dataset.accion === "rebajar") { const a = baseDatosAnuncios.find(x => x.id === id); if (a) abrirRebaja(a, nuevo => { baseDatosAnuncios = baseDatosAnuncios.map(x => (x.id === nuevo.id ? nuevo : x)); renderizarMisAnuncios(); aplicarFiltros(); }); }
+    else if (b.dataset.accion === "rebajar") { const a = baseDatosAnuncios.find(x => x.id === id); if (a) abrirRebaja(a, nuevo => { baseDatosAnuncios = baseDatosAnuncios.map(x => (x.id === nuevo.id ? nuevo : x)); aplicarFiltros(); }); }
     else if (b.dataset.accion === "compartir-mio") { const a = baseDatosAnuncios.find(x => x.id === id); if (a && typeof abrirCompartir === "function") abrirCompartir(datosCompartirAnuncio(a)); }
     else if (b.dataset.accion === "eliminar") eliminarAnuncio(id, false);
     else if (b.dataset.accion === "eliminar-admin") eliminarAnuncio(id, true);
   };
   $("contenedor-anuncios").addEventListener("click", acciones);
-  $("lista-mis-anuncios").addEventListener("click", acciones);
   // Las imágenes no "burbujean" el evento error; con capture=true lo atrapamos igual.
   $("contenedor-anuncios").addEventListener("error", e => {
     if (e.target.tagName === "IMG") e.target.remove();
@@ -1470,9 +1442,7 @@ function iniciarEventos() {
   });
   $("auth-switch-btn").addEventListener("click", cambiarModoAuth);
   $("auth-olvido").addEventListener("click", olvidePassword);
-  $("btn-cerrar-sesion").addEventListener("click", cerrarSesion);
   $("btn-cerrar-sesion-menu").addEventListener("click", () => { cerrarMenuCuenta(); cerrarSesion(); });
-  $("menu-mis-anuncios").addEventListener("click", () => { cerrarMenuCuenta(); $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" }); });
   document.addEventListener("click", e => { if (!e.target.closest("#menu-cuenta") && !e.target.closest("#btn-auth")) cerrarMenuCuenta(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarMenuCuenta(); });
   $("btn-cerca-anuncios").addEventListener("click", cercaDeMiAnuncios);
@@ -1605,11 +1575,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     else mostrarToast("Solo el dueño puede editar esta publicación", "error");
   }
   // Enlace "#publicar" (lo usa «Publicar gratis» de anuncios.html): abre el formulario o pide la cuenta
-  // Desde la barra inferior en otras páginas: «📋 Mis anuncios» → index.html#mis-anuncios
-  if (location.hash === "#mis-anuncios" && usuarioActual) {
-    history.replaceState(null, "", location.pathname + location.search);
-    setTimeout(() => $("seccion-mis-anuncios").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
-  }
+  // Enlaces viejos «index.html#mis-anuncios» → la página nueva (fase 2AT)
+  if (location.hash === "#mis-anuncios") { location.replace("mis-anuncios.html"); return; }
   if (location.hash === "#publicar") { history.replaceState(null, "", location.pathname + location.search); $("btn-publicar-header").click(); }
 });
 

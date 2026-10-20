@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <title>Mis anuncios | Merkap</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="styles.css?v=86">
+  <link rel="stylesheet" href="tw.css?v=86">
+</head>
+<body class="bg-slate-50 text-slate-800" data-nav="yo">
+  <header class="bg-indigo-600 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
+      <a href="index.html" class="font-black tracking-tight text-xl"><span class="marca"><img class="marca-ico" src="img/logo-merkap.png" alt="" width="40" height="40" decoding="async" onerror="this.onerror=null;this.src='img/merkap-logo.svg'"><span class="marca-txt">Merk<b>ap</b></span></span></a>
+      <div class="flex items-center gap-2">
+        <a href="mi-tienda.html" id="ma-mi-tienda" class="hidden bg-white/20 hover:bg-white/30 text-white font-semibold px-3 py-2 rounded-full text-sm whitespace-nowrap">🏪 Mi tienda</a>
+        <a href="index.html" class="text-sm text-indigo-100 hover:text-white whitespace-nowrap">← Inicio</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+      <div>
+        <h1 class="text-2xl font-black text-indigo-900">📋 Mis anuncios <span id="ma-cuenta" class="text-base font-semibold text-slate-500"></span></h1>
+        <p class="text-sm text-slate-500 mt-1">Edita, comparte, rebaja o borra lo que publicaste. Solo tú ves esta página.</p>
+      </div>
+      <a href="index.html#publicar" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm whitespace-nowrap">＋ Publicar un anuncio</a>
+    </div>
+
+    <!-- Atajos de la cuenta -->
+    <nav id="ma-atajos" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4" aria-label="Atajos de mi cuenta">
+      <a href="mi-tienda.html" id="ma-atajo-tienda" class="ma-atajo hidden"><span aria-hidden="true">🏪</span><b>Mi tienda</b><small>Datos, productos y promos</small></a>
+      <a href="vendedor.html" id="ma-atajo-perfil" class="ma-atajo"><span aria-hidden="true">🙋</span><b>Mi perfil público</b><small>Cómo te ven los compradores</small></a>
+      <a href="favoritos.html" class="ma-atajo"><span aria-hidden="true">❤️</span><b>Mis favoritos</b><small>Lo que guardaste</small></a>
+      <a href="registrar-negocio.html" id="ma-atajo-negocio" class="ma-atajo"><span aria-hidden="true">🛍️</span><b>Registrar mi negocio</b><small>Aparece en el mapa gratis</small></a>
+    </nav>
+
+    <p id="ma-pista" class="hidden text-sm text-slate-700 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-4"></p>
+
+    <div id="ma-cargando" class="text-slate-500 text-sm">Cargando…</div>
+    <div id="ma-lista" class="grid gap-3 md:grid-cols-2"></div>
+    <div id="ma-vacio" class="hidden text-center py-12 text-slate-500">
+      <div class="text-4xl mb-2">📭</div>
+      <p class="text-sm">Aún no tienes anuncios. Publica el primero gratis: en 1 minuto te escriben por WhatsApp.</p>
+      <a href="index.html#publicar" class="inline-block mt-3 bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-sm">＋ Publicar gratis</a>
+    </div>
+    <div id="ma-sinsesion" class="hidden text-center py-12 text-slate-500">
+      <div class="text-4xl mb-2">🔒</div>
+      <p class="text-sm">Inicia sesión para ver tus anuncios.</p>
+      <a href="index.html#login" class="inline-block mt-3 text-indigo-600 underline text-sm">Iniciar sesión</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="utils.js?v=86"></script>
+  <script src="data.js?v=86"></script>
+  <script src="qr.js?v=86"></script>
+  <script src="piezas.js?v=86"></script>
+  <script src="compartir.js?v=86"></script>
+  <script src="navegacion.js?v=86"></script>
+  <script src="mis-anuncios.js?v=86"></script>
+</body>
+</html>

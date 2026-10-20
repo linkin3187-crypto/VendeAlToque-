@@ -282,6 +282,16 @@ async function cargarAnuncios() {
   baseDatosAnuncios = (data || []).map(filaAAnuncio);
 }
 
+// Fase 2AT: TODOS mis anuncios (también vencidos u ocultos: el dueño los ve por las reglas RLS) para «Mis anuncios»
+async function cargarMisAnunciosTodos() {
+  if (!usuarioActual) return [];
+  const consulta = cols => sb.from("anuncios").select(cols).eq("owner_id", usuarioActual.id).order("creado_en", { ascending: false }).limit(300);
+  let { data, error } = await conDetalles(consulta);
+  if (error && sinColumnasContacto(error)) ({ data, error } = await consulta("*"));
+  if (error) throw error;
+  return (data || []).map(r => Object.assign(filaAAnuncio(r), { estadoPub: r.estado_publicacion || "activo", expira: r.expira_en ? Date.parse(r.expira_en) : null }));
+}
+
 // Carga todo lo necesario para pintar las páginas de anuncios.
 async function cargarDatos() {
   await cargarMunicipios();          // primero: los anuncios necesitan los municipios

@@ -57,7 +57,7 @@
     } else {
       const u = usuarioActual;
       titulo = "👤 " + (u.nombre || "Mi cuenta");
-      html += opcion("📋", "Mis anuncios", "Editar, renovar o borrar", enInicio ? { "data-ni-accion": "mis-anuncios" } : { href: "index.html#mis-anuncios" });
+      html += opcion("📋", "Mis anuncios", "Compartir, rebajar, editar o borrar", { href: "mis-anuncios.html" });
       html += opcion("🙋", "Mi perfil público", "Cómo te ven los compradores", { href: "vendedor.html?id=" + encodeURIComponent(u.id) });
       html += opcion("❤️", "Mis favoritos", "", { href: "favoritos.html" });
       html += opcion("🛍️", "Mi tienda", "Si tienes un negocio registrado", { href: "mi-tienda.html" });
@@ -98,12 +98,6 @@
       cerrarHoja();
       try { await cerrarSesionDB(); } catch (err) { /* igual recargamos */ }
       location.href = "index.html";
-      return;
-    }
-    if (accion === "mis-anuncios") {
-      cerrarHoja();
-      const s = document.getElementById("seccion-mis-anuncios");
-      if (s) s.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     // Enlaces y «Publicar» (data-abrir lo maneja utils.js): solo cerramos el menú

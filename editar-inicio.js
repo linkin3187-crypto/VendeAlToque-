@@ -12,7 +12,7 @@ const TIPOS_DESTINO = [
 const DESTINO_FIJO = { publicar: "#publicar", contenido: "#contenido", recomendar: "recomendar.html", registrar: "registrar-negocio.html", directorio: "comercios.html", anuncios: "anuncios.html",
   mitienda: "mi-tienda.html", mispromos: "mi-tienda.html#promos", misanuncios: "#mis-anuncios" };
 // Fase 2AR: destinos extra que solo usan los avisos
-const DESTINOS_AVISO = [["misanuncios", "📋 Mis anuncios (baja a ellos)"], ["mitienda", "🏪 Mi tienda"], ["mispromos", "🔥 Mis promociones"]];
+const DESTINOS_AVISO = [["misanuncios", "📋 Mis anuncios"], ["mitienda", "🏪 Mi tienda"], ["mispromos", "🔥 Mis promociones"]];
 
 function analizarDestino(d) {
   d = String(d || "");

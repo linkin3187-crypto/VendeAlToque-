@@ -99,6 +99,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `index.html` y `anuncios.html`: `#filtro-categoria`, `#filtro-subcategoria` y `#filtros-detalle` dentro de la caja de filtros; «Ordenar por» visible (`.ordenar-caja`).
 - `anuncios-comun.js`: `chipsCategoriasHTML` ahora da `<option>`s, `pintarCategoriasSelect`, `conectarSelectCategorias`; `app.js` y `anuncios.js` usan los desplegables. Caché v85.
 
+### Fase 2AT · «Mis anuncios» en su propia página
+- Nuevos `mis-anuncios.html` y `mis-anuncios.js`; `data.js`: `cargarMisAnunciosTodos()` (incluye vencidos u ocultos del dueño).
+- `index.html`/`app.js`: sale `#seccion-mis-anuncios`; `#menu-mis-anuncios` es enlace; `#btn-mi-tienda-enc` junto al perfil (clase `con-tienda` en el encabezado); `index.html#mis-anuncios` redirige a la página nueva; tras editar desde «Mis anuncios» vuelve allá (`mf_tras_editar`).
+- `navegacion.js`: «Yo → Mis anuncios» lleva a la página. Caché v86.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

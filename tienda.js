@@ -157,18 +157,21 @@ function renderizarTienda(c, ps) {
       ? (c.activo
         ? "📍 <b>Este negocio ya aparece en el mapa y el directorio</b> como «Ubicado». Los <b>productos</b> de esta vitrina solo los ves tú hasta que Merkap lo verifique por WhatsApp o llamada."
         : "🙈 Este negocio está oculto: solo lo ves tú (o un moderador).")
-      : "⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. <b>Llama o escribe antes de ir.</b> ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>";
+      : avisoPlegable("⚠️ <b>Comercio «Ubicado», aún sin verificar.</b> <b>Llama o escribe antes de ir.</b>",
+          "Sabemos dónde está según el mapa o quien lo registró, pero Merkap todavía no ha confirmado que exista o atienda en esta ubicación. ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>");
     av.classList.remove("hidden");
   } else {
     // Fase 2AQ: qué significa (y qué NO) el sello de un comercio verificado
     const fecha = fechaSello(c);
-    const que = c.nivel >= 3
-      ? `<b>✅ Ubicación confirmada en persona${fecha ? " el " + esc(fecha) : ""}.</b> El equipo de Merkap visitó la dirección y vio el local en ese lugar en esa fecha.`
-      : `<b>✅ Verificado por teléfono${fecha ? " el " + esc(fecha) : ""}.</b> Merkap habló con el negocio y este confirmó sus datos de contacto y ubicación (no visitamos el local).`;
+    const titulo = c.nivel >= 3 ? `<b>✅ Ubicación confirmada en persona${fecha ? " el " + esc(fecha) : ""}.</b>`
+                                : `<b>✅ Verificado por teléfono${fecha ? " el " + esc(fecha) : ""}.</b>`;
+    const que = c.nivel >= 3 ? "El equipo de Merkap visitó la dirección y vio el local en ese lugar en esa fecha."
+                             : "Merkap habló con el negocio y este confirmó sus datos de contacto y ubicación (no visitamos el local).";
     const as = $("t-aviso-sello");
-    as.innerHTML = que + (selloVencido(c) ? " <b>Sello en revisión:</b> tiene más de " + MESES_VIGENCIA + " meses." : "") +
+    // Fase 2AQ.3: plegado; se ve solo el título y el ⓘ despliega la explicación
+    as.innerHTML = avisoPlegable(titulo + (selloVencido(c) ? " <b>Sello en revisión.</b>" : ""), que + (selloVencido(c) ? " El sello tiene más de " + MESES_VIGENCIA + " meses." : "") +
       " El sello <b>no certifica</b> permisos, licencias, registro mercantil, calidad ni normas sanitarias, y <b>no garantiza</b> sus productos o precios; los datos pueden cambiar. ¿Lo conoces? Tu opinión ayuda a otros. <a href=\"terminos.html#sellos\" class=\"underline\">¿Qué significan los sellos?</a>" +
-      (muestraSelloSalud(c) ? "<span class=\"block mt-2\">" + AVISO_SALUD + "</span>" : "");
+      (muestraSelloSalud(c) ? "<span class=\"block mt-2\">" + AVISO_SALUD + "</span>" : ""));
     as.classList.remove("hidden");
   }
   // Fase 2AP-3b: el DUEÑO también comparte desde su ficha pública (antes solo desde Mi tienda)
@@ -631,4 +634,9 @@ async function iniciarOpiniones() {
     if (opinionesActivas && !esDuenoTienda()) abrirFormOpinion();
     else $("opiniones").scrollIntoView();
   } else if (location.hash === "#opiniones") $("opiniones").scrollIntoView();
+}
+
+// Fase 2AQ.3: aviso que muestra solo una línea; el botón ⓘ despliega el detalle (ahorra espacio en el celular)
+function avisoPlegable(resumen, detalle) {
+  return `<details class="aviso-plegable"><summary aria-label="Ver qué significa"><span>${resumen}</span><span class="ico-info" aria-hidden="true"></span></summary><div class="aviso-detalle">${detalle}</div></details>`;
 }

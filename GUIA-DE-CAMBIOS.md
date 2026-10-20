@@ -74,6 +74,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.js`, `comercios.js`, `mi-tienda.js`: usan `muestraSelloSalud`; el dueño ve por qué no aparece (falta verificar o venció). `comercios.html` y `terminos.html` con el texto nuevo. Pruebas nuevas. Caché v80.
 - Por qué: un distintivo «sanitario» al lado de «Ubicado» se contradecía y prometía una revisión que Merkap no hace.
 
+### Fase 2AQ.3 · Avisos plegables con ⓘ
+- `tienda.js`: `avisoPlegable(resumen, detalle)` usa `<details>`/`<summary>` (accesible, sin JavaScript extra); `styles.css`: `.aviso-plegable` y el botón `ico-info` (ⓘ cerrado, ✕ abierto). Caché v81.
+- Por qué: el aviso completo ocupaba media pantalla en el celular; lo esencial (sello, fecha y «Llama o escribe antes de ir») sigue siempre visible.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

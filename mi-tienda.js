@@ -214,6 +214,8 @@ async function elegirComercio(id) {
   pintarCabecera(); pintarDatos();
   await pintarSalud();
   await refrescarProductos();
+  await refrescarPromos();   // fase 2AP-4a
+  if (/^#promos?$/.test(location.hash)) $("promos").scrollIntoView({ block: "start" });
 }
 
 // Fase 2AI: el dueño ve al instante si entendimos su horario (sin horario no sale en «🟢 Abiertos ahora»)
@@ -266,4 +268,144 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("mt-productos").querySelector('[data-pid=""] [data-k="nombre"]').focus();
   });
   await elegirComercio(misComercios[0].id);
+});
+
+// =====================================================================
+// Fase 2AP-4a · 🔥 Promociones de la tienda (SQL 42). Máximo 2 activas o programadas, 15 días cada una.
+// Las reglas las impone la base de datos; aquí solo se hace cómodo.
+// =====================================================================
+let promosMias = [];
+let promoEditando = null;
+const fechaMas = (iso, dias) => { const d = new Date(iso + "T12:00:00-05:00"); d.setDate(d.getDate() + dias); return d.toISOString().slice(0, 10); };
+const fechaPromoCorta = iso => new Date(iso + "T12:00:00-05:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" });
+function estadoPromo(p) {
+  if (p.oculta) return ["🙈 Oculta por Merkap", "bg-slate-200 text-slate-700"];
+  if (p.hasta < hoyBogota()) return ["⏹ Terminada", "bg-slate-100 text-slate-500"];
+  if (p.desde > hoyBogota()) return ["🗓️ Programada", "bg-indigo-100 text-indigo-800"];
+  return ["🟢 Activa", "bg-emerald-100 text-emerald-800"];
+}
+const promoCuenta = p => !p.oculta && p.hasta >= hoyBogota();
+
+async function refrescarPromos() {
+  if (!actual) return;
+  const lista = await cargarPromosVigentes(actual.id);
+  // las terminadas se muestran solo los últimos 30 días (historial)
+  promosMias = lista.filter(p => p.hasta >= fechaMas(hoyBogota(), -30)).sort((a, b) => (promoCuenta(b) - promoCuenta(a)) || b.hasta.localeCompare(a.hasta));
+  pintarPromos();
+}
+
+function pintarPromos() {
+  const activas = promosMias.filter(promoCuenta).length;
+  $("mt-promos-cuenta").textContent = `(${activas} de ${MAX_PROMOS})`;
+  $("mt-promo-nueva").disabled = activas >= MAX_PROMOS;
+  $("mt-promo-nueva").classList.toggle("opacity-50", activas >= MAX_PROMOS);
+  $("mt-promo-nueva").title = activas >= MAX_PROMOS ? "Ya tienes 2 promociones: borra una o espera a que termine" : "";
+  $("mt-promo-ayuda").open = !promosMias.length;   // la primera vez se ve la explicación abierta
+  if (!actual.activo) { $("mt-promos").innerHTML = '<p class="text-sm text-amber-800">Tu tienda debe estar activa en el mapa para publicar promociones.</p>'; return; }
+  $("mt-promos").innerHTML = promosMias.length ? promosMias.map(p => {
+    const [txt, cls] = estadoPromo(p), pct = pctPromo(p), vive = promoCuenta(p);
+    return `<div class="border border-slate-200 rounded-xl p-3 ${vive ? "" : "opacity-70"}" data-promo="${p.id}">
+      <div class="flex flex-wrap items-start justify-between gap-2">
+        <p class="font-bold text-slate-900">🔥 ${esc(p.titulo)} ${pct ? `<span class="rebaja-pct">−${pct} %</span>` : ""}</p>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${cls}">${txt}</span>
+      </div>
+      <p class="text-xs text-slate-600 mt-0.5">${p.tipo === "precio" ? `<span class="rebaja-antes">${esc(formatearPrecio(p.precioAntes))}</span> <b>${esc(formatearPrecio(p.precioPromo))}</b> · ` : ""}${esc(fechaPromoCorta(p.desde))} → ${esc(fechaPromoCorta(p.hasta))}${vive ? " · " + esc(plazoPromo(p)) : ""}${p.cantidad ? ` · ${p.cantidad} und.` : ""}</p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        ${vive && !p.oculta ? `<button type="button" data-promo-acc="compartir" class="btn-compartir-dueno text-xs font-bold px-3 py-1.5 rounded-lg">📣 Compartir promo</button>` : ""}
+        ${vive ? `<button type="button" data-promo-acc="editar" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">✏️ Editar</button>` : ""}
+        <button type="button" data-promo-acc="borrar" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700">🗑 Borrar</button>
+      </div>
+    </div>`;
+  }).join("") : '<p class="text-sm text-slate-500">Aún no tienes promociones. Toca «➕ Nueva promoción»: en 1 minuto tu tienda sale con 🔥 en el directorio.</p>';
+}
+
+function tipoPromoForm() { return (document.querySelector('input[name="pr-tipo"]:checked') || {}).value || "precio"; }
+function pintarFormPromo() {
+  const t = tipoPromoForm();
+  $("pr-antes-caja").classList.toggle("hidden", t !== "precio");
+  $("pr-ahora-caja").classList.toggle("hidden", t !== "precio");
+  $("pr-desc-caja").classList.toggle("hidden", t !== "porcentaje");
+  const antes = Number(soloDigitos($("pr-antes").value)), ahora = Number(soloDigitos($("pr-ahora").value)), desc = Number(soloDigitos($("pr-desc").value));
+  const pct = t === "precio" && antes && ahora && ahora < antes ? Math.round((1 - ahora / antes) * 100) : t === "porcentaje" ? desc : 0;
+  $("pr-pct").textContent = t === "precio" && antes && ahora && ahora >= antes ? "⚠️ El precio de promo debe ser menor que el normal"
+    : pct ? `Así se verá: 🔥 −${pct} %` : t === "combo" ? "Así se verá: 🔥 COMBO" : "";
+  $("pr-hasta").min = $("pr-desde").value || hoyBogota();
+  $("pr-hasta").max = fechaMas($("pr-desde").value || hoyBogota(), DIAS_PROMO - 1);
+}
+function abrirFormPromo(p) {
+  promoEditando = p ? p.id : null;
+  $("pr-producto").innerHTML = '<option value="">— Ninguno —</option>' + productosMios.map(x => `<option value="${x.id}" data-precio="${x.precio == null ? "" : x.precio}">${esc(x.nombre)}${x.precio != null ? " · " + esc(formatearPrecio(x.precio)) : ""}</option>`).join("");
+  $("pr-titulo").value = p ? p.titulo : "";
+  document.querySelectorAll('input[name="pr-tipo"]').forEach(r => { r.checked = r.value === (p ? p.tipo : "precio"); });
+  $("pr-producto").value = p && p.productoId ? String(p.productoId) : "";
+  $("pr-antes").value = p && p.precioAntes ? p.precioAntes : "";
+  $("pr-ahora").value = p && p.precioPromo != null ? p.precioPromo : "";
+  $("pr-desc").value = p && p.descuento ? p.descuento : "";
+  $("pr-desde").value = p ? p.desde : hoyBogota();
+  $("pr-desde").min = hoyBogota();
+  $("pr-hasta").value = p ? p.hasta : fechaMas(hoyBogota(), 6);
+  $("pr-cantidad").value = p && p.cantidad ? p.cantidad : "";
+  $("pr-condiciones").value = p ? p.condiciones : "";
+  $("pr-descripcion").value = p ? p.descripcion : "";
+  $("mt-promo-form").querySelector('button[type="submit"]').textContent = p ? "💾 Guardar cambios" : "💾 Publicar promo";
+  $("mt-promo-form").classList.remove("hidden");
+  pintarFormPromo();
+  $("pr-titulo").focus();
+}
+async function guardarPromo(e) {
+  e.preventDefault();
+  const t = tipoPromoForm();
+  const num = id => { const v = soloDigitos($(id).value); return v ? Number(v) : null; };
+  const fila = {
+    comercio_id: actual.id, titulo: $("pr-titulo").value.trim(), tipo: t,
+    precio_antes: t === "precio" ? num("pr-antes") : null, precio_promo: t === "precio" ? num("pr-ahora") : null,
+    descuento: t === "porcentaje" ? num("pr-desc") : null, producto_id: $("pr-producto").value ? Number($("pr-producto").value) : null,
+    desde: $("pr-desde").value, hasta: $("pr-hasta").value, cantidad: num("pr-cantidad"),
+    condiciones: $("pr-condiciones").value.trim() || null, descripcion: $("pr-descripcion").value.trim() || null
+  };
+  if (t === "precio" && (!fila.precio_antes || fila.precio_promo == null || fila.precio_promo >= fila.precio_antes)) { mostrarToast("Escribe el precio normal y uno de promo más bajo", "error"); return; }
+  if (t === "porcentaje" && !(fila.descuento >= 1 && fila.descuento <= 90)) { mostrarToast("El descuento va de 1 % a 90 %", "error"); return; }
+  if (!fila.desde || !fila.hasta || fila.hasta < fila.desde || fila.hasta > fechaMas(fila.desde, DIAS_PROMO - 1)) { mostrarToast("Revisa las fechas: máximo 15 días", "error"); return; }
+  const b = e.target.querySelector('button[type="submit"]'); b.disabled = true;
+  try {
+    await guardarPromoDB(promoEditando, promoEditando ? (({ comercio_id, ...resto }) => resto)(fila) : fila);
+    mostrarToast(promoEditando ? "✅ Promoción actualizada" : "🔥 ¡Promoción publicada! Ahora compártela");
+    $("mt-promo-form").classList.add("hidden");
+    await refrescarPromos();
+  } catch (err) {
+    if (!(await ofrecerRevision(err, fila.titulo + " · " + (fila.descripcion || "")))) mostrarToast(err.message, "error");
+  } finally { b.disabled = false; }
+}
+function compartirPromo(p) {
+  const prod = productosMios.find(x => x.id === p.productoId);
+  const pct = pctPromo(p);
+  const precio = p.tipo === "precio" ? `${formatearPrecio(p.precioPromo)} (antes ${formatearPrecio(p.precioAntes)}${pct ? ", −" + pct + " %" : ""})` : pct ? `¡−${pct} %!` : "";
+  abrirCompartir({ tipo: "promo", id: actual.id, nombre: p.titulo, tienda: actual.nombre, precio, plazo: plazoPromo(p),
+    foto: (prod && (prod.fotos || [])[0]) || (actual.fotos || [])[0] || actual.foto || "", icono: "🔥", ciudad: actual.ciudad || "" });
+}
+document.addEventListener("DOMContentLoaded", () => {
+  if (!$("mt-promo-form")) return;
+  $("mt-promo-nueva").addEventListener("click", () => abrirFormPromo(null));
+  $("pr-cancelar").addEventListener("click", () => $("mt-promo-form").classList.add("hidden"));
+  $("mt-promo-form").addEventListener("submit", guardarPromo);
+  $("mt-promo-form").addEventListener("input", pintarFormPromo);
+  $("mt-promo-form").addEventListener("change", e => {
+    if (e.target.id === "pr-producto") {   // al elegir un producto se sugiere su precio y su nombre
+      const o = e.target.selectedOptions[0];
+      if (o && o.dataset.precio && !$("pr-antes").value) $("pr-antes").value = o.dataset.precio;
+      if (o && o.value && !$("pr-titulo").value.trim()) $("pr-titulo").value = o.textContent.split(" · ")[0];
+    }
+    if (e.target.id === "pr-desde" && $("pr-hasta").value > fechaMas($("pr-desde").value, DIAS_PROMO - 1)) $("pr-hasta").value = fechaMas($("pr-desde").value, DIAS_PROMO - 1);
+    pintarFormPromo();
+  });
+  $("mt-promos").addEventListener("click", async e => {
+    const b = e.target.closest("[data-promo-acc]"); if (!b) return;
+    const p = promosMias.find(x => x.id === Number(b.closest("[data-promo]").dataset.promo)); if (!p) return;
+    if (b.dataset.promoAcc === "editar") abrirFormPromo(p);
+    if (b.dataset.promoAcc === "compartir") compartirPromo(p);
+    if (b.dataset.promoAcc === "borrar") {
+      if (!confirm(`¿Borrar la promoción «${p.titulo}»?`)) return;
+      try { await borrarPromoDB(p.id); mostrarToast("🗑 Promoción borrada"); await refrescarPromos(); } catch (err) { mostrarToast(err.message, "error"); }
+    }
+  });
 });

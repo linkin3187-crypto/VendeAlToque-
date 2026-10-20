@@ -170,7 +170,8 @@ function renderizarTienda(c, ps) {
   // Fase 2AP-3: acceso rápido del administrador al 📣 Centro de marketing con esta tienda ya elegida
   if (esAdmin() && !$("t-admin-mk")) $("t-aviso-privado").insertAdjacentHTML("beforebegin",
     `<div id="t-admin-mk" class="mb-3 flex flex-wrap gap-2"><a href="marketing.html?destino=tienda&canal=qr&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-700 text-white no-underline">📣 Pieza de marketing / sticker QR</a>
-      <a href="marketing.html?destino=producto&canal=whatsapp&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-100 text-violet-800 no-underline">🏷️ Promocionar un producto</a></div>`);
+      <a href="marketing.html?destino=producto&canal=whatsapp&id=${c.id}" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-100 text-violet-800 no-underline">🏷️ Promocionar un producto</a>
+      <a href="mi-tienda.html?id=${c.id}#promos" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-rose-100 text-rose-800 no-underline">🔥 Crear promoción</a></div>`);
   // Fase 2Z.10: lo que dice la comunidad + «⚡ Acelerar mi verificación» (dueño)
   if (confirmadoPorVecinos(c) && c.nivel < 2) $("t-sello").insertAdjacentHTML("afterend", ` <span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span>`);
   if (comercioDudoso(c) && !gestiona) {
@@ -308,6 +309,19 @@ function mostrarBurbujaReclamar(c) {
   });
 }
 
+// Fase 2AP-4a: 🔥 promociones vigentes (las da la base de datos: solo vigentes y de tiendas activas)
+async function pintarPromosTienda(c) {
+  const lista = (await cargarPromosVigentes(c.id)).filter(promoVigente);
+  const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esAdmin());
+  $("t-promos-gestionar").href = esAdmin() && c.ownerId !== (usuarioActual || {}).id ? "mi-tienda.html?id=" + c.id + "#promos" : "mi-tienda.html#promos";
+  $("t-promos-gestionar").classList.toggle("hidden", !gestiona);
+  if (!lista.length && !gestiona) return;
+  $("t-promos").innerHTML = lista.length ? lista.map(p => tarjetaPromoHTML(p, c)).join("")
+    : '<p class="text-sm text-slate-500 sm:col-span-2">Aún no tienes promociones activas. Una promo atrae clientes nuevos: créala en 1 minuto desde «✏️ Gestionar mis promos».</p>';
+  $("promos").classList.remove("hidden");
+  if (/^#promos?$/.test(location.hash)) $("promos").scrollIntoView({ block: "start" });
+}
+
 function manejarClicks(e) {
   const mas = e.target.closest("[data-mas]"), menos = e.target.closest("[data-menos]"), rep = e.target.closest("[data-reportar]");
   if (mas) { const id = Number(mas.dataset.mas); carrito.set(id, Math.min(20, (carrito.get(id) || 0) + 1)); pintarProductos(); }
@@ -336,6 +350,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("t-cargando").classList.add("hidden");
   if (!c) { $("t-error").classList.remove("hidden"); return; }
   renderizarTienda(c, ps);
+  pintarPromosTienda(c);   // fase 2AP-4a
   iniciarOpiniones();
   $("t-lista").addEventListener("click", e => {   // fase 2AA.4: foto del producto en grande
     const im = e.target.closest("[data-ver-prod]");

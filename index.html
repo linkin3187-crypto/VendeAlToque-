@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=75" />
-  <link rel="stylesheet" href="tw.css?v=75">
+  <link rel="stylesheet" href="styles.css?v=76" />
+  <link rel="stylesheet" href="tw.css?v=76">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -78,6 +78,8 @@
       <a href="marketing.html" class="solo-admin bg-violet-700 hover:bg-violet-800 text-white font-semibold px-3 py-1 rounded-full text-xs">📣 Marketing</a>
     </div>
   </div>
+  <!-- Fase 2AP-4a: «Novedades» para dueños de tiendas y anuncios (una vez por persona, se puede cerrar) -->
+  <div id="novedad-caja" class="hidden max-w-6xl mx-auto px-4 mt-3"></div>
 
   <!-- QUÉ ES (texto corto) + ACCESOS + CATEGORÍAS. El buscador vive ahora en el encabezado fijo (fase 2Y). -->
   <section class="bg-gradient-to-b from-indigo-700 to-indigo-800 text-white pb-4 pt-3 px-4">
@@ -445,6 +447,7 @@
           <div>
             <label for="form-precio" class="block text-xs font-bold text-slate-500 mb-1">Precio (COP, opcional) <span id="form-precio-ayuda" class="font-normal text-indigo-700"></span></label>
             <input type="text" id="form-precio" inputmode="numeric" placeholder="1200000" class="w-full border border-slate-300 p-3 rounded-xl">
+            <p id="form-precio-rebaja" class="hidden text-xs font-semibold text-rose-700 mt-1"></p>
             <!-- Fase 2AC: precio fijo o negociable (se guarda en detalles.precio_tipo) -->
             <div id="form-precio-tipo" class="flex gap-2 mt-2 text-sm" role="radiogroup" aria-label="Tipo de precio">
               <label class="precio-tipo"><input type="radio" name="precio-tipo" value="fijo" checked> Precio fijo</label>
@@ -642,16 +645,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=75"></script>
-  <script src="data.js?v=75"></script>
-  <script src="foro.js?v=75"></script>
-  <script src="carrusel.js?v=75"></script>
-  <script src="buscador.js?v=75"></script>
-  <script src="anuncios-comun.js?v=75"></script>
-  <script src="qr.js?v=75"></script>
-  <script src="piezas.js?v=75"></script>
-  <script src="compartir.js?v=75"></script>
-  <script src="app.js?v=75"></script>
-  <script src="navegacion.js?v=75"></script>
+  <script src="utils.js?v=76"></script>
+  <script src="data.js?v=76"></script>
+  <script src="foro.js?v=76"></script>
+  <script src="carrusel.js?v=76"></script>
+  <script src="buscador.js?v=76"></script>
+  <script src="anuncios-comun.js?v=76"></script>
+  <script src="qr.js?v=76"></script>
+  <script src="piezas.js?v=76"></script>
+  <script src="compartir.js?v=76"></script>
+  <script src="app.js?v=76"></script>
+  <script src="navegacion.js?v=76"></script>
 </body>
 </html>

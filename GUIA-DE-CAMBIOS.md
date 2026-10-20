@@ -840,3 +840,15 @@ En **Editar comercios → 2 · Verificar y completar datos**, debajo de los filt
 
 - **Qué pasaba:** si el logo ya estaba en la memoria del celular, `alCargarLogo` llamaba enseguida a `programarDibujo()`, que usa una variable (`let dibujoPendiente`) declarada más abajo en el archivo. En JavaScript, usar un `let` antes de su línea da error y el resto del archivo no corre → «Cargando…».
 - **Lección:** el aviso «⚠️ La página no terminó de cargar» con el error escrito permitió encontrarlo en minutos. Si vuelve a salir en otra página, una captura basta.
+
+## Fase 2AP-4a · Promociones de las tiendas + rebajas en anuncios
+
+**SQL:** `supabase/42_promociones_rebajas.sql` — **antes** de fusionar. Debe mostrar `rebajas = true | promociones = true | seguras = true | filtro = true`.
+
+**Cambian:** `data.js` (rebajas, promos, ventana «Rebajar»), `mi-tienda.*` (🔥 Mis promociones), `tienda.*` (sección de promos), `app.js` (Mis anuncios, Novedades, compartir al publicar, aviso al bajar el precio), `anuncio.*`, `anuncios-comun.js`, `comercios.js`, `buscar.js`, `compartir.js` (tipo «promo»), `index.html`, `styles.css`, `tw.css`; caché `?v=76`.
+
+- **Reglas en la base (no se pueden saltar desde el navegador):** 2 promos activas o programadas por tienda, 15 días máximo, precio de promo menor que el normal, solo el dueño o el administrador, filtro de palabras. El público solo ve las vigentes de tiendas activas.
+- **Rebaja honesta:** el precio anterior lo guarda el servidor al bajar el precio; no se puede escribir a mano. Se muestra 15 días.
+- **Descubrimiento:** «💡 ¿Para qué sirve?» abierta la primera vez, tarjeta de Novedades una sola vez por persona (se cierra con «Ahora no»), pista en Mis anuncios y oferta de compartir al publicar.
+
+**Revertir:** PR → **Revert**. El SQL puede quedarse (sin la página nueva, nadie ve promociones; los anuncios rebajados se ven con su precio nuevo).

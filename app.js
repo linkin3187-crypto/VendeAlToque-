@@ -224,6 +224,30 @@ function comerciosBase() {
   });
 }
 
+// ---------- 🔥 Promos cerca de ti (fase 2AP-4b) ----------
+// Solo de tiendas con vitrina pública (verificadas). Orden: la ciudad elegida primero, luego las que terminan antes.
+function pintarPromosInicio() {
+  const sec = $("promos-inicio");
+  if (!sec) return;
+  const ciudad = ($("filtro-ciudad") || {}).value || "";
+  const porId = new Map(comercios.map(c => [c.id, c]));
+  const lista = promosVigentes.filter(p => p.desde <= hoyBogota()).map(p => ({ p, c: porId.get(p.comercioId) }))
+    .filter(x => x.c && vitrinaPublica(x.c))
+    .sort((a, b) => (b.c.ciudad === ciudad) - (a.c.ciudad === ciudad) || a.p.hasta.localeCompare(b.p.hasta) || pctPromo(b.p) - pctPromo(a.p))
+    .slice(0, 12);
+  sec.classList.toggle("hidden", !lista.length);
+  $("pi-lista").innerHTML = lista.map(({ p, c }) => {
+    const foto = urlSegura(p.foto || (c.fotos || [])[0] || c.foto);
+    const pct = pctPromo(p);
+    const precio = p.tipo === "precio" && p.precioPromo != null
+      ? `<span class="sel-precio pi-precio">${p.precioAntes ? `<s>${esc(formatearPrecio(p.precioAntes))}</s> ` : ""}${esc(formatearPrecio(p.precioPromo))}</span>` : "";
+    return `<div class="sel-item"><a href="tienda.html?id=${c.id}#promo-${p.id}" class="sel-card pi-card">
+      <span class="sel-foto pi-foto">${iconosComercio[c.tipo] || "🛍️"}${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${pct ? `<b class="pi-pct">−${pct} %</b>` : p.tipo === "combo" ? '<b class="pi-pct">COMBO</b>' : ""}</span>
+      <span class="sel-txt"><span class="sel-nombre">🔥 ${esc(p.titulo)}</span>${precio}<span class="sel-lugar">${esc(c.nombre)}</span><span class="pi-plazo">⏳ ${esc(plazoPromo(p))}</span></span>
+    </a></div>`;
+  }).join("");
+}
+
 // ---------- ⭐ Selección del día (fase 2AC) ----------
 function pintarSeleccionDia() {
   const lista = seleccionDelDia(baseDatosAnuncios, 8);
@@ -1496,7 +1520,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("sel-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   activarModoEditor();
   // Los comercios cargan aparte: si fallan, los anuncios siguen funcionando.
-  cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); });
+  cargarComercios().then(() => { pintarComercios(); pintarComerciosFeed(); pintarPromosInicio(); });
+  $("filtro-ciudad").addEventListener("change", () => pintarPromosInicio());
+  $("pi-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   $("comercios-cats").addEventListener("click", e => { const b = e.target.closest("[data-cat-com]"); if (b) { catComercio = b.dataset.catCom; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); } });
   $("comercios-buscar").addEventListener("input", e => { textoComercio = e.target.value; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
   $("comercios-depto").addEventListener("change", e => { deptoComercio = e.target.value; muniComercio = ""; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });

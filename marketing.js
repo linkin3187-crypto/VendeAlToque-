@@ -23,6 +23,8 @@ const DESTINOS = {
                 escena: "productos de una tienda de barrio bien organizados en estantes, luz cálida" },
   producto:   { pagina: "tienda.html", hash: "#productos", icono: "🏷️", titulo: "", sub: "Míralo con foto y precio y pide por WhatsApp.",
                 escena: "un producto de tienda de barrio bien presentado sobre una mesa, estilo catálogo, luz cálida" },
+  promo:      { pagina: "tienda.html", hash: "#promos", icono: "🔥", titulo: "", sub: "Por tiempo limitado. Pide por WhatsApp.",
+                escena: "productos en oferta de una tienda de barrio con etiquetas de descuento, luz cálida, estilo catálogo" },
   anuncio:    { pagina: "anuncio.html", icono: "🔥", titulo: "", sub: "Míralo con fotos y escríbele directo al vendedor.",
                 escena: "objetos de segunda mano en buen estado bien iluminados sobre un fondo limpio" },
   libre:      { pagina: "", icono: "👉", titulo: "Mira esto en Merkap", sub: "Compra, vende y encuentra negocios cerca de ti.",
@@ -80,6 +82,11 @@ const TEXTOS = {
     "🔥 *{nombre}*\n\n📸 Míralo con foto y precio\n💬 Pide directo por WhatsApp\n📍 Cómo llegar en un toque\n\nAquí 👇\n{link}",
     "¿Ya viste *{nombre}*? 👀 Míralo aquí 👉 {link}"
   ],
+  promo: [
+    "🔥 *{nombre}* 👉 {link}",
+    "🔥 *PROMO: {nombre}*\n\n⏳ Por tiempo limitado\n💬 Pide directo por WhatsApp\n📍 Cómo llegar en un toque\n\nMírala aquí 👇\n{link}",
+    "¿Ya viste esta promo? 👀 *{nombre}* → {link}"
+  ],
   anuncio: [
     "📄 Mira este anuncio en Merkap: *{nombre}* 👉 {link}",
     "🔥 *{nombre}*\n\nMíralo con fotos y escríbele directo al vendedor por WhatsApp 👇\n{link}",
@@ -126,6 +133,10 @@ const ctaCanal = c => (typeof ctaPorCanal === "function" ? ctaPorCanal(c) : "�
 // Carpeta donde vive la página (sirve igual en GitHub Pages o en un dominio propio)
 function baseSitio() { return location.origin + location.pathname.replace(/[^/]*$/, ""); }
 function codigoActual() { return limpiarRef(slugRef($("rf-codigo").value)); }
+// Destinos que necesitan el número de un comercio o anuncio (fase 2AP-4b: + «promo»)
+const CON_ID = ["tienda", "producto", "anuncio", "promo"];
+let promosObjetivo = [];      // fase 2AP-4b: promos vigentes de la tienda elegida (para la pieza)
+function promoElegida() { return promosObjetivo.find(p => String(p.id) === $("mk-promo").value) || promosObjetivo[0] || null; }
 function destinoActual() { return DESTINOS[$("rf-destino").value] ? $("rf-destino").value : "inicio"; }
 function canalActual() { return $("mk-canal").value; }
 
@@ -141,7 +152,7 @@ function destinoPartes() {
   const d = DESTINOS[destino];
   let pagina = d.pagina, hash = d.hash || "";
   const params = [];
-  if (destino === "tienda" || destino === "anuncio" || destino === "producto") {
+  if (CON_ID.includes(destino)) {
     const id = $("rf-id").value.replace(/\D/g, "");
     if (!id) return null;
     params.push("id=" + id);
@@ -189,6 +200,7 @@ function nombreParaTexto() {
   if (destino === "categoria") { const c = CATEGORIAS.find(x => x.id === $("mk-cat").value); return c ? c.nombre : "Merkap"; }
   if (destino === "directorio") { const t = TIPOS_COMERCIO.find(x => x.id === $("mk-tipo").value); return t ? t.nombre.toLowerCase() : "negocios"; }
   if (destino === "tienda") return nombreObjetivo || "esta tienda";
+  if (destino === "promo") { const p = promoElegida(); return p ? p.titulo + (nombreObjetivo ? " en " + nombreObjetivo : "") : (nombreObjetivo ? "las promos de " + nombreObjetivo : "esta promo"); }
   if (destino === "anuncio") return nombreObjetivo || "este anuncio";
   if (destino === "producto") {
     const o = $("mk-prod").selectedOptions[0];
@@ -298,7 +310,7 @@ function dibujar() {
     fondo: $("mk-color-fondo").value, cta: $("mk-color-cta").value, foto: fotoFondo,
     verLogo: $("mk-ver-logo").checked, verCta: $("mk-ver-cta").checked, ctaTexto: $("mk-cta").value,
     verLink: $("mk-ver-link").checked, icono: iconoElegido || iconoDestino(),
-    titulo: $("mk-titulo").value, sub: $("mk-sub").value
+    titulo: $("mk-titulo").value, sub: $("mk-sub").value, precio: precioPieza()
   });
 }
 
@@ -309,6 +321,7 @@ function rellenarTarjeta() {
   let titulo = d.titulo;
   if (destino === "categoria") titulo = "Mira lo nuevo en " + nombreParaTexto();
   if (destino === "tienda") titulo = nombreObjetivo ? nombreObjetivo + " ya está en Merkap" : "Visita nuestra tienda en Merkap";
+  if (destino === "promo") { const p = promoElegida(); titulo = p ? p.titulo : (nombreObjetivo ? "Promos de " + nombreObjetivo : "Promoción"); }
   if (destino === "anuncio") titulo = nombreObjetivo || "Mira este anuncio";
   if (destino === "producto") {
     const o = $("mk-prod").selectedOptions[0];
@@ -316,7 +329,8 @@ function rellenarTarjeta() {
   }
   if (destino === "directorio" && $("mk-tipo").value) titulo = nombreParaTexto().replace(/^./, c => c.toUpperCase()) + " cerca de ti";
   $("mk-titulo").value = titulo;
-  $("mk-sub").value = destino === "producto" && nombreObjetivo ? "En " + nombreObjetivo + ". " + d.sub : d.sub;
+  $("mk-sub").value = (destino === "producto" || destino === "promo") && nombreObjetivo
+    ? "En " + nombreObjetivo + ". " + (destino === "promo" && promoElegida() ? plazoPromo(promoElegida()) + ". Pide por WhatsApp." : d.sub) : d.sub;
   if (!ctaTocado) $("mk-cta").value = ctaCanal(canalActual());
   iconoElegido = "";
   pintarIconos();
@@ -367,7 +381,7 @@ function codigoSugerido() {
   const canal = { whatsapp: "wa", estado: "estado", facebook: "fb", instagram: "ig", tiktok: "tt", qr: "qr", volante: "volante", "": "link" }[canalActual()] || "link";
   const zona = slugRef($("mk-zona").value).slice(0, 12);
   // nombre de la tienda o del anuncio, cortado en una palabra completa (máx. 20 letras)
-  const objetivo = nombreObjetivo && ["tienda", "producto", "anuncio"].includes(destinoActual())
+  const objetivo = nombreObjetivo && CON_ID.includes(destinoActual())
     ? (() => { let t = ""; for (const w of slugRef(nombreObjetivo).split("-")) { const n = t ? t + "-" + w : w; if (n.length > 20) break; t = n; } return t; })() : "";
   return slugRef([canal, objetivo || (destinoActual() === "libre" ? "pagina" : destinoActual()), objetivo ? "" : zona].filter(Boolean).join("-"));
 }
@@ -380,8 +394,9 @@ function pintarEnlace() {
   const limpio = base && base.length < 30 && /[-_]$/.test(crudo) ? base + "-" : base;
   if (entrada.value !== limpio && !entrada.readOnly) entrada.value = limpio;
   const destino = destinoActual();
-  $("rf-id-caja").classList.toggle("hidden", destino !== "tienda" && destino !== "anuncio" && destino !== "producto");
+  $("rf-id-caja").classList.toggle("hidden", !CON_ID.includes(destino));
   $("mk-prod-caja").classList.toggle("hidden", destino !== "producto");
+  $("mk-promo-caja").classList.toggle("hidden", destino !== "promo");
   $("rf-id-etq").textContent = destino === "anuncio" ? "Busca el anuncio" : "Busca el comercio";
   $("mk-buscar-obj").placeholder = destino === "anuncio" ? "🔎 Escribe el título (ej.: moto)" : "🔎 Escribe el nombre (ej.: panadería)";
   $("mk-cat-caja").classList.toggle("hidden", destino !== "categoria");
@@ -411,6 +426,27 @@ function llenarProductos(prods, vacio) {
   productoPendiente = "";
 }
 
+// Fase 2AP-4b: promos vigentes de la tienda (el enlace siempre abre «la promo del momento»; esto solo arma la pieza)
+function llenarPromos(nombre) {
+  const sel = $("mk-promo"), antes = sel.value;
+  sel.innerHTML = promosObjetivo.length
+    ? promosObjetivo.map(p => `<option value="${p.id}">${esc(p.titulo)}${pctPromo(p) ? " · −" + pctPromo(p) + " %" : ""} · ${esc(plazoPromo(p))}</option>`).join("")
+    : `<option value="">${nombre ? "Esta tienda no tiene promos activas hoy" : "Primero busca el comercio"}</option>`;
+  if (antes && promosObjetivo.some(p => String(p.id) === antes)) sel.value = antes;
+  $("mk-promo-nota").textContent = nombre && !promosObjetivo.length
+    ? "Puedes guardar la campaña igual: el QR mostrará las promos que la tienda publique después (y mientras tanto, su vitrina)."
+    : "El QR siempre abre las promos vigentes de la tienda: cuando esta termine y publique otra, no hay que reimprimir.";
+}
+// Precio tachado para la pieza (solo promos «precio especial» o «% de descuento»)
+function precioPieza() {
+  if (destinoActual() !== "promo" || !$("mk-ver-precio").checked) return null;
+  const p = promoElegida();
+  if (!p) return null;
+  if (p.tipo === "precio" && p.precioAntes && p.precioPromo != null) return { antes: formatearPrecio(p.precioAntes), ahora: formatearPrecio(p.precioPromo), pct: pctPromo(p) };
+  if (p.tipo === "porcentaje" && p.descuento) return { antes: "", ahora: "", pct: p.descuento };
+  return null;
+}
+
 // Busca el nombre del comercio o del anuncio para el texto y la tarjeta
 let esperaNombre = 0;
 function buscarNombre() {
@@ -418,7 +454,7 @@ function buscarNombre() {
   const destino = destinoActual();
   const id = parseInt($("rf-id").value.replace(/\D/g, ""), 10);
   $("rf-id-nombre").textContent = "";
-  const conComercio = destino === "tienda" || destino === "producto";
+  const conComercio = destino === "tienda" || destino === "producto" || destino === "promo";
   if ((!conComercio && destino !== "anuncio") || !id) {
     if (destino === "producto") llenarProductos([], "Primero escribe el número del comercio");
     if (nombreObjetivo) { nombreObjetivo = ""; rellenarTarjeta(); pintarEnlace(); }
@@ -439,6 +475,11 @@ function buscarNombre() {
       } catch (e) { prods = []; }
       if (destinoActual() !== destino) return;
       llenarProductos(prods, nombre ? (prods.length ? "Elige el producto…" : "Esta vitrina aún no tiene productos") : "—");
+    }
+    if (destino === "promo") {
+      promosObjetivo = nombre ? (await cargarPromosVigentes(id)).filter(promoVigente) : [];
+      if (destinoActual() !== destino) return;
+      llenarPromos(nombre);
     }
     nombreObjetivo = nombre || "";
     if (!codigoTocado && !campanaEditando) $("rf-codigo").value = codigoSugerido();
@@ -512,6 +553,7 @@ function etiquetaDestino(c) {
   const opt = [...$("rf-destino").options].find(o => o.value === k.destino);
   let t = opt ? opt.textContent.replace(/\s*\(.*\)$/, "") : c.destino;
   if (k.destino === "tienda") t = "🛍️ Vitrina · " + (c.comercio || k.objetivo || "#" + k.id);
+  if (k.destino === "promo") t = "🔥 Promo vigente · " + (c.comercio || k.objetivo || "#" + k.id);
   if (k.destino === "producto") t = "🏷️ " + (k.producto || "Producto") + " · " + (c.comercio || k.objetivo || "#" + k.id);
   if (k.destino === "anuncio") t = "📄 Anuncio · " + (k.objetivo || "#" + k.id);
   if (k.destino === "categoria") { const x = CATEGORIAS.find(z => z.id === k.cat); t = "📂 Categoría · " + (x ? x.nombre : k.cat); }
@@ -524,10 +566,11 @@ function nombreSugerido() {
   const pref = canal === "qr" ? "Sticker" : canal === "volante" ? "Volante" : NOMBRE_CANAL[canal] || "Enlace";
   const destino = destinoActual();
   const opt = $("rf-destino").selectedOptions[0];
-  const que = ["tienda", "producto", "anuncio"].includes(destino) && nombreObjetivo ? nombreParaTexto()
+  const que = destino === "promo" && nombreObjetivo ? "Promos de " + nombreObjetivo
+    : CON_ID.includes(destino) && nombreObjetivo ? nombreParaTexto()
     : (opt ? opt.textContent.replace(/^\S+\s/, "").replace(/\s*\(.*\)$/, "") : destino);
   const zona = $("mk-zona").value.trim();
-  return (pref + " · " + que + (zona && !["tienda", "producto", "anuncio"].includes(destino) ? " · " + zona : "")).slice(0, 80);
+  return (pref + " · " + que + (zona && !CON_ID.includes(destino) ? " · " + zona : "")).slice(0, 80);
 }
 function campanaPorCodigo(c) { return campanas.find(x => x.codigo === c); }
 function sinGuardar() {
@@ -696,7 +739,7 @@ async function guardarCampana() {
   if (!codigo) { mostrarToast("Escribe el código de la campaña", "error"); return; }
   if (!destino) { mostrarToast($("rf-vacio").textContent || "Completa el destino", "error"); return; }
   const nombre = ($("mk-nombre").value.trim() || nombreSugerido()).slice(0, 80);
-  const conTienda = ["tienda", "producto"].includes(destinoActual());
+  const conTienda = ["tienda", "producto", "promo"].includes(destinoActual());
   const fila = { nombre, destino, canal: canalActual() || null, config: configActual(),
                  comercio_id: conTienda ? Number($("rf-id").value.replace(/\D/g, "")) || null : null };
   const b = $("mk-guardar-camp"); b.disabled = true;
@@ -775,6 +818,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("mk-cta").addEventListener("input", () => { ctaTocado = !!$("mk-cta").value.trim(); });
   ["mk-modo-corto", "mk-modo-directo"].forEach(id => $(id).addEventListener("change", () => { textoEditado = false; pintarEnlace(); }));
   $("mk-prod").addEventListener("change", () => { textoEditado = false; rellenarTarjeta(); pintarEnlace(); });
+  $("mk-promo").addEventListener("change", () => { textoEditado = false; rellenarTarjeta(); pintarEnlace(); });
+  $("mk-ver-precio").addEventListener("change", () => programarDibujo());
   $("mk-guardar-camp").addEventListener("click", guardarCampana);
   $("mk-cancelar-camp").addEventListener("click", nuevaCampana);
   $("mk-camp-nueva").addEventListener("click", () => { nuevaCampana(); $("rf-destino").closest(".mk-caja").scrollIntoView({ behavior: "smooth", block: "start" }); });

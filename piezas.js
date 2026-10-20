@@ -223,7 +223,11 @@ async function dibujarPieza(cv, o) {
   const altoTit = tit.lineas.length * tit.t * 1.1;
   const altoSub = sb_.lineas.length * sb_.t * 1.3;
   const altoIcono = tIcono ? tIcono * 1.15 : 0;
-  let total = altoIcono + altoTit + (altoSub ? altoSub + 20 : 0);
+  // Fase 2AP-4b: precio de promo (antes tachado · ahora · −%)
+  const pr = o.precio && (o.precio.ahora || o.precio.pct) ? o.precio : null;
+  const tPr = horizontal ? 54 : (formato === "historia" ? 96 : 80);
+  const altoPr = pr ? tPr * 1.5 : 0;
+  let total = altoIcono + altoTit + altoPr + (altoSub ? altoSub + 20 : 0);
   let k = total > espacio ? espacio / total : 1;     // si no cabe, todo un poco más chico
   let yy = arriba + Math.max(0, (espacio - total * k) / 2);
   ctx.textAlign = horizontal ? "left" : "center";
@@ -238,6 +242,36 @@ async function dibujarPieza(cv, o) {
     yy += tit.t * 1.1 * k;
     ctx.fillText(l, xc, yy);   // en horizontal el ícono ya va al comienzo del título
   });
+  if (pr) {
+    const t = tPr * k, tA = t * .62, tP = t * .62;
+    const pctTxt = pr.pct ? "−" + pr.pct + " %" : "";
+    ctx.font = `700 ${Math.round(tA)}px ${FUENTE}`; const wA = pr.antes ? ctx.measureText(pr.antes).width : 0;
+    ctx.font = `900 ${Math.round(t)}px ${FUENTE}`; const wN = pr.ahora ? ctx.measureText(pr.ahora).width : 0;
+    ctx.font = `900 ${Math.round(tP)}px ${FUENTE}`; const wP = pctTxt ? ctx.measureText(pctTxt).width + tP * .9 : 0;
+    const gap = t * .35, partes = [wA, wN, wP].filter(Boolean);
+    const anchoTot = partes.reduce((a, b) => a + b, 0) + gap * (partes.length - 1);
+    let x = horizontal ? pad : W / 2 - anchoTot / 2;
+    const yb = yy + t * 1.15;
+    ctx.textAlign = "left";
+    if (pr.antes) {
+      ctx.font = `700 ${Math.round(tA)}px ${FUENTE}`; ctx.fillStyle = conFoto ? "rgba(255,255,255,.8)" : colSub;
+      ctx.fillText(pr.antes, x, yb);
+      ctx.fillRect(x - 4, yb - tA * .36, wA + 8, Math.max(3, tA * .08));   // tachado
+      x += wA + gap;
+    }
+    if (pr.ahora) {
+      ctx.font = `900 ${Math.round(t)}px ${FUENTE}`; ctx.fillStyle = conFoto ? "#ffffff" : (claro ? "#be123c" : cta);
+      ctx.fillText(pr.ahora, x, yb); x += wN + gap;
+    }
+    if (pctTxt) {
+      const h = tP * 1.35;
+      ctx.fillStyle = "#e11d48"; rectRedondo(ctx, x, yb - tP * 1.02, wP, h, h * .3); ctx.fill();
+      ctx.font = `900 ${Math.round(tP)}px ${FUENTE}`; ctx.fillStyle = "#ffffff"; ctx.textAlign = "center";
+      ctx.fillText(pctTxt, x + wP / 2, yb);
+    }
+    ctx.textAlign = horizontal ? "left" : "center";
+    yy += altoPr * k;
+  }
   if (sb_.lineas.length) {
     yy += 20 * k;
     ctx.fillStyle = conFoto ? "rgba(255,255,255,.92)" : colSub;

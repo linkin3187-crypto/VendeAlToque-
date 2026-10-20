@@ -78,7 +78,7 @@ function leerFiltrosCo() {
     texto: normalizar($("co-buscar").value.trim()),
     depto: $("co-depto").value, muni: $("co-muni").value,
     nivel: $("co-nivel").value, calif: parseFloat($("co-calif").value) || 0,
-    abierto: $("co-abierto").checked, vitrina: $("co-vitrina").checked, salud: $("co-salud").checked,
+    abierto: $("co-abierto").checked, vitrina: $("co-vitrina").checked, salud: $("co-salud").checked, promo: $("co-promo").checked,
     orden: $("co-orden").value
   };
 }
@@ -94,6 +94,7 @@ function baseCo(f) {
     if (f.abierto && estaAbierto(c.horario) !== true) return false;
     if (f.vitrina && !(vitrinaPublica(c) && c.nProductos > 0)) return false;
     if (f.salud && !muestraSelloSalud(c)) return false;   // fase 2AC.1
+    if (f.promo && !(c.promos || []).length) return false;   // fase 2AP-4b
     if (f.texto) {
       // Buscador inteligente (buscador.js): «postres» también encuentra pastelerías y panaderías
       if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, f.texto)) return false; }
@@ -167,6 +168,7 @@ function filtrosAQueryCo() {
   if (f.abierto) p.set("abierto", "1");
   if (f.vitrina) p.set("vitrina", "1");
   if (f.salud) p.set("salud", "1");
+  if (f.promo) p.set("promo", "1");
   if (f.orden && f.orden !== "abiertos" && f.orden !== "cercanos") p.set("orden", f.orden);
   return p.toString();
 }
@@ -185,7 +187,8 @@ function aplicarQueryCo(qs) {
   $("co-abierto").checked = p.get("abierto") === "1";
   $("co-vitrina").checked = p.get("vitrina") === "1";
   $("co-salud").checked = p.get("salud") === "1";
-  if (["nivel", "calif", "abierto", "vitrina", "salud"].some(k => p.get(k)) && $("co-panel").classList.contains("hidden")) $("co-btn-filtros").click();
+  $("co-promo").checked = p.get("promo") === "1";
+  if (["nivel", "calif", "abierto", "vitrina", "salud", "promo"].some(k => p.get(k)) && $("co-panel").classList.contains("hidden")) $("co-btn-filtros").click();
 }
 
 function pintarListaCo() {
@@ -230,7 +233,7 @@ function limpiarCo() {
   $("co-depto").value = ""; llenarMunisCo("");
   ["co-nivel", "co-calif"].forEach(id => { $(id).value = ""; });
   $("co-orden").value = "abiertos";
-  $("co-abierto").checked = false; $("co-vitrina").checked = false; $("co-salud").checked = false;
+  $("co-abierto").checked = false; $("co-vitrina").checked = false; $("co-salud").checked = false; $("co-promo").checked = false;
   tipoActivo = "todos";
   ubicacionCo = null;
   $("co-cerca").setAttribute("aria-pressed", "false");
@@ -331,7 +334,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const conRetraso = debounce(pintar, 250);
   $("co-buscar").addEventListener("input", conRetraso);
   $("co-depto").addEventListener("change", () => { llenarMunisCo(""); pintar(); });
-  ["co-muni", "co-nivel", "co-calif", "co-abierto", "co-vitrina", "co-salud"].forEach(id => $(id).addEventListener("change", pintar));
+  ["co-muni", "co-nivel", "co-calif", "co-abierto", "co-vitrina", "co-salud", "co-promo"].forEach(id => $(id).addEventListener("change", pintar));
   $("co-orden").addEventListener("change", async () => {
     if ($("co-orden").value === "cercanos" && !ubicacionCo) { $("co-orden").value = "abiertos"; await cercaDeMiCo(); return; }
     pintar();

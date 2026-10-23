@@ -4,6 +4,7 @@
 // ver, compartir (imagen + QR), rebajar, editar y eliminar. Muestra también los vencidos u ocultos.
 
 let misAnuncios = [];
+let numerosMios = null;   // M-0 (SQL 47): { id: {vistas, contactos, …} } o null si falta el SQL
 
 function estadoMiAnuncio(a) {
   if (a.estadoPub && a.estadoPub !== "activo") return ["🙈 Oculto por moderación", "bg-red-100 text-red-800", false];
@@ -16,6 +17,7 @@ function tarjetaMiAnuncio(a) {
   const foto = urlSegura(a.imagen);
   const [estado, clase, vivo] = estadoMiAnuncio(a);
   const rb = rebajaDe(a);
+  const consejo = vivo && numerosMios ? consejoNumeros(numerosMios[a.id] || NUM_CERO, a.fecha ? (Date.now() - a.fecha) / 864e5 : 0, !!a.precio) : null;
   return `<article data-id="${a.id}" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${vivo ? "" : "opacity-80"}">
     <div class="flex gap-3 p-3">
       <a href="anuncio.html?id=${a.id}" class="relative w-24 h-24 shrink-0 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden" aria-label="Ver ${esc(a.nombre)}">
@@ -29,6 +31,8 @@ function tarjetaMiAnuncio(a) {
         <p class="text-xs text-slate-500 mt-0.5">${esc([a.barrio, a.ciudad].filter(Boolean).join(", "))}${a.fecha ? " · publicado " + esc(haceCuanto(a.fecha)) : ""}</p>
       </div>
     </div>
+    ${numerosMios ? numerosAnuncioHTML(numerosMios[a.id] || NUM_CERO) : ""}
+    ${consejo ? `<p class="ma-consejo">💡 ${esc(consejo)}</p>` : ""}
     <div class="ma-herr" role="group" aria-label="Herramientas del anuncio">
       ${vivo ? `<button type="button" data-ma="compartir" class="ma-b ma-b-violeta" title="Imagen, texto y QR para WhatsApp y estados">📣 Compartir</button>` : ""}
       ${vivo && a.precio ? `<button type="button" data-ma="rebajar" class="ma-b ma-b-rosa" title="Baja el precio: sale con el anterior tachado y −% durante 15 días">📉 Rebajar</button>` : ""}
@@ -43,15 +47,37 @@ function pintarMisAnuncios() {
   $("ma-cuenta").textContent = misAnuncios.length ? "(" + misAnuncios.length + ")" : "";
   $("ma-lista").innerHTML = misAnuncios.map(tarjetaMiAnuncio).join("");
   $("ma-vacio").classList.toggle("hidden", misAnuncios.length > 0);
+  pintarResumenNumeros();
   // Una pista corta para descubrir las herramientas (la misma idea de la fase 2AP-4a)
   const vivos = misAnuncios.filter(a => estadoMiAnuncio(a)[2]);
-  const viejo = vivos.find(a => a.precio && !rebajaDe(a) && Date.now() - a.fecha > 7 * 864e5);
+  // Con los números (M-0) cada anuncio trae su propio consejo; arriba solo queda el aviso de vencimiento
+  const viejo = !numerosMios && vivos.find(a => a.precio && !rebajaDe(a) && Date.now() - a.fecha > 7 * 864e5);
   const vence = vivos.find(a => a.expira && a.expira - Date.now() < 5 * 864e5);
   const pista = vence ? `⏳ «${esc(vence.nombre)}» vence pronto. Compártelo hoy o, si ya lo vendiste, elimínalo.`
     : viejo ? `💡 ¿«${esc(viejo.nombre)}» aún no se vende? Toca <b>📉 Rebajar</b>: sale con el precio anterior tachado y llama más la atención.`
-    : vivos.length ? "💡 Toca <b>📣 Compartir</b> para mandar tu anuncio con foto y QR a tus grupos y estados de WhatsApp: es la forma más rápida de vender." : "";
+    : vivos.length && !numerosMios ? "💡 Toca <b>📣 Compartir</b> para mandar tu anuncio con foto y QR a tus grupos y estados de WhatsApp: es la forma más rápida de vender." : "";
   $("ma-pista").innerHTML = pista;
   $("ma-pista").classList.toggle("hidden", !pista);
+}
+
+// M-0: totales de todos mis anuncios (arriba de la lista)
+function pintarResumenNumeros() {
+  const caja = $("ma-resumen");
+  if (!numerosMios || !misAnuncios.length) { caja.classList.add("hidden"); return; }
+  const t = misAnuncios.reduce((s, a) => {
+    const n = numerosMios[a.id] || NUM_CERO;
+    ["vistas", "vistas7", "contactos", "guardados", "compartidos"].forEach(k => { s[k] += n[k]; });
+    return s;
+  }, { vistas: 0, vistas7: 0, contactos: 0, guardados: 0, compartidos: 0 });
+  const vivos = misAnuncios.filter(a => estadoMiAnuncio(a)[2]).length;
+  $("ma-resumen-vivos").textContent = `· ${vivos} publicado${vivos === 1 ? "" : "s"} de ${misAnuncios.length}`;
+  const cifra = (ico, num, txt, extra) => `<div class="ma-resumen-cifra"><b>${ico} ${num}</b><span>${txt}</span>${extra ? `<small>${extra}</small>` : ""}</div>`;
+  $("ma-resumen-cifras").innerHTML =
+    cifra("👁️", t.vistas, "vieron", t.vistas7 ? `+${t.vistas7} esta semana` : "") +
+    cifra("💬", t.contactos, "te contactaron", t.vistas ? `${Math.round(t.contactos * 100 / t.vistas)} de cada 100 que vieron` : "") +
+    cifra("❤️", t.guardados, "guardaron") +
+    cifra("📣", t.compartidos, "compartieron");
+  caja.classList.remove("hidden");
 }
 
 async function accionMiAnuncio(e) {
@@ -93,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ma-lista").addEventListener("click", e => { if (e.target.closest("[data-ma-editar]")) { try { sessionStorage.setItem("mf_tras_editar", "mis-anuncios"); } catch (err) { /* nada */ } } });
   $("ma-lista").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
   try {
-    misAnuncios = await cargarMisAnunciosTodos();
+    [misAnuncios, numerosMios] = await Promise.all([cargarMisAnunciosTodos(), cargarNumerosAnuncios()]);
     pintarMisAnuncios();
   } catch (err) {
     mostrarToast(mensajeError(err), "error");

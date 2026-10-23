@@ -117,6 +117,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `data.js`: `FRANJA_ROTACION` (20 por defecto), `cargarAjustesSitio`, `guardarAjusteSitio`; `compararRelevantes` usa la franja; `cargarComercios` carga los ajustes.
 - `editar-inicio.html/js`: sección «⚖️ Orden de comercios» (Amplia / Normal, consejo según cuántas tiendas completas hay y vista previa). Caché v88.
 
+### Fase M-0 · Números de cada anuncio para su dueño (SQL 47)
+- `supabase/47_numeros_anuncios.sql`: (1) `registrar_evento` ya no cuenta las visitas ni los contactos del **dueño** en su propio anuncio o tienda (`owner_id = auth.uid()`); si lo **comparte** se anota con la columna nueva `metricas_eventos.del_dueno = true` (para medir el uso de 📣 Compartir) y no suma en sus números; (2) `anuncio_numeros()` (security definer, solo `authenticated`, solo los anuncios de `auth.uid()`): personas distintas que vieron (total y 7 días), contactaron (whatsapp + llamar + como_llegar, y cada uno), compartieron, y guardados en `favoritos`. No crea tablas: lee `metricas_eventos` (2AJ).
+- `data.js`: `cargarNumerosAnuncios` (null si falta el SQL → la página no muestra números), `NUM_CERO`, `numerosAnuncioHTML`, `consejoNumeros(n, edadDias, conPrecio)`.
+- `mis-anuncios.html/js`: caja `#ma-resumen` (totales, «X de cada 100 que vieron», ⓘ ¿Cómo se cuentan?), fila `.ma-nums` y `.ma-consejo` en cada anuncio; con números, la pista de arriba solo avisa vencimientos. `privacidad.html`: el dueño ve cuántos, nunca quiénes. CSS `.ma-nums`, `.ma-resumen*`. Caché v89.
+- **Revertir:** PR → Revert. El SQL puede quedarse (la función no se usa y el dueño seguirá sin contarse, que es lo correcto).
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

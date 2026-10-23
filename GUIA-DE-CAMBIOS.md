@@ -108,6 +108,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `data.js`: `hashTexto`, `semillaOrden` (visitante + día), `rotacionDia`, `faltantesFicha`, `fichaIncompleta`, `esTiendaNueva`, `puntajeRelevancia`, `compararRelevantes`, `conVariedad`, `TEXTO_ORDEN_JUSTO`; `actualizadoEn` en el comercio.
 - `comercios.js` (`ordenarCo`, opción `relevantes`; `?orden=recomendados` sigue funcionando) y `app.js` (`comerciosFiltrados`, `pintarPromosInicio`) usan el orden justo. ⓘ `.orden-info` en `comercios.html` e `index.html`. `mi-tienda.js`: `#mt-ficha`. Caché v87.
 
+### Fase 2AU · Documentos privados
+- `ROADMAP.md`, `SEGURIDAD.md` y `PRUEBAS-FILTRO.md` quedan como una nota que dice dónde están: el Proyecto privado de Claude (`claude/…`). Desde ahora Claude actualiza el ROADMAP allá en cada PR.
+- Ojo: las versiones viejas siguen en el historial de GitHub mientras el repositorio sea público.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

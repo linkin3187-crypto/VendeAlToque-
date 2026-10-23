@@ -2,7 +2,7 @@
 
 Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con HTML, CSS y JavaScript puro, listo para GitHub Pages.
 
-> Estado: **Fase 2A (backend real con Supabase) — código listo para probar.** Los anuncios, cuentas, fotos, foro y reportes viven en Supabase; ya no en `localStorage`. Mira `ROADMAP.md`.
+> Estado: **Fase 2A (backend real con Supabase) — código listo para probar.** Los anuncios, cuentas, fotos, foro y reportes viven en Supabase; ya no en `localStorage`. El ROADMAP está en el Proyecto privado de Claude (ver `ROADMAP.md`).
 
 ## Archivos (todos en la raíz del repositorio, sin carpetas)
 
@@ -17,7 +17,7 @@ Clasificados de barrio con mapa, contacto directo por WhatsApp y foro. Hecho con
 | `foro.js` | Lógica del foro |
 | `styles.css` | Estilos que Tailwind no cubre |
 | `.nojekyll` | Le dice a GitHub Pages que no procese los archivos con Jekyll |
-| `README.md`, `GUIA-DE-CAMBIOS.md`, `ROADMAP.md` | Documentación |
+| `README.md`, `GUIA-DE-CAMBIOS.md` | Documentación técnica (el ROADMAP, la seguridad y las pruebas del filtro están en el Proyecto privado) |
 
 ## Cómo publicar en GitHub Pages
 

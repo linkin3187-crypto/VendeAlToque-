@@ -302,6 +302,29 @@ async function accionAviso(e) {
   } catch (err) { mostrarToast(mensajeError(err), "error"); b.disabled = false; b.textContent = "Guardar"; }
 }
 
+// ---------- 1c) Orden de comercios (fase 2AO.1 · SQL 46) ----------
+function franjaElegida() { const r = document.querySelector('input[name="or-franja"]:checked'); return r ? Number(r.value) : FRANJA_ROTACION; }
+function pintarVistaOrden() {
+  const guardada = FRANJA_ROTACION;
+  FRANJA_ROTACION = franjaElegida();                         // vista previa con lo elegido (sin guardar)
+  const completas = comercios.filter(c => c.activo !== false && c.nivel >= 2 && !fichaIncompleta(c) && faltantesFicha(c).length <= 1).length;
+  const lista = comercios.filter(c => c.activo !== false).slice().sort(compararRelevantes).slice(0, 6);
+  $("or-vista").innerHTML = lista.map(c => `<li>${esc(c.nombre)} <span class="text-xs text-slate-400">· ${puntajeRelevancia(c)} pts</span></li>`).join("") || "<li>Aún no hay comercios</li>";
+  FRANJA_ROTACION = guardada;
+  $("or-consejo").innerHTML = `Hoy hay <b>${completas}</b> tiendas verificadas con la ficha casi completa. ${completas < 30 ? "Mientras sean menos de 30, conviene la rotación <b>amplia</b>." : "Ya son más de 30: puedes pasar a <b>normal</b> para premiar la calidad."}`;
+}
+async function guardarOrden() {
+  const b = $("or-guardar"); b.disabled = true;
+  try {
+    await guardarAjusteSitio("rotacion_comercios", { franja: franjaElegida() });
+    FRANJA_ROTACION = franjaElegida();
+    $("or-estado").textContent = "✅ Guardado: ya se aplica en el inicio y el directorio";
+    mostrarToast("✅ Orden de comercios guardado");
+  } catch (err) {
+    mostrarToast(/ajustes_sitio/.test(err.message || "") ? "Primero ejecuta supabase/46_ajustes_sitio.sql" : mensajeError(err), "error");
+  } finally { b.disabled = false; }
+}
+
 async function elegirImagen(e, maxFondo, maxLado = 700) {
   const inp = e.target.closest('[data-c="archivo"]');
   if (!inp || !inp.files[0]) return null;
@@ -696,6 +719,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("ban-lista").insertAdjacentHTML("beforeend", filaBanner({ titulo: "", boton: "", destino: "#publicar", paleta: "indigo", icono1: "⭐", icono2: "", orden: 500, activo: true }));
     const f = $("ban-lista").lastElementChild; vistaBanner(f); f.querySelector('[data-c="titulo"]').focus();
   });
+
+  // Orden de comercios (fase 2AO.1)
+  const rOrden = document.querySelector(`input[name="or-franja"][value="${FRANJA_ROTACION}"]`); if (rOrden) rOrden.checked = true;
+  pintarVistaOrden();
+  document.querySelectorAll('input[name="or-franja"]').forEach(r => r.addEventListener("change", pintarVistaOrden));
+  $("or-guardar").addEventListener("click", guardarOrden);
 
   // Avisos y novedades (fase 2AR)
   pintarAvisosAdmin();

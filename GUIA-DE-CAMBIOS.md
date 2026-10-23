@@ -123,6 +123,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `mis-anuncios.html/js`: caja `#ma-resumen` (totales, «X de cada 100 que vieron», ⓘ ¿Cómo se cuentan?), fila `.ma-nums` y `.ma-consejo` en cada anuncio; con números, la pista de arriba solo avisa vencimientos. `privacidad.html`: el dueño ve cuántos, nunca quiénes. CSS `.ma-nums`, `.ma-resumen*`. Caché v89.
 - **Revertir:** PR → Revert. El SQL puede quedarse (la función no se usa y el dueño seguirá sin contarse, que es lo correcto).
 
+### Fase 2AV · Buscador del directorio en el celular
+- `comercios.html`: el buscador pasa a `#co-busca-sitio > #co-busca > .busca-co-in` con 🔎, `#co-buscar` (16 px: con menos el iPhone hace zoom), `#co-borrar` ✕ y `#co-ir` 🔍; debajo `#co-ejemplos`. El texto quieto es corto («Nombre, dirección o tipo») porque el anterior medía 458 px y la caja del celular 322.
+- `comercios.js`: `palabrasDirectorio` (tipos con negocios, primero los que más tienen), `ejemplosDirectorio` (un comercio real, una calle real, un tipo), `irAResultadosCo`, `conectarBuscadorCo` (Enter/🔍 cierran el teclado y muestran resultados; al bajar, la barra queda `.fija` arriba y el hueco guarda su alto; al escribir pegado vuelve al comienzo de la lista).
+- `buscador.js`: `animarLetrero(input, prefijo, {fuente, fijo})` acepta palabras propias (el inicio sigue igual). CSS `.busca-co*`, `.busca-ejemplos`. Caché v90.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

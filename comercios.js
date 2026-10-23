@@ -215,6 +215,7 @@ function pintarListaCo() {
 }
 
 function pintar() {
+  $("co-borrar").classList.toggle("hidden", !$("co-buscar").value);   // ✕ solo si hay texto (fase 2AV)
   const f = leerFiltrosCo();
   const base = baseCo(f);
   pintarTiposCo(base);
@@ -329,6 +330,68 @@ async function enviarSolicitud(e) {
   } finally { btn.disabled = false; }
 }
 
+// ---------- Buscador del directorio (fase 2AV) ----------
+// A: frase que se escribe sola con los tipos de negocio que hay · B: 🔍, ✕ y ejemplos tocables ·
+// C: al bajar por la lista el buscador queda pegado arriba de la pantalla.
+function palabrasDirectorio() {
+  const cuenta = {};
+  comercios.forEach(c => { cuenta[c.tipo] = (cuenta[c.tipo] || 0) + 1; });
+  const corta = t => t.nombre.split(" y ")[0].toLowerCase();
+  const conDatos = TIPOS_COMERCIO.filter(t => cuenta[t.id]).sort((a, b) => cuenta[b.id] - cuenta[a.id]).map(corta);
+  const resto = TIPOS_COMERCIO.filter(t => !cuenta[t.id] && t.id !== "otro").map(corta);
+  const vistas = new Set();
+  return conDatos.concat(resto).filter(p => p.length <= 16 && !vistas.has(p) && vistas.add(p)).slice(0, 12);
+}
+// Ejemplos con datos reales: un comercio, una dirección y tipos que sí tienen negocios
+function ejemplosDirectorio() {
+  const ej = [];
+  const buenos = comercios.filter(c => c.nombre && c.nombre.length <= 24).sort((a, b) => (b.nivel || 0) - (a.nivel || 0));
+  if (buenos[0]) ej.push(buenos[0].nombre);
+  const dir = comercios.map(c => ((c.direccion || "").match(/^\s*((?:cra|carrera|cl|calle|av|avenida|cr|kr|dg|diagonal|tv|transversal)\.?\s+\d+[a-z]?)\b/i) || [])[1]).find(Boolean);
+  if (dir) ej.push(dir.replace(/\s+/g, " "));
+  palabrasDirectorio().slice(0, 3).forEach(p => ej.push(p));
+  return [...new Set(ej)].slice(0, 3);   // 3 caben en una línea del celular
+}
+function pintarEjemplosCo() {
+  const ej = ejemplosDirectorio();
+  $("co-ejemplos").innerHTML = ej.length ? "Ej.: " + ej.map(x => `<button type="button" data-ej="${esc(x)}">${esc(x)}</button>`).join(" · ") : "";
+  $("co-ejemplos").classList.toggle("hidden", !ej.length);
+}
+// Lleva la vista al comienzo de los resultados (debajo del buscador pegado, si lo está)
+function irAResultadosCo() {
+  const fija = $("co-busca").classList.contains("fija");
+  const alto = fija ? $("co-busca").offsetHeight + 8 : 12;
+  const y = $("co-contador").getBoundingClientRect().top + scrollY - alto;
+  if (fija || y < scrollY) window.scrollTo({ top: y, behavior: "smooth" });
+}
+function conectarBuscadorCo() {
+  const input = $("co-buscar"), sitio = $("co-busca-sitio"), barra = $("co-busca");
+  if (typeof animarLetrero === "function") animarLetrero(input, "Busca ", { fuente: palabrasDirectorio, fijo: "Nombre, dirección o tipo" });
+  pintarEjemplosCo();
+  const buscarYa = () => { input.blur(); pintar(); irAResultadosCo(); };   // cierra el teclado y muestra los resultados
+  $("co-ir").addEventListener("click", () => { if (input.value.trim()) buscarYa(); else input.focus(); });
+  input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarYa(); } });
+  $("co-borrar").addEventListener("click", () => { input.value = ""; pintar(); input.focus(); });
+  $("co-ejemplos").addEventListener("click", e => {
+    const b = e.target.closest("[data-ej]");
+    if (b) { input.value = b.dataset.ej; buscarYa(); }
+  });
+  // Pegado arriba: cuando el lugar del buscador sale por arriba de la pantalla
+  let fija = false;
+  const revisar = () => {
+    const debe = sitio.getBoundingClientRect().bottom < 0;
+    if (debe === fija) return;
+    fija = debe;
+    sitio.style.height = fija ? sitio.offsetHeight + "px" : "";   // guarda el hueco para que la página no salte
+    barra.classList.toggle("fija", fija);
+  };
+  let pend = false;
+  window.addEventListener("scroll", () => { if (!pend) { pend = true; requestAnimationFrame(() => { pend = false; revisar(); }); } }, { passive: true });
+  // Si se escribe con el buscador pegado, la lista se acorta: volver al comienzo de los resultados
+  input.addEventListener("input", debounce(() => { if (fija) irAResultadosCo(); }, 300));
+  revisar();
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarMunicipios();
   await Promise.all([cargarComercios(), cargarSesion()]);
@@ -377,6 +440,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const pedido = parseInt(qs.get("solicitar"), 10);
   const aReportar = comercios.find(x => x.id === parseInt(qs.get("reportar"), 10));
   pintar();
+  conectarBuscadorCo();
   if (pedido) abrirSolicitud(pedido, qs.get("tipo"));
   if (aReportar && !pedido) abrirReporteComercio(aReportar);
 });

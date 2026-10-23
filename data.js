@@ -2392,6 +2392,46 @@ function numerosPromoHTML(n, terminada) {
     <span title="Llegaron tocándola en «Promos cerca de ti» del inicio">🏠 ${n.inicio} desde el inicio</span>
     <span title="Tocaron «Pedir esta promo»">💬 ${n.whatsapp} ${n.whatsapp === 1 ? "pidió" : "pidieron"} por WhatsApp</span></p>`;
 }
+// ===== M-0 · Números de cada anuncio para su dueño (SQL 47) =====
+// { [anuncioId]: { vistas, vistas7, contactos, whatsapp, llamar, comoLlegar, compartidos, guardados } }
+// o null si falta el SQL 47 (entonces la página no muestra números).
+async function cargarNumerosAnuncios() {
+  try {
+    const { data, error } = await sb.rpc("anuncio_numeros");
+    if (error) return null;
+    const r = {};
+    (data || []).forEach(x => {
+      r[Number(x.anuncio_id)] = {
+        vistas: Number(x.vistas) || 0, vistas7: Number(x.vistas_7d) || 0, contactos: Number(x.contactos) || 0,
+        whatsapp: Number(x.whatsapp) || 0, llamar: Number(x.llamar) || 0, comoLlegar: Number(x.como_llegar) || 0,
+        compartidos: Number(x.compartidos) || 0, guardados: Number(x.guardados) || 0
+      };
+    });
+    return r;
+  } catch (e) { return null; }
+}
+const NUM_CERO = { vistas: 0, vistas7: 0, contactos: 0, whatsapp: 0, llamar: 0, comoLlegar: 0, compartidos: 0, guardados: 0 };
+function numerosAnuncioHTML(n) {
+  if (!n) return "";
+  const det = [n.whatsapp && `💬 ${n.whatsapp} WhatsApp`, n.llamar && `📞 ${n.llamar} llamada${n.llamar === 1 ? "" : "s"}`, n.comoLlegar && `🗺️ ${n.comoLlegar} Cómo llegar`].filter(Boolean).join(" · ");
+  const celda = (ico, num, txt, extra, titulo) => `<div class="ma-num" title="${esc(titulo)}"><b>${ico} ${num}</b><span>${txt}</span>${extra ? `<small>${extra}</small>` : ""}</div>`;
+  return `<div class="ma-nums" aria-label="Números de este anuncio">
+    ${celda("👁️", n.vistas, n.vistas === 1 ? "persona lo vio" : "personas lo vieron", n.vistas7 ? `+${n.vistas7} esta semana` : "", "Personas distintas que abrieron el anuncio")}
+    ${celda("💬", n.contactos, n.contactos === 1 ? "te contactó" : "te contactaron", det, "Personas distintas que tocaron WhatsApp, Llamar o Cómo llegar")}
+    ${celda("❤️", n.guardados, n.guardados === 1 ? "lo guardó" : "lo guardaron", "", "Personas que lo tienen en sus favoritos")}
+    ${celda("📣", n.compartidos, n.compartidos === 1 ? "lo compartió" : "lo compartieron", "", "Otras personas que lo compartieron")}
+  </div>`;
+}
+// Consejo según los números (null si no hay nada que decir). edadDias = días desde que se publicó.
+function consejoNumeros(n, edadDias, conPrecio) {
+  if (!n) return null;
+  if (n.vistas >= 15 && n.contactos === 0) return conPrecio
+    ? "Muchos lo ven pero nadie escribe: revisa el precio (📉 Rebajar) o pon una foto más clara."
+    : "Muchos lo ven pero nadie escribe: pon una foto más clara y más detalles en la descripción.";
+  if (n.vistas < 5 && edadDias >= 2) return "Pocos lo han visto todavía: tócale 📣 Compartir y mándalo a tus grupos y estados de WhatsApp.";
+  if (n.contactos > 0 && n.guardados > n.contactos) return "Varias personas lo guardaron para después: si le bajas un poco el precio (📉 Rebajar), lo verán rebajado cuando vuelvan a mirarlo.";
+  return null;
+}
 // Línea corta para las tarjetas del directorio, el inicio y el buscador
 function lineaPromoHTML(c, clase) {
   const p = (c.promos || [])[0];

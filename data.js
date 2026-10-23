@@ -831,7 +831,7 @@ function puntajeRelevancia(c) {
   p += (4 - falta) * 5;                                                    // foto, horario, contacto y vitrina: 5 c/u
   if (c.ownerId && c.actualizadoEn && Date.now() - Date.parse(c.actualizadoEn) < 30 * 864e5) p += 5;   // la cuida su dueño
   if ((c.promos || []).length) p += 8;                                     // promo vigente
-  if (typeof muestraSelloSalud === "function" && muestraSelloSalud(c)) p += 4;
+  if (typeof muestraSelloSalud === "function" && muestraSelloSalud(c)) p += 10;   // 🧾: sube un escalón entre las droguerías
   if (esTiendaNueva(c)) p += 10;                                           // fase 2AO-B: impulso a las recién verificadas
   return p;
 }
@@ -1522,7 +1522,7 @@ function leerDatosSanitariosOpcional(pre) {
   return vacio ? { datos: null } : leerDatosSanitarios(pre);
 }
 // Lo que gana quien los llena (se muestra en registro, reclamo y Mi tienda)
-const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha verificada muestra el distintivo <b>«🧾 NIT y director técnico declarados»</b> (más confianza), sales <b>primero</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
+const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha verificada muestra el distintivo <b>«🧾 NIT y director técnico declarados»</b> (más confianza), sales <b>más arriba</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
 
 async function cargarDatosSanitarios(comercioId) {
   const { data, error } = await sb.from("datos_sanitarios").select("*").eq("comercio_id", comercioId).maybeSingle();

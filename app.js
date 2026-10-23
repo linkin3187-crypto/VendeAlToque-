@@ -233,7 +233,8 @@ function pintarPromosInicio() {
   const porId = new Map(comercios.map(c => [c.id, c]));
   const lista = promosVigentes.filter(p => p.desde <= hoyBogota()).map(p => ({ p, c: porId.get(p.comercioId) }))
     .filter(x => x.c && vitrinaPublica(x.c))
-    .sort((a, b) => (b.c.ciudad === ciudad) - (a.c.ciudad === ciudad) || a.p.hasta.localeCompare(b.p.hasta) || pctPromo(b.p) - pctPromo(a.p))
+    // Fase 2AO: tu ciudad primero → las que terminan HOY → rotación justa del día
+    .sort((a, b) => (b.c.ciudad === ciudad) - (a.c.ciudad === ciudad) || ((b.p.hasta === hoyBogota()) - (a.p.hasta === hoyBogota())) || (rotacionDia("p" + a.p.id) - rotacionDia("p" + b.p.id)))
     .slice(0, 12);
   sec.classList.toggle("hidden", !lista.length);
   $("pi-lista").innerHTML = lista.map(({ p, c }) => {
@@ -284,9 +285,11 @@ function distanciaComercio(c) {
 
 function comerciosFiltrados() {
   // Con «Comercios cerca de mí»: los más cercanos primero. Sin él: verificados, con productos y por nombre.
-  return comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio))
+  const l = comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio))
     .sort((x, y) => ubicacionComercios ? distanciaComercio(x) - distanciaComercio(y)
-      : (grupoHorario(x) - grupoHorario(y)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es"));   // fase 2AI: abiertos primero
+      : (grupoHorario(x) - grupoHorario(y)) || compararRelevantes(x, y));   // fase 2AI: abiertos primero · 2AO: rotación justa
+  // Fase 2AO-C: en «Todos», variedad (máx. 2 seguidos del mismo tipo) sin sacar a nadie de su grupo
+  return !ubicacionComercios && catComercio === "todos" ? conVariedad(l, c => grupoHorario(c) * 2 + (fichaIncompleta(c) ? 1 : 0)) : l;
 }
 
 // Categorías (con cuántos hay) y municipios de esta sección
@@ -323,7 +326,7 @@ function pintarFiltrosComercios() {
   sel.classList.toggle("hidden", ids.length < 2);
   $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
   $("comercios-orden").textContent = ubicacionComercios ? "📍 Ordenados por cercanía a ti (de toda la zona)"
-    : "🟢 Abiertos primero, luego verificados · toca «Comercios cerca de mí» para ordenarlos por cercanía";
+    : "🟢 Abiertos primero; entre parecidos el orden cambia cada día · toca «Comercios cerca de mí» para ordenarlos por cercanía";
 }
 
 function tarjetaComercioFeed(c) {

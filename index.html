@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=86" />
-  <link rel="stylesheet" href="tw.css?v=86">
+  <link rel="stylesheet" href="styles.css?v=87" />
+  <link rel="stylesheet" href="tw.css?v=87">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
 
@@ -166,7 +166,7 @@
   <section id="promos-inicio" class="hidden pt-5" aria-labelledby="pi-titulo">
     <div class="flex items-baseline justify-between gap-2 mb-1.5">
       <h2 id="pi-titulo" class="text-lg sm:text-xl font-black text-rose-700 whitespace-nowrap">🔥 Promos cerca de ti</h2>
-      <a href="comercios.html?promo=1" class="text-xs font-semibold text-rose-700 hover:underline whitespace-nowrap">Ver todas →</a>
+      <span class="inline-flex items-center gap-2"><details class="orden-info"><summary title="¿Por qué veo este orden?" aria-label="¿Por qué veo este orden?">ⓘ</summary><div class="orden-info-txt" data-orden-info></div></details><a href="comercios.html?promo=1" class="text-xs font-semibold text-rose-700 hover:underline whitespace-nowrap">Ver todas →</a></span>
     </div>
     <div id="pi-lista" class="sel-pista custom-scrollbar"></div>
   </section>
@@ -367,7 +367,7 @@
         <label for="comercios-muni" id="comercios-muni-etq" class="hidden text-xs font-bold text-slate-500">🏘️ Municipio</label>
         <select id="comercios-muni" aria-label="Municipio" class="hidden border border-slate-300 rounded-lg p-1.5 text-sm bg-white"></select>
         <button type="button" id="btn-cerca-comercios" aria-pressed="false" class="btn-cerca btn-cerca-chico whitespace-nowrap">📡 Comercios cerca de mí</button>
-        <span id="comercios-orden" class="text-xs text-slate-500 basis-full sm:basis-auto"></span>
+        <span class="text-xs text-slate-500 basis-full sm:basis-auto inline-flex items-center gap-1.5"><span id="comercios-orden"></span><details class="orden-info"><summary title="¿Por qué veo este orden?" aria-label="¿Por qué veo este orden?">ⓘ</summary><div class="orden-info-txt" data-orden-info></div></details></span>
       </div>
       <div id="comercios-cats" class="flex gap-2 overflow-x-auto pb-2 mb-3 custom-scrollbar" role="tablist" aria-label="Categorías de comercios"></div>
       <div id="comercios-feed" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -666,16 +666,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=86"></script>
-  <script src="data.js?v=86"></script>
-  <script src="foro.js?v=86"></script>
-  <script src="carrusel.js?v=86"></script>
-  <script src="buscador.js?v=86"></script>
-  <script src="anuncios-comun.js?v=86"></script>
-  <script src="qr.js?v=86"></script>
-  <script src="piezas.js?v=86"></script>
-  <script src="compartir.js?v=86"></script>
-  <script src="app.js?v=86"></script>
-  <script src="navegacion.js?v=86"></script>
+  <script src="utils.js?v=87"></script>
+  <script src="data.js?v=87"></script>
+  <script src="foro.js?v=87"></script>
+  <script src="carrusel.js?v=87"></script>
+  <script src="buscador.js?v=87"></script>
+  <script src="anuncios-comun.js?v=87"></script>
+  <script src="qr.js?v=87"></script>
+  <script src="piezas.js?v=87"></script>
+  <script src="compartir.js?v=87"></script>
+  <script src="app.js?v=87"></script>
+  <script src="navegacion.js?v=87"></script>
 </body>
 </html>

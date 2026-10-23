@@ -835,10 +835,31 @@ function puntajeRelevancia(c) {
   if (esTiendaNueva(c)) p += 10;                                           // fase 2AO-B: impulso a las recién verificadas
   return p;
 }
-// Comparador «Relevantes»: completas antes que incompletas → franja de puntaje (de 10 en 10) → rotación del día
+// Fase 2AO.1: ancho de la franja que rota (lo eliges en «🎨 Editar inicio → ⚖️ Orden de comercios»; SQL 46)
+// 20 = amplia (se turnan más tiendas el primer lugar; recomendada en el piloto) · 10 = normal (pesa más la calidad)
+let FRANJA_ROTACION = 20;
+let _ajustesPromesa = null;
+function cargarAjustesSitio() {
+  if (!_ajustesPromesa) _ajustesPromesa = (async () => {
+    try {
+      const { data, error } = await sb.from("ajustes_sitio").select("clave, valor");
+      if (error || !data) return null;
+      const r = data.find(x => x.clave === "rotacion_comercios");
+      const f = r && r.valor ? Number(r.valor.franja) : 0;
+      if (f === 10 || f === 20) FRANJA_ROTACION = f;
+      return data;
+    } catch (e) { return null; }
+  })();
+  return _ajustesPromesa;
+}
+async function guardarAjusteSitio(clave, valor) {
+  const { error } = await sb.from("ajustes_sitio").upsert({ clave, valor }, { onConflict: "clave" });
+  if (error) throw error;
+}
+// Comparador «Relevantes»: completas antes que incompletas → franja de puntaje → rotación del día
 function compararRelevantes(x, y) {
   return (fichaIncompleta(x) - fichaIncompleta(y))
-    || (Math.floor(puntajeRelevancia(y) / 10) - Math.floor(puntajeRelevancia(x) / 10))
+    || (Math.floor(puntajeRelevancia(y) / FRANJA_ROTACION) - Math.floor(puntajeRelevancia(x) / FRANJA_ROTACION))
     || (rotacionDia("c" + x.id) - rotacionDia("c" + y.id));
 }
 // Fase 2AO-C: variedad — en «Todos», máximo 2 seguidos del mismo tipo (sin sacar a nadie de su grupo)
@@ -899,7 +920,7 @@ async function cargarComercios() {
   const { data, error } = await sb.from("comercios").select("*").eq("activo", true).limit(2000);
   if (error) { console.error("comercios:", error); comercios = []; return comercios; }
   comercios = (data || []).map(filaAComercio);
-  await cargarPromosVigentes();   // fase 2AP-4a: 🔥 en las tarjetas
+  await Promise.all([cargarPromosVigentes(), cargarAjustesSitio()]);   // fase 2AP-4a: 🔥 en las tarjetas · 2AO.1: rotación
   comercios.forEach(c => { c.promos = promosDeComercio(c.id); });
   return comercios;
 }

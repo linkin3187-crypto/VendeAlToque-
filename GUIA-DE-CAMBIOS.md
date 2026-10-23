@@ -112,6 +112,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `ROADMAP.md`, `SEGURIDAD.md` y `PRUEBAS-FILTRO.md` quedan como una nota que dice dónde están: el Proyecto privado de Claude (`claude/…`). Desde ahora Claude actualiza el ROADMAP allá en cada PR.
 - Ojo: las versiones viejas siguen en el historial de GitHub mientras el repositorio sea público.
 
+### Fase 2AO.1 · Rotación amplia o normal (SQL 46)
+- `supabase/46_ajustes_sitio.sql`: tabla `ajustes_sitio` (clave → valor; todos leen, solo `es_admin()` cambia) con `rotacion_comercios = {franja: 20}`.
+- `data.js`: `FRANJA_ROTACION` (20 por defecto), `cargarAjustesSitio`, `guardarAjusteSitio`; `compararRelevantes` usa la franja; `cargarComercios` carga los ajustes.
+- `editar-inicio.html/js`: sección «⚖️ Orden de comercios» (Amplia / Normal, consejo según cuántas tiendas completas hay y vista previa). Caché v88.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

@@ -771,7 +771,7 @@ function filaAComercio(r) {
     foto: r.foto_url || "", lat: parseFloat(r.lat), lng: parseFloat(r.lng),
     verificado: !!r.verificado, activo: !!r.activo,
     nivel: Number(r.nivel_verificacion) || (r.verificado ? 2 : 1),          // 1 ubicado · 2 por teléfono · 3 en persona
-    verificadoEn: r.verificado_en || null,
+    verificadoEn: r.verificado_en || null, actualizadoEn: r.actualizado_en || null,   // fase 2AO: actividad
     ownerId: r.owner_id || null, descripcion: r.descripcion || "", whatsapp: r.whatsapp || "",
     recoge: !!r.recoge, domicilio: !!r.domicilio, domicilioInfo: r.domicilio_info || "",
     nProductos: Number(r.n_productos) || 0, fuente: r.fuente || "",
@@ -789,6 +789,85 @@ function filaAComercio(r) {
     limiteProductos: Number.isInteger(r.limite_productos) ? r.limite_productos : LIMITE_PRODUCTOS_GRATIS   // fase 2AG
   };
 }
+
+// =====================================================================
+// Fase 2AO · ORDEN JUSTO de comercios y promos
+// Los filtros de la persona siempre mandan. Entre comercios parecidos el orden ROTA:
+// cada visitante ve un orden propio que se mantiene todo el día; al otro día (o para otra persona) cambia.
+// Así todas las tiendas pasan por arriba y nadie gana solo por empezar con «A».
+// =====================================================================
+function hashTexto(s) {   // FNV-1a de 32 bits: mismo texto → mismo número
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+let _semillaOrden = null;
+function semillaOrden() {
+  if (_semillaOrden) return _semillaOrden;
+  let v = typeof idVisitante === "function" ? idVisitante() : null;
+  if (!v) { try { v = sessionStorage.getItem("mf_semilla") || Math.random().toString(36).slice(2); sessionStorage.setItem("mf_semilla", v); } catch (e) { v = "x"; } }
+  _semillaOrden = v + "|" + new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10);   // persona + día (Bogotá)
+  return _semillaOrden;
+}
+const rotacionDia = clave => hashTexto(semillaOrden() + ":" + clave) / 4294967296;   // 0…1, fijo por persona y día
+const DIAS_TIENDA_NUEVA = 14;
+// Lo que le falta a la ficha (también lo ve el dueño en Mi tienda para subir)
+function faltantesFicha(c) {
+  const f = [];
+  if (!c.whatsapp && !c.telefono) f.push("WhatsApp o teléfono");
+  if (!(c.fotos && c.fotos.length) && !c.foto) f.push("una foto");
+  if (!c.horario) f.push("el horario");
+  if (!(c.nProductos > 0)) f.push("productos en tu vitrina");
+  return f;
+}
+// Ficha «incompleta» (sin forma de contacto o sin foto): sale al final de su grupo, pero sigue rotando
+const fichaIncompleta = c => (!c.whatsapp && !c.telefono) || (!(c.fotos && c.fotos.length) && !c.foto);
+const esTiendaNueva = c => c.nivel >= 2 && !!c.verificadoEn && Date.now() - Date.parse(c.verificadoEn) < DIAS_TIENDA_NUEVA * 864e5;
+// Puntaje «Relevantes»: verificación + calificación (mín. 3 opiniones) + ficha completa + actividad + promo + nueva
+function puntajeRelevancia(c) {
+  let p = c.nivel >= 3 ? 30 : c.nivel === 2 ? 20 : 0;
+  if ((c.nCalif || 0) >= 3) p += Math.max(0, Math.min(10, ((c.calif || 0) - 3) * 5));
+  const falta = faltantesFicha(c).length;
+  p += (4 - falta) * 5;                                                    // foto, horario, contacto y vitrina: 5 c/u
+  if (c.ownerId && c.actualizadoEn && Date.now() - Date.parse(c.actualizadoEn) < 30 * 864e5) p += 5;   // la cuida su dueño
+  if ((c.promos || []).length) p += 8;                                     // promo vigente
+  if (typeof muestraSelloSalud === "function" && muestraSelloSalud(c)) p += 10;   // 🧾: sube un escalón entre las droguerías
+  if (esTiendaNueva(c)) p += 10;                                           // fase 2AO-B: impulso a las recién verificadas
+  return p;
+}
+// Comparador «Relevantes»: completas antes que incompletas → franja de puntaje (de 10 en 10) → rotación del día
+function compararRelevantes(x, y) {
+  return (fichaIncompleta(x) - fichaIncompleta(y))
+    || (Math.floor(puntajeRelevancia(y) / 10) - Math.floor(puntajeRelevancia(x) / 10))
+    || (rotacionDia("c" + x.id) - rotacionDia("c" + y.id));
+}
+// Fase 2AO-C: variedad — en «Todos», máximo 2 seguidos del mismo tipo (sin sacar a nadie de su grupo)
+function conVariedad(lista, grupo) {
+  const g = c => (grupo ? grupo(c) : 0);
+  const resto = lista.slice(), sal = [];
+  while (resto.length) {
+    const n = sal.length, t1 = n >= 1 ? sal[n - 1].tipo : null, t2 = n >= 2 ? sal[n - 2].tipo : null;
+    const g0 = g(resto[0]);
+    const enGrupo = resto.filter(c => g(c) === g0);
+    const triple = c => t1 && t1 === t2 && c.tipo === t1;
+    // el tipo que más queda en el grupo: si «sobra», se reparte para no amontonarlo al final
+    const cuenta = {}; enGrupo.forEach(c => { cuenta[c.tipo] = (cuenta[c.tipo] || 0) + 1; });
+    const mayor = Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a])[0];
+    const otros = enGrupo.length - cuenta[mayor];
+    let i = 0;
+    if (triple(resto[0])) {
+      const j = resto.findIndex(c => g(c) === g0 && c.tipo !== t1);
+      if (j > 0) i = j;
+    } else if (resto[0].tipo !== mayor && cuenta[mayor] > 2 * otros) {
+      const j = resto.findIndex(c => g(c) === g0 && c.tipo === mayor && !triple(c));
+      if (j > 0) i = j;
+    }
+    sal.push(resto.splice(i, 1)[0]);
+  }
+  return sal;
+}
+document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("[data-orden-info]").forEach(el => { el.innerHTML = TEXTO_ORDEN_JUSTO; }));
+const TEXTO_ORDEN_JUSTO = "Primero los abiertos y los verificados con la ficha completa. Entre comercios parecidos el orden <b>cambia cada día</b> para que todos tengan su turno arriba; las tiendas recién verificadas suben unos días. Nadie paga por este orden: lo pagado, cuando exista, dirá siempre «Destacado». Si tocas «Cerca de mí» u otro orden, manda tu elección.";
 
 // De dónde salió un comercio (para ordenar el trabajo del administrador)
 const ORIGENES = {
@@ -1443,7 +1522,7 @@ function leerDatosSanitariosOpcional(pre) {
   return vacio ? { datos: null } : leerDatosSanitarios(pre);
 }
 // Lo que gana quien los llena (se muestra en registro, reclamo y Mi tienda)
-const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha verificada muestra el distintivo <b>«🧾 NIT y director técnico declarados»</b> (más confianza), sales <b>primero</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
+const BENEFICIOS_SALUD = "Son <b>opcionales</b>. Si los llenas y Merkap los revisa, tu ficha verificada muestra el distintivo <b>«🧾 NIT y director técnico declarados»</b> (más confianza), sales <b>más arriba</b> entre las droguerías de tu zona y tendrás hecho el <b>primer paso</b> para cuando Merkap abra la venta de medicamentos de venta libre.";
 
 async function cargarDatosSanitarios(comercioId) {
   const { data, error } = await sb.from("datos_sanitarios").select("*").eq("comercio_id", comercioId).maybeSingle();

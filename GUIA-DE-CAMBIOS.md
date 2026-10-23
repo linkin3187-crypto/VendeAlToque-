@@ -104,6 +104,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `index.html`/`app.js`: sale `#seccion-mis-anuncios`; `#menu-mis-anuncios` es enlace; `#btn-mi-tienda-enc` junto al perfil (clase `con-tienda` en el encabezado); `index.html#mis-anuncios` redirige a la página nueva; tras editar desde «Mis anuncios» vuelve allá (`mf_tras_editar`).
 - `navegacion.js`: «Yo → Mis anuncios» lleva a la página. Caché v86.
 
+### Fase 2AO · Orden justo de comercios y promos
+- `data.js`: `hashTexto`, `semillaOrden` (visitante + día), `rotacionDia`, `faltantesFicha`, `fichaIncompleta`, `esTiendaNueva`, `puntajeRelevancia`, `compararRelevantes`, `conVariedad`, `TEXTO_ORDEN_JUSTO`; `actualizadoEn` en el comercio.
+- `comercios.js` (`ordenarCo`, opción `relevantes`; `?orden=recomendados` sigue funcionando) y `app.js` (`comerciosFiltrados`, `pintarPromosInicio`) usan el orden justo. ⓘ `.orden-info` en `comercios.html` e `index.html`. `mi-tienda.js`: `#mt-ficha`. Caché v87.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

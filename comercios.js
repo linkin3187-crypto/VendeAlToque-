@@ -109,15 +109,18 @@ function baseCo(f) {
 
 function ordenarCo(lista, orden) {
   const dist = c => (ubicacionCo && tieneCoords(c)) ? distanciaKm(ubicacionCo, c) : Infinity;
-  // Fase 2AC.1: entre droguerías y naturistas, las que tienen el distintivo 🧾 salen primero
-  const sello = c => muestraSelloSalud(c) ? 1 : 0;
-  const recomendados = (x, y) => (sello(y) - sello(x)) || (y.nivel - x.nivel) || (y.nProductos - x.nProductos) || x.nombre.localeCompare(y.nombre, "es");
+  // Fase 2AO: «Relevantes» con rotación justa del día (antes «Recomendados», con desempate por nombre)
+  const variedad = tipoActivo === "todos";
   if (orden === "cercanos" && ubicacionCo) return lista.sort((x, y) => dist(x) - dist(y));
-  // Fase 2AI (por defecto): abiertos → abren pronto → sin horario → cerrados; dentro de cada grupo, el orden recomendado
-  if (orden === "abiertos") return lista.map(c => [grupoHorario(c), c]).sort((a, b) => (a[0] - b[0]) || recomendados(a[1], b[1])).map(x => x[1]);
-  if (orden === "calificacion") return lista.sort((x, y) => (puntajeCalif(y) - puntajeCalif(x)) || recomendados(x, y));
+  // Fase 2AI (por defecto): abiertos → abren pronto → sin horario → cerrados; dentro de cada grupo, el orden relevante
+  if (orden === "abiertos") {
+    const l = lista.map(c => [grupoHorario(c), c]).sort((a, b) => (a[0] - b[0]) || compararRelevantes(a[1], b[1])).map(x => x[1]);
+    return variedad ? conVariedad(l, c => grupoHorario(c) * 2 + (fichaIncompleta(c) ? 1 : 0)) : l;
+  }
+  if (orden === "calificacion") return lista.sort((x, y) => (puntajeCalif(y) - puntajeCalif(x)) || compararRelevantes(x, y));
   if (orden === "nombre") return lista.sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
-  return lista.sort(recomendados);
+  const l = lista.sort(compararRelevantes);
+  return variedad ? conVariedad(l, c => (fichaIncompleta(c) ? 1 : 0)) : l;
 }
 
 // Departamentos y municipios: solo los que tienen comercios, con cuántos hay
@@ -183,7 +186,7 @@ function aplicarQueryCo(qs) {
   elegir("co-muni", p.get("muni"));
   elegir("co-nivel", p.get("nivel"));
   elegir("co-calif", p.get("calif"));
-  elegir("co-orden", p.get("orden"));
+  elegir("co-orden", p.get("orden") === "recomendados" ? "relevantes" : p.get("orden"));   // fase 2AO: enlaces viejos
   $("co-abierto").checked = p.get("abierto") === "1";
   $("co-vitrina").checked = p.get("vitrina") === "1";
   $("co-salud").checked = p.get("salud") === "1";

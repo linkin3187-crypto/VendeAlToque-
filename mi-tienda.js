@@ -27,6 +27,15 @@ function pintarCabecera() {
       + (saludPendiente(actual) ? " Cuando Merkap revise tus <b>datos sanitarios</b>, tu ficha verificada mostrará el distintivo «🧾 NIT y director técnico declarados»." : "")
     : !actual.activo ? "🙈 Tu negocio está oculto en el mapa. Escríbenos si crees que es un error."
     : "📍 <b>Tu negocio YA aparece en el mapa y en el directorio</b>, con la etiqueta «Ubicado». Lo que aún no ven los clientes son <b>tus productos</b>: tu vitrina se publica cuando Merkap confirme tu negocio por WhatsApp o llamada (sello «Verificado»). Mientras tanto, prepara tus productos.";
+  // Fase 2AO-E: qué le falta a la ficha para salir más arriba (sin pagar)
+  let fi = $("mt-ficha");
+  if (!fi) { e.insertAdjacentHTML("afterend", '<p id="mt-ficha" class="mt-ficha" role="status"></p>'); fi = $("mt-ficha"); }
+  const falta = faltantesFicha(actual);
+  fi.classList.toggle("completa", !falta.length);
+  fi.innerHTML = !actual.activo ? "" : falta.length
+    ? `📈 <b>Completa tu ficha para salir más arriba</b> en el directorio y el inicio: te falta ${esc(falta.length > 1 ? falta.slice(0, -1).join(", ") + " y " + falta[falta.length - 1] : falta[0])}.`
+    : "⭐ <b>Tu ficha está completa.</b> Sales en el grupo de arriba; entre tiendas parecidas el orden cambia cada día para que todas tengan su turno.";
+  fi.classList.toggle("hidden", !actual.activo);
   $("mt-ver").href = "tienda.html?id=" + actual.id;
   // Fase 2AP-3: «📣 Comparte tu tienda» (si está activa en el mapa)
   $("mt-compartir").classList.toggle("hidden", !actual.activo);

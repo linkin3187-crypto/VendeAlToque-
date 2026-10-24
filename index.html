@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=104" />
-  <link rel="stylesheet" href="tw.css?v=104">
+  <link rel="stylesheet" href="styles.css?v=105" />
+  <link rel="stylesheet" href="tw.css?v=105">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
   <!-- Íconos de línea de las tarjetas de comercio (fase V-2b · V-2d) -->
@@ -334,8 +334,31 @@
     <!-- MAPA: en celular va DESPUÉS de las publicaciones y más bajito, con «Ampliar»;
          en computador queda a la derecha y fijo al hacer scroll -->
     <section id="seccion-mapa" class="lg:col-span-5 lg:sticky lg:top-20 self-start">
-      <div class="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-100">
-        <div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+      <!-- Fase 2AE: en el celular el mapa va «plegado» en una tarjeta viva; al tocarla se abre a pantalla completa -->
+      <div id="mapa-plegado" class="mapa-plegado lg:hidden">
+        <button type="button" id="mp-abrir" class="mp-vista" aria-label="Abrir el mapa a pantalla completa">
+          <svg id="mp-pines" class="mp-pines" viewBox="0 0 340 104" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <span class="mp-velo" aria-hidden="true"></span>
+          <span class="mp-pista">👆 Toca y despliega</span>
+          <span class="mp-cta"><span class="mp-txt"><b>🗺️ Mira todo en el mapa</b><small id="mp-cuenta">Anuncios y comercios cerca de ti</small></span><span class="mp-btn">Abrir mapa ⤢</span></span>
+        </button>
+        <div class="mp-atajos">
+          <button type="button" data-mp="ubicacion">📍 Mi ubicación</button>
+          <button type="button" data-mp="anuncios">🟠 Anuncios</button>
+          <button type="button" data-mp="comercios">🏪 Comercios</button>
+          <button type="button" data-mp="zona">🔎 Esta zona</button>
+        </div>
+      </div>
+      <div id="mapa-panel" class="mapa-panel bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-100" role="region" aria-label="Mapa de anuncios y comercios">
+        <div class="mp-barra">
+          <button type="button" id="mp-cerrar" class="mp-cerrar" aria-label="Cerrar el mapa">✕</button>
+          <div class="mp-seg" role="radiogroup" aria-label="Qué mostrar en el mapa">
+            <button type="button" data-mp-ver="todo" aria-pressed="true">Todo</button>
+            <button type="button" data-mp-ver="anuncios" aria-pressed="false">🟠 Anuncios</button>
+            <button type="button" data-mp-ver="comercios" aria-pressed="false">🏪 Comercios</button>
+          </div>
+        </div>
+        <div class="mp-cabeza flex items-center justify-between mb-2 gap-2 flex-wrap">
           <h2 class="text-lg font-bold">🗺️ En el mapa</h2>
           <div class="flex items-center gap-1.5">
             <button type="button" id="btn-mi-ubicacion" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-full border border-indigo-200">
@@ -344,20 +367,21 @@
             <button type="button" id="btn-ampliar-mapa" aria-pressed="false" class="lg:hidden text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-full">⤢ Ampliar</button>
           </div>
         </div>
-        <label class="flex items-center gap-2 text-xs text-slate-600 mb-2 cursor-pointer w-fit">
+        <label id="lbl-chk-comercios" class="flex items-center gap-2 text-xs text-slate-600 mb-2 cursor-pointer w-fit">
           <input type="checkbox" id="chk-comercios" checked class="accent-indigo-600">
           <span>🏪 Mostrar comercios cercanos (farmacias, cajeros, panaderías…)</span>
         </label>
         <div id="map"></div>
-        <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+        <div id="mapa-tira" class="mapa-tira" aria-label="Lo que se ve en el mapa"></div>
+        <div class="mp-zona flex flex-wrap items-center justify-center gap-2 mt-3">
           <button type="button" id="btn-zona" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-full">🔎 Buscar en esta zona</button>
           <button type="button" id="btn-quitar-zona" class="hidden text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-3 py-1.5 rounded-full">✖ Quitar filtro de zona</button>
         </div>
-        <p class="text-xs text-slate-600 mt-3 text-center flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+        <p class="mp-leyenda text-xs text-slate-600 mt-3 text-center flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           <span><i class="leyenda-pin leyenda-pin-anuncio"></i> <b>Anuncio de venta</b> (pin grande naranja)</span>
           <span><i class="leyenda-pin leyenda-pin-comercio"></i> <b>Comercio</b> (pin pequeño blanco)</span>
         </p>
-        <p class="text-xs text-slate-400 mt-1 text-center">Toca un pin para ver el anuncio o comercio · Los números agrupan pines cercanos</p>
+        <p class="mp-ayuda text-xs text-slate-400 mt-1 text-center">Toca un pin para ver el anuncio o comercio · Los números agrupan pines cercanos</p>
       </div>
     </section>
   </main>
@@ -692,19 +716,24 @@
   </div>
 
   <!-- Scripts: el orden importa. librerías → utils → data (Supabase) → foro/app -->
+  <!-- Fase 2AE (B): botón flotante «🗺️ Mapa» que aparece al bajar por anuncios y comercios (solo celular) -->
+  <div id="fab-mapa-caja" class="fab-mapa-caja" aria-hidden="true">
+    <p id="fab-mapa-globo" class="fab-mapa-globo">👋 ¿Prefieres verlos en el mapa? Toca aquí</p>
+    <button type="button" id="fab-mapa" class="fab-mapa" tabindex="-1">🗺️ Mapa <em id="fab-mapa-n"></em></button>
+  </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=104"></script>
-  <script src="data.js?v=104"></script>
-  <script src="foro.js?v=104"></script>
-  <script src="carrusel.js?v=104"></script>
-  <script src="buscador.js?v=104"></script>
-  <script src="anuncios-comun.js?v=104"></script>
-  <script src="qr.js?v=104"></script>
-  <script src="piezas.js?v=104"></script>
-  <script src="compartir.js?v=104"></script>
-  <script src="app.js?v=104"></script>
-  <script src="navegacion.js?v=104"></script>
+  <script src="utils.js?v=105"></script>
+  <script src="data.js?v=105"></script>
+  <script src="foro.js?v=105"></script>
+  <script src="carrusel.js?v=105"></script>
+  <script src="buscador.js?v=105"></script>
+  <script src="anuncios-comun.js?v=105"></script>
+  <script src="qr.js?v=105"></script>
+  <script src="piezas.js?v=105"></script>
+  <script src="compartir.js?v=105"></script>
+  <script src="app.js?v=105"></script>
+  <script src="navegacion.js?v=105"></script>
 </body>
 </html>

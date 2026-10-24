@@ -366,14 +366,17 @@ function pintarComercios() {
   marcadoresComercioPorId.forEach((m, id) => { if (typeof m.isPopupOpen === "function" && m.isPopupOpen()) reabrirCom = id; });
   marcadoresComercioPorId.clear();
   capaComercios.clearLayers();
-  if (!$("chk-comercios").checked) return;
+  pintarMapaPlegado();
+  if (!$("chk-comercios").checked) { pintarTiraMapa(); return; }
   comercios.forEach(c => {
     if (!tieneCoords(c)) return;
     const mc = L.marker([c.lat, c.lng], { icon: iconoComercio(c.tipo), title: c.nombre, zIndexOffset: -500 })
       .bindPopup(popupComercioHTML(c), { maxWidth: 240 }).addTo(capaComercios);
+    mc.on("click", () => resaltarEnTira("c", c.id));   // fase 2AE
     marcadoresComercioPorId.set(c.id, mc);
   });
   if (reabrirCom !== null && marcadoresComercioPorId.has(reabrirCom)) marcadoresComercioPorId.get(reabrirCom).openPopup();
+  pintarTiraMapa();
 }
 
 function renderizarMarcadores(ajustarVista) {
@@ -389,18 +392,20 @@ function renderizarMarcadores(ajustarVista) {
     const m = L.marker([a.lat, a.lng], { icon: iconoMarcador(a.categoria), title: a.nombre });
     m.bindPopup(popupHTML(a), { maxWidth: 240 });
     // Mapa → lista: al tocar un pin se resalta su tarjeta
-    m.on("click", () => resaltarTarjeta(a.id, true));
+    m.on("click", () => { resaltarTarjeta(a.id, true); resaltarEnTira("a", a.id); });
     marcadoresPorId.set(a.id, m);
     nuevos.push(m);
   });
   capaMarcadores.addLayers(nuevos); // addLayers (en lote) es mucho más rápido que addLayer uno a uno
+  pintarMapaPlegado();   // fase 2AE: vista previa y cuentas del mapa plegado
   if (reabrir !== null && marcadoresPorId.has(reabrir)) {
     const m = marcadoresPorId.get(reabrir);
     capaMarcadores.zoomToShowLayer(m, () => m.openPopup());
   }
 
   // fitBounds: el mapa se ajusta solo para mostrar los resultados filtrados
-  if (ajustarVista && nuevos.length) {
+  if (ajustarVista && esCelularMapa() && !mapaAbierto()) mapaYaEncuadrado = false;   // fase 2AE: se encuadra al abrirlo
+  if (ajustarVista && nuevos.length && $("map").offsetWidth > 0) {
     mapa.fitBounds(capaMarcadores.getBounds().pad(0.2), { maxZoom: 15 });
   }
 }
@@ -409,6 +414,10 @@ function renderizarMarcadores(ajustarVista) {
 function verEnMapa(id) {
   const m = marcadoresPorId.get(id);
   if (!m) { mostrarToast("Este anuncio no tiene ubicación en el mapa", "error"); return; }
+  if (esCelularMapa()) {   // fase 2AE: en el celular se abre el mapa a pantalla completa sobre ese pin
+    abrirMapa(verMapa === "comercios" ? "todo" : null, () => capaMarcadores.zoomToShowLayer(m, () => m.openPopup()));
+    return;
+  }
   $("map").scrollIntoView({ behavior: "smooth", block: "center" });
   resaltarTarjeta(id, false);
   capaMarcadores.zoomToShowLayer(m, () => m.openPopup()); // desagrupa el cluster si hace falta
@@ -443,6 +452,168 @@ function quitarZona() {
   limitesZona = null;
   $("btn-quitar-zona").classList.add("hidden");
   aplicarFiltros();
+}
+
+// =====================================================================
+// FASE 2AE · MAPA PLEGABLE (celular) + BOTÓN FLOTANTE «🗺️ Mapa»
+// En el celular el mapa ya no parte la página: queda una tarjeta viva con los pines (vista previa)
+// y al tocarla se abre a pantalla completa con todo lo de antes. En computador sigue igual.
+// =====================================================================
+const esCelularMapa = () => window.matchMedia("(max-width: 1023px)").matches;
+let verMapa = "todo";            // todo | anuncios | comercios
+let mapaYaEncuadrado = false;    // la 1.ª vez que se abre en el celular se encuadra con los pines
+const mapaAbierto = () => document.body.classList.contains("mapa-abierto");
+
+function puntosDelMapa() {
+  const a = listaFiltrada.filter(tieneCoords).map(x => ({ lat: x.lat, lng: x.lng, t: "a" }));
+  const c = (comercios || []).filter(tieneCoords).map(x => ({ lat: x.lat, lng: x.lng, t: "c" }));
+  return { a, c };
+}
+// Vista previa: los pines reales dibujados en la tarjeta (sin cargar el mapa) + cuántos hay
+function pintarMapaPlegado() {
+  const svg = $("mp-pines");
+  if (!svg) return;
+  const { a, c } = puntosDelMapa();
+  const todos = a.concat(c);
+  const ciudad = ($("filtro-ciudad") && $("filtro-ciudad").value) || "";
+  const txt = [a.length ? `${a.length} anuncio${a.length === 1 ? "" : "s"}` : "", c.length ? `${c.length} comercio${c.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  $("mp-cuenta").textContent = txt ? txt + (ciudad ? " en " + ciudad : " cerca de ti") : "Anuncios y comercios cerca de ti";
+  $("fab-mapa-n").textContent = todos.length ? String(todos.length) : "";
+  if (!todos.length) { svg.innerHTML = ""; return; }
+  let s = 90, n = -90, o = 180, e = -180;
+  todos.forEach(p => { s = Math.min(s, p.lat); n = Math.max(n, p.lat); o = Math.min(o, p.lng); e = Math.max(e, p.lng); });
+  const W = 340, H = 104, m = 14;
+  const dx = Math.max(e - o, 0.004), dy = Math.max(n - s, 0.003);
+  const x = v => m + (v - o) / dx * (W - 2 * m), y = v => 22 + (n - v) / dy * 40;   // los pines van en la parte de arriba (abajo va el texto)
+  // primero comercios (pequeños), encima anuncios (grandes); máximo 60 pines
+  const orden = c.slice(0, 40).concat(a.slice(0, 20));
+  svg.innerHTML = orden.map((p, i) => p.t === "a"
+    ? `<g class="mp-pin" style="--d:${(i % 12) * 60}ms" transform="translate(${x(p.lng).toFixed(1)} ${y(p.lat).toFixed(1)})"><path d="M0 0 C-8 -9 -8 -18 0 -18 C8 -18 8 -9 0 0Z" fill="#f97316" stroke="#fff" stroke-width="2"/></g>`
+    : `<g class="mp-pin" style="--d:${(i % 12) * 60}ms" transform="translate(${x(p.lng).toFixed(1)} ${y(p.lat).toFixed(1)})"><circle r="4.6" fill="#fff" stroke="#0f766e" stroke-width="2.2"/></g>`).join("");
+}
+
+function aplicarVerMapa(modo) {
+  verMapa = modo;
+  document.querySelectorAll("[data-mp-ver]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mpVer === modo)));
+  if (!mapa) return;
+  if (modo === "comercios") { if (mapa.hasLayer(capaMarcadores)) mapa.removeLayer(capaMarcadores); }
+  else if (!mapa.hasLayer(capaMarcadores)) mapa.addLayer(capaMarcadores);
+  const quiere = modo !== "anuncios";
+  if ($("chk-comercios").checked !== quiere) { $("chk-comercios").checked = quiere; pintarComercios(); }
+  else pintarTiraMapa();
+}
+
+function abrirMapa(modo, despues) {
+  if (!esCelularMapa()) {   // computador: el mapa ya está a la vista (columna derecha)
+    if (modo) aplicarVerMapa(modo);
+    $("seccion-mapa").scrollIntoView({ block: "start", behavior: "smooth" });
+    if (despues) despues();
+    return;
+  }
+  if (!mapaAbierto()) {
+    document.body.classList.add("mapa-abierto");
+    try { history.pushState({ mapaAbierto: 1 }, ""); } catch (e) { /* nada */ }
+  }
+  if (modo) aplicarVerMapa(modo);
+  setTimeout(() => {
+    if (!mapa) return;
+    mapa.invalidateSize();
+    if (!mapaYaEncuadrado) {
+      mapaYaEncuadrado = true;
+      const capa = verMapa === "comercios" ? capaComercios : capaMarcadores;
+      const b = capa && capa.getLayers().length ? capa.getBounds() : null;
+      if (b && b.isValid()) mapa.fitBounds(b.pad(0.2), { maxZoom: 15 });
+    }
+    pintarTiraMapa();
+    if (despues) despues();
+  }, 80);
+}
+function cerrarMapa(desdeAtras) {
+  if (!mapaAbierto()) return;
+  document.body.classList.remove("mapa-abierto");
+  if (!desdeAtras && history.state && history.state.mapaAbierto) { try { history.back(); } catch (e) { /* nada */ } }
+  if (mapa) mapa.closePopup();
+  actualizarFabMapa();
+}
+
+// Tira de abajo (mapa abierto): lo que se ve en pantalla; al tocar un pin, su tarjeta se resalta
+function pintarTiraMapa() {
+  const tira = $("mapa-tira");
+  if (!tira || !mapa || !mapaAbierto()) return;
+  const b = mapa.getBounds();
+  const dentro = p => tieneCoords(p) && b.contains([p.lat, p.lng]);
+  const anu = verMapa === "comercios" ? [] : listaFiltrada.filter(dentro).slice(0, 12);
+  const com = $("chk-comercios").checked ? (comercios || []).filter(dentro).slice(0, 12) : [];
+  if (!anu.length && !com.length) { tira.innerHTML = '<p class="mt-vacio">Mueve el mapa o aléjate para ver lo que hay en la zona</p>'; return; }
+  tira.innerHTML = anu.map(a => {
+    const f = urlSegura(a.imagen);
+    return `<a class="mt-item" href="anuncio.html?id=${a.id}" data-mt="a-${a.id}"><span class="mt-foto">${iconosCategoria[a.categoria] || "📦"}${f && !esAdultos(a) ? `<img src="${esc(f)}" alt="" loading="lazy">` : ""}</span><span class="mt-txt"><b>${esc(a.precio ? precioConSufijo(a) : "Ver precio")}</b><small>${esc(a.nombre)}</small></span></a>`;
+  }).concat(com.map(c => {
+    const f = imagenCuadroComercio(c), hz = estadoHorario(c.horario);
+    return `<a class="mt-item" href="tienda.html?id=${c.id}" data-mt="c-${c.id}"><span class="mt-foto">${iconosComercio[c.tipo] || "🏪"}${f ? `<img src="${esc(f)}" alt="" loading="lazy">` : ""}</span><span class="mt-txt"><b>${esc(c.nombre)}</b><small>${hz ? esc(hz.corto) : esc(nombreCategorias(c))}</small></span></a>`;
+  })).join("");
+}
+function resaltarEnTira(t, id) {
+  if (!mapaAbierto()) return;
+  pintarTiraMapa();
+  const el = document.querySelector(`#mapa-tira [data-mt="${t}-${id}"]`);
+  document.querySelectorAll("#mapa-tira .mt-activo").forEach(x => x.classList.remove("mt-activo"));
+  if (!el) return;
+  el.classList.add("mt-activo");
+  const tira = $("mapa-tira");
+  tira.scrollTo({ left: el.offsetLeft - (tira.clientWidth - el.offsetWidth) / 2, behavior: "smooth" });
+}
+
+// (B) Botón flotante: aparece al bajar cuando la tarjeta del mapa ya no se ve; globo solo la 1.ª vez
+function actualizarFabMapa() {
+  const caja = $("fab-mapa-caja");
+  if (!caja) return;
+  const pleg = $("mapa-plegado").getBoundingClientRect();
+  const pie = document.querySelector(".pie-merkap");
+  const cercaDelPie = pie && pie.getBoundingClientRect().top < innerHeight - 40;
+  const tarjetaVisible = pleg.bottom > 70 && pleg.top < innerHeight - 70;
+  const ver = esCelularMapa() && !mapaAbierto() && scrollY > 350 && !tarjetaVisible && !cercaDelPie && !!$("fab-mapa-n").textContent;
+  if (ver === caja.classList.contains("visible")) return;
+  caja.classList.toggle("visible", ver);
+  caja.setAttribute("aria-hidden", String(!ver));
+  $("fab-mapa").tabIndex = ver ? 0 : -1;
+  if (ver) {
+    let visto = false;
+    try { visto = !!localStorage.getItem("mf_globo_mapa"); localStorage.setItem("mf_globo_mapa", "1"); } catch (e) { /* nada */ }
+    if (!visto) { caja.classList.add("con-globo"); setTimeout(() => caja.classList.remove("con-globo"), 3500); }
+  }
+}
+
+function conectarMapaPlegado() {
+  if (!$("mapa-plegado")) return;
+  $("mp-abrir").addEventListener("click", () => abrirMapa());
+  document.querySelector(".mp-atajos").addEventListener("click", e => {
+    const b = e.target.closest("[data-mp]");
+    if (!b) return;
+    const q = b.dataset.mp;
+    if (q === "ubicacion") abrirMapa(null, centrarEnMiUbicacion);
+    else if (q === "zona") abrirMapa(null, () => { $("btn-zona").classList.add("mp-resalta"); setTimeout(() => $("btn-zona").classList.remove("mp-resalta"), 2600); mostrarToast("Mueve el mapa a la zona que quieras y toca «🔎 Buscar en esta zona»"); });
+    else abrirMapa(q);
+  });
+  $("mp-cerrar").addEventListener("click", () => cerrarMapa());
+  document.querySelectorAll("[data-mp-ver]").forEach(b => b.addEventListener("click", () => aplicarVerMapa(b.dataset.mpVer)));
+  window.addEventListener("popstate", () => { if (mapaAbierto()) cerrarMapa(true); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && mapaAbierto()) cerrarMapa(); });
+  if (mapa) mapa.on("moveend", pintarTiraMapa);
+  // Los pines «caen» la primera vez que la tarjeta entra en pantalla
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(ent => { if (ent.some(x => x.isIntersecting)) { $("mapa-plegado").classList.add("mp-cae"); io.disconnect(); } }, { threshold: 0.4 });
+    io.observe($("mapa-plegado"));
+  } else $("mapa-plegado").classList.add("mp-cae");
+  // Botón flotante
+  $("fab-mapa").addEventListener("click", () => {
+    const sc = $("seccion-comercios");
+    const enComercios = sc && !sc.classList.contains("hidden") && sc.getBoundingClientRect().top < innerHeight / 2;
+    abrirMapa(enComercios ? "comercios" : "todo");
+  });
+  let pend = false;
+  window.addEventListener("scroll", () => { if (pend) return; pend = true; requestAnimationFrame(() => { pend = false; actualizarFabMapa(); }); }, { passive: true });
+  window.addEventListener("resize", () => { if (!esCelularMapa() && mapaAbierto()) cerrarMapa(); actualizarFabMapa(); });
 }
 
 // =====================================================================
@@ -1501,6 +1672,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderizarCategorias();
   iniciarMapa();
   iniciarEventos();
+  conectarMapaPlegado();   // fase 2AE
   conectarBuscadorGlobal(() => ({ anuncios: baseDatosAnuncios, comercios }));
 
   // 2) Datos reales desde Supabase

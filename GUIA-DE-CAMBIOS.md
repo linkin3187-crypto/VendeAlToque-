@@ -142,6 +142,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.js`: la pregunta «¿Eres mayor de 18?» y la leyenda grande salen solo si la categoría **principal** es licorera o tienda íntima (`[c.tipo]`, antes también `tiposExtra`). Tiendas de barrio, minimercados, supermercados y bares no la piden: cada licor o cigarrillo de su vitrina lleva su leyenda (`RX_LICOR` / `RX_TABACO`, desde la 2AL). Nadie sale del buscador por vender licor.
 - `data.js`: `esPalabraMas18(p)` mira la palabra (licor, tabaco, íntimo, rumba y palabras clave de esas categorías), no el nombre de la categoría: «tienda» ya no es +18 por «Tienda íntima». La usan los ejemplos del buscador (`comercios.js`) y la vista previa del panel (`editar-inicio.js`). Caché v95.
 
+### Fase 2AZ · Pie de página de confianza + «Sobre Merkap»
+- Mismo `<footer class="pie-merkap">` (HTML fijo, sin JS) en index, anuncios, anuncio, comercios, tienda, buscar, vendedor, recomendar, post, términos, privacidad, prohibidos y la página nueva: marca + frase, columnas **Merkap** (Quiénes somos, Cómo verificamos, Compra seguro, Contacto), **Negocios** (Registrar, Recomendar, Directorio) y **Legal** (Términos, Privacidad, Prohibidos, Reportar un problema), y la atribución de OpenStreetMap. Si se cambia, hay que cambiarlo en todas (una prueba revisa que todos los enlaces existan).
+- `nosotros.html` (nueva): quiénes somos, cómo verificamos (los 3 sellos y lo que NO dicen), compra seguro, contacto (mercafree7@gmail.com hasta P2) y cómo reportar. CSS `.pie-*`; en `anuncio.html` el pie deja espacio a la barra de abajo (`.pie-con-barra`). Caché v96.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

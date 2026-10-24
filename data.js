@@ -867,6 +867,19 @@ const EJEMPLOS_BUSCADOR_BASE = {
 let EJEMPLOS_BUSCADOR = JSON.parse(JSON.stringify(EJEMPLOS_BUSCADOR_BASE));
 // Nunca de ejemplo: lo de +18 lo ve todo el mundo (también menores)
 const TIPOS_SIN_EJEMPLO = ["intimo", "licorera", "bar"];
+// ¿La palabra es de +18? (licor, tabaco, íntimo, rumba). Fase 2AY: se mira la palabra misma y las palabras
+// clave de esas categorías, NO el nombre de la categoría: «tienda» no es +18 por «Tienda íntima».
+const RX_MAS18_EJEMPLO = /\b(sex\w*|intim\w*|lenceria|lubricantes?|eroti\w*|porno\w*|bar|bares|discotecas?|rumba|estanco|trago|tragos|pola|polas)\b/;
+function esPalabraMas18(p) {
+  const q = normalizar(p);
+  if (!q) return false;
+  if ((typeof RX_LICOR !== "undefined" && RX_LICOR.test(q)) || (typeof RX_TABACO !== "undefined" && RX_TABACO.test(q)) || RX_MAS18_EJEMPLO.test(q)) return true;
+  const sinPlural = w => w.replace(/(es|s)$/, "");
+  const respaldo = typeof PALABRAS_COMERCIO_RESPALDO !== "undefined" ? PALABRAS_COMERCIO_RESPALDO : {};
+  return (typeof TIPOS_COMERCIO !== "undefined" ? TIPOS_COMERCIO : []).filter(t => TIPOS_SIN_EJEMPLO.includes(t.id)).some(t =>
+    String(t.palabras || respaldo[t.id] || "").split(",").map(x => normalizar(x.trim())).filter(Boolean)
+      .some(k => k === q || sinPlural(k) === sinPlural(q)));
+}
 // Limpia lo que llega de la base (o del panel): listas de palabras cortas, sin repetir
 function limpiarEjemplos(v) {
   const lista = (x, max) => {

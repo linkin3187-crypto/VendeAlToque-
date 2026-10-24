@@ -98,8 +98,10 @@ function renderizarTienda(c, ps) {
   const entrega = [c.recoge ? (aprox ? "Recoger en un punto acordado por WhatsApp" : "Recoger en el local") : "", c.domicilio ? "Domicilio" + (c.domicilioInfo ? " (" + c.domicilioInfo + ")" : "") : ""].filter(Boolean).join(" · ");
   fila("t-ent", entrega);
 
-  // Fase 2AL: tiendas íntimas y licoreras piden confirmar la edad y muestran la leyenda legal
-  const tipos18 = [c.tipo, ...(c.tiposExtra || [])].filter(t => TIPOS_MAS18.includes(t));
+  // Fase 2AL: tiendas íntimas y licoreras piden confirmar la edad y muestran la leyenda legal.
+  // Fase 2AY: solo si es su categoría PRINCIPAL. Una tienda de barrio que además vende cerveza (licorera como
+  // categoría secundaria) no pide la edad: cada licor o cigarrillo de su vitrina ya lleva su propia leyenda 🔞.
+  const tipos18 = [c.tipo].filter(t => TIPOS_MAS18.includes(t));
   if (tipos18.length) {
     const ley = tipos18.includes("intimo") ? LEYENDA_ADULTOS : LEYENDA_ALCOHOL;
     if (!$("t-leyenda")) $("t-abierto").closest("div").insertAdjacentHTML("afterend", `<div id="t-leyenda">${leyendaHTML(ley)}</div>`);

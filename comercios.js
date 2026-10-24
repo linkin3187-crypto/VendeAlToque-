@@ -230,6 +230,7 @@ function pintar() {
   $("co-vacio-limpiar").classList.toggle("hidden", !comercios.length);
   const qs = filtrosAQueryCo();
   history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+  actualizarPildoraCo();   // fase 2AW.2
 }
 
 function limpiarCo() {
@@ -376,11 +377,39 @@ function irAResultadosCo(siempre) {
     c.classList.remove("co-contador-brillo"); void c.offsetWidth; c.classList.add("co-contador-brillo");
   }
 }
+// Vuelve a la caja de filtros (el buscador deja de estar pegado y quedan a la vista categorías, ciudad y orden)
+function volverArribaCo() {
+  const quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const y = Math.max(0, $("co-busca-sitio").getBoundingClientRect().top + scrollY - 12);
+  window.scrollTo({ top: y, behavior: quieto ? "auto" : "smooth" });
+  setTimeout(actualizarPildoraCo, quieto ? 50 : 700);
+}
+// Píldora flotante «⬇ Ver N comercios»: sale si hay una búsqueda y los resultados están más abajo
+function actualizarPildoraCo() {
+  const b = $("co-ver-resultados");
+  if (!b) return;
+  const hay = !!$("co-buscar").value.trim() || tipoActivo !== "todos";
+  // «Abajo» = del primer resultado se ve menos de ~1/3 (sobre la barra de abajo del celular)
+  const primero = $("co-lista").querySelector("article") || $("co-vacio");
+  const abajo = (primero.offsetParent ? primero : $("co-contador")).getBoundingClientRect().top > innerHeight - 260;
+  const mostrar = hay && abajo && !$("co-busca").classList.contains("fija");
+  if (mostrar) {
+    const n = listaCo.length;
+    b.textContent = n ? `⬇ Ver ${n} ${n === 1 ? "comercio" : "comercios"}` : "⬇ Sin resultados · ver opciones";
+  }
+  b.classList.toggle("hidden", !mostrar);
+}
 function conectarBuscadorCo() {
   const input = $("co-buscar"), sitio = $("co-busca-sitio"), barra = $("co-busca");
   if (typeof animarLetrero === "function") animarLetrero(input, "Busca ", { fuente: palabrasDirectorio, fijo: "Nombre, dirección o tipo" });
   pintarEjemplosCo();
-  const buscarYa = () => { input.blur(); pintar(); irAResultadosCo(true); };   // cierra el teclado y muestra los resultados
+  // Desde arriba: baja a los resultados. Desde el buscador pegado (abajo): vuelve arriba, a los filtros,
+  // y la píldora «⬇ Ver N comercios» avisa que los resultados están debajo (fase 2AW.2)
+  const buscarYa = () => {
+    const desdeAbajo = barra.classList.contains("fija");
+    input.blur(); pintar();
+    if (desdeAbajo) volverArribaCo(); else irAResultadosCo(true);
+  };
   $("co-ir").addEventListener("click", () => { if (input.value.trim()) buscarYa(); else input.focus(); });
   input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarYa(); } });
   $("co-borrar").addEventListener("click", () => { input.value = ""; pintar(); input.focus(); });
@@ -400,8 +429,12 @@ function conectarBuscadorCo() {
   let pend = false;
   window.addEventListener("scroll", () => { if (!pend) { pend = true; requestAnimationFrame(() => { pend = false; revisar(); }); } }, { passive: true });
   // Si se escribe con el buscador pegado, la lista se acorta: volver al comienzo de los resultados
-  input.addEventListener("input", debounce(() => { if (fija) irAResultadosCo(); }, 300));
+  input.addEventListener("input", debounce(() => { if (fija) volverArribaCo(); }, 300));
+  $("co-ver-resultados").addEventListener("click", () => irAResultadosCo(true));
+  window.addEventListener("scroll", debounce(actualizarPildoraCo, 120), { passive: true });
+  window.addEventListener("resize", debounce(actualizarPildoraCo, 200));
   revisar();
+  actualizarPildoraCo();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

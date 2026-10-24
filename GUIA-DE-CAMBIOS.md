@@ -133,6 +133,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **2AW.1:** 🔍, Enter o un ejemplo ahora **siempre** bajan hasta «N comercios» (`irAResultadosCo(true)`), dejando libre el alto del buscador pegado; con pocos resultados baja solo hasta dejar el buscador entero arriba. El conteo brilla 1,4 s (`.co-contador-brillo`). Caché v92.
 - **2AW.2:** buscando desde el buscador **pegado** (abajo), con 🔍, Enter o escribiendo, se vuelve a la caja de filtros (`volverArribaCo`). Píldora flotante `#co-ver-resultados` («⬇ Ver N comercios», `actualizarPildoraCo`) cuando hay búsqueda o categoría y del primer resultado se ve menos de ~1/3; al tocarla baja a los resultados. Desde arriba, 🔍 sigue bajando a los resultados. Caché v93.
 
+### Fase 2AX · Ejemplos del buscador según la hora (sin SQL)
+- `data.js`: `FRANJAS_EJEMPLOS` (6 franjas en hora de Colombia), `EJEMPLOS_BUSCADOR_BASE` / `EJEMPLOS_BUSCADOR` (franjas, finde, siempre, descubre, quincena, rotar), `TIPOS_SIN_EJEMPLO` (+18), `limpiarEjemplos`, `ahoraBogota`, `franjaEjemplos`, `listasEjemplos`; `cargarAjustesSitio` lee la clave `ejemplos_buscador` de `ajustes_sitio` (la tabla del SQL 46; la guarda solo `es_admin()`).
+- `comercios.js`: reemplaza los ejemplos fijos (comercio + calle) por 3 espacios: hora · siempre · descubrir. `palabraEjemploValida` (da resultados en la ciudad elegida y no es +18), `prepararEjemplosCo`, `rotarEjemploCo` (una palabra cada 4 s; quieto si se escribe, si la pestaña no se ve o con «reducir movimiento»), `arrancarEjemplosCo`. Cambia solo al pasar de franja o de ciudad.
+- `editar-inicio.html/js`: sección «💡 Ejemplos del buscador» (campos por franja, rotar, vista previa a cualquier hora con ✅ / ⚠️ / 🚫, Guardar, Volver a las sugeridas). Caché v94.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

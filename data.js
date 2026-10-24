@@ -838,6 +838,71 @@ function puntajeRelevancia(c) {
 // Fase 2AO.1: ancho de la franja que rota (lo eliges en «🎨 Editar inicio → ⚖️ Orden de comercios»; SQL 46)
 // 20 = amplia (se turnan más tiendas el primer lugar; recomendada en el piloto) · 10 = normal (pesa más la calidad)
 let FRANJA_ROTACION = 20;
+// ===== Ejemplos del buscador del directorio según la hora (fase 2AX) =====
+// 3 espacios: (1) de la hora · (2) de siempre · (3) descubrimiento. Se editan en «🎨 Editar inicio →
+// 💡 Ejemplos del buscador» (se guardan en ajustes_sitio, clave «ejemplos_buscador»; sin SQL nuevo).
+const FRANJAS_EJEMPLOS = [
+  { id: "manana",      nombre: "🌅 Mañana (5 a 10 a. m.)",          desde: 5,  hasta: 10 },
+  { id: "diligencias", nombre: "☕ Diligencias (10 a. m. a 12 m.)", desde: 10, hasta: 12 },
+  { id: "almuerzo",    nombre: "🍽️ Almuerzo (12 m. a 3 p. m.)",    desde: 12, hasta: 15 },
+  { id: "tarde",       nombre: "🛒 Tarde (3 a 7 p. m.)",            desde: 15, hasta: 19 },
+  { id: "noche",       nombre: "🍔 Noche (7 p. m. a 12 a. m.)",     desde: 19, hasta: 24 },
+  { id: "madrugada",   nombre: "🌙 Madrugada (12 a 5 a. m.)",       desde: 0,  hasta: 5 }
+];
+const EJEMPLOS_BUSCADOR_BASE = {
+  franjas: {
+    manana: ["pan", "tinto", "desayunos", "fruver"],
+    diligencias: ["banco", "papelería", "peluquería", "óptica"],
+    almuerzo: ["almuerzo", "restaurante", "arepas", "carnicería"],
+    tarde: ["mercado", "heladería", "panadería", "lavandería"],
+    noche: ["hamburguesas", "perros calientes", "comida rápida", "pizza"],
+    madrugada: ["droguería", "cajero", "comida rápida"]
+  },
+  finde: ["heladería", "pastelería", "flores", "gimnasio"],
+  siempre: ["droguería", "cajero", "banco", "mercado", "ferretería"],
+  descubre: ["veterinaria", "arriendos", "cerrajero", "lavandería", "óptica", "taller de motos", "arreglos de ropa", "odontólogo", "celulares"],
+  quincena: ["mercado", "ropa", "ferretería"],
+  rotar: true
+};
+let EJEMPLOS_BUSCADOR = JSON.parse(JSON.stringify(EJEMPLOS_BUSCADOR_BASE));
+// Nunca de ejemplo: lo de +18 lo ve todo el mundo (también menores)
+const TIPOS_SIN_EJEMPLO = ["intimo", "licorera", "bar"];
+// Limpia lo que llega de la base (o del panel): listas de palabras cortas, sin repetir
+function limpiarEjemplos(v) {
+  const lista = (x, max) => {
+    const vistas = new Set();
+    return (Array.isArray(x) ? x : []).map(p => String(p || "").replace(/\s+/g, " ").trim().slice(0, 24))
+      .filter(p => p.length >= 2 && !/[<>"]/.test(p) && !vistas.has(p.toLowerCase()) && vistas.add(p.toLowerCase())).slice(0, max || 15);
+  };
+  const b = EJEMPLOS_BUSCADOR_BASE, o = v && typeof v === "object" ? v : {};
+  const franjas = {};
+  FRANJAS_EJEMPLOS.forEach(f => { franjas[f.id] = o.franjas && Array.isArray(o.franjas[f.id]) ? lista(o.franjas[f.id]) : b.franjas[f.id].slice(); });
+  const pick = k => (Array.isArray(o[k]) ? lista(o[k]) : b[k].slice());
+  return { franjas, finde: pick("finde"), siempre: pick("siempre"), descubre: pick("descubre"), quincena: pick("quincena"), rotar: o.rotar !== false };
+}
+// Hora, día de la semana y día del mes en Colombia
+function ahoraBogota(fecha) {
+  const p = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: "America/Bogota", hour: "numeric", hourCycle: "h23", weekday: "short", day: "numeric" })
+    .formatToParts(fecha || new Date()).forEach(x => { p[x.type] = x.value; });
+  return { hora: Number(p.hour) % 24, finde: p.weekday === "Sat" || p.weekday === "Sun", dia: Number(p.day) };
+}
+function franjaEjemplos(fecha) {
+  const { hora } = ahoraBogota(fecha);
+  return FRANJAS_EJEMPLOS.find(f => hora >= f.desde && hora < f.hasta) || FRANJAS_EJEMPLOS[0];
+}
+// Las 3 listas de palabras para este momento (antes de comprobar que den resultados)
+function listasEjemplos(fecha, cfg) {
+  const c = cfg || EJEMPLOS_BUSCADOR;
+  const t = ahoraBogota(fecha);
+  const quincena = [14, 15, 16, 28, 29, 30, 31, 1].includes(t.dia);
+  const hora = c.franjas[franjaEjemplos(fecha).id] || [];
+  return [
+    t.finde ? hora.concat(c.finde) : hora.slice(),
+    quincena ? c.quincena.concat(c.siempre) : c.siempre.slice(),
+    c.descubre.slice()
+  ];
+}
 let _ajustesPromesa = null;
 function cargarAjustesSitio() {
   if (!_ajustesPromesa) _ajustesPromesa = (async () => {
@@ -847,6 +912,8 @@ function cargarAjustesSitio() {
       const r = data.find(x => x.clave === "rotacion_comercios");
       const f = r && r.valor ? Number(r.valor.franja) : 0;
       if (f === 10 || f === 20) FRANJA_ROTACION = f;
+      const ej = data.find(x => x.clave === "ejemplos_buscador");   // fase 2AX
+      if (ej && ej.valor) EJEMPLOS_BUSCADOR = limpiarEjemplos(ej.valor);
       return data;
     } catch (e) { return null; }
   })();

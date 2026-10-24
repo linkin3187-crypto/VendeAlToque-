@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <title>Editar inicio y buscador | Merkap</title>
   <meta name="robots" content="noindex">
-  <link rel="stylesheet" href="styles.css?v=93">
-  <link rel="stylesheet" href="tw.css?v=93">
+  <link rel="stylesheet" href="styles.css?v=94">
+  <link rel="stylesheet" href="tw.css?v=94">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -36,6 +36,7 @@
         <a href="#carrusel-editor" class="b-pestana">🎠 Carrusel</a>
         <a href="#avisos-editor" class="b-pestana">📣 Avisos y novedades</a>
         <a href="#orden-editor" class="b-pestana">⚖️ Orden de comercios</a>
+        <a href="#ejemplos-editor" class="b-pestana">💡 Ejemplos del buscador</a>
         <a href="#accesos-editor" class="b-pestana">🧩 Cuadros de acceso</a>
         <a href="#seleccion-editor" class="b-pestana">⭐ Selección del día</a>
         <a href="#entrenar" class="b-pestana">🧠 Entrenar el buscador</a>
@@ -119,6 +120,27 @@
         <span id="or-estado" class="ml-2 text-xs text-slate-500"></span>
       </section>
 
+      <!-- 1d) EJEMPLOS DEL BUSCADOR DEL DIRECTORIO (fase 2AX · sin SQL nuevo: va en ajustes_sitio) -->
+      <section id="ejemplos-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-xl font-black text-indigo-900">💡 Ejemplos del buscador</h2>
+        <p class="text-xs text-slate-500 mt-1 mb-3">Debajo del buscador de <b>Comercios</b> salen 3 ejemplos que se pueden tocar: <b>uno de la hora</b>, <b>uno de siempre</b> y <b>uno para descubrir</b>. Cada 4 segundos cambia uno con un desvanecido suave (se detiene cuando la persona escribe). Solo salen palabras que <b>den resultados</b> en la ciudad elegida y <b>nunca de +18</b>. Escribe como habla la gente («tinto», «almuerzo», «arriendos»), separadas por comas.</p>
+        <div class="grid sm:grid-cols-2 gap-3" id="ej-campos"></div>
+        <label class="flex items-center gap-2 mt-3 text-sm"><input type="checkbox" id="ej-rotar"> Rotar los ejemplos (si lo apagas quedan quietos)</label>
+        <div class="mt-4 border border-indigo-100 bg-indigo-50/50 rounded-xl p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs font-bold text-slate-600">👀 Vista previa a las</p>
+            <select id="ej-hora" class="border border-slate-300 rounded-lg px-2 py-1 text-sm bg-white"></select>
+            <label class="flex items-center gap-1 text-xs"><input type="checkbox" id="ej-finde"> fin de semana</label>
+          </div>
+          <div id="ej-vista" class="mt-2 text-sm"></div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button type="button" id="ej-guardar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Guardar</button>
+          <button type="button" id="ej-restaurar" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-4 py-2 rounded-lg text-sm">↺ Volver a las sugeridas</button>
+          <span id="ej-estado" class="text-xs text-slate-500 self-center"></span>
+        </div>
+      </section>
+
       <!-- 2) CUADROS DE ACCESO -->
       <section id="accesos-editor" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
         <h2 class="text-xl font-black text-indigo-900">🧩 Cuadros de acceso <span id="ac-n" class="text-sm font-semibold text-slate-500"></span></h2>
@@ -176,12 +198,12 @@
   <datalist id="dl-comercios"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=93"></script>
-  <script src="data.js?v=93"></script>
-  <script src="buscador.js?v=93"></script>
-  <script src="iconos.js?v=93"></script>
+  <script src="utils.js?v=94"></script>
+  <script src="data.js?v=94"></script>
+  <script src="buscador.js?v=94"></script>
+  <script src="iconos.js?v=94"></script>
   <!-- Arrastrar para ordenar (funciona con dedo y con mouse) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  <script src="editar-inicio.js?v=93"></script>
+  <script src="editar-inicio.js?v=94"></script>
 </body>
 </html>

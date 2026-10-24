@@ -325,6 +325,60 @@ async function guardarOrden() {
   } finally { b.disabled = false; }
 }
 
+// ---------- 1d) Ejemplos del buscador del directorio (fase 2AX) ----------
+const CAMPOS_EJ = FRANJAS_EJEMPLOS.map(f => ({ id: "f-" + f.id, nombre: f.nombre, ayuda: "Lo que se busca a esa hora" }))
+  .concat([
+    { id: "finde", nombre: "🎉 Sábado y domingo", ayuda: "Se suma a la palabra de la hora" },
+    { id: "siempre", nombre: "⭐ De siempre", ayuda: "Necesidades de cualquier hora" },
+    { id: "descubre", nombre: "🔭 Para descubrir", ayuda: "Lo que la gente no sabe que puede buscar aquí" },
+    { id: "quincena", nombre: "💰 Quincena (días 14-16 y 28-1)", ayuda: "Se suma a «De siempre»" }
+  ]);
+function pintarCamposEj(cfg) {
+  const valor = id => (id.startsWith("f-") ? cfg.franjas[id.slice(2)] : cfg[id]) || [];
+  $("ej-campos").innerHTML = CAMPOS_EJ.map(c => `<label class="block text-xs font-bold text-slate-600">${esc(c.nombre)} <span class="font-normal text-slate-400">· ${esc(c.ayuda)}</span>
+      <input data-ej-campo="${c.id}" maxlength="400" value="${esc(valor(c.id).join(", "))}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg text-sm font-normal"></label>`).join("");
+  $("ej-rotar").checked = cfg.rotar !== false;
+}
+function leerEjemplosPanel() {
+  const v = { franjas: {}, rotar: $("ej-rotar").checked };
+  document.querySelectorAll("[data-ej-campo]").forEach(i => {
+    const palabras = i.value.split(",").map(x => x.trim()).filter(Boolean);
+    if (i.dataset.ejCampo.startsWith("f-")) v.franjas[i.dataset.ejCampo.slice(2)] = palabras; else v[i.dataset.ejCampo] = palabras;
+  });
+  return limpiarEjemplos(v);
+}
+// Una palabra: ✅ da resultados · ⚠️ no encuentra comercios · 🚫 +18 (nunca sale)
+function estadoPalabraEj(p) {
+  if (typeof analizarBusqueda === "function" && analizarBusqueda(p).catsComercio.some(c => TIPOS_SIN_EJEMPLO.includes(c.id))) return "🚫";
+  const q = normalizar(p);
+  const coincide = c => c.activo !== false && (typeof comercioCoincide === "function" ? comercioCoincide(c, q) : normalizar(c.nombre).includes(q));
+  if (comercios.some(c => coincide(c) && !TIPOS_SIN_EJEMPLO.includes(c.tipo))) return "✅";
+  return comercios.some(c => coincide(c)) ? "🚫" : "⚠️";   // solo lo encuentran tiendas de +18
+}
+function pintarVistaEj() {
+  const cfg = leerEjemplosPanel();
+  const h = Number($("ej-hora").value);
+  // Fecha de ejemplo en Bogotá a esa hora (día 10: sin quincena; sábado si se marcó fin de semana)
+  const fecha = new Date(Date.UTC(2026, 9, $("ej-finde").checked ? 10 : 7, h + 5, 30));
+  const nombres = ["De la hora", "De siempre", "Para descubrir"];
+  const listas = listasEjemplos(fecha, cfg);
+  $("ej-vista").innerHTML = `<p class="text-xs text-slate-500 mb-1">${esc(franjaEjemplos(fecha).nombre)} · ✅ da resultados · ⚠️ no encuentra comercios (no saldrá) · 🚫 +18 (nunca sale)</p>`
+    + listas.map((l, i) => `<p><b class="text-indigo-900">${nombres[i]}:</b> ${l.length ? [...new Set(l)].map(p => `<span class="inline-block mr-2">${estadoPalabraEj(p)} ${esc(p)}</span>`).join("") : '<span class="text-slate-400">(vacío)</span>'}</p>`).join("");
+}
+async function guardarEjemplos() {
+  const b = $("ej-guardar"); b.disabled = true;
+  try {
+    const v = leerEjemplosPanel();
+    await guardarAjusteSitio("ejemplos_buscador", v);
+    EJEMPLOS_BUSCADOR = v;
+    pintarCamposEj(v); pintarVistaEj();
+    $("ej-estado").textContent = "✅ Guardado: ya se ve en Comercios";
+    mostrarToast("✅ Ejemplos del buscador guardados");
+  } catch (err) {
+    mostrarToast(/ajustes_sitio/.test(err.message || "") ? "Primero ejecuta supabase/46_ajustes_sitio.sql" : mensajeError(err), "error");
+  } finally { b.disabled = false; }
+}
+
 async function elegirImagen(e, maxFondo, maxLado = 700) {
   const inp = e.target.closest('[data-c="archivo"]');
   if (!inp || !inp.files[0]) return null;
@@ -725,6 +779,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   pintarVistaOrden();
   document.querySelectorAll('input[name="or-franja"]').forEach(r => r.addEventListener("change", pintarVistaOrden));
   $("or-guardar").addEventListener("click", guardarOrden);
+
+  // Ejemplos del buscador (fase 2AX)
+  pintarCamposEj(EJEMPLOS_BUSCADOR);
+  $("ej-hora").innerHTML = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${h === 0 ? "12 a. m." : h < 12 ? h + " a. m." : h === 12 ? "12 m." : (h - 12) + " p. m."}</option>`).join("");
+  $("ej-hora").value = String(ahoraBogota().hora);
+  $("ej-finde").checked = ahoraBogota().finde;
+  pintarVistaEj();
+  ["ej-hora", "ej-finde", "ej-rotar"].forEach(id => $(id).addEventListener("change", pintarVistaEj));
+  $("ej-campos").addEventListener("input", debounce(pintarVistaEj, 300));
+  $("ej-guardar").addEventListener("click", guardarEjemplos);
+  $("ej-restaurar").addEventListener("click", () => { pintarCamposEj(limpiarEjemplos(EJEMPLOS_BUSCADOR_BASE)); pintarVistaEj(); $("ej-estado").textContent = "Sugeridas cargadas: toca Guardar para usarlas"; });
 
   // Avisos y novedades (fase 2AR)
   pintarAvisosAdmin();

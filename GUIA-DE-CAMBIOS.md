@@ -130,6 +130,7 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 
 ### Fase 2AW · Avisos del directorio más compactos
 - `comercios.html`: la explicación de los sellos pasa a `<details class="sellos-info">` («ⓘ Qué significa cada sello»); «Registrar mi negocio» y «Recomendar» pasan a dos tarjetas lado a lado (`.invita-co`, `.invita-co-t`), con los mismos enlaces. En el celular el buscador sube de ~495 px a ~370 px. Caché v91.
+- **2AW.1:** 🔍, Enter o un ejemplo ahora **siempre** bajan hasta «N comercios» (`irAResultadosCo(true)`), dejando libre el alto del buscador pegado; con pocos resultados baja solo hasta dejar el buscador entero arriba. El conteo brilla 1,4 s (`.co-contador-brillo`). Caché v92.
 
 ## 7. Lo que NO se cambió y por qué
 

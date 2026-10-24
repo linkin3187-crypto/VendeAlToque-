@@ -202,6 +202,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Comercios:** lo mismo + lo propio: su buscador y las categorías en botones con su número (mismas reglas de aparición). **Nuevo en el inicio:** ↕️ Orden (Abiertos primero, Relevantes, Más cercanos, Mejor calificados, Nombre A-Z) y ⚙️ Más (verificación, calificación, abierto ahora, con vitrina, con promoción, 🧾 droguerías), iguales al directorio completo (`ordenComercio`, `filtrosCom`, `sincronizarBotonesComercios`).
 - El buscador fijo de arriba sigue buscando en **todo** (anuncios, comercios y productos de vitrinas). Caché v106.
 
+### Fase 2BA.1 · «📍 Lugar» de comercios con departamento y ciudad + sin frase repetida
+- En «📍 Lugar» de Comercios ahora siempre salen **Departamento y Ciudad**, igual que en Anuncios (antes el departamento se escondía cuando había uno solo). En celulares angostos van uno debajo del otro para que no se corte el texto.
+- Se quitó la frase «👆 Toca un comercio para ver su ficha completa…» de arriba de la sección: cada tarjeta ya lo dice con «👆 Toca para ver el comercio completo →» (pedido del dueño). Caché v107.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

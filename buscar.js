@@ -36,27 +36,13 @@ function tarjetaAnuncioBusq(a) {
   </a>`;
 }
 
+// Fase V-2d: la misma tarjeta «tipo app» del inicio y del directorio (data.js), con sus avisos de confianza.
+// «Actualizar o retirar», «Reportar» y «Reclámalo» llevan al directorio con el formulario abierto.
 function tarjetaComercioBusq(c) {
-  const sello = SELLOS[c.nivel] || SELLOS[1];
-  const foto = urlSegura(c.foto);
-  const hz = estadoHorario(c.horario);   // fase 2AH
-  return `<a href="tienda.html?id=${c.id}" class="b-tarjeta bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition p-3 flex gap-3 items-start">
-    <div class="relative w-16 h-16 shrink-0 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
-      <span class="text-3xl">${esc(iconosComercio[c.tipo] || "🏪")}</span>
-      ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-    </div>
-    <div class="min-w-0">
-      <h3 class="font-bold text-slate-900 leading-tight">${esc(c.nombre)}</h3>
-      <p class="text-xs text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
-      <p class="text-xs mt-0.5">${resumenCalifHTML(c)}</p>
-      <div class="flex flex-wrap gap-1 mt-1">
-        <span class="${sello.clase} text-[10px] font-semibold px-1.5 py-0.5 rounded-full">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.corto)}</span>
-        ${badgeHorarioHTML(hz)}
-        ${vitrinaPublica(c) && c.nProductos > 0 ? `<span class="bg-teal-50 text-teal-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">🛍️ Vitrina (${c.nProductos})</span>` : ""}
-      </div>
-      ${lineaPromoHTML(c, "mt-1")}
-    </div>
-  </a>`;
+  return tarjetaComercioTC(c, { distancia: ubicBusq && tieneCoords(c) ? textoDistanciaBusq(distanciaKm(ubicBusq, c)) : null, completa: true });
+}
+function textoDistanciaBusq(km) {
+  return km < 1 ? Math.max(10, Math.round(km * 100) * 10) + " m" : km.toFixed(1).replace(".", ",") + " km";
 }
 
 function tarjetaProductoBusq(p) {
@@ -250,6 +236,12 @@ async function cercaBusq() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   conectarBuscadorGlobal(() => fuentesBusq, { alBuscar: buscarAqui });
+  // Fase V-2d: ❤️ en las tarjetas de comercio
+  cargarSesion().then(cargarFavoritosComercio).then(refrescarCorazonesComercio);
+  $("b-comercios").addEventListener("click", e => {
+    const fav = e.target.closest("[data-fav-com]");
+    if (fav) { e.preventDefault(); alternarCorazonComercio(Number(fav.dataset.favCom), fav); }
+  });
   $("buscador").value = qActual();
   $("buscador").addEventListener("input", () => {
     $("b-limpiar").classList.toggle("hidden", !$("buscador").value);

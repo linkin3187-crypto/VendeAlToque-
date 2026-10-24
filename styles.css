@@ -1148,7 +1148,7 @@ body:has(#t-mapa-caja.hidden) .t-info-mapa { display: none; }
 .tc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .tc-fav { position: absolute; top: 8px; right: 8px; z-index: 11; width: 36px; height: 36px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15, 23, 42, .08); display: flex; align-items: center; justify-content: center; font-size: 17px; }
 .tc-fav:hover { border-color: #fda4af; }
-.tc-detalle { margin-top: 10px; }
+.tc-detalle { margin-top: 10px; flex: 1 1 auto; }   /* V-2d: los botones quedan alineados abajo en la cuadrícula */
 .tc-toca { margin-top: 8px; font-size: .75rem; font-weight: 700; color: #4f46e5; background: #eef2ff; border-radius: 10px; padding: 6px 10px; }
 .linea-promo-etq { font-weight: 900; color: #be123c; text-transform: uppercase; font-size: .68rem; letter-spacing: .04em; background: #ffe4e6; border-radius: 6px; padding: 1px 5px; }
 .tc-acciones { position: relative; z-index: 10; display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; }
@@ -1163,7 +1163,13 @@ body:has(#t-mapa-caja.hidden) .t-info-mapa { display: none; }
 .tc-menu { position: absolute; right: 0; bottom: calc(100% + 6px); min-width: 190px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 28px rgba(15, 23, 42, .18); padding: 6px; z-index: 30; }
 .tc-menu-op { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: .85rem; font-weight: 700; color: #334155; text-decoration: none !important; }
 .tc-menu-op:hover { background: #f1f5f9; }
-.tc-menu-op .ti { width: 17px; height: 17px; color: #6366f1; }
+.tc-menu-op .ti { width: 17px; height: 17px; color: #6366f1; flex-shrink: 0; }
+/* Fase V-2d: el menú también tiene «Actualizar o retirar» y «Reportar» (directorio y búsqueda) */
+button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; cursor: pointer; font-family: inherit; }
+.tc-menu { min-width: 230px; }
+.tc-menu-rojo { color: #b91c1c; } .tc-menu-rojo .ti { color: #dc2626; } .tc-menu-rojo:hover { background: #fef2f2; }
+.tc-chips .badge-vecinos, .tc-chips .badge-modo { font-size: 11px; }
+.tc-aviso { font-size: 11px; font-weight: 600; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 4px 8px; margin-top: 2px; }
 /* ===== Fase V-3 · ficha del anuncio: confianza primero (solo estilo y orden; nada se quitó) ===== */
 .panel-dueno { background: linear-gradient(135deg, #f5f3ff, #eef2ff); border: 1px solid #ddd6fe; border-radius: 16px; padding: 10px 12px 4px; margin-bottom: 12px; }
 .panel-dueno.hidden { display: none; }

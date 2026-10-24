@@ -167,6 +167,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `mi-tienda.html/js` (`#mt-logo`, `logoGestor`) y `admin-comercios.html/js` (pestaña Foto, `#ed-logo`, `edLogo`): subir/cambiar/quitar el logo; se guarda con «Guardar datos» / «Guardar todo». Sin el SQL 49 avisa en vez de fallar.
 - Se muestra en `.t-avatar` de la ficha, en la tarjeta del inicio y en «Mis favoritos». Caché v100.
 
+### Fase V-2d · La misma tarjeta de comercio en el inicio, el directorio y la búsqueda
+- **Una sola tarjeta:** `data.js` `tarjetaComercioTC(c, {distancia, completa, reportarAqui})`. La usan `app.js` (`tarjetaComercioFeed`), `comercios.js` (`tarjetaComercio`) y `buscar.js` (`tarjetaComercioBusq`). *Por qué:* antes había 3 tarjetas distintas; cambiar una y olvidar otra es como nacen los errores (regla de la sección 1).
+- **`completa: true` (directorio y búsqueda)** conserva todos los avisos de confianza: fecha del sello («… el 1 de sept»), «⚠️ Aún sin verificar…» (ahora en una franja amarilla), 👥 vecinos, sello de salud y modo de atención como chips, «🚩 ya no está aquí», zona aproximada, 📞 teléfono, «Pedir por WhatsApp», «Ver tienda (n)».
+- **Menú «⋯»:** Llamar / Cómo llegar (los que no son el botón principal), ⭐ Calificar, ✏️ «¿Es tu negocio? Actualizar o retirar» y 🚩 «Reportar este negocio» (en rojo). En el directorio abren el formulario ahí mismo; en la búsqueda llevan a `comercios.html?solicitar=ID` / `?reportar=ID`. «🔑 Reclámalo» sigue visible en la tarjeta.
+- **❤️ en las 3 páginas:** `alternarCorazonComercio` y `refrescarCorazonesComercio` pasaron de `app.js` a `data.js`. Sin sesión: en el inicio abre la ventana de entrar; en las otras páginas avisa y lleva a entrar.
+- `comercios.html` y `buscar.html` traen el sprite de íconos (nuevo `i-flag`). CSS: `.tc-aviso`, `.tc-menu-rojo`, botones dentro del menú y `.tc-detalle` que empuja los botones al fondo (alineados en la cuadrícula de escritorio). Caché v101.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

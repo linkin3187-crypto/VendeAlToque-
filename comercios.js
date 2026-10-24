@@ -28,48 +28,11 @@ function textoDistanciaCo(km) {
   return km < 1 ? Math.max(10, Math.round(km * 100) * 10) + " m" : km.toFixed(1).replace(".", ",") + " km";
 }
 
+// Fase V-2d: misma tarjeta «tipo app» del inicio (data.js), con TODOS los avisos de confianza del directorio.
+// Llamar, Cómo llegar, Calificar, «Actualizar o retirar» y «Reportar» siguen ahí, en el menú «⋯».
 function tarjetaComercio(c) {
-  const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-  const foto = urlSegura(c.foto);
-  const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
-  const sello = SELLOS[c.nivel] || SELLOS[1];
-  const hz = estadoHorario(c.horario);   // fase 2AH: abierto / cierra pronto / abre pronto / cerrado
   const km = ubicacionCo && tieneCoords(c) ? distanciaKm(ubicacionCo, c) : null;
-  return `<article class="relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
-    <div class="h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
-      <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
-      ${foto ? `<img src="${esc(foto)}" alt="Foto de ${esc(c.nombre)}" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      <span class="absolute top-2 left-2 ${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
-      ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
-      ${!c.ownerId ? `<button type="button" data-reclamar="${c.id}" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis para administrarla">🔑 ¿Es tu negocio? Reclámalo</button>` : ""}
-    </div>
-    <div class="p-4 flex-1 flex flex-col">
-      <h2 class="font-bold text-lg leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h2>
-      <p class="text-xs text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
-      ${km !== null ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistanciaCo(km)} de ti</p>` : ""}
-      ${califHTML(c)}
-      ${c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400 mt-0.5">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
-      ${c.nivel < 2 ? (confirmadoPorVecinos(c) ? `<p class="mt-1"><span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span></p>` : '<p class="text-[11px] text-amber-700 mt-0.5">⚠️ Aún sin verificar que exista aquí: confirma antes de ir</p>') : ""}
-      ${muestraSelloSalud(c) ? `<p class="mt-1">${BADGE_SALUD}</p>` : ""}
-      ${comercioDudoso(c) ? `<p class="text-[11px] font-semibold text-red-700 mt-0.5">🚩 ${c.confirmaNo} personas dicen que ya no está aquí</p>` : ""}
-      ${esUbicacionAprox(c) ? `<p class="mt-2"><span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span> <span class="text-[11px] text-slate-500">zona aproximada</span></p>` : c.direccion ? `<p class="text-sm text-slate-600 mt-2">📍 ${esc(c.direccion)}</p>` : ""}
-      ${c.horario ? `<p class="text-sm text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
-      ${c.telefono ? `<p class="text-sm text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
-      ${lineaPromoHTML(c, "mt-2")}
-      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
-      <div class="flex flex-wrap gap-2 mt-auto pt-3 relative z-10">
-        ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">📞 Llamar</a>` : ""}
-        ${vitrinaPublica(c) && c.nProductos > 0 ? `<a href="tienda.html?id=${c.id}" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">🛍️ Ver tienda (${c.nProductos})</a>` : ""}
-        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg">💬 ${esUbicacionAprox(c) ? "Pedir por WhatsApp" : "WhatsApp"}</a>` : ""}
-        ${tieneCoords(c) && !esUbicacionAprox(c) ? `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-3 py-2 rounded-lg">🗺️ Cómo llegar</a>` : ""}
-      </div>
-      <a href="tienda.html?id=${c.id}#opinar" class="relative z-10 mt-2 inline-flex w-fit items-center gap-1 text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg">⭐ Calificar</a>
-      <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 relative z-10">
-        <button type="button" data-solicitar="${c.id}" class="text-xs text-slate-500 hover:text-indigo-600 underline text-left">✏️ ¿Es tu negocio? Actualizar o retirar</button>
-        <button type="button" data-reportar-com="${c.id}" class="text-xs text-slate-500 hover:text-red-600 underline text-left">⚠️ Reportar este negocio</button>
-      </div>
-    </div>
-  </article>`;
+  return tarjetaComercioTC(c, { distancia: km !== null ? textoDistanciaCo(km) : null, completa: true, reportarAqui: true });
 }
 
 // ---------- Filtros ----------
@@ -514,6 +477,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     new IntersectionObserver(ent => { if (ent.some(x => x.isIntersecting) && listaCo.length) masUno(); }, { rootMargin: "400px" }).observe($("co-centinela"));
   }
   $("co-lista").addEventListener("click", e => {
+    const fav = e.target.closest("[data-fav-com]");   // fase V-2d: ❤️
+    if (fav) { e.preventDefault(); alternarCorazonComercio(Number(fav.dataset.favCom), fav); return; }
     const b = e.target.closest("[data-solicitar]");
     if (b) abrirSolicitud(Number(b.dataset.solicitar));
     const rc = e.target.closest("[data-reclamar]");
@@ -529,6 +494,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const pedido = parseInt(qs.get("solicitar"), 10);
   const aReportar = comercios.find(x => x.id === parseInt(qs.get("reportar"), 10));
   pintar();
+  cargarFavoritosComercio().then(refrescarCorazonesComercio);   // fase V-2d
   conectarBuscadorCo();
   if (pedido) abrirSolicitud(pedido, qs.get("tipo"));
   if (aReportar && !pedido) abrirReporteComercio(aReportar);

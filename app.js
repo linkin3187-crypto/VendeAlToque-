@@ -329,38 +329,60 @@ function pintarFiltrosComercios() {
     : "🟢 Abiertos primero; entre parecidos el orden cambia cada día · toca «Comercios cerca de mí» para ordenarlos por cercanía";
 }
 
+// Fase V-2b: tarjeta más limpia (foto a la izquierda, ❤️, estrellas, «Promo:», 1 botón principal + «Ver tienda» + «⋯»).
+// Nada se quitó: Llamar, Cómo llegar, Calificar y Editar siguen en el menú «⋯».
 function tarjetaComercioFeed(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
   const foto = urlSegura(c.foto);
   const sello = SELLOS[c.nivel] || SELLOS[1];
   const hz = estadoHorario(c.horario);   // fase 2AH
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
-  return `<article class="tarjeta-comercio relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm overflow-hidden flex flex-col" data-comercio="${c.id}">
-    <div class="h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center relative">
-      <span class="text-5xl">${esc(t ? t.icono : "🏪")}</span>
-      ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}
-      <span class="absolute top-2 left-2 ${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
-      ${badgeHorarioHTML(hz, "absolute top-2 right-2")}
-      ${!c.ownerId ? `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar absolute bottom-2 left-2 z-10" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>` : ""}
-    </div>
-    <div class="p-4 flex-1 flex flex-col">
-      <h3 class="font-bold text-base leading-tight"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
-      <p class="text-xs text-slate-500">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
-      ${ubicacionComercios && tieneCoords(c) ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistancia(distanciaComercio(c))} de ti</p>` : ""}
-      <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
-      ${c.descripcion ? `<p class="text-sm text-slate-600 mt-1.5 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
-      ${c.direccion ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${esc(c.direccion)}</p>` : ""}
-      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
-      ${vitrinaPublica(c) && c.nProductos > 0 ? `<p class="text-xs font-bold text-teal-700 mt-1.5">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
-      ${lineaPromoHTML(c, "mt-1.5")}
-      <p class="text-[11px] text-indigo-600 font-semibold mt-2">👆 Toca para ver el comercio completo${vitrinaPublica(c) && c.nProductos > 0 ? ", sus productos y promociones" : ""}</p>
-      <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100 relative z-10">
-        ${c.whatsapp ? `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg">💬 WhatsApp</a>` : ""}
-        ${tel ? `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg">📞 Llamar</a>` : ""}
-        ${esUbicacionAprox(c) ? "" : `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="text-xs bg-blue-500 hover:bg-blue-600 text-white font-semibold px-3 py-1.5 rounded-lg">🗺️ Cómo llegar</a>`}
-        <a href="tienda.html?id=${c.id}#opinar" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold px-3 py-1.5 rounded-lg">⭐ Calificar</a>
-        ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold px-3 py-1.5 rounded-lg">✏️ Editar</a>` : ""}
+  const ico = n => `<svg class="ti" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+  const wa = c.whatsapp ? { html: cls => `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="${cls}">${ico("chat")}WhatsApp</a>` } : null;
+  const ll = tel ? { html: cls => `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="${cls}">${ico("phone")}Llamar</a>` } : null;
+  const ir = esUbicacionAprox(c) ? null : { html: cls => `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="${cls}">${ico("route")}Cómo llegar</a>` };
+  const acciones = [wa, ll, ir].filter(Boolean);
+  const principal = acciones.shift();
+  const guardado = favoritosComercioIds.has(c.id);
+  const vitrina = vitrinaPublica(c) && c.nProductos > 0;
+  return `<article class="tarjeta-comercio tc relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm flex flex-col" data-comercio="${c.id}">
+    <button type="button" data-fav-com="${c.id}" class="tc-fav" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}">${guardado ? "❤️" : "🤍"}</button>
+    <div class="tc-cuerpo">
+      <div class="tc-foto">
+        <span>${esc(t ? t.icono : "🏪")}</span>
+        ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}
       </div>
+      <div class="tc-info">
+        <h3 class="font-bold text-base leading-tight pr-8"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
+        <p class="text-xs text-slate-500 mt-0.5">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
+        ${ubicacionComercios && tieneCoords(c) ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${textoDistancia(distanciaComercio(c))} de ti</p>` : ""}
+        <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
+        <div class="tc-chips">
+          <span class="${c.nivel === 3 ? "bg-green-600 text-white" : c.nivel === 2 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
+          ${badgeHorarioHTML(hz, "")}
+        </div>
+      </div>
+    </div>
+    <div class="tc-detalle">
+      ${!c.ownerId ? `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar relative z-10 inline-block mb-1.5" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>` : ""}
+      ${c.descripcion ? `<p class="text-sm text-slate-600 line-clamp-2">${esc(c.descripcion)}</p>` : ""}
+      ${c.direccion ? `<p class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</p>` : ""}
+      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
+      ${vitrina ? `<p class="text-xs font-bold text-teal-700 mt-1">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
+      ${lineaPromoHTML(c, "mt-1", true)}
+      <p class="tc-toca">👆 Toca para ver el comercio completo${vitrina ? ", sus productos y promociones" : ""} →</p>
+    </div>
+    <div class="tc-acciones">
+      ${principal ? principal.html(principal === wa ? "tc-b tc-b-wa" : principal === ll ? "tc-b tc-b-wa" : "tc-b tc-b-suave") : ""}
+      <a href="tienda.html?id=${c.id}" class="tc-b tc-b-suave">${ico("store")}Ver tienda</a>
+      <details class="tc-mas">
+        <summary class="tc-b tc-b-mas" aria-label="Más opciones">${ico("dots")}</summary>
+        <div class="tc-menu">
+          ${acciones.map(a => a.html("tc-menu-op")).join("")}
+          <a href="tienda.html?id=${c.id}#opinar" class="tc-menu-op">${ico("star")}Calificar</a>
+          ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="tc-menu-op">${ico("edit")}Editar</a>` : ""}
+        </div>
+      </details>
     </div>
   </article>`;
 }
@@ -910,7 +932,31 @@ document.addEventListener("click", e => {
 
 });
 
+// ---------- ❤️ de comercios (fase V-2b) ----------
+async function alternarCorazonComercio(id, btn) {
+  if (!usuarioActual) { mostrarToast("Inicia sesión para guardar favoritos", "error"); abrirModal("modal-auth"); return; }
+  const antes = favoritosComercioIds.has(id);
+  pintarCorazon(btn, !antes);
+  btn.disabled = true;
+  try {
+    const ahora = await alternarFavoritoComercio(id);
+    pintarCorazon(btn, ahora);
+    mostrarToast(ahora ? "❤️ Comercio guardado en favoritos" : "Quitado de favoritos");
+  } catch (err) {
+    pintarCorazon(btn, antes);
+    mostrarToast(/favoritos_comercio/.test(err.message || "") ? "Falta ejecutar supabase/48_favoritos_comercios.sql" : mensajeError(err), "error");
+  } finally { btn.disabled = false; }
+}
+function refrescarCorazonesComercio() {
+  document.querySelectorAll("[data-fav-com]").forEach(b => pintarCorazon(b, favoritosComercioIds.has(Number(b.dataset.favCom))));
+}
+// El menú «⋯» de las tarjetas se cierra al tocar fuera
+document.addEventListener("click", e => {
+  document.querySelectorAll("details.tc-mas[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; });
+});
+
 async function refrescarCorazones() {
+  cargarFavoritosComercio().then(refrescarCorazonesComercio);
   await cargarFavoritos();
   document.querySelectorAll('[data-accion="favorito"]').forEach(b => {
     const fila = b.closest("[data-id]");
@@ -1541,6 +1587,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (volverSiCorresponde()) return;
   refrescarMiTienda();
   await cargarFavoritos();           // si falla (p. ej. aún no existe la tabla) la lista sigue funcionando
+  cargarFavoritosComercio().then(refrescarCorazonesComercio);   // fase V-2b (SQL 48)
   aplicarFiltros();
   pintarSeleccionDia();
   $("sel-lista").addEventListener("click", quitarDeSeleccion);
@@ -1554,6 +1601,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("comercios-buscar").addEventListener("input", e => { textoComercio = e.target.value; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
   $("comercios-depto").addEventListener("change", e => { deptoComercio = e.target.value; muniComercio = ""; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
   $("comercios-feed").addEventListener("click", e => {
+    const fav = e.target.closest("[data-fav-com]");   // fase V-2b: ❤️ en comercios
+    if (fav) { e.preventDefault(); alternarCorazonComercio(Number(fav.dataset.favCom), fav); return; }
     if (!e.target.closest("#btn-limpiar-comercios")) return;
     muniComercio = ""; deptoComercio = ""; textoComercio = ""; $("comercios-buscar").value = ""; catComercio = "todos"; pintarComerciosFeed();
   });

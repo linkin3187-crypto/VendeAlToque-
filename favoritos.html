@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <title>Mis favoritos | Merkap</title>
   <meta name="robots" content="noindex">
-  <link rel="stylesheet" href="styles.css?v=97">
-  <link rel="stylesheet" href="tw.css?v=97">
+  <link rel="stylesheet" href="styles.css?v=98">
+  <link rel="stylesheet" href="tw.css?v=98">
 </head>
 <body class="bg-slate-50 text-slate-800" data-nav="favoritos">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -20,8 +20,14 @@
 
   <main class="max-w-5xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-black text-indigo-900">❤️ Mis favoritos</h1>
-    <p class="text-sm text-slate-500 mt-1 mb-4">Los anuncios que guardaste. Solo tú los ves.</p>
+    <p class="text-sm text-slate-500 mt-1 mb-4">Los anuncios y comercios que guardaste. Solo tú los ves.</p>
     <div id="fav-cargando" class="text-slate-500 text-sm">Cargando…</div>
+    <!-- Fase V-2b: comercios guardados con el ❤️ (SQL 48) -->
+    <section id="favc-caja" class="hidden mb-6">
+      <h2 class="text-lg font-black text-indigo-900 mb-2">🏪 Comercios</h2>
+      <div id="favc-lista" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
+    <h2 id="fav-titulo-anuncios" class="hidden text-lg font-black text-indigo-900 mb-2">📢 Anuncios</h2>
     <div id="fav-lista" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
     <div id="fav-vacio" class="hidden text-center py-12 text-slate-500">
       <div class="text-4xl mb-2">🤍</div>
@@ -36,9 +42,9 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=97"></script>
-  <script src="data.js?v=97"></script>
-  <script src="navegacion.js?v=97"></script>
-  <script src="favoritos.js?v=97"></script>
+  <script src="utils.js?v=98"></script>
+  <script src="data.js?v=98"></script>
+  <script src="navegacion.js?v=98"></script>
+  <script src="favoritos.js?v=98"></script>
 </body>
 </html>

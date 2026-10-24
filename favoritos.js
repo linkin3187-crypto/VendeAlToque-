@@ -22,7 +22,7 @@ function tarjetaFavorito(a) {
 // Fase V-2b: comercios guardados
 function tarjetaFavComercio(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-  const foto = urlSegura(c.foto);
+  const foto = imagenCuadroComercio(c);   // fase V-2c
   return `<article data-com="${c.id}" class="relative bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex gap-3 items-center">
     <a href="tienda.html?id=${c.id}" class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-100 to-pink-50 flex items-center justify-center text-3xl">
       <span>${esc(t ? t.icono : "🏪")}</span>${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}</a>

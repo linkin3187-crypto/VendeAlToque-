@@ -805,6 +805,7 @@ function filaAComercio(r) {
     // Fase 2AA.4: galería (máx. 5; la primera es la portada). Sin el SQL 27, la foto de siempre.
     fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 5),
     tieneColumnaFotos: Array.isArray(r.fotos),
+    logo: r.logo_url || "", tieneColumnaLogo: "logo_url" in r,   // fase V-2c (SQL 49)
     modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
     // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)
     confirmaSi: Number(r.confirma_si) || 0, confirmaNo: Number(r.confirma_no) || 0, confirmaLugar: Number(r.confirma_lugar) || 0,
@@ -2967,7 +2968,11 @@ function cerrarVisorFotos() {
 // Uso: const g = gestorFotos(contenedor, fotosActuales); … const urls = await g.subir();
 // =====================================================================
 const MAX_FOTOS_COMERCIO = 5;
-function gestorFotos(cont, iniciales, alCambiar, max) {
+// Fase V-2c: lo que se muestra en el cuadrito de una tienda: su logo, si no la portada, si no el ícono
+function imagenCuadroComercio(c) { return urlSegura(c.logo) || urlSegura(c.foto) || ""; }
+const NOTA_LOGO = "Tu logo: idealmente <b>cuadrado</b>, con fondo blanco o transparente. Sale en el cuadro blanco sobre tu portada, en las tarjetas y en favoritos. Si no subes uno, se ve el ícono de tu categoría.";
+// opciones (fase V-2c): { nota: texto de ayuda, sinPortada: no marcar «Portada» } — para el logo (1 foto)
+function gestorFotos(cont, iniciales, alCambiar, max, opciones = {}) {
   const MAX = max || MAX_FOTOS_COMERCIO;
   let items = (iniciales || []).filter(Boolean).slice(0, MAX).map(url => ({ url }));
   let cambiado = false;
@@ -2975,7 +2980,7 @@ function gestorFotos(cont, iniciales, alCambiar, max) {
   function pintar() {
     cont.innerHTML = `<div class="gf-grid">${items.map((it, i) => `<div class="gf-item" data-gf="${i}">
         <img src="${esc(it.data || urlSegura(it.url))}" alt="Foto ${i + 1}" data-gf-ver="${i}">
-        ${i === 0 ? '<span class="gf-portada">Portada</span>' : ""}
+        ${i === 0 && !opciones.sinPortada ? '<span class="gf-portada">Portada</span>' : ""}
         <div class="gf-acciones">
           ${i > 0 ? `<button type="button" data-gf-mover="-1" aria-label="Mover a la izquierda">◀</button>` : ""}
           ${i > 0 ? `<button type="button" data-gf-portada aria-label="Usar como portada" title="Usar como portada">★</button>` : ""}
@@ -2986,7 +2991,7 @@ function gestorFotos(cont, iniciales, alCambiar, max) {
         <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" capture="environment" class="sr-only">📷 Tomar foto</label>
         <label class="foto-btn"><input type="file" data-gf-nueva accept="image/*" multiple class="sr-only">🖼️ Galería</label>
       </span>` : ""}
-      <p class="text-[11px] text-slate-500 mt-1">${items.length} de ${MAX} fotos. La primera es la <b>portada</b>; toca una foto para verla en grande.</p>`;
+      <p class="text-[11px] text-slate-500 mt-1">${opciones.nota || `${items.length} de ${MAX} fotos. La primera es la <b>portada</b>; toca una foto para verla en grande.`}</p>`;
   }
   function cambio() { cambiado = true; pintar(); if (alCambiar) alCambiar(); }
   cont.addEventListener("click", e => {

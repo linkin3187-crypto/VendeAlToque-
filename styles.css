@@ -1183,3 +1183,8 @@ body:has(#t-mapa-caja.hidden) .t-info-mapa { display: none; }
 .anuncio-reportar .ti { width: 16px; height: 16px; }
 .anuncio-h2 { display: flex; align-items: center; gap: 8px; font-size: 1.125rem; font-weight: 800; color: #1e1b4b; margin-bottom: .5rem; }
 .anuncio-h2 .ti { width: 20px; height: 20px; color: #4f46e5; }
+/* Fase V-2c · logo de la tienda */
+.t-avatar { overflow: hidden; }
+.t-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #fff; }
+.gf-logo .gf-grid { grid-template-columns: repeat(auto-fill, 96px); }
+.gf-logo .gf-item { border-radius: 20px; }

@@ -333,7 +333,7 @@ function pintarFiltrosComercios() {
 // Nada se quitó: Llamar, Cómo llegar, Calificar y Editar siguen en el menú «⋯».
 function tarjetaComercioFeed(c) {
   const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
-  const foto = urlSegura(c.foto);
+  const foto = imagenCuadroComercio(c);   // fase V-2c: logo → portada → ícono
   const sello = SELLOS[c.nivel] || SELLOS[1];
   const hz = estadoHorario(c.horario);   // fase 2AH
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");

@@ -794,7 +794,7 @@ async function enviarVerificacion(resultado) {
 // ---------- Editor completo de un comercio (fase 2AA.2) ----------
 // Todo lo que tienen el registro de negocio y «Mi tienda», en pestañas y con un solo «Guardar todo».
 // La ubicación se mueve con el mismo mapa de «Corregir ubicación», pero vuelve aquí sin guardarse sola.
-let edC = null, edCoords = null, edSucio = false, ubParaEditor = false, edGaleria = null;
+let edC = null, edCoords = null, edSucio = false, ubParaEditor = false, edGaleria = null, edLogo = null;
 function marcarEditorSucio() { edSucio = true; $("ed-sucio").classList.remove("hidden"); }
 function pintarCoordsEditor() {
   const p = edCoords || edC;
@@ -829,6 +829,7 @@ function abrirEditor(id) {
   $("ed-aviso-aprox").classList.toggle("hidden", !esUbicacionAprox(c));
   pintarCoordsEditor();
   edGaleria = gestorFotos($("ed-galeria"), c.fotos, marcarEditorSucio);   // fase 2AA.4: hasta 5 fotos
+  edLogo = gestorFotos($("ed-logo"), c.logo ? [c.logo] : [], marcarEditorSucio, 1, { sinPortada: true, nota: NOTA_LOGO });   // fase V-2c
   $("ed-activo").checked = !!c.activo;
   pintarDuenoEditor();
   pintarSaludEditor();
@@ -904,6 +905,10 @@ async function guardarEditor() {
       const urls = await edGaleria.subir();
       if (edC.tieneColumnaFotos) cambios.fotos = urls;   // el servidor pone la portada (la primera)
       else cambios.foto_url = urls[0] || null;           // sin el SQL 27: solo la portada
+    }
+    if (edLogo && edLogo.cambiado) {   // fase V-2c (SQL 49)
+      if (!edC.tieneColumnaLogo) throw new Error("Para guardar el logo falta ejecutar supabase/49_logo_comercio.sql");
+      cambios.logo_url = (await edLogo.subir())[0] || null;
     }
     await guardarComercioDB(edC.id, cambios);
     edSucio = false;

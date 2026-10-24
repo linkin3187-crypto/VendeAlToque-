@@ -1347,3 +1347,34 @@ button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; 
   body.mapa-abierto .nav-inferior, body.mapa-abierto .fab-mapa-caja { display: none !important; }
 }
 @media (min-width: 1024px) { .fab-mapa-caja, .mapa-plegado { display: none !important; } }
+
+/* ===== Fase 2BA · Filtros compactos (propuesta B): mismo modelo en Anuncios y Comercios ===== */
+.fb-frase { font-size: .75rem; font-weight: 700; color: #64748b; margin-bottom: 8px; }
+.fb-botones { display: flex; flex-wrap: wrap; gap: 5px; }
+.fb-b { display: inline-flex; align-items: center; gap: 3px; min-height: 36px; border-radius: 999px; padding: 0 9px; font-size: .76rem; font-weight: 800; border: 1.5px solid #c7d2fe; background: #eef2ff; color: #3730a3; white-space: nowrap; cursor: pointer; }
+.fb-b i { font-style: normal; font-size: .7rem; }
+.fb-b span { max-width: 9.5rem; overflow: hidden; text-overflow: ellipsis; }
+.fb-b.fb-activo { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.fb-b.fb-abierto { box-shadow: 0 0 0 3px #fde68a; }
+.fb-b.fb-mas { background: #fff; border-color: #e2e8f0; color: #334155; }
+.fb-b.fb-mas.fb-activo { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.fb-b.fb-cerca { background: #4f46e5; border-color: #3730a3; color: #fff; box-shadow: 0 2px 0 #3730a3; }
+.fb-b.fb-cerca[aria-pressed="true"] { background: #16a34a; border-color: #15803d; box-shadow: 0 2px 0 #166534; }
+.fb-hoja { margin-top: 8px; border: 1.5px solid #c7d2fe; border-radius: 14px; padding: 10px; background: #fff; box-shadow: 0 8px 20px rgba(79, 70, 229, .10); }
+.fb-hoja-tit { display: flex; align-items: center; justify-content: space-between; font-size: .85rem; font-weight: 900; color: #1e1b4b; margin-bottom: 8px; }
+.fb-cerrar { width: 30px; height: 30px; border-radius: 999px; background: #f1f5f9; color: #475569; font-weight: 900; }
+.fb-hoja-acc { display: flex; gap: 8px; margin-top: 12px; }
+.fb-acc, .fb-acc-suave { flex: 1; min-height: 38px; border-radius: 10px; font-weight: 800; font-size: .85rem; }
+.fb-acc { background: #4f46e5; color: #fff; } .fb-acc-suave { background: #f1f5f9; color: #334155; }
+.fb-busca { width: 100%; height: 40px; border: 1.5px solid #c7d2fe; border-radius: 12px; padding: 0 12px; font-size: 16px; background: #fff; margin-bottom: 8px; }
+.fb-busca:focus { outline: 2px solid #818cf8; outline-offset: 1px; }
+.fb-ind { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .72rem; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 6px 9px; }
+.fb-ind > span { flex: 1; }
+.fb-ind-anu { color: #3730a3; background: #eef2ff; border-color: #c7d2fe; }
+.fb-ind b { font-weight: 800; }
+.fb-hoja-mas.fb-hoja { margin-top: 8px; }
+.fb-ind.fb-ind-anu { display: block; }
+
+/* En Comercios la caja de filtros va dentro de la tarjeta de la sección: sin doble borde */
+#fb-comercios.fb-caja { border: 0; box-shadow: none; padding: 0; }
+@media (min-width: 640px) { .fb-b { padding: 0 12px; font-size: .8rem; } }

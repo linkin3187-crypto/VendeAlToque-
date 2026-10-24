@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=105" />
-  <link rel="stylesheet" href="tw.css?v=105">
+  <link rel="stylesheet" href="styles.css?v=106" />
+  <link rel="stylesheet" href="tw.css?v=106">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
   <!-- Íconos de línea de las tarjetas de comercio (fase V-2b · V-2d) -->
@@ -207,22 +207,33 @@
 
   <!-- FILTROS (compactos) -->
   <div class="max-w-7xl mx-auto px-4 pt-2">
-    <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
-      <!-- Fase 2AS: categoría y subcategoría como un filtro más (antes eran botones sueltos arriba) -->
-      <p class="text-xs font-bold text-slate-500 mb-1.5">🔎 Filtra los anuncios por categoría, lugar y orden</p>
-      <div id="fila-categoria" class="grid grid-cols-2 gap-2 mb-2">
-        <label for="filtro-categoria" class="sr-only">Categoría</label>
-        <select id="filtro-categoria" class="filtro-sel col-span-2" title="Categoría"></select>
-        <label for="filtro-subcategoria" class="sr-only">Subcategoría</label>
-        <select id="filtro-subcategoria" class="filtro-sel hidden" title="Subcategoría"></select>
+    <!-- Fase 2BA (propuesta B): filtros compactos — una frase, una fila de botones que despliegan su lista y una línea
+         que explica el orden. Es el MISMO modelo de la sección Comercios. Los id de siempre no cambian (mismo código).
+         (La propuesta A, con las listas a la vista, quedó guardada en el ROADMAP por si se quiere volver.) -->
+    <div id="fb-anuncios" class="fb-caja bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+      <p class="fb-frase">🔎 Filtra los anuncios: toca un botón para elegir</p>
+      <div class="fb-botones" role="group" aria-label="Filtros de anuncios">
+        <button type="button" class="fb-b" data-fb="fb-a-cat" aria-expanded="false" aria-controls="fb-a-cat">📂 <span id="fb-a-cat-txt">Categoría</span> <i aria-hidden="true">▾</i></button>
+        <button type="button" class="fb-b" data-fb="fb-a-lugar" aria-expanded="false" aria-controls="fb-a-lugar">📍 <span id="fb-a-lugar-txt">Lugar</span> <i aria-hidden="true">▾</i></button>
+        <button type="button" class="fb-b" data-fb="fb-a-orden" aria-expanded="false" aria-controls="fb-a-orden">↕️ <span id="fb-a-orden-txt">Recientes</span> <i aria-hidden="true">▾</i></button>
+        <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca fb-b fb-cerca">📡 Cerca de mí</button>
+        <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" title="Más filtros: precio, estado, distancia, solo con foto…" class="fb-b fb-mas">⚙️ Más <span aria-hidden="true" id="flecha-filtros">▾</span></button>
       </div>
-      <div id="filtros-detalle" class="filtros-detalle hidden mb-2" aria-label="Filtros de inmuebles y vehículos"></div>
-      <!-- Compactos (fase 2W.1): fila 1 = dónde · fila 2 = cerca, orden y más filtros · luego los filtros activos con ✕.
-           En computador todo cabe en una sola fila. Los id no cambian: el código es el mismo. -->
-      <div class="flex flex-col lg:flex-row gap-2">
-        <div class="grid grid-cols-2 gap-2 lg:flex-[3]">
+      <!-- Lo que despliega cada botón (uno a la vez; se cierra con ✕ o al elegir) -->
+      <div id="fb-a-cat" class="fb-hoja hidden">
+        <div class="fb-hoja-tit">📂 ¿Qué buscas? <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+        <div id="fila-categoria" class="grid grid-cols-2 gap-2">
+          <label for="filtro-categoria" class="sr-only">Categoría</label>
+          <select id="filtro-categoria" class="filtro-sel col-span-2" title="Categoría"></select>
+          <label for="filtro-subcategoria" class="sr-only">Subcategoría</label>
+          <select id="filtro-subcategoria" class="filtro-sel hidden" title="Subcategoría"></select>
+        </div>
+      </div>
+      <div id="fb-a-lugar" class="fb-hoja hidden">
+        <div class="fb-hoja-tit">📍 ¿Dónde buscas? <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+        <div class="grid grid-cols-2 gap-2">
           <label for="filtro-departamento" class="sr-only">Departamento</label>
-          <select id="filtro-departamento" class="filtro-sel" title="Departamento">
+          <select id="filtro-departamento" class="filtro-sel" title="Departamento" data-fb-sigue="1">
             <option value="">📍 Departamento</option>
           </select>
           <label for="filtro-ciudad" class="sr-only">Municipio o ciudad</label>
@@ -230,26 +241,24 @@
             <option value="">🏘️ Ciudad</option>
           </select>
         </div>
-        <div class="flex flex-wrap lg:flex-nowrap gap-2 lg:flex-[3]">
-          <!-- Fase 2AS: «Ordenar por» se ve escrito (en celular va en su propia fila) -->
-          <label for="ordenar-por" class="ordenar-caja w-full lg:w-auto lg:flex-1 min-w-0"><span class="ordenar-etq">↕️ Ordenar por</span>
-          <select id="ordenar-por" class="filtro-sel flex-1 min-w-0" title="Ordenar por">
-            <option value="recientes">Más recientes</option>
-            <option value="cercanos">Más cerca de mí</option>
-            <option value="precio-asc">Menor precio</option>
-            <option value="precio-desc">Mayor precio</option>
-            <option value="nombre">Nombre A-Z</option>
-          </select></label>
-          <button type="button" id="btn-cerca-anuncios" aria-pressed="false" class="btn-cerca btn-cerca-pill whitespace-nowrap flex-1 lg:flex-none">📡 Cerca de mí</button>
-          <button id="btn-filtros" type="button" aria-expanded="false" aria-controls="panel-filtros" title="Más filtros: precio, estado, distancia, solo con foto…" class="btn-mas-filtros">
-            ⚙️<span class="hidden min-[400px]:inline"> Filtros</span> <span aria-hidden="true" id="flecha-filtros">▾</span>
-          </button>
-        </div>
       </div>
-      <!-- Filtros activos: se ven aunque «Filtros» esté cerrado y se quitan con ✕ (anuncios-comun.js → pintarChipsActivos) -->
+      <div id="fb-a-orden" class="fb-hoja hidden">
+        <div class="fb-hoja-tit">↕️ Ordenar por <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+        <label for="ordenar-por" class="sr-only">Ordenar por</label>
+        <select id="ordenar-por" class="filtro-sel w-full" title="Ordenar por">
+          <option value="recientes">Más recientes</option>
+          <option value="cercanos">Más cerca de mí</option>
+          <option value="precio-asc">Menor precio</option>
+          <option value="precio-desc">Mayor precio</option>
+          <option value="nombre">Nombre A-Z</option>
+        </select>
+      </div>
+      <div id="filtros-detalle" class="filtros-detalle hidden mt-2" aria-label="Filtros de inmuebles y vehículos"></div>
+      <!-- Filtros activos: se ven aunque los botones estén cerrados y se quitan con ✕ (anuncios-comun.js → pintarChipsActivos) -->
       <div id="chips-activos" class="hidden flex flex-wrap gap-1.5 mt-2" aria-label="Filtros activos"></div>
+      <p id="fb-a-ind" class="fb-ind fb-ind-anu">🕒 <b>Más recientes primero</b> · toca «Cerca de mí» para ver los más cercanos</p>
 
-      <div id="panel-filtros" class="hidden mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="panel-filtros" class="fb-hoja fb-hoja-mas hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label for="filtro-estado" class="block text-xs font-bold text-slate-500 mb-1">Estado</label>
           <select id="filtro-estado" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
@@ -395,16 +404,70 @@
         <h2 class="text-xl font-bold">🏪 Comercios <span id="comercios-contador" class="text-sm font-semibold text-slate-400"></span></h2>
         <a href="comercios.html" id="link-directorio" class="text-sm text-indigo-600 font-semibold hover:underline">Ver directorio completo →</a>
       </div>
-      <p class="text-sm text-slate-500 mb-4">👆 <b>Toca un comercio</b> para ver su ficha completa, sus productos y promociones.</p>
-      <div class="flex flex-wrap items-center gap-2 mb-2">
-        <input id="comercios-buscar" type="search" maxlength="60" placeholder="🔎 Buscar comercio…" aria-label="Buscar comercio" class="border border-slate-300 rounded-lg p-1.5 text-sm bg-white w-full sm:w-52">
-        <select id="comercios-depto" aria-label="Departamento de los comercios" class="hidden border border-slate-300 rounded-lg p-1.5 text-sm bg-white"></select>
-        <label for="comercios-muni" id="comercios-muni-etq" class="hidden text-xs font-bold text-slate-500">🏘️ Municipio</label>
-        <select id="comercios-muni" aria-label="Municipio" class="hidden border border-slate-300 rounded-lg p-1.5 text-sm bg-white"></select>
-        <button type="button" id="btn-cerca-comercios" aria-pressed="false" class="btn-cerca btn-cerca-chico whitespace-nowrap">📡 Comercios cerca de mí</button>
-        <span class="text-xs text-slate-500 basis-full sm:basis-auto inline-flex items-center gap-1.5"><span id="comercios-orden"></span><details class="orden-info"><summary title="¿Por qué veo este orden?" aria-label="¿Por qué veo este orden?">ⓘ</summary><div class="orden-info-txt" data-orden-info></div></details></span>
+      <p class="text-sm text-slate-500 mb-3">👆 <b>Toca un comercio</b> para ver su ficha completa, sus productos y promociones.</p>
+      <!-- Fase 2BA (propuesta B): el MISMO modelo de filtros de «Anuncios y clasificados» + lo propio de comercios
+           (su buscador y las categorías en botones con su número, con las reglas de aparición de siempre) -->
+      <div id="fb-comercios" class="fb-caja bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-3">
+        <p class="fb-frase">🔎 Filtra los comercios: escribe o toca un botón para elegir</p>
+        <input id="comercios-buscar" type="search" maxlength="60" placeholder="🔎 Buscar comercio…" aria-label="Buscar comercio" class="fb-busca">
+        <div class="fb-botones" role="group" aria-label="Filtros de comercios">
+          <button type="button" class="fb-b" data-fb="fb-c-lugar" aria-expanded="false" aria-controls="fb-c-lugar">📍 <span id="fb-c-lugar-txt">Lugar</span> <i aria-hidden="true">▾</i></button>
+          <button type="button" class="fb-b" data-fb="fb-c-orden" aria-expanded="false" aria-controls="fb-c-orden">↕️ <span id="fb-c-orden-txt">Abiertos primero</span> <i aria-hidden="true">▾</i></button>
+          <button type="button" id="btn-cerca-comercios" aria-pressed="false" class="btn-cerca fb-b fb-cerca">📡 Cerca de mí</button>
+          <button type="button" class="fb-b fb-mas" data-fb="fb-c-mas" aria-expanded="false" aria-controls="fb-c-mas">⚙️ Más <i aria-hidden="true">▾</i></button>
+        </div>
+        <div id="fb-c-lugar" class="fb-hoja hidden">
+          <div class="fb-hoja-tit">📍 ¿Dónde buscas? <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="comercios-depto" aria-label="Departamento de los comercios" class="filtro-sel hidden" data-fb-sigue="1"></select>
+            <label for="comercios-muni" id="comercios-muni-etq" class="hidden sr-only">🏘️ Municipio</label>
+            <select id="comercios-muni" aria-label="Municipio" class="filtro-sel hidden col-span-2"></select>
+          </div>
+          <p id="fb-c-lugar-uno" class="hidden text-xs text-slate-500">Por ahora todos los comercios están en un solo municipio.</p>
+        </div>
+        <div id="fb-c-orden" class="fb-hoja hidden">
+          <div class="fb-hoja-tit">↕️ Ordenar por <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+          <select id="comercios-ordenar" aria-label="Ordenar comercios por" class="filtro-sel w-full">
+            <option value="abiertos">🟢 Abiertos primero</option>
+            <option value="relevantes">⚖️ Relevantes</option>
+            <option value="cercanos">📍 Más cercanos a mí</option>
+            <option value="calificacion">⭐ Mejor calificados</option>
+            <option value="nombre">🔤 Nombre A-Z</option>
+          </select>
+        </div>
+        <div id="fb-c-mas" class="fb-hoja hidden" data-fb-queda="1">
+          <div class="fb-hoja-tit">⚙️ Más filtros <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="comercios-nivel" class="block text-xs font-bold text-slate-500 mb-1">✔ Verificación</label>
+              <select id="comercios-nivel" class="filtro-sel w-full">
+                <option value="">Todos (verificados y sin verificar)</option>
+                <option value="2">Solo verificados</option>
+                <option value="3">Solo con ubicación confirmada en persona</option>
+                <option value="1">Solo sin verificar (ubicados)</option>
+              </select>
+            </div>
+            <div>
+              <label for="comercios-calif" class="block text-xs font-bold text-slate-500 mb-1">⭐ Calificación</label>
+              <select id="comercios-calif" class="filtro-sel w-full">
+                <option value="">Cualquiera</option>
+                <option value="4">4 ★ o más</option>
+                <option value="3">3 ★ o más</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <span class="text-xs font-bold text-slate-500">Solo los que…</span>
+              <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="comercios-abierto" class="w-4 h-4"> 🟢 Están abiertos ahora</label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="comercios-vitrina" class="w-4 h-4"> 🛍️ Tienen vitrina (productos)</label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="comercios-promo" class="w-4 h-4"> 🔥 Tienen promoción</label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="comercios-salud" class="w-4 h-4"> 🧾 Droguerías con NIT y director técnico declarados</label>
+            </div>
+          </div>
+          <div class="fb-hoja-acc"><button type="button" id="comercios-limpiar-mas" class="fb-acc-suave">Limpiar</button><button type="button" id="comercios-ver" class="fb-acc">Ver comercios</button></div>
+        </div>
+        <div id="comercios-cats" class="flex gap-2 overflow-x-auto pb-1 mt-2 custom-scrollbar" role="tablist" aria-label="Categorías de comercios"></div>
+        <div class="fb-ind"><span id="comercios-orden"></span><details class="orden-info"><summary title="¿Por qué veo este orden?" aria-label="¿Por qué veo este orden?">ⓘ</summary><div class="orden-info-txt" data-orden-info></div></details></div>
       </div>
-      <div id="comercios-cats" class="flex gap-2 overflow-x-auto pb-2 mb-3 custom-scrollbar" role="tablist" aria-label="Categorías de comercios"></div>
       <div id="comercios-feed" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       <div id="comercios-mas" class="hidden text-center mt-5">
         <button type="button" id="btn-mas-comercios" class="bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold px-6 py-2.5 rounded-xl text-sm shadow-sm"></button>
@@ -724,16 +787,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=105"></script>
-  <script src="data.js?v=105"></script>
-  <script src="foro.js?v=105"></script>
-  <script src="carrusel.js?v=105"></script>
-  <script src="buscador.js?v=105"></script>
-  <script src="anuncios-comun.js?v=105"></script>
-  <script src="qr.js?v=105"></script>
-  <script src="piezas.js?v=105"></script>
-  <script src="compartir.js?v=105"></script>
-  <script src="app.js?v=105"></script>
-  <script src="navegacion.js?v=105"></script>
+  <script src="utils.js?v=106"></script>
+  <script src="data.js?v=106"></script>
+  <script src="foro.js?v=106"></script>
+  <script src="carrusel.js?v=106"></script>
+  <script src="buscador.js?v=106"></script>
+  <script src="anuncios-comun.js?v=106"></script>
+  <script src="qr.js?v=106"></script>
+  <script src="piezas.js?v=106"></script>
+  <script src="compartir.js?v=106"></script>
+  <script src="app.js?v=106"></script>
+  <script src="navegacion.js?v=106"></script>
 </body>
 </html>

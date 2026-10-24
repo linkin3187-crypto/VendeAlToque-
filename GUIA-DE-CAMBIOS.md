@@ -195,6 +195,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **(B) Botón flotante** `#fab-mapa` «🗺️ Mapa N»: aparece al bajar cuando la tarjeta ya no se ve (no arriba, no sobre el pie); globo «👋 ¿Prefieres verlos en el mapa?» solo la 1.ª vez (`mf_globo_mapa`); en la sección Comercios abre solo comercios.
 - **Computador:** igual que antes (columna derecha fija). «⤢ Ampliar» quedó reemplazado por la pantalla completa en el celular. Caché v105.
 
+### Fase 2BA · Filtros compactos del inicio (propuesta B): el mismo modelo en Anuncios y Comercios
+- **Por qué:** los filtros de Comercios ocupaban ~450 px y los de Anuncios ~320 px en el celular, y cada sección se usaba distinto. Ahora las dos se ven y se usan igual: se aprende una vez.
+- **Modelo:** una frase («🔎 Filtra…: toca un botón para elegir»), una fila de botones que despliegan su lista debajo (`.fb-b` → `.fb-hoja`, uno a la vez, ✕ o al elegir se cierra) y una línea que explica el orden (`.fb-ind`). El botón se pinta morado y dice lo elegido («📍 Envigado», «↕️ Menor precio», «⚙️ Más (2)»). `utils.js` `conectarBotonesFiltro(caja)` sirve para las dos.
+- **Anuncios:** 📂 Categoría · 📍 Lugar (departamento + ciudad) · ↕️ Orden · 📡 Cerca de mí · ⚙️ Más (el panel de siempre). Los id de siempre no cambiaron: el código de filtros es el mismo. `anuncios-comun.js` `sincronizarBotonesAnuncios()` (se llama desde `pintarChipsActivos`).
+- **Comercios:** lo mismo + lo propio: su buscador y las categorías en botones con su número (mismas reglas de aparición). **Nuevo en el inicio:** ↕️ Orden (Abiertos primero, Relevantes, Más cercanos, Mejor calificados, Nombre A-Z) y ⚙️ Más (verificación, calificación, abierto ahora, con vitrina, con promoción, 🧾 droguerías), iguales al directorio completo (`ordenComercio`, `filtrosCom`, `sincronizarBotonesComercios`).
+- El buscador fijo de arriba sigue buscando en **todo** (anuncios, comercios y productos de vitrinas). Caché v106.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

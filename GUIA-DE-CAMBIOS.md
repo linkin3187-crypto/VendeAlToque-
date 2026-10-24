@@ -174,6 +174,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **❤️ en las 3 páginas:** `alternarCorazonComercio` y `refrescarCorazonesComercio` pasaron de `app.js` a `data.js`. Sin sesión: en el inicio abre la ventana de entrar; en las otras páginas avisa y lleva a entrar.
 - `comercios.html` y `buscar.html` traen el sprite de íconos (nuevo `i-flag`). CSS: `.tc-aviso`, `.tc-menu-rojo`, botones dentro del menú y `.tc-detalle` que empuja los botones al fondo (alineados en la cuadrícula de escritorio). Caché v101.
 
+### Fase V-4 · Tarjeta de anuncio «tipo marketplace»
+- `anuncios-comun.js` `tarjetaHTML` (inicio, «Todos los anuncios» y perfil del vendedor): el **precio grande debajo de la foto** (`.ta-precio`) con el anterior tachado y «🤝 Negociable» o «Precio fijo» (`ETIQUETA_PRECIO`). Sobre la foto solo: «🕒 hace…» (arriba a la izquierda), ❤️ (arriba a la derecha, como en comercios), «📉 −%» y «📷 N».
+- Debajo: título, una línea con íconos (ciudad · distancia · «Publicado el 22 oct 2026»), tipo y Nuevo/Usado, datos del artículo, descripción, la franja «👆 Toca para ver el anuncio completo →» (antes la cinta sobre la foto), WhatsApp + 📞 + Mapa y «Ver anuncio completo →».
+- Panel del dueño en franja morada («🙋 Es tu anuncio · ✏️ Editar mi publicación») y del administrador en franja naranja punteada («👑 Administrador · Editar · Eliminar»). Los íconos van dentro de la tarjeta (`ICONOS_TA`), así funcionan en cualquier página sin sprite. **Nada se quitó.** CSS `.ta*`. Caché v102.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

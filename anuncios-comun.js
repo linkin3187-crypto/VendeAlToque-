@@ -333,7 +333,18 @@ function botonesContactoHTML(a, chico) {
     + (tel ? `<button type="button" data-contacto="llamar" ${base} aria-label="Llamar al vendedor" title="Llamar" class="btn-llamar ${wa ? "px-3.5" : "flex-1"} text-sm font-semibold py-2.5 rounded-xl">${wa ? ICONO_TEL : ICONO_TEL + " Llamar"}</button>` : "");
 }
 
-// ---------- Tarjeta de anuncio (igual en el inicio y en «Todos los anuncios») ----------
+// ---------- Tarjeta de anuncio (igual en el inicio, «Todos los anuncios» y el perfil del vendedor) ----------
+// Fase V-4 «tipo marketplace»: el precio sale de la foto y queda grande debajo; la foto solo lleva
+// «hace…», ❤️, −% y 📷. NADA se quitó: rebaja tachada, negociable/fijo, fecha, ciudad, distancia,
+// tipo, nuevo/usado, datos del artículo, descripción, «Toca para ver…», «Ver anuncio completo»,
+// WhatsApp, Llamar, Mapa y los paneles del dueño y del administrador.
+const ICONOS_TA = {
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  ruta: '<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
+  reloj: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  camara: '<path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="3.5"/>'
+};
+const icoTA = n => `<svg class="ti" viewBox="0 0 24 24" aria-hidden="true">${ICONOS_TA[n]}</svg>`;
 function tarjetaHTML(a) {
   const icono = iconosCategoria[a.categoria] || "📦";
   const foto = urlSegura(a.imagen);
@@ -347,36 +358,43 @@ function tarjetaHTML(a) {
   // Si la foto falla al cargar, se quita la <img> y queda el icono (sin código extra por tarjeta).
   const guardado = favoritosIds.has(a.id);
   const esMio = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
-  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio relative bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-    <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-lg">${guardado ? "❤️" : "🤍"}</button>
-    <a href="anuncio.html?id=${a.id}" class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
+  const rb = rebajaDe(a);
+  const tipoPrecio = ETIQUETA_PRECIO[(a.detalles || {}).precio_tipo];
+  const sub = nombreSubcategoria(a.categoria, a.subcategoria);
+  const fechaCorta = a.fecha ? fechaPublicacion(a.fecha).split(",")[0] : "";
+  return `<article id="tarjeta-${a.id}" data-id="${a.id}" class="tarjeta-anuncio ta relative bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <button type="button" data-accion="favorito" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}" class="btn-fav ta-fav">${guardado ? "❤️" : "🤍"}</button>
+    <a href="anuncio.html?id=${a.id}" class="ta-foto relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center" aria-label="Ver ${esc(a.nombre)}">
       <span class="text-5xl">${icono}</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover${esAdultos(a) ? " foto-18" : ""}">` : ""}
       ${esAdultos(a) ? '<span class="aviso-foto-18" data-foto18>🔞 Toca para ver (+18)</span>' : ""}
-      ${a.precio ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow text-right">${rebajaDe(a) ? `<span class="block text-[10px] font-semibold line-through text-indigo-200">${esc(formatearPrecio(rebajaDe(a).antes))}</span>` : ""}${esc(precioConSufijo(a))}${rebajaDe(a) ? `<span class="block mt-0.5"><span class="rebaja-pct">📉 −${rebajaDe(a).pct} %</span></span>` : ""}${(a.detalles || {}).precio_tipo === "negociable" ? '<span class="block text-[10px] font-semibold text-indigo-100">Negociable</span>' : ""}</div>` : ""}
       ${a.fecha ? `<span class="foto-publicado ${esReciente(a.fecha) ? "reciente" : ""}" title="Publicado el ${esc(fechaPublicacion(a.fecha))}">🕒 ${esc(haceCuanto(a.fecha))}</span>` : ""}
-      ${a.fotos && a.fotos.length > 1 ? `<span class="absolute bottom-8 right-2 bg-black/60 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md" aria-label="${a.fotos.length} fotos">📷 ${a.fotos.length}</span>` : ""}
-      <span class="cinta-ver absolute bottom-0 inset-x-0 text-center text-xs font-bold text-white py-1.5">👆 Toca para ver el anuncio completo</span>
+      ${rb ? `<span class="ta-rebaja">📉 −${rb.pct} %</span>` : ""}
+      ${a.fotos && a.fotos.length > 1 ? `<span class="ta-nfotos" aria-label="${a.fotos.length} fotos">${icoTA("camara")}${a.fotos.length}</span>` : ""}
     </a>
-    <div class="p-4 flex flex-col flex-1">
-      <div class="flex items-center gap-2 mb-1 flex-wrap">
-        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(a.ciudad || a.barrio || "")}</span>
-        ${nombreSubcategoria(a.categoria, a.subcategoria) ? `<span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(nombreSubcategoria(a.categoria, a.subcategoria))}</span>` : ""}
-        ${badgeEstado}
-        ${km !== null ? `<span class="text-xs text-slate-400">${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
-      </div>
-      <h3 class="font-bold text-slate-900 mb-1 line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
+    <div class="ta-cuerpo flex flex-col flex-1">
+      ${a.precio ? `<p class="ta-precio"><b>${esc(precioConSufijo(a))}</b>${rb ? `<s>${esc(formatearPrecio(rb.antes))}</s>` : ""}${tipoPrecio ? `<span class="ta-tipo-precio ${(a.detalles || {}).precio_tipo}">${esc(tipoPrecio)}</span>` : ""}</p>` : ""}
+      <h3 class="ta-titulo line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
+      <p class="ta-meta">
+        ${a.ciudad || a.barrio ? `<span>${icoTA("pin")}${esc(a.ciudad || a.barrio)}</span>` : ""}
+        ${km !== null ? `<span>${icoTA("ruta")}${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
+        ${fechaCorta ? `<span>${icoTA("reloj")}Publicado el ${esc(fechaCorta)}</span>` : ""}
+      </p>
+      ${sub || badgeEstado ? `<div class="ta-chips">${sub ? `<span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(sub)}</span>` : ""}${badgeEstado}</div>` : ""}
       ${(() => { const r = resumenDetalles(a); return r.length ? `<div class="det-chips">${r.slice(0, 5).map((t, i) => `<span class="det-chip ${i === 0 && a.detalles && a.detalles.operacion ? "op" : ""}">${esc(t)}</span>`).join("")}</div>` : ""; })()}
-      <p class="text-sm text-slate-600 line-clamp-2 mb-3 flex-1">${esc(a.desc || "")}</p>
-      <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2.5 rounded-xl mb-2">Ver anuncio completo →</a>
-      <div class="flex gap-2">
-        ${botonesContactoHTML(a)}
-        ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-2.5 rounded-xl" title="Ver en el mapa">📍 Mapa</button>` : ""}
+      <p class="text-sm text-slate-600 line-clamp-2 mt-1.5 flex-1">${esc(a.desc || "")}</p>
+      <a href="anuncio.html?id=${a.id}" class="cinta-ver ta-toca"><span>👆 Toca para ver el anuncio completo</span><span aria-hidden="true">→</span></a>
+      <div class="ta-acciones">
+        <div class="flex gap-2">
+          ${botonesContactoHTML(a)}
+          ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="ta-b-mapa" title="Ver en el mapa">${icoTA("pin")}Mapa</button>` : ""}
+        </div>
+        <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2 rounded-xl mt-2">Ver anuncio completo →</a>
       </div>
-      ${esMio ? '<button type="button" data-accion="editar" class="btn-editar-mio mt-2 w-full text-sm font-bold py-2 rounded-xl">✏️ Editar mi publicación</button>' : ""}
-      ${EDITOR && !esMio ? `<div class="flex gap-2 mt-2">
-        <button type="button" data-accion="editar" class="flex-1 text-xs bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg">✏️ Editar</button>
-        <button type="button" data-accion="eliminar-admin" class="flex-1 text-xs bg-red-100 text-red-600 font-semibold py-2 rounded-lg">🗑️ Eliminar</button>
+      ${esMio ? '<div class="ta-panel-dueno"><span>🙋 Es tu anuncio</span><button type="button" data-accion="editar" class="btn-editar-mio text-sm font-bold py-2 px-3 rounded-xl">✏️ Editar mi publicación</button></div>' : ""}
+      ${EDITOR && !esMio ? `<div class="ta-panel-admin"><span>👑 Administrador</span>
+        <button type="button" data-accion="editar" class="text-xs bg-indigo-100 text-indigo-700 font-semibold py-1.5 px-2.5 rounded-lg">✏️ Editar</button>
+        <button type="button" data-accion="eliminar-admin" class="text-xs bg-red-100 text-red-600 font-semibold py-1.5 px-2.5 rounded-lg">🗑️ Eliminar</button>
       </div>` : ""}
     </div>
   </article>`;

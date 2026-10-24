@@ -12,7 +12,7 @@
 // Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
 // código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
 // Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
-const VERSION_SITIO = 103;
+const VERSION_SITIO = 104;
 (function revisarVersion() {
   try {
     const src = (document.currentScript && document.currentScript.src) || "";
@@ -556,13 +556,18 @@ function diasDeTexto(t) {
 
 // Convierte el horario en tramos {dias, ini, fin} (minutos del día). «24 horas» → "siempre"; si no se entiende → null.
 function tramosHorario(horario) {
-  const txt = sinTildes(horario);
+  // V-4b: arreglos de escritura comunes: «730 am» → «7:30 am», «don» → «dom»
+  const txt = sinTildes(horario)
+    .replace(/\b(\d{1,2})([0-5]\d)\s*(am|pm|a\.\s?m\.|p\.\s?m\.)/g, "$1:$2 $3")
+    .replace(/\bdon\b/g, "dom");
   if (!txt.trim()) return null;
   if (/24 ?(h|horas)|24\/7/.test(txt)) return "siempre";
   const tramos = [];
   let diasPrevios = null;   // «Lun-Vie 8-12, 2-6»: el segundo tramo hereda los días del primero
   for (const seg of txt.split(/[;,/\n|]+|\by\b/)) {
-    const hm = seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?\s*(?:[-–]|\ba\b|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?/);
+    const hm = seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?\s*(?:[-–]|\ba\b|hasta)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)?/)
+      // V-4b: «8:30 am 7:30 pm» (sin «a» ni guion): se entiende si las dos horas dicen am/pm
+      || seg.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.\s?m\.|p\.\s?m\.)/);
     if (!hm) continue;
     const ap = x => x ? (x[0] === "p" ? "pm" : "am") : undefined;
     const dias = diasDeTexto(seg.slice(0, hm.index)) || diasPrevios || [0, 1, 2, 3, 4, 5, 6];

@@ -1194,3 +1194,47 @@ button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; 
 .t-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #fff; }
 .gf-logo .gf-grid { grid-template-columns: repeat(auto-fill, 96px); }
 .gf-logo .gf-item { border-radius: 20px; }
+
+/* ===== Fase V-4 · Tarjeta de anuncio «tipo marketplace» (nada se quitó) ===== */
+.ta { position: relative; }
+.ta .ti { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.ta-fav { position: absolute; top: 8px; right: 8px; z-index: 10; width: 36px; height: 36px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.ta-fav:hover { border-color: #fda4af; }
+.ta .foto-publicado { top: 8px; bottom: auto; left: 8px; border-radius: 999px; padding: 2px 8px; background: rgb(15 23 42 / .62); backdrop-filter: blur(4px); }
+.ta .foto-publicado.reciente { background: #059669; }
+.ta-rebaja { position: absolute; left: 8px; bottom: 8px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 999px; }
+.ta-nfotos { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; background: rgb(15 23 42 / .62); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.ta-nfotos .ti { width: 12px; height: 12px; }
+.ta-cuerpo { padding: 12px 14px 14px; }
+.ta-precio { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ta-precio b { font-size: 1.3rem; font-weight: 900; color: #0f172a; letter-spacing: -.02em; line-height: 1.2; }
+.ta-precio s { font-size: .8rem; color: #94a3b8; }
+.ta-tipo-precio { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 1px 8px; background: #f1f5f9; color: #475569; }
+.ta-tipo-precio.negociable { background: #fef9c3; color: #854d0e; }
+.ta-titulo { font-size: .95rem; font-weight: 800; line-height: 1.25; color: #0f172a; margin-top: 2px; }
+.ta-meta { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 5px; font-size: 12px; color: #64748b; }
+.ta-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.ta-meta .ti { color: #6366f1; }
+.ta-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ta .det-chips { margin-top: 6px; }
+.ta-toca { display: flex; justify-content: space-between; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 800; color: #4f46e5 !important; background: #eef2ff; border-radius: 10px; padding: 7px 10px; text-decoration: none !important; }
+.ta-toca:hover { background: #e0e7ff; }
+.ta-acciones { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+.ta-acciones [data-contacto="whatsapp"] { background: #16a34a; font-weight: 800; }
+.ta-acciones [data-contacto="whatsapp"]:hover { background: #15803d; }
+.ta-b-mapa { display: inline-flex; align-items: center; gap: 4px; padding: 0 10px; border-radius: 12px; background: #f1f5f9; color: #334155; font-size: .8rem; font-weight: 800; }
+.ta-b-mapa:hover { background: #e2e8f0; }
+.ta-b-mapa .ti { width: 16px; height: 16px; color: #6366f1; }
+.ta .btn-ver-anuncio { border-width: 1px; }
+.ta-panel-dueno { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; padding: 8px; }
+.ta-panel-dueno > span { flex: 1; font-size: 11px; font-weight: 800; color: #6d28d9; white-space: nowrap; }
+.ta-panel-dueno .btn-editar-mio { background: #7c3aed; color: #fff; border: 0; }
+.ta-panel-dueno .btn-editar-mio:hover { background: #6d28d9; }
+.ta-panel-admin { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #fff7ed; border: 1px dashed #fdba74; border-radius: 12px; padding: 8px; }
+.ta-panel-admin > span { flex: 1; font-size: 11px; font-weight: 800; color: #9a3412; white-space: nowrap; }
+
+/* V-4.1: «¿Cómo pedir?» en los productos de la tienda */
+.t-como-pedir { margin-top: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 10px 12px; font-size: 12.5px; color: #14532d; }
+.t-como-pedir ol { margin: 6px 0 4px 18px; list-style: decimal; display: grid; gap: 3px; }
+.t-como-pedir p { font-size: 11.5px; color: #166534; }
+.t-chip-agregar { display: inline-block; background: #4f46e5; color: #fff; font-weight: 800; font-size: 11px; border-radius: 999px; padding: 0 8px; }

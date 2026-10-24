@@ -145,6 +145,8 @@ function renderizarTienda(c, ps) {
     $("t-desactualizado").classList.toggle("hidden", (Date.now() - new Date(ultima).getTime()) / 86400000 <= 30);
   }
 
+  // V-4.1: cómo funciona «+ Agregar» (arma un pedido que se envía por WhatsApp)
+  $("t-como-pedir").classList.toggle("hidden", !(c.whatsapp && ps.some(p => p.disponible)));
   // Recoger / domicilio: si ofrece ambos, la persona elige
   if (c.recoge && c.domicilio && c.whatsapp) {
     $("t-modo").classList.remove("hidden");
@@ -356,7 +358,13 @@ async function pintarPromosTienda(c) {
 
 function manejarClicks(e) {
   const mas = e.target.closest("[data-mas]"), menos = e.target.closest("[data-menos]"), rep = e.target.closest("[data-reportar]");
-  if (mas) { const id = Number(mas.dataset.mas); carrito.set(id, Math.min(20, (carrito.get(id) || 0) + 1)); pintarProductos(); }
+  if (mas) {
+    const id = Number(mas.dataset.mas);
+    const primero = !itemsPedido().length;
+    carrito.set(id, Math.min(20, (carrito.get(id) || 0) + 1)); pintarProductos();
+    // V-4.1: la primera vez explica qué pasó y qué sigue
+    if (primero) mostrarToast("🛒 Agregado a tu pedido. Cuando termines, toca «Pedir por WhatsApp» abajo para enviarlo.");
+  }
   else if (menos) { const id = Number(menos.dataset.menos); const n = (carrito.get(id) || 0) - 1; n > 0 ? carrito.set(id, n) : carrito.delete(id); pintarProductos(); }
   else if (rep) {
     if (!usuarioActual) {

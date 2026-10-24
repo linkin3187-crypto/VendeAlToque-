@@ -358,17 +358,29 @@ function pintarEjemplosCo() {
   $("co-ejemplos").classList.toggle("hidden", !ej.length);
 }
 // Lleva la vista al comienzo de los resultados (debajo del buscador pegado, si lo está)
-function irAResultadosCo() {
+// siempre = true al tocar 🔍, Enter o un ejemplo: la persona debe VER que hubo resultados (fase 2AW.1)
+function irAResultadosCo(siempre) {
   const fija = $("co-busca").classList.contains("fija");
-  const alto = fija ? $("co-busca").offsetHeight + 8 : 12;
-  const y = $("co-contador").getBoundingClientRect().top + scrollY - alto;
-  if (fija || y < scrollY) window.scrollTo({ top: y, behavior: "smooth" });
+  // Al bajar, el buscador queda pegado arriba: se deja su alto libre para que no tape el «N comercios»
+  const alto = $("co-busca").offsetHeight + (fija ? 0 : 17) + 12;   // pegado suma 8 + 8 de margen y 1 de borde
+  let y = Math.max(0, $("co-contador").getBoundingClientRect().top + scrollY - alto);
+  // Con pocos resultados la página no alcanza a bajar tanto: se baja solo hasta dejar el buscador
+  // entero arriba (sin cortarlo) y los resultados quedan a la vista debajo
+  const max = document.documentElement.scrollHeight - innerHeight;
+  if (y > max) y = Math.max(0, Math.min(max, $("co-busca-sitio").getBoundingClientRect().top + scrollY - 8));
+  if (!(siempre || fija || y < scrollY)) return;
+  const quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: y, behavior: quieto ? "auto" : "smooth" });
+  if (siempre) {   // el conteo brilla un momento: «aquí están tus resultados»
+    const c = $("co-contador");
+    c.classList.remove("co-contador-brillo"); void c.offsetWidth; c.classList.add("co-contador-brillo");
+  }
 }
 function conectarBuscadorCo() {
   const input = $("co-buscar"), sitio = $("co-busca-sitio"), barra = $("co-busca");
   if (typeof animarLetrero === "function") animarLetrero(input, "Busca ", { fuente: palabrasDirectorio, fijo: "Nombre, dirección o tipo" });
   pintarEjemplosCo();
-  const buscarYa = () => { input.blur(); pintar(); irAResultadosCo(); };   // cierra el teclado y muestra los resultados
+  const buscarYa = () => { input.blur(); pintar(); irAResultadosCo(true); };   // cierra el teclado y muestra los resultados
   $("co-ir").addEventListener("click", () => { if (input.value.trim()) buscarYa(); else input.focus(); });
   input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscarYa(); } });
   $("co-borrar").addEventListener("click", () => { input.value = ""; pintar(); input.focus(); });

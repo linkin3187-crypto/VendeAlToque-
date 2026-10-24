@@ -1018,3 +1018,20 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 .orden-info-txt { position: absolute; right: 0; top: 34px; z-index: 60; width: min(300px, 80vw); background: #fff; color: #334155; border: 1px solid #c7d2fe; border-radius: 12px; padding: 10px 12px; font-size: 12.5px; font-weight: 500; line-height: 1.45; box-shadow: 0 10px 24px rgba(15, 23, 42, .15); text-align: left; white-space: normal; }
 .mt-ficha { font-size: .85rem; line-height: 1.45; margin-top: .5rem; padding: .55rem .75rem; border-radius: .6rem; background: #eef2ff; color: #312e81; border: 1px solid #c7d2fe; }
 .mt-ficha.completa { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
+/* Fase 2AV · buscador del directorio: 🔍, ✕, ejemplos y pegado arriba al bajar */
+.busca-sitio { margin-bottom: .5rem; }
+.busca-co-in { position: relative; }
+.busca-co-ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; }
+.busca-co-input { width: 100%; border: 2px solid #c7d2fe; border-radius: 14px; padding: 12px 96px 12px 42px; font-size: 16px; background: #fff; box-shadow: 0 1px 2px rgba(30, 27, 75, .06); -webkit-appearance: none; appearance: none; }
+.busca-co-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, .18); }
+.busca-co-input::placeholder { color: #64748b; }
+.busca-co-input::-webkit-search-cancel-button { display: none; }
+.busca-co-x { position: absolute; right: 58px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; background: #f1f5f9; color: #475569; font-weight: 700; font-size: 14px; }
+.busca-co-x:hover { background: #e2e8f0; }
+.busca-co-ir { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 40px; width: 46px; border-radius: 10px; background: #4f46e5; color: #fff; font-size: 18px; }
+.busca-co-ir:hover { background: #4338ca; }
+.busca-ejemplos { font-size: .75rem; color: #64748b; margin: 0 2px .65rem; line-height: 1.9; }
+.busca-ejemplos button { color: #3730a3; font-weight: 700; text-decoration: underline dotted; text-underline-offset: 3px; }
+.busca-co.fija { position: fixed; top: 0; left: 0; right: 0; z-index: 45; padding: 8px max(16px, calc((100vw - 72rem) / 2 + 16px)); background: rgba(248, 250, 252, .97); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border-bottom: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(30, 27, 75, .08); animation: busca-baja .18s ease-out; }
+@keyframes busca-baja { from { transform: translateY(-100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .busca-co.fija { animation: none; } }

@@ -303,14 +303,17 @@ function palabrasLetrero() {
   return PALABRAS_LETRERO_BASE.concat(extra.sort(() => Math.random() - 0.5)).filter(p => !vistas.has(p) && vistas.add(p)).slice(0, 18);
 }
 
-function animarLetrero(input, prefijo = "¿Qué buscas hoy? ") {
+// opciones (fase 2AV, directorio): { fuente: () => [palabras], fijo: "texto quieto" }
+function animarLetrero(input, prefijo = "¿Qué buscas hoy? ", opciones = {}) {
   if (!input) return;
-  const fijo = prefijo + "restaurantes, farmacias, usados…";
+  const fijo = opciones.fijo || prefijo + "restaurantes, farmacias, usados…";
+  const fuente = opciones.fuente || palabrasLetrero;
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { input.placeholder = fijo; return; }
-  let palabras = PALABRAS_LETRERO_BASE.slice(), i = 0, letras = 0, borrando = false, t = null;
+  let palabras = opciones.fuente ? [] : PALABRAS_LETRERO_BASE.slice(), i = 0, letras = 0, borrando = false, t = null;
   const pausado = () => document.activeElement === input || input.value || document.hidden;
   function paso() {
     if (pausado()) { input.placeholder = fijo; t = setTimeout(paso, 600); return; }
+    if (!palabras.length) { input.placeholder = fijo; t = setTimeout(() => { palabras = fuente(); paso(); }, 1500); return; }
     const p = palabras[i % palabras.length];
     if (!borrando) {
       letras++;
@@ -322,12 +325,12 @@ function animarLetrero(input, prefijo = "¿Qué buscas hoy? ") {
       input.placeholder = prefijo + p.slice(0, Math.max(0, letras));
       if (letras <= 0) {
         borrando = false; i++;
-        if (i % palabras.length === 0) palabras = palabrasLetrero();   // en cada vuelta toma las categorías ya cargadas
+        if (i % palabras.length === 0) palabras = fuente();   // en cada vuelta toma las categorías ya cargadas
         t = setTimeout(paso, 300); return;
       }
       t = setTimeout(paso, 35);
     }
   }
-  setTimeout(() => { palabras = palabrasLetrero(); paso(); }, 800);
+  setTimeout(() => { palabras = fuente(); paso(); }, 800);
   return () => clearTimeout(t);
 }

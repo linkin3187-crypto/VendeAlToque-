@@ -161,6 +161,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `anuncio.html`: `#panel-dueno` agrupa Editar / Compartir (morado) / Rebajar; `#vendedor-caja` y `.anuncio-seguro` (Compra seguro, con enlace a «Sobre Merkap») suben antes de los botones; «Cómo llegar» pasa a blanco con borde y su explicación `.ayuda-llegar` sigue debajo; «Reportar» como botón suave; títulos `.anuncio-h2` con ícono. Todo lo demás igual (precio rebajado, fijo/negociable, publicado hace…, fecha, leyendas, guía, descripción completa con sus datos por tipo, ubicación, similares, barra de abajo).
 - `anuncio.js`: muestra `#panel-dueno` al dueño; `#sel-botones` (administrador) con su título; la guía rápida abierta la 1.ª vez y plegada después (`mf_guia_vista`), respetando si la persona la abre o la cierra. Caché v99.
 
+### Fase V-2c · Logo de la tienda (SQL 49)
+- `supabase/49_logo_comercio.sql`: `comercios.logo_url` (https, ≤500) y `comercios_limite_dueno` permite `logo_url` al dueño.
+- `data.js`: `c.logo`, `c.tieneColumnaLogo`; `gestorFotos(…, max, {nota, sinPortada})`; `imagenCuadroComercio(c)` (logo → portada → ícono); `NOTA_LOGO`.
+- `mi-tienda.html/js` (`#mt-logo`, `logoGestor`) y `admin-comercios.html/js` (pestaña Foto, `#ed-logo`, `edLogo`): subir/cambiar/quitar el logo; se guarda con «Guardar datos» / «Guardar todo». Sin el SQL 49 avisa en vez de fallar.
+- Se muestra en `.t-avatar` de la ficha, en la tarjeta del inicio y en «Mis favoritos». Caché v100.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

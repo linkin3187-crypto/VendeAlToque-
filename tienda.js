@@ -80,6 +80,10 @@ function renderizarTienda(c, ps) {
   document.title = `${c.nombre} | Merkap`;
   $("t-nombre").textContent = c.nombre;
   $("t-icono").textContent = t ? t.icono : "🏪";
+  // Fase V-2c: si la tienda subió su logo, va en el cuadro blanco sobre la portada (si no carga, queda el ícono)
+  const logo = urlSegura(c.logo);
+  const av = document.querySelector(".t-avatar");
+  if (av) { av.querySelectorAll("img").forEach(x => x.remove()); if (logo) { const im = document.createElement("img"); im.src = logo; im.alt = "Logo de " + c.nombre; im.addEventListener("error", () => im.remove()); av.appendChild(im); } }
   $("t-sub").textContent = [nombreCategorias(c), c.ciudad].filter(Boolean).join(" · ");
   const sello = SELLOS[c.nivel] || SELLOS[1];
   $("t-sello").className = "text-xs font-semibold px-2 py-0.5 rounded-full " + sello.clase;

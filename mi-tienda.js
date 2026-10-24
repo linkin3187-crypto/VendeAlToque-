@@ -9,6 +9,7 @@ let productosMios = [];
 const maxProductos = () => (actual && actual.limiteProductos) || LIMITE_PRODUCTOS_GRATIS;
 
 let galeria = null;
+let logoGestor = null;   // fase V-2c
 let datosSalud = null;   // fase 2AB.1: datos sanitarios del comercio actual (o null)
 const soloDigitos = s => String(s || "").replace(/\D/g, "");
 
@@ -60,6 +61,7 @@ function pintarDatos() {
   $("mt-dom").checked = actual.domicilio;
   $("mt-dom-info").value = actual.domicilioInfo;
   galeria = gestorFotos($("mt-galeria"), actual.fotos);   // fase 2AA.4
+  logoGestor = gestorFotos($("mt-logo"), actual.logo ? [actual.logo] : [], null, 1, { sinPortada: true, nota: NOTA_LOGO });   // fase V-2c
 }
 
 async function guardarNegocio(e) {
@@ -86,6 +88,10 @@ async function guardarNegocio(e) {
     if (galeria && galeria.cambiado) {
       const urls = await galeria.subir();
       if (actual.tieneColumnaFotos) cambios.fotos = urls; else cambios.foto_url = urls[0] || null;
+    }
+    if (logoGestor && logoGestor.cambiado) {   // fase V-2c (SQL 49)
+      if (!actual.tieneColumnaLogo) throw new Error("Para guardar el logo falta ejecutar supabase/49_logo_comercio.sql");
+      cambios.logo_url = (await logoGestor.subir())[0] || null;
     }
     actual = await guardarMiComercio(actual.id, cambios);
     misComercios = misComercios.map(c => c.id === actual.id ? actual : c);

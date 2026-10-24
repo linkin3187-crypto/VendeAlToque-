@@ -107,6 +107,7 @@ async function cercaDeMiComercios() {
   const btn = $("btn-cerca-comercios");
   if (btn.getAttribute("aria-pressed") === "true") {
     ubicacionComercios = null;
+    if (ordenComercio === "cercanos") ordenComercio = "abiertos";   // fase 2BA
     btn.setAttribute("aria-pressed", "false");
     comerciosVisibles = POR_PAGINA_COMERCIOS;
     pintarComerciosFeed();
@@ -116,13 +117,14 @@ async function cercaDeMiComercios() {
   try {
     ubicacionComercios = await obtenerGPS();
     muniComercio = ""; deptoComercio = "";
+    ordenComercio = "cercanos";   // fase 2BA
     btn.setAttribute("aria-pressed", "true");
     comerciosVisibles = POR_PAGINA_COMERCIOS;
     pintarComerciosFeed();
   } catch (err) {
     mostrarToast(textoErrorGPS(err), "error");
   } finally {
-    btn.disabled = false; btn.textContent = "📡 Comercios cerca de mí";
+    btn.disabled = false; btn.textContent = "📡 Cerca de mí";
   }
 }
 
@@ -203,6 +205,9 @@ const POR_PAGINA_COMERCIOS = 12;
 let comerciosVisibles = POR_PAGINA_COMERCIOS;
 
 let catComercio = "todos", muniComercio = "", deptoComercio = "", textoComercio = "";
+// Fase 2BA: orden y «⚙️ Más» de comercios en el inicio (los mismos del directorio completo)
+let ordenComercio = "abiertos";
+const filtrosCom = { nivel: "", calif: 0, abierto: false, vitrina: false, promo: false, salud: false };
 let ubicacionComercios = null;   // {lat,lng}: solo si tocaste «Comercios cerca de mí» (independiente de los clasificados)
 
 // Base: SOLO los filtros propios de la sección de comercios (buscador, departamento y municipio de comercios).
@@ -213,6 +218,14 @@ function comerciosBase() {
   return comercios.filter(c => {
     if (deptoComercio && c.departamento !== deptoComercio) return false;
     if (muniComercio && String(c.municipioId) !== muniComercio) return false;
+    const f = filtrosCom;   // fase 2BA: «⚙️ Más»
+    if (f.nivel === "1" && c.nivel !== 1) return false;
+    if ((f.nivel === "2" || f.nivel === "3") && c.nivel < Number(f.nivel)) return false;
+    if (f.calif && !((c.nCalif || 0) > 0 && (c.calif || 0) >= f.calif)) return false;
+    if (f.abierto && estaAbierto(c.horario) !== true) return false;
+    if (f.vitrina && !(vitrinaPublica(c) && c.nProductos > 0)) return false;
+    if (f.promo && !(c.promos || []).length) return false;
+    if (f.salud && !muestraSelloSalud(c)) return false;
     if (texto) {
       if (typeof comercioCoincide === "function") { if (!comercioCoincide(c, texto)) return false; }
       else {
@@ -285,11 +298,58 @@ function distanciaComercio(c) {
 
 function comerciosFiltrados() {
   // Con «Comercios cerca de mí»: los más cercanos primero. Sin él: verificados, con productos y por nombre.
-  const l = comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio))
-    .sort((x, y) => ubicacionComercios ? distanciaComercio(x) - distanciaComercio(y)
-      : (grupoHorario(x) - grupoHorario(y)) || compararRelevantes(x, y));   // fase 2AI: abiertos primero · 2AO: rotación justa
+  const l = comerciosBase().filter(c => catComercio === "todos" || comercioEsTipo(c, catComercio));
+  // Fase 2BA: «↕️ Orden» como en el directorio. Con «Cerca de mí» y orden «Abiertos primero» (por defecto) → por cercanía.
+  const o = ordenComercio;
+  if (ubicacionComercios && (o === "cercanos" || o === "abiertos")) return l.sort((x, y) => distanciaComercio(x) - distanciaComercio(y));
+  if (o === "calificacion") return l.sort((x, y) => (puntajeCalifCom(y) - puntajeCalifCom(x)) || compararRelevantes(x, y));
+  if (o === "nombre") return l.sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+  if (o === "relevantes") { l.sort(compararRelevantes); return catComercio === "todos" ? conVariedad(l, c => (fichaIncompleta(c) ? 1 : 0)) : l; }
+  l.sort((x, y) => (grupoHorario(x) - grupoHorario(y)) || compararRelevantes(x, y));   // fase 2AI: abiertos primero · 2AO: rotación justa
   // Fase 2AO-C: en «Todos», variedad (máx. 2 seguidos del mismo tipo) sin sacar a nadie de su grupo
-  return !ubicacionComercios && catComercio === "todos" ? conVariedad(l, c => grupoHorario(c) * 2 + (fichaIncompleta(c) ? 1 : 0)) : l;
+  return catComercio === "todos" ? conVariedad(l, c => grupoHorario(c) * 2 + (fichaIncompleta(c) ? 1 : 0)) : l;
+}
+
+// Promedio ponderado de estrellas (igual que en el directorio): 4,8 con 40 opiniones vale más que 5,0 con 1
+function puntajeCalifCom(c) {
+  const n = c.nCalif || 0;
+  return n ? (3.5 * 3 + (c.calif || 0) * n) / (3 + n) : 0;
+}
+const ORDEN_COM_CORTO = { abiertos: "Abiertos primero", relevantes: "Relevantes", cercanos: "Más cercanos", calificacion: "Mejor calificados", nombre: "Nombre A-Z" };
+function cuantosFiltrosCom() {
+  const f = filtrosCom;
+  return [f.nivel, f.calif, f.abierto, f.vitrina, f.promo, f.salud].filter(Boolean).length;
+}
+// Fase 2BA: los botones compactos dicen lo elegido y la línea explica el orden
+function sincronizarBotonesComercios(nMunis, nDeptos) {
+  const tL = $("fb-c-lugar-txt");
+  if (!tL) return;
+  const selM = $("comercios-muni"), selD = $("comercios-depto");
+  const muni = muniComercio && selM.selectedOptions[0] ? selM.selectedOptions[0].textContent : "";
+  tL.textContent = ubicacionComercios ? "Cerca de ti" : (muni || deptoComercio || "Lugar");
+  tL.closest(".fb-b").classList.toggle("fb-activo", !!(muni || deptoComercio));
+  $("fb-c-lugar-uno").classList.toggle("hidden", nMunis > 1 || nDeptos > 1);
+  const tO = $("fb-c-orden-txt");
+  tO.textContent = ORDEN_COM_CORTO[ordenComercio] || "Abiertos primero";
+  tO.closest(".fb-b").classList.toggle("fb-activo", ordenComercio !== "abiertos");
+  $("comercios-ordenar").value = ordenComercio;
+  const n = cuantosFiltrosCom();
+  const bm = document.querySelector('[data-fb="fb-c-mas"]');
+  bm.firstChild.textContent = n ? `⚙️ Más (${n}) ` : "⚙️ Más ";
+  bm.classList.toggle("fb-activo", n > 0);
+}
+function leerFiltrosComDelPanel() {
+  filtrosCom.nivel = $("comercios-nivel").value;
+  filtrosCom.calif = parseFloat($("comercios-calif").value) || 0;
+  ["abierto", "vitrina", "promo", "salud"].forEach(k => { filtrosCom[k] = $("comercios-" + k).checked; });
+  comerciosVisibles = POR_PAGINA_COMERCIOS;
+  pintarComerciosFeed();
+}
+
+function limpiarFiltrosComPanel() {
+  $("comercios-nivel").value = ""; $("comercios-calif").value = "";
+  ["abierto", "vitrina", "promo", "salud"].forEach(k => { $("comercios-" + k).checked = false; });
+  Object.assign(filtrosCom, { nivel: "", calif: 0, abierto: false, vitrina: false, promo: false, salud: false });
 }
 
 // Categorías (con cuántos hay) y municipios de esta sección
@@ -325,8 +385,17 @@ function pintarFiltrosComercios() {
   sel.value = muniComercio;
   sel.classList.toggle("hidden", ids.length < 2);
   $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
-  $("comercios-orden").textContent = ubicacionComercios ? "📍 Ordenados por cercanía a ti (de toda la zona)"
-    : "🟢 Abiertos primero; entre parecidos el orden cambia cada día · toca «Comercios cerca de mí» para ordenarlos por cercanía";
+  const lineas = {
+    abiertos: "🟢 Abiertos primero; entre parecidos el orden cambia cada día · toca «Cerca de mí» para ordenarlos por cercanía",
+    relevantes: "⚖️ Relevantes: verificados, mejor calificados y con ficha completa primero; entre parecidos el orden cambia cada día",
+    cercanos: "📍 Más cercanos a ti primero",
+    calificacion: "⭐ Mejor calificados primero (promedio que pesa cuántas opiniones tienen)",
+    nombre: "🔤 Por nombre, de la A a la Z"
+  };
+  $("comercios-orden").textContent = ubicacionComercios && (ordenComercio === "abiertos" || ordenComercio === "cercanos")
+    ? "📍 Ordenados por cercanía a ti (de toda la zona) · toca de nuevo «Cerca de mí» para quitarlo"
+    : (lineas[ordenComercio] || lineas.abiertos);
+  sincronizarBotonesComercios(ids.length, deptos.length);
 }
 
 // Fase V-2b: tarjeta más limpia (foto a la izquierda, ❤️, estrellas, «Promo:», 1 botón principal + «Ver tienda» + «⋯»).
@@ -350,8 +419,10 @@ function pintarComerciosFeed() {
   $("link-directorio").href = "comercios.html" + (p.toString() ? "?" + p : "");
   $("seccion-comercios").classList.toggle("hidden", !comercios.length);
   if (!comercios.length) return;
-  if (!lista.length) { cont.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-6">No hay comercios con estos filtros de comercios.' + ((muniComercio || deptoComercio || textoComercio) ? ' <button type="button" id="btn-limpiar-comercios" class="text-indigo-600 font-semibold underline">Ver todos los comercios</button>' : '') + '</p>'; $("comercios-mas").classList.add("hidden"); $("comercios-contador").textContent = "(0)"; return; }
+  if (!lista.length && $("comercios-ver")) $("comercios-ver").textContent = "Ver comercios";
+  if (!lista.length) { cont.innerHTML = '<p class="text-sm text-slate-500 col-span-full text-center py-6">No hay comercios con estos filtros de comercios.' + ((muniComercio || deptoComercio || textoComercio || cuantosFiltrosCom()) ? ' <button type="button" id="btn-limpiar-comercios" class="text-indigo-600 font-semibold underline">Ver todos los comercios</button>' : '') + '</p>'; $("comercios-mas").classList.add("hidden"); $("comercios-contador").textContent = "(0)"; return; }
   $("comercios-contador").textContent = "(" + lista.length + ")";
+  if ($("comercios-ver")) $("comercios-ver").textContent = `Ver ${lista.length} comercio${lista.length === 1 ? "" : "s"}`;
   cont.innerHTML = lista.slice(0, comerciosVisibles).map(tarjetaComercioFeed).join("");
   const faltan = lista.length - comerciosVisibles;
   $("comercios-mas").classList.toggle("hidden", faltan <= 0);
@@ -1704,9 +1775,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     const fav = e.target.closest("[data-fav-com]");   // fase V-2b: ❤️ en comercios
     if (fav) { e.preventDefault(); alternarCorazonComercio(Number(fav.dataset.favCom), fav); return; }
     if (!e.target.closest("#btn-limpiar-comercios")) return;
-    muniComercio = ""; deptoComercio = ""; textoComercio = ""; $("comercios-buscar").value = ""; catComercio = "todos"; pintarComerciosFeed();
+    muniComercio = ""; deptoComercio = ""; textoComercio = ""; $("comercios-buscar").value = ""; catComercio = "todos"; limpiarFiltrosComPanel(); pintarComerciosFeed();
   });
   $("comercios-muni").addEventListener("change", e => { muniComercio = e.target.value; comerciosVisibles = POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
+  // Fase 2BA: filtros compactos (Anuncios y Comercios con el mismo modelo)
+  conectarBotonesFiltro($("fb-anuncios"));
+  conectarBotonesFiltro($("fb-comercios"));
+  sincronizarBotonesAnuncios();
+  $("comercios-ordenar").addEventListener("change", e => {
+    ordenComercio = e.target.value;
+    comerciosVisibles = POR_PAGINA_COMERCIOS;
+    if (ordenComercio === "cercanos" && !ubicacionComercios) { cercaDeMiComercios(); return; }
+    pintarComerciosFeed();
+  });
+  ["comercios-nivel", "comercios-calif", "comercios-abierto", "comercios-vitrina", "comercios-promo", "comercios-salud"].forEach(id => $(id).addEventListener("change", leerFiltrosComDelPanel));
+  $("comercios-limpiar-mas").addEventListener("click", () => { limpiarFiltrosComPanel(); leerFiltrosComDelPanel(); });
+  $("comercios-ver").addEventListener("click", () => {
+    $("fb-comercios").__cerrarHojas("");
+    $("comercios-feed").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $("btn-mas-comercios").addEventListener("click", () => { comerciosVisibles += POR_PAGINA_COMERCIOS; pintarComerciosFeed(); });
 
   // Enlace "#login" (lo usan las otras páginas para pedir que inicies sesión)

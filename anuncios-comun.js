@@ -225,6 +225,39 @@ function pintarChipsActivos() {
   caja.innerHTML = chips.map(([k, t]) => `<button type="button" data-quitar="${k}" class="chip-activo" aria-label="Quitar filtro ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`).join("")
     + (limitaContenido ? '<button type="button" data-quitar="todo" class="chip-ver-todo" title="Quita la búsqueda, la categoría y los demás filtros. Deja tu ubicación y «Cerca de mí»">🔄 Ver todas las publicaciones</button>' : "");
   caja.classList.toggle("hidden", !chips.length);
+  sincronizarBotonesAnuncios();   // fase 2BA
+}
+
+// Fase 2BA: los botones compactos dicen lo elegido («📂 Vehículos», «📍 Envigado», «↕️ Menor precio») y la línea explica el orden
+const ORDEN_ANU_CORTO = { recientes: "Recientes", cercanos: "Más cerca", "precio-asc": "Menor precio", "precio-desc": "Mayor precio", nombre: "Nombre A-Z" };
+const ORDEN_ANU_LINEA = {
+  recientes: "🕒 <b>Más recientes primero</b> · toca «Cerca de mí» para ver los más cercanos",
+  cercanos: "📍 <b>Más cerca de ti primero</b>",
+  "precio-asc": "💲 <b>Menor precio primero</b>",
+  "precio-desc": "💲 <b>Mayor precio primero</b>",
+  nombre: "🔤 <b>Por nombre, de la A a la Z</b>"
+};
+function sincronizarBotonesAnuncios() {
+  const tCat = $("fb-a-cat-txt");
+  if (!tCat) return;   // páginas sin los botones compactos
+  const marcar = (txt, activo) => { const b = txt.closest(".fb-b"); if (b) b.classList.toggle("fb-activo", !!activo); };
+  const cat = categoriaActiva !== "todos" ? CATEGORIAS.find(x => x.id === categoriaActiva) : null;
+  const sub = cat && subcategoriaActiva ? nombreSubcategoria(categoriaActiva, subcategoriaActiva) : "";
+  tCat.textContent = cat ? (sub || cat.nombre) : "Categoría";
+  marcar(tCat, cat);
+  const selC = $("filtro-ciudad"), selD = $("filtro-departamento");
+  const limpio = o => o ? o.textContent.replace(/^[^\p{L}]+/u, "").replace(/\s*\(\d+\)$/, "").trim() : "";
+  const ciudad = selC && selC.value ? limpio(selC.selectedOptions[0]) : "";
+  const depto = selD && selD.value ? limpio(selD.selectedOptions[0]) : "";
+  const tL = $("fb-a-lugar-txt");
+  tL.textContent = ciudad || depto || "Lugar";
+  marcar(tL, ciudad || depto);
+  const orden = $("ordenar-por").value;
+  const tO = $("fb-a-orden-txt");
+  tO.textContent = ORDEN_ANU_CORTO[orden] || "Recientes";
+  marcar(tO, orden !== "recientes");
+  const cerca = $("btn-cerca-anuncios").getAttribute("aria-pressed") === "true";
+  $("fb-a-ind").innerHTML = (ORDEN_ANU_LINEA[orden] || ORDEN_ANU_LINEA.recientes) + (cerca && orden === "cercanos" ? " · toca de nuevo «Cerca de mí» para quitarlo" : "");
 }
 
 // Vuelve a filtrar con la función de cada página (inicio: aplicarFiltros · «Todos los anuncios»: aplicarTodos)

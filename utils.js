@@ -12,7 +12,7 @@
 // Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
 // código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
 // Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
-const VERSION_SITIO = 105;
+const VERSION_SITIO = 106;
 (function revisarVersion() {
   try {
     const src = (document.currentScript && document.currentScript.src) || "";
@@ -733,3 +733,44 @@ function aplicarLogoPagina(l) {
 (function () {
   try { const l = JSON.parse(localStorage.getItem("mf_logo") || "null"); if (l) aplicarLogoPagina(l); } catch (e) { /* sin memoria: queda el oficial */ }
 })();
+
+// =====================================================================
+// FASE 2BA · Filtros compactos (propuesta B): cada botón [data-fb="id"] despliega su lista (.fb-hoja) debajo.
+// Uno a la vez; se cierran con ✕ o al elegir. Sirve para Anuncios y Comercios (el mismo modelo).
+// =====================================================================
+function conectarBotonesFiltro(caja) {
+  if (!caja) return;
+  const flecha = (b, abierto) => { const i = b.querySelector("i") || document.getElementById("flecha-filtros"); if (i && b.contains(i)) i.textContent = abierto ? "▴" : "▾"; };
+  const cerrar = h => {
+    if (!h || h.classList.contains("hidden")) return;
+    h.classList.add("hidden");
+    const b = caja.querySelector(`[data-fb="${h.id}"], [aria-controls="${h.id}"]`);
+    if (b) { b.setAttribute("aria-expanded", "false"); flecha(b, false); b.classList.remove("fb-abierto"); }
+  };
+  caja.__cerrarHojas = excepto => caja.querySelectorAll(".fb-hoja").forEach(h => { if (h.id !== excepto) cerrar(h); });
+  caja.addEventListener("click", e => {
+    const x = e.target.closest("[data-fb-cerrar]");
+    if (x) { cerrar(x.closest(".fb-hoja")); return; }
+    const b = e.target.closest("[data-fb], [aria-controls].fb-mas");
+    if (!b || !caja.contains(b)) return;
+    const id = b.dataset.fb || b.getAttribute("aria-controls");
+    caja.__cerrarHojas(id);
+    if (!b.dataset.fb) { b.classList.toggle("fb-abierto", b.getAttribute("aria-expanded") === "true"); return; }   // «⚙️ Más» de anuncios: lo abre su propio código
+    const h = document.getElementById(id);
+    if (!h) return;
+    const abrir = h.classList.contains("hidden");
+    if (abrir) {
+      h.classList.remove("hidden"); b.setAttribute("aria-expanded", "true"); flecha(b, true); b.classList.add("fb-abierto");
+      const s = h.querySelector("select:not(.hidden), input[type=search]");
+      if (s && window.matchMedia && matchMedia("(min-width: 1024px)").matches) s.focus();
+    } else cerrar(h);
+  });
+  // Al elegir en una lista, se cierra sola (salvo cuando falta elegir algo más: subcategoría o municipio)
+  caja.addEventListener("change", e => {
+    const h = e.target.closest(".fb-hoja");
+    if (!h || h.classList.contains("fb-hoja-mas") || h.dataset.fbQueda === "1") return;
+    if (e.target.dataset.fbSigue === "1") return;
+    if (e.target.id === "filtro-categoria" && !document.getElementById("filtro-subcategoria").classList.contains("hidden")) return;
+    setTimeout(() => cerrar(h), 120);
+  });
+}

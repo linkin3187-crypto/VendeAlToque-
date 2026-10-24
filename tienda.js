@@ -21,7 +21,7 @@ function tarjetaProducto(p) {
     : !tienda.whatsapp ? ""
     : enCarro
       ? `<div class="flex items-center gap-2"><button type="button" data-menos="${p.id}" aria-label="Quitar uno" class="w-8 h-8 rounded-full border border-slate-300 font-bold">−</button><b>${enCarro}</b><button type="button" data-mas="${p.id}" aria-label="Agregar uno" class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold">+</button></div>`
-      : `<button type="button" data-mas="${p.id}" class="text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full px-3 py-1.5">+ Agregar</button>`;
+      : `<button type="button" data-mas="${p.id}" class="t-agregar">+ Agregar</button>`;
   return `<article class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col ${p.disponible ? "" : "opacity-70"}" data-prod="${p.id}">
     <div class="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
       <span class="text-3xl">🛍️</span>
@@ -126,7 +126,7 @@ function renderizarTienda(c, ps) {
   if (aprox) ll.classList.add("hidden");   // no hay a dónde «llegar»: el punto es aproximado
   pintarMapaComercio(c, t);
   $("t-es-tuyo").href = "comercios.html?solicitar=" + c.id + (c.ownerId ? "" : "&tipo=reclamar");
-  if (!c.ownerId) { $("t-es-tuyo").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
+  if (!c.ownerId) { $("t-es-tuyo").querySelector("span").textContent = "🔑 ¿Es tu negocio? Reclámalo gratis"; mostrarBurbujaReclamar(c); }
   $("t-reportar").addEventListener("click", () => abrirReporteComercio(c));
   $("t-compartir").addEventListener("click", async () => {
     const datos = { title: c.nombre, text: `${c.nombre} en Merkap`, url: location.href };
@@ -245,7 +245,7 @@ async function pintarConfirmar(c) {
   const titulo = volvio ? "🧭 ¿Lo encontraste?" : verificado ? "👥 ¿Sigue abierto este negocio?" : "👥 ¿Conoces este negocio?";
   const texto = volvio ? "Hace poco buscaste cómo llegar o lo contactaste. Cuéntales a tus vecinos si de verdad está ahí."
     : "Ayuda a tus vecinos: dinos si existe y atiende en este lugar. Con tu ayuda lo verificamos más rápido.";
-  $("t-aviso-privado").insertAdjacentHTML("afterend", `<div id="t-confirmar" class="confirmar-caja mb-3" role="region" aria-label="Confirmar comercio">
+  $("t-confirmar-sitio").insertAdjacentHTML("beforeend", `<div id="t-confirmar" class="confirmar-caja mt-4" role="region" aria-label="Confirmar comercio">
     <button type="button" data-conf-cerrar class="confirmar-cerrar" aria-label="Cerrar">✕</button>
     <p class="font-black text-indigo-900">${titulo}</p>
     <p class="text-xs text-slate-600 mt-0.5 pr-6">${texto}</p>

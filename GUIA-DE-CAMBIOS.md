@@ -146,6 +146,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Mismo `<footer class="pie-merkap">` (HTML fijo, sin JS) en index, anuncios, anuncio, comercios, tienda, buscar, vendedor, recomendar, post, términos, privacidad, prohibidos y la página nueva: marca + frase, columnas **Merkap** (Quiénes somos, Cómo verificamos, Compra seguro, Contacto), **Negocios** (Registrar, Recomendar, Directorio) y **Legal** (Términos, Privacidad, Prohibidos, Reportar un problema), y la atribución de OpenStreetMap. Si se cambia, hay que cambiarlo en todas (una prueba revisa que todos los enlaces existan).
 - `nosotros.html` (nueva): quiénes somos, cómo verificamos (los 3 sellos y lo que NO dicen), compra seguro, contacto (mercafree7@gmail.com hasta P2) y cómo reportar. CSS `.pie-*`; en `anuncio.html` el pie deja espacio a la barra de abajo (`.pie-con-barra`). Caché v96.
 
+### Fase V-2a · Ficha de la tienda «tipo app» (solo estilo)
+- Regla del dueño: en las mejoras visuales no se quita nada; solo cambia el estilo y algunas cosas se reubican.
+- `tienda.html`: sprite de íconos de línea (`<symbol id="i-…">`, clase `.ti`); `.t-cabecera` con la portada (degradado + cámara si no hay foto) y `.t-avatar` con el ícono del tipo; `#t-aviso-sello` pasa dentro de `#t-chips` y, cuando se ve, oculta `#t-sello` (el sello sale una vez y el ⓘ despliega el mismo texto); dirección/horario/entrega en `.t-info` (con «Mapa»); acciones en `#t-acciones` (`.t-accion`, WhatsApp verde, demás blancas); el «Compartir» morado del dueño queda debajo a lo ancho; `#t-confirmar-sitio` (la tarjeta «¿Sigue abierto?» va después de las acciones); títulos `.t-titulo` con ícono; «Para pedir» como selector `.t-seg`; al final `.t-boton-suave` (¿Es tu negocio? / Reportar) y `.t-escudo`.
+- `tienda.js`: el texto de «Reclámalo» va en el `<span>` de `#t-es-tuyo`; `t-confirmar` se inserta en `#t-confirmar-sitio`; botón `.t-agregar`. Caché v97.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

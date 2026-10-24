@@ -138,6 +138,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `comercios.js`: reemplaza los ejemplos fijos (comercio + calle) por 3 espacios: hora · siempre · descubrir. `palabraEjemploValida` (da resultados en la ciudad elegida y no es +18), `prepararEjemplosCo`, `rotarEjemploCo` (una palabra cada 4 s; quieto si se escribe, si la pestaña no se ve o con «reducir movimiento»), `arrancarEjemplosCo`. Cambia solo al pasar de franja o de ciudad.
 - `editar-inicio.html/js`: sección «💡 Ejemplos del buscador» (campos por franja, rotar, vista previa a cualquier hora con ✅ / ⚠️ / 🚫, Guardar, Volver a las sugeridas). Caché v94.
 
+### Fase 2AY · +18 solo por la categoría principal
+- `tienda.js`: la pregunta «¿Eres mayor de 18?» y la leyenda grande salen solo si la categoría **principal** es licorera o tienda íntima (`[c.tipo]`, antes también `tiposExtra`). Tiendas de barrio, minimercados, supermercados y bares no la piden: cada licor o cigarrillo de su vitrina lleva su leyenda (`RX_LICOR` / `RX_TABACO`, desde la 2AL). Nadie sale del buscador por vender licor.
+- `data.js`: `esPalabraMas18(p)` mira la palabra (licor, tabaco, íntimo, rumba y palabras clave de esas categorías), no el nombre de la categoría: «tienda» ya no es +18 por «Tienda íntima». La usan los ejemplos del buscador (`comercios.js`) y la vista previa del panel (`editar-inicio.js`). Caché v95.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

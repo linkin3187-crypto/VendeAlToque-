@@ -347,7 +347,7 @@ function palabrasDirectorio() {
 // Solo palabras que den resultados en la ciudad elegida y nunca de +18. Cambia una palabra cada 4 s.
 const ejCo = { listas: [[], [], []], vistas: [null, null, null], turno: 0, clave: "", t: null };
 function palabraEjemploValida(p, base) {
-  if (typeof analizarBusqueda === "function" && analizarBusqueda(p).catsComercio.some(c => TIPOS_SIN_EJEMPLO.includes(c.id))) return false;
+  if (esPalabraMas18(p)) return false;   // fase 2AY: por la palabra, no por el nombre de la categoría
   const q = normalizar(p);
   return base.some(c => !TIPOS_SIN_EJEMPLO.includes(c.tipo)
     && (typeof comercioCoincide === "function" ? comercioCoincide(c, q) : normalizar(c.nombre).includes(q)));

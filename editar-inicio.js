@@ -349,7 +349,7 @@ function leerEjemplosPanel() {
 }
 // Una palabra: ✅ da resultados · ⚠️ no encuentra comercios · 🚫 +18 (nunca sale)
 function estadoPalabraEj(p) {
-  if (typeof analizarBusqueda === "function" && analizarBusqueda(p).catsComercio.some(c => TIPOS_SIN_EJEMPLO.includes(c.id))) return "🚫";
+  if (esPalabraMas18(p)) return "🚫";   // fase 2AY: «tienda» ya no sale como +18
   const q = normalizar(p);
   const coincide = c => c.activo !== false && (typeof comercioCoincide === "function" ? comercioCoincide(c, q) : normalizar(c.nombre).includes(q));
   if (comercios.some(c => coincide(c) && !TIPOS_SIN_EJEMPLO.includes(c.tipo))) return "✅";

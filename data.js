@@ -470,6 +470,32 @@ async function alternarFavorito(anuncioId) {
   return true;
 }
 
+// ---------- Favoritos de COMERCIOS (fase V-2b · SQL 48) ----------
+let favoritosComercioIds = new Set();
+async function cargarFavoritosComercio() {
+  if (!usuarioActual) { favoritosComercioIds = new Set(); return favoritosComercioIds; }
+  try {
+    const { data, error } = await sb.from("favoritos_comercio").select("comercio_id").limit(500);
+    if (error) return favoritosComercioIds;   // falta el SQL 48 u otro error: se sigue sin corazones marcados
+    favoritosComercioIds = new Set((data || []).map(r => Number(r.comercio_id)));
+  } catch (e) { /* nada */ }
+  return favoritosComercioIds;
+}
+async function alternarFavoritoComercio(comercioId) {
+  if (!usuarioActual) throw new Error("Inicia sesión para guardar favoritos");
+  const id = Number(comercioId);
+  if (favoritosComercioIds.has(id)) {
+    const { error } = await sb.from("favoritos_comercio").delete().eq("comercio_id", id).eq("usuario_id", usuarioActual.id);
+    if (error) throw error;
+    favoritosComercioIds.delete(id);
+    return false;
+  }
+  const { error } = await sb.from("favoritos_comercio").insert({ comercio_id: id });
+  if (error && !/duplicate key|23505/i.test(error.message || "")) throw error;
+  favoritosComercioIds.add(id);
+  return true;
+}
+
 // Trae los anuncios (activos y vigentes) de una lista de ids, p. ej. para «Mis favoritos».
 async function cargarAnunciosPorIds(ids) {
   if (!ids.length) return [];
@@ -2513,11 +2539,11 @@ function consejoNumeros(n, edadDias, conPrecio) {
   return null;
 }
 // Línea corta para las tarjetas del directorio, el inicio y el buscador
-function lineaPromoHTML(c, clase) {
+function lineaPromoHTML(c, clase, conEtiqueta) {
   const p = (c.promos || [])[0];
   if (!p) return "";
   const pct = pctPromo(p);
-  return `<p class="linea-promo ${clase || ""}">🔥 <b>${esc(p.titulo)}</b>${pct ? ` <span class="rebaja-pct">−${pct} %</span>` : ""} <span class="linea-promo-plazo">· ${esc(plazoPromo(p))}</span></p>`;
+  return `<p class="linea-promo ${clase || ""}">🔥 ${conEtiqueta ? '<span class="linea-promo-etq">Promo:</span> ' : ""}<b>${esc(p.titulo)}</b>${pct ? ` <span class="rebaja-pct">−${pct} %</span>` : ""} <span class="linea-promo-plazo">· ${esc(plazoPromo(p))}</span></p>`;
 }
 // Tarjeta completa (ficha de la tienda)
 function tarjetaPromoHTML(p, c) {

@@ -1139,3 +1139,28 @@ body:has(#t-mapa-caja.hidden) .t-info-mapa { display: none; }
 .t-escudo { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; font-size: .78rem; line-height: 1.5; color: #475569; }
 .t-escudo .ti { color: #4f46e5; width: 20px; height: 20px; }
 #burbuja-reclamar .badge-reclamar { box-shadow: 0 0 0 5px rgba(250, 204, 21, .3), 0 8px 18px rgba(0, 0, 0, .18); }
+/* ===== Fase V-2b · tarjeta de comercio del inicio (foto a la izquierda, ❤️, «⋯») ===== */
+.tc { position: relative; padding: 12px; }
+.tc-cuerpo { display: flex; gap: 12px; }
+.tc-foto { position: relative; width: 84px; height: 84px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #e0e7ff, #f8fafc 60%, #fce7f3); display: flex; align-items: center; justify-content: center; font-size: 36px; }
+.tc-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tc-info { flex: 1; min-width: 0; }
+.tc-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.tc-fav { position: absolute; top: 8px; right: 8px; z-index: 11; width: 36px; height: 36px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15, 23, 42, .08); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.tc-fav:hover { border-color: #fda4af; }
+.tc-detalle { margin-top: 10px; }
+.tc-toca { margin-top: 8px; font-size: .75rem; font-weight: 700; color: #4f46e5; background: #eef2ff; border-radius: 10px; padding: 6px 10px; }
+.linea-promo-etq { font-weight: 900; color: #be123c; text-transform: uppercase; font-size: .68rem; letter-spacing: .04em; background: #ffe4e6; border-radius: 6px; padding: 1px 5px; }
+.tc-acciones { position: relative; z-index: 10; display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+.tc-b { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border-radius: 11px; font-size: .8rem; font-weight: 800; text-decoration: none !important; white-space: nowrap; }
+.tc-b .ti { width: 16px; height: 16px; }
+.tc-b-wa { background: #16a34a; color: #fff !important; } .tc-b-wa:hover { background: #15803d; }
+.tc-b-suave { background: #eef2ff; color: #3730a3 !important; } .tc-b-suave:hover { background: #e0e7ff; }
+.tc-mas { position: relative; flex: 0 0 44px; }
+.tc-b-mas { width: 44px; background: #f1f5f9; color: #334155; list-style: none; cursor: pointer; }
+.tc-b-mas::-webkit-details-marker { display: none; }
+.tc-mas[open] .tc-b-mas { background: #e2e8f0; }
+.tc-menu { position: absolute; right: 0; bottom: calc(100% + 6px); min-width: 190px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 28px rgba(15, 23, 42, .18); padding: 6px; z-index: 30; }
+.tc-menu-op { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: .85rem; font-weight: 700; color: #334155; text-decoration: none !important; }
+.tc-menu-op:hover { background: #f1f5f9; }
+.tc-menu-op .ti { width: 17px; height: 17px; color: #6366f1; }

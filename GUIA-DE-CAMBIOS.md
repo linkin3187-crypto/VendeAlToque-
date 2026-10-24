@@ -151,6 +151,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.html`: sprite de íconos de línea (`<symbol id="i-…">`, clase `.ti`); `.t-cabecera` con la portada (degradado + cámara si no hay foto) y `.t-avatar` con el ícono del tipo; `#t-aviso-sello` pasa dentro de `#t-chips` y, cuando se ve, oculta `#t-sello` (el sello sale una vez y el ⓘ despliega el mismo texto); dirección/horario/entrega en `.t-info` (con «Mapa»); acciones en `#t-acciones` (`.t-accion`, WhatsApp verde, demás blancas); el «Compartir» morado del dueño queda debajo a lo ancho; `#t-confirmar-sitio` (la tarjeta «¿Sigue abierto?» va después de las acciones); títulos `.t-titulo` con ícono; «Para pedir» como selector `.t-seg`; al final `.t-boton-suave` (¿Es tu negocio? / Reportar) y `.t-escudo`.
 - `tienda.js`: el texto de «Reclámalo» va en el `<span>` de `#t-es-tuyo`; `t-confirmar` se inserta en `#t-confirmar-sitio`; botón `.t-agregar`. Caché v97.
 
+### Fase V-2b · Tarjeta de comercio del inicio + ❤️ de comercios (SQL 48)
+- `supabase/48_favoritos_comercios.sql`: `favoritos_comercio` (usuario_id, comercio_id), RLS: cada quien ve, crea y borra solo los suyos; máx. 200.
+- `data.js`: `favoritosComercioIds`, `cargarFavoritosComercio` (si falta el SQL no rompe), `alternarFavoritoComercio`; `lineaPromoHTML(c, clase, conEtiqueta)` agrega «Promo:».
+- `app.js` `tarjetaComercioFeed`: foto o ícono a la izquierda (`.tc-foto`), ❤️ (`[data-fav-com]`), estrellas, sello y horario en chips, la misma descripción, dirección, horario, vitrina, promo con «Promo:», «👆 Toca para ver el comercio completo →» resaltado; abajo 1 botón principal (WhatsApp, o Llamar, o Cómo llegar) + «Ver tienda» + «⋯» (`details.tc-mas`) con el resto, Calificar y Editar. Nada se quitó. `alternarCorazonComercio`, `refrescarCorazonesComercio`; el «⋯» se cierra al tocar fuera.
+- `index.html`: sprite de íconos; `favoritos.html/js`: sección «🏪 Comercios» con quitar. CSS `.tc*` (`.tc` trae su propio `position: relative`). Caché v98.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

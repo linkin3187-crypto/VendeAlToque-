@@ -19,6 +19,28 @@ function tarjetaFavorito(a) {
   </article>`;
 }
 
+// Fase V-2b: comercios guardados
+function tarjetaFavComercio(c) {
+  const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+  const foto = urlSegura(c.foto);
+  return `<article data-com="${c.id}" class="relative bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex gap-3 items-center">
+    <a href="tienda.html?id=${c.id}" class="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-100 to-pink-50 flex items-center justify-center text-3xl">
+      <span>${esc(t ? t.icono : "🏪")}</span>${foto ? `<img src="${esc(foto)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover">` : ""}</a>
+    <a href="tienda.html?id=${c.id}" class="min-w-0 flex-1"><p class="font-bold text-sm leading-tight line-clamp-2">${esc(c.nombre)}</p>
+      <p class="text-xs text-slate-500 mt-0.5">${esc(nombreCategorias(c))} · ${esc(c.ciudad || "")}</p><p class="text-xs mt-0.5">${resumenCalifHTML(c)}</p></a>
+    <button type="button" data-quitar-com="${c.id}" aria-label="Quitar de favoritos" class="w-9 h-9 shrink-0 rounded-full bg-white border border-slate-200 flex items-center justify-center text-lg">❤️</button>
+  </article>`;
+}
+async function pintarFavComercios() {
+  await cargarFavoritosComercio();
+  if (!favoritosComercioIds.size) { $("favc-caja").classList.add("hidden"); return; }
+  await cargarComercios();
+  const lista = comercios.filter(c => favoritosComercioIds.has(c.id));
+  $("favc-lista").innerHTML = lista.map(tarjetaFavComercio).join("");
+  $("favc-caja").classList.toggle("hidden", !lista.length);
+  $("fav-titulo-anuncios").classList.toggle("hidden", !lista.length);
+}
+
 async function pintarFavoritos() {
   const lista = await cargarAnunciosPorIds([...favoritosIds]);
   $("fav-lista").innerHTML = lista.map(tarjetaFavorito).join("");
@@ -33,9 +55,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await cargarFavoritos();
     await pintarFavoritos();
+    await pintarFavComercios();
   } catch (err) {
     mostrarToast(mensajeError(err), "error");
   }
+  $("favc-lista").addEventListener("click", async e => {
+    const b = e.target.closest("[data-quitar-com]");
+    if (!b) return;
+    b.disabled = true;
+    try {
+      await alternarFavoritoComercio(Number(b.dataset.quitarCom));
+      b.closest("article").remove();
+      if (!$("favc-lista").children.length) { $("favc-caja").classList.add("hidden"); $("fav-titulo-anuncios").classList.add("hidden"); }
+      mostrarToast("Quitado de favoritos");
+    } catch (err) { b.disabled = false; mostrarToast(mensajeError(err), "error"); }
+  });
   $("fav-lista").addEventListener("click", async e => {
     const b = e.target.closest("[data-quitar]");
     if (!b) return;

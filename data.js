@@ -3390,3 +3390,123 @@ document.addEventListener("DOMContentLoaded", () => {
   const [rt, rid] = refDeElemento(document.body);
   registrarEvento("visita", rt, rid, { origen });
 });
+
+// =====================================================================
+// TARJETA DE COMERCIO «tipo app» (fase V-2b en el inicio · V-2d también en el directorio y en la búsqueda)
+// Una sola tarjeta para las 3 páginas: foto/logo a la izquierda, ❤️, estrellas, sellos en chips,
+// 1 botón principal + «Ver tienda» + menú «⋯» con el resto. NADA se quita: lo que no cabe va al menú.
+// op = { distancia: "350 m" | null,
+//        completa: true → muestra además los avisos de confianza del directorio (fecha del sello,
+//                  «aún sin verificar», vecinos, salud, «ya no está», zona aproximada, teléfono)
+//        reportarAqui: true → «Actualizar o retirar», «Reportar» y «Reclámalo» abren el formulario en esta
+//                  página (directorio); si no, llevan al directorio con el formulario abierto }
+// =====================================================================
+function iconoLinea(n) { return `<svg class="ti" aria-hidden="true"><use href="#i-${n}"/></svg>`; }
+function tarjetaComercioTC(c, op = {}) {
+  const t = TIPOS_COMERCIO.find(x => x.id === c.tipo);
+  const foto = imagenCuadroComercio(c);   // fase V-2c: logo → portada → ícono
+  const sello = SELLOS[c.nivel] || SELLOS[1];
+  const hz = estadoHorario(c.horario);
+  const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
+  const ico = iconoLinea;
+  const aprox = esUbicacionAprox(c);
+  const completa = !!op.completa;
+  const wa = c.whatsapp ? { html: cls => `<a href="${esc(urlWhatsAppTexto(c.whatsapp, `Hola, vi «${c.nombre}» en Merkap.`))}" target="_blank" rel="noopener" data-fui="${c.id}" class="${cls}">${ico("chat")}${completa && aprox ? "Pedir por WhatsApp" : "WhatsApp"}</a>` } : null;
+  const ll = tel ? { html: cls => `<a href="tel:${esc(tel)}" data-fui="${c.id}" class="${cls}">${ico("phone")}Llamar</a>` } : null;
+  const ir = aprox || !tieneCoords(c) ? null : { html: cls => `<a href="${esc(urlGoogleMaps(c.lat, c.lng))}" data-como-llegar data-fui="${c.id}" data-lat="${c.lat}" data-lng="${c.lng}" data-nombre="${esc(c.nombre)}" data-ciudad="${esc(c.ciudad || "")}" target="_blank" rel="noopener" class="${cls}">${ico("route")}Cómo llegar</a>` };
+  const acciones = [wa, ll, ir].filter(Boolean);
+  const principal = acciones.shift();
+  const guardado = favoritosComercioIds.has(c.id);
+  const vitrina = vitrinaPublica(c) && c.nProductos > 0;
+  const vecinos = c.nivel < 2 && confirmadoPorVecinos(c);
+  const aqui = !!op.reportarAqui;
+  const reclamar = c.ownerId ? "" : aqui
+    ? `<button type="button" data-reclamar="${c.id}" class="badge-reclamar relative z-10 inline-block mb-1.5" title="¿Eres el dueño? Reclama esta ficha gratis para administrarla">🔑 ¿Es tu negocio? Reclámalo</button>`
+    : `<a href="comercios.html?solicitar=${c.id}&tipo=reclamar" class="badge-reclamar relative z-10 inline-block mb-1.5" title="¿Eres el dueño? Reclama esta ficha gratis">🔑 ¿Es tu negocio? Reclámalo</a>`;
+  const opReportes = !completa ? "" : aqui
+    ? `<button type="button" data-solicitar="${c.id}" class="tc-menu-op">${ico("edit")}¿Es tu negocio? Actualizar o retirar</button>
+       <button type="button" data-reportar-com="${c.id}" class="tc-menu-op tc-menu-rojo">${ico("flag")}Reportar este negocio</button>`
+    : `<a href="comercios.html?solicitar=${c.id}" class="tc-menu-op">${ico("edit")}¿Es tu negocio? Actualizar o retirar</a>
+       <a href="comercios.html?reportar=${c.id}" class="tc-menu-op tc-menu-rojo">${ico("flag")}Reportar este negocio</a>`;
+  return `<article class="tarjeta-comercio tc relative bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition rounded-2xl shadow-sm flex flex-col" data-comercio="${c.id}">
+    <button type="button" data-fav-com="${c.id}" class="tc-fav" aria-pressed="${guardado}" aria-label="${guardado ? "Quitar de favoritos" : "Guardar en favoritos"}">${guardado ? "❤️" : "🤍"}</button>
+    <div class="tc-cuerpo">
+      <div class="tc-foto">
+        <span>${esc(t ? t.icono : "🏪")}</span>
+        ${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}
+      </div>
+      <div class="tc-info">
+        <h3 class="font-bold text-base leading-tight pr-8"><a href="tienda.html?id=${c.id}" class="after:absolute after:inset-0 after:content-[''] hover:text-indigo-700">${esc(c.nombre)}</a></h3>
+        <p class="text-xs text-slate-500 mt-0.5">${esc(nombreCategorias(c))} · ${esc(c.ciudad)}</p>
+        ${op.distancia ? `<p class="text-xs font-bold text-indigo-700 mt-0.5">📏 A ${op.distancia} de ti</p>` : ""}
+        <p class="text-xs mt-1">${resumenCalifHTML(c)}</p>
+        <div class="tc-chips">
+          <span class="${sello.clase} text-[11px] font-semibold px-2 py-0.5 rounded-full" title="${esc(sello.corto)}">${c.nivel >= 2 ? "✔ " : ""}${esc(sello.mini || sello.corto)}</span>
+          ${badgeHorarioHTML(hz, "")}
+          ${completa && vecinos ? `<span class="badge-vecinos">👥 Confirmado por ${c.confirmaSi} vecinos</span>` : ""}
+          ${completa && muestraSelloSalud(c) ? BADGE_SALUD : ""}
+          ${completa && aprox ? `<span class="badge-modo ${c.modoAtencion}">${MODOS_ATENCION[c.modoAtencion].icono} ${esc(MODOS_ATENCION[c.modoAtencion].corto)}</span>` : ""}
+        </div>
+      </div>
+    </div>
+    <div class="tc-detalle">
+      ${reclamar}
+      ${completa && c.nivel >= 2 && c.verificadoEn ? `<p class="text-[11px] text-slate-400">${esc(sello.corto)} el ${esc(fechaSello(c))}${selloVencido(c) ? " · en revisión" : ""}</p>` : ""}
+      ${completa && c.nivel < 2 && !vecinos ? `<p class="tc-aviso">⚠️ Aún sin verificar que exista aquí: confirma antes de ir</p>` : ""}
+      ${completa && comercioDudoso(c) ? `<p class="text-[11px] font-semibold text-red-700 mt-0.5">🚩 ${c.confirmaNo} personas dicen que ya no está aquí</p>` : ""}
+      ${c.descripcion ? `<p class="text-sm text-slate-600 line-clamp-2 mt-1">${esc(c.descripcion)}</p>` : ""}
+      ${completa && aprox ? `<p class="text-xs text-slate-500 mt-1">📍 Zona aproximada</p>` : c.direccion ? `<p class="text-xs text-slate-600 mt-1">📍 ${esc(c.direccion)}</p>` : ""}
+      ${c.horario ? `<p class="text-xs text-slate-600">🕒 ${esc(c.horario)}</p>${lineaHorarioHTML(hz)}` : ""}
+      ${completa && c.telefono ? `<p class="text-xs text-slate-600">📞 ${esc(c.telefono)}</p>` : ""}
+      ${vitrina ? `<p class="text-xs font-bold text-teal-700 mt-1">🛍️ ${c.nProductos} producto${c.nProductos === 1 ? "" : "s"} en su vitrina</p>` : ""}
+      ${lineaPromoHTML(c, "mt-1", true)}
+      <p class="tc-toca">👆 Toca para ver el comercio completo${vitrina ? ", sus productos y promociones" : ""} →</p>
+    </div>
+    <div class="tc-acciones">
+      ${principal ? principal.html(principal === ir ? "tc-b tc-b-suave" : "tc-b tc-b-wa") : ""}
+      <a href="tienda.html?id=${c.id}" class="tc-b tc-b-suave">${ico("store")}Ver tienda${vitrina && completa ? ` (${c.nProductos})` : ""}</a>
+      <details class="tc-mas">
+        <summary class="tc-b tc-b-mas" aria-label="Más opciones">${ico("dots")}</summary>
+        <div class="tc-menu">
+          ${acciones.map(a => a.html("tc-menu-op")).join("")}
+          <a href="tienda.html?id=${c.id}#opinar" class="tc-menu-op">${ico("star")}Calificar</a>
+          ${opReportes}
+          ${EDITOR ? `<a href="admin-comercios.html?editar=${c.id}" class="tc-menu-op">${ico("edit")}Editar</a>` : ""}
+        </div>
+      </details>
+    </div>
+  </article>`;
+}
+
+// ---------- ❤️ de comercios en cualquier página (fase V-2b · V-2d) ----------
+function pintarCorazonComercio(btn, guardado) {
+  btn.textContent = guardado ? "❤️" : "🤍";
+  btn.setAttribute("aria-pressed", String(guardado));
+  btn.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+}
+async function alternarCorazonComercio(id, btn) {
+  if (!usuarioActual) {
+    mostrarToast("Inicia sesión para guardar favoritos", "error");
+    if (document.getElementById("modal-auth") && typeof abrirModal === "function") abrirModal("modal-auth");
+    else setTimeout(() => { location.href = "index.html#login"; }, 1200);
+    return;
+  }
+  const antes = favoritosComercioIds.has(id);
+  pintarCorazonComercio(btn, !antes);
+  btn.disabled = true;
+  try {
+    const ahora = await alternarFavoritoComercio(id);
+    pintarCorazonComercio(btn, ahora);
+    mostrarToast(ahora ? "❤️ Comercio guardado en favoritos" : "Quitado de favoritos");
+  } catch (err) {
+    pintarCorazonComercio(btn, antes);
+    mostrarToast(/favoritos_comercio/.test(err.message || "") ? "Falta ejecutar supabase/48_favoritos_comercios.sql" : mensajeError(err), "error");
+  } finally { btn.disabled = false; }
+}
+function refrescarCorazonesComercio() {
+  document.querySelectorAll("[data-fav-com]").forEach(b => pintarCorazonComercio(b, favoritosComercioIds.has(Number(b.dataset.favCom))));
+}
+// El menú «⋯» de las tarjetas se cierra al tocar fuera
+document.addEventListener("click", e => {
+  document.querySelectorAll("details.tc-mas[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; });
+});

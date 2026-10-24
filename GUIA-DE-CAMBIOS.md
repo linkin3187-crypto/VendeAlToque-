@@ -188,6 +188,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **«Todos los anuncios» y el perfil del vendedor en 2 columnas en el celular** (`.rejilla-anuncios`): WhatsApp como 💬 verde, el precio anterior pasa al lado del precio, la fecha sale como «🕒 19 oct 2026». En computador, igual que antes.
 - **Horarios** (`utils.js` `tramosHorario`): ahora entiende «8:30 am 7:30 pm» (sin «a» ni guion, si las dos horas dicen am/pm), «730 am» (= 7:30) y «don» (= domingo). *Por qué:* 5 comercios reales (p. ej. «Super Maskotas la 38») no mostraban «Abierto/Cerrado» y 2 («Ara… 730 am») se leían mal. Caché v104.
 
+### Fase 2AE · Mapa plegable en el celular + botón flotante «🗺️ Mapa»
+- **Por qué:** en el celular el mapa ocupaba ~505 px (casi una pantalla) y partía el inicio entre anuncios y comercios; además se cargaba aunque nadie lo usara.
+- **(A) Tarjeta plegada** `#mapa-plegado` (~150 px, solo celular): vista previa con los **pines reales** dibujados en SVG (`pintarMapaPlegado`, sin cargar el mapa), «🗺️ Mira todo en el mapa · N anuncios · M comercios», «Abrir mapa ⤢» y atajos 📍 Mi ubicación · 🟠 Anuncios · 🏪 Comercios · 🔎 Esta zona. La 1.ª vez que entra en pantalla los pines «caen» y late «👆 Toca y despliega» (respeta «reducir movimiento»).
+- **Mapa a pantalla completa** (`abrirMapa` / `cerrarMapa`, clase `body.mapa-abierto`): el mismo `#mapa-panel` con todo lo de antes (Mi ubicación, Buscar y Quitar zona, leyenda, números que agrupan) + ✕, selector **Todo / Anuncios / Comercios** (`aplicarVerMapa`, maneja la casilla de comercios) y una **tira abajo** con lo que se ve en pantalla (`pintarTiraMapa`; al tocar un pin su tarjeta se resalta). El botón «atrás» del celular y Esc cierran (history.pushState). La 1.ª vez se encuadra con los pines. El botón 📍 de una tarjeta de anuncio abre el mapa grande en su pin. Mientras está cerrado el mapa no descarga cuadros (menos datos).
+- **(B) Botón flotante** `#fab-mapa` «🗺️ Mapa N»: aparece al bajar cuando la tarjeta ya no se ve (no arriba, no sobre el pie); globo «👋 ¿Prefieres verlos en el mapa?» solo la 1.ª vez (`mf_globo_mapa`); en la sección Comercios abre solo comercios.
+- **Computador:** igual que antes (columna derecha fija). «⤢ Ampliar» quedó reemplazado por la pantalla completa en el celular. Caché v105.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

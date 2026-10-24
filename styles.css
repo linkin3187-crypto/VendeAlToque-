@@ -1232,3 +1232,9 @@ button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; 
 .ta-panel-dueno .btn-editar-mio:hover { background: #6d28d9; }
 .ta-panel-admin { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #fff7ed; border: 1px dashed #fdba74; border-radius: 12px; padding: 8px; }
 .ta-panel-admin > span { flex: 1; font-size: 11px; font-weight: 800; color: #9a3412; white-space: nowrap; }
+
+/* V-4.1: «¿Cómo pedir?» en los productos de la tienda */
+.t-como-pedir { margin-top: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 10px 12px; font-size: 12.5px; color: #14532d; }
+.t-como-pedir ol { margin: 6px 0 4px 18px; list-style: decimal; display: grid; gap: 3px; }
+.t-como-pedir p { font-size: 11.5px; color: #166534; }
+.t-chip-agregar { display: inline-block; background: #4f46e5; color: #fff; font-weight: 800; font-size: 11px; border-radius: 999px; padding: 0 8px; }

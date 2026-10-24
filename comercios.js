@@ -227,6 +227,8 @@ async function cercaDeMiCo() {
     $("co-nota-cerca").textContent = "📍 Mostrando primero los más cercanos a ti, con la distancia. Toca de nuevo para quitarlo.";
     $("co-nota-cerca").classList.remove("hidden");
     pintar();
+    // V-4.1: igual que el buscador, baja hasta el primer comercio (el más cercano) y el contador brilla
+    requestAnimationFrame(() => { irAResultadosCo(true); actualizarPildoraCo(); });
   } catch (err) {
     mostrarToast(textoErrorGPS(err), "error");
   } finally {
@@ -394,7 +396,7 @@ function volverArribaCo() {
 function actualizarPildoraCo() {
   const b = $("co-ver-resultados");
   if (!b) return;
-  const hay = !!$("co-buscar").value.trim() || tipoActivo !== "todos";
+  const hay = !!$("co-buscar").value.trim() || tipoActivo !== "todos" || !!ubicacionCo;   // V-4.1: también con «Cerca de mí»
   // «Abajo» = del primer resultado se ve menos de ~1/3 (sobre la barra de abajo del celular)
   const primero = $("co-lista").querySelector("article") || $("co-vacio");
   const abajo = (primero.offsetParent ? primero : $("co-contador")).getBoundingClientRect().top > innerHeight - 260;

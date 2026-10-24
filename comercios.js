@@ -343,20 +343,63 @@ function palabrasDirectorio() {
   const vistas = new Set();
   return conDatos.concat(resto).filter(p => p.length <= 16 && !vistas.has(p) && vistas.add(p)).slice(0, 12);
 }
-// Ejemplos con datos reales: un comercio, una dirección y tipos que sí tienen negocios
-function ejemplosDirectorio() {
-  const ej = [];
-  const buenos = comercios.filter(c => c.nombre && c.nombre.length <= 24).sort((a, b) => (b.nivel || 0) - (a.nivel || 0));
-  if (buenos[0]) ej.push(buenos[0].nombre);
-  const dir = comercios.map(c => ((c.direccion || "").match(/^\s*((?:cra|carrera|cl|calle|av|avenida|cr|kr|dg|diagonal|tv|transversal)\.?\s+\d+[a-z]?)\b/i) || [])[1]).find(Boolean);
-  if (dir) ej.push(dir.replace(/\s+/g, " "));
-  palabrasDirectorio().slice(0, 3).forEach(p => ej.push(p));
-  return [...new Set(ej)].slice(0, 3);   // 3 caben en una línea del celular
+// Ejemplos que rotan según la hora (fase 2AX): espacio 1 = de la hora, 2 = de siempre, 3 = descubrimiento.
+// Solo palabras que den resultados en la ciudad elegida y nunca de +18. Cambia una palabra cada 4 s.
+const ejCo = { listas: [[], [], []], vistas: [null, null, null], turno: 0, clave: "", t: null };
+function palabraEjemploValida(p, base) {
+  if (typeof analizarBusqueda === "function" && analizarBusqueda(p).catsComercio.some(c => TIPOS_SIN_EJEMPLO.includes(c.id))) return false;
+  const q = normalizar(p);
+  return base.some(c => !TIPOS_SIN_EJEMPLO.includes(c.tipo)
+    && (typeof comercioCoincide === "function" ? comercioCoincide(c, q) : normalizar(c.nombre).includes(q)));
+}
+function claveEjemplosCo() { const t = ahoraBogota(); return franjaEjemplos().id + (t.finde ? "+finde" : "") + "|" + $("co-depto").value + "|" + $("co-muni").value; }
+function prepararEjemplosCo() {
+  const depto = $("co-depto").value, muni = $("co-muni").value;
+  const base = comercios.filter(c => (!depto || c.departamento === depto) && (!muni || String(c.municipioId) === muni));
+  const cache = {};
+  const sirve = p => { const k = p.toLowerCase(); if (!(k in cache)) cache[k] = palabraEjemploValida(p, base); return cache[k]; };
+  const barajar = l => l.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  ejCo.listas = listasEjemplos().map(l => barajar([...new Set(l)].filter(sirve)));
+  const usadas = new Set();
+  ejCo.vistas = ejCo.listas.map(l => { const p = l.find(x => !usadas.has(x.toLowerCase())); if (p) usadas.add(p.toLowerCase()); return p || null; });
+  // Si un espacio quedó vacío (pocas tiendas en esa ciudad), se llena con lo que sobre de los otros
+  const resto = ejCo.listas.flat().filter(x => !usadas.has(x.toLowerCase()));
+  ejCo.vistas = ejCo.vistas.map(p => { if (p) return p; const r = resto.find(x => !usadas.has(x.toLowerCase())); if (r) usadas.add(r.toLowerCase()); return r || null; });
+  ejCo.clave = claveEjemplosCo();
+  pintarEjemplosCo();
 }
 function pintarEjemplosCo() {
-  const ej = ejemplosDirectorio();
-  $("co-ejemplos").innerHTML = ej.length ? "Ej.: " + ej.map(x => `<button type="button" data-ej="${esc(x)}">${esc(x)}</button>`).join(" · ") : "";
-  $("co-ejemplos").classList.toggle("hidden", !ej.length);
+  const v = ejCo.vistas.map((p, i) => (p ? `<button type="button" data-ej="${esc(p)}" data-slot="${i}">${esc(p)}</button>` : "")).filter(Boolean);
+  $("co-ejemplos").innerHTML = v.length ? `<span class="busca-ejemplos-tit">Prueba:</span> ${v.join(' <span aria-hidden="true">·</span> ')}` : "";
+  $("co-ejemplos").classList.toggle("hidden", !v.length);
+}
+function rotarEjemploCo() {
+  const input = $("co-buscar");
+  if (document.hidden || document.activeElement === input || input.value || !EJEMPLOS_BUSCADOR.rotar) return;
+  if (claveEjemplosCo() !== ejCo.clave) { prepararEjemplosCo(); return; }   // cambió la franja (o la ciudad)
+  for (let k = 0; k < 3; k++) {
+    const i = (ejCo.turno + k) % 3;
+    const enUso = new Set(ejCo.vistas.filter(Boolean).map(x => x.toLowerCase()));
+    const l = ejCo.listas[i], actual = ejCo.vistas[i];
+    if (!actual || l.length < 2) continue;
+    const desde = l.indexOf(actual);
+    let nueva = null;
+    for (let n = 1; n <= l.length && !nueva; n++) { const c = l[(desde + n + l.length) % l.length]; if (!enUso.has(c.toLowerCase())) nueva = c; }
+    if (!nueva) continue;
+    ejCo.turno = (i + 1) % 3;
+    ejCo.vistas[i] = nueva;
+    const b = $("co-ejemplos").querySelector(`[data-slot="${i}"]`);
+    if (!b) { pintarEjemplosCo(); return; }
+    b.classList.remove("ej-entra"); b.classList.add("ej-sale");
+    setTimeout(() => { b.textContent = nueva; b.dataset.ej = nueva; b.classList.remove("ej-sale"); b.classList.add("ej-entra"); }, 260);
+    return;
+  }
+}
+function arrancarEjemplosCo() {
+  prepararEjemplosCo();
+  clearInterval(ejCo.t);
+  const quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!quieto) ejCo.t = setInterval(rotarEjemploCo, 4000);
 }
 // Lleva la vista al comienzo de los resultados (debajo del buscador pegado, si lo está)
 // siempre = true al tocar 🔍, Enter o un ejemplo: la persona debe VER que hubo resultados (fase 2AW.1)
@@ -402,7 +445,8 @@ function actualizarPildoraCo() {
 function conectarBuscadorCo() {
   const input = $("co-buscar"), sitio = $("co-busca-sitio"), barra = $("co-busca");
   if (typeof animarLetrero === "function") animarLetrero(input, "Busca ", { fuente: palabrasDirectorio, fijo: "Nombre, dirección o tipo" });
-  pintarEjemplosCo();
+  arrancarEjemplosCo();
+  ["co-depto", "co-muni"].forEach(id => $(id).addEventListener("change", prepararEjemplosCo));   // ejemplos de esa ciudad
   // Desde arriba: baja a los resultados. Desde el buscador pegado (abajo): vuelve arriba, a los filtros,
   // y la píldora «⬇ Ver N comercios» avisa que los resultados están debajo (fase 2AW.2)
   const buscarYa = () => {

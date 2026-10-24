@@ -1059,3 +1059,10 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 @keyframes co-pildora-entra { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes co-pildora-salta { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 5px); } }
 @media (prefers-reduced-motion: reduce) { .co-pildora { animation: none; } }
+/* Fase 2AX · ejemplos del buscador que rotan según la hora */
+.busca-ejemplos-tit { font-weight: 600; color: #64748b; }
+.busca-ejemplos button { transition: opacity .25s ease, transform .25s ease; display: inline-block; }
+.busca-ejemplos button.ej-sale { opacity: 0; transform: translateY(-3px); }
+.busca-ejemplos button.ej-entra { animation: ej-entra .3s ease-out; }
+@keyframes ej-entra { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .busca-ejemplos button { transition: none; } .busca-ejemplos button.ej-entra { animation: none; } }

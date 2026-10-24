@@ -334,7 +334,7 @@ function botonesContactoHTML(a, chico) {
 }
 
 // ---------- Tarjeta de anuncio (igual en el inicio, «Todos los anuncios» y el perfil del vendedor) ----------
-// Fase V-4 «tipo marketplace»: el precio sale de la foto y queda grande debajo; la foto solo lleva
+// Fase V-4 «tipo marketplace» (V-4b: compacta, ~30 % más baja; la foto no se achica): el precio sale de la foto y queda grande debajo; la foto solo lleva
 // «hace…», ❤️, −% y 📷. NADA se quitó: rebaja tachada, negociable/fijo, fecha, ciudad, distancia,
 // tipo, nuevo/usado, datos del artículo, descripción, «Toca para ver…», «Ver anuncio completo»,
 // WhatsApp, Llamar, Mapa y los paneles del dueño y del administrador.
@@ -369,27 +369,30 @@ function tarjetaHTML(a) {
       ${foto ? `<img src="${esc(foto)}" alt="${esc(a.nombre)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover${esAdultos(a) ? " foto-18" : ""}">` : ""}
       ${esAdultos(a) ? '<span class="aviso-foto-18" data-foto18>🔞 Toca para ver (+18)</span>' : ""}
       ${a.fecha ? `<span class="foto-publicado ${esReciente(a.fecha) ? "reciente" : ""}" title="Publicado el ${esc(fechaPublicacion(a.fecha))}">🕒 ${esc(haceCuanto(a.fecha))}</span>` : ""}
-      ${rb ? `<span class="ta-rebaja">📉 −${rb.pct} %</span>` : ""}
+      ${rb ? `<span class="ta-rebaja">📉 −${rb.pct} % <s>${esc(formatearPrecio(rb.antes))}</s></span>` : ""}
       ${a.fotos && a.fotos.length > 1 ? `<span class="ta-nfotos" aria-label="${a.fotos.length} fotos">${icoTA("camara")}${a.fotos.length}</span>` : ""}
+      <span class="cinta-ver ta-cinta">👆 Toca para ver el anuncio completo</span>
     </a>
     <div class="ta-cuerpo flex flex-col flex-1">
-      ${a.precio ? `<p class="ta-precio"><b>${esc(precioConSufijo(a))}</b>${rb ? `<s>${esc(formatearPrecio(rb.antes))}</s>` : ""}${tipoPrecio ? `<span class="ta-tipo-precio ${(a.detalles || {}).precio_tipo}">${esc(tipoPrecio)}</span>` : ""}</p>` : ""}
+      ${a.precio ? `<p class="ta-precio"><b>${esc(precioConSufijo(a))}</b>${rb ? `<s class="ta-antes">${esc(formatearPrecio(rb.antes))}</s>` : ""}${tipoPrecio ? `<span class="ta-tipo-precio ${(a.detalles || {}).precio_tipo}">${esc(tipoPrecio)}</span>` : ""}</p>` : ""}
       <h3 class="ta-titulo line-clamp-2"><a href="anuncio.html?id=${a.id}" class="hover:text-indigo-600">${esc(a.nombre)}</a></h3>
       <p class="ta-meta">
         ${a.ciudad || a.barrio ? `<span>${icoTA("pin")}${esc(a.ciudad || a.barrio)}</span>` : ""}
         ${km !== null ? `<span>${icoTA("ruta")}${km < 1 ? "a " + Math.round(km * 1000) + " m" : "a " + km.toFixed(1) + " km"}</span>` : ""}
-        ${fechaCorta ? `<span>${icoTA("reloj")}Publicado el ${esc(fechaCorta)}</span>` : ""}
+        ${fechaCorta ? `<span title="Publicado el ${esc(fechaPublicacion(a.fecha))}">${icoTA("reloj")}<span class="ta-pub-txt">Publicado el </span>${esc(fechaCorta)}</span>` : ""}
       </p>
-      ${sub || badgeEstado ? `<div class="ta-chips">${sub ? `<span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">${esc(sub)}</span>` : ""}${badgeEstado}</div>` : ""}
-      ${(() => { const r = resumenDetalles(a); return r.length ? `<div class="det-chips">${r.slice(0, 5).map((t, i) => `<span class="det-chip ${i === 0 && a.detalles && a.detalles.operacion ? "op" : ""}">${esc(t)}</span>`).join("")}</div>` : ""; })()}
-      <p class="text-sm text-slate-600 line-clamp-2 mt-1.5 flex-1">${esc(a.desc || "")}</p>
-      <a href="anuncio.html?id=${a.id}" class="cinta-ver ta-toca"><span>👆 Toca para ver el anuncio completo</span><span aria-hidden="true">→</span></a>
+      ${(() => {   // V-4b: tipo, Nuevo/Usado y datos del artículo en UNA fila que se desliza
+        const r = resumenDetalles(a);
+        const det = r.slice(0, 5).map((t, i) => `<span class="det-chip ${i === 0 && a.detalles && a.detalles.operacion ? "op" : ""}">${esc(t)}</span>`).join("");
+        return sub || badgeEstado || det ? `<div class="ta-fila">${sub ? `<span class="ta-sub">${esc(sub)}</span>` : ""}${badgeEstado}${det}</div>` : "";
+      })()}
+      <p class="ta-desc flex-1">${esc(a.desc || "")}</p>
       <div class="ta-acciones">
         <div class="flex gap-2">
           ${botonesContactoHTML(a)}
-          ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="ta-b-mapa" title="Ver en el mapa">${icoTA("pin")}Mapa</button>` : ""}
+          ${tieneCoords(a) ? `<button type="button" data-accion="ver-mapa" class="ta-b-mapa" title="Ver en el mapa" aria-label="Ver en el mapa">${icoTA("pin")}</button>` : ""}
         </div>
-        <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio block text-center text-sm font-bold py-2 rounded-xl mt-2">Ver anuncio completo →</a>
+        <a href="anuncio.html?id=${a.id}" class="btn-ver-anuncio ta-ver block text-center font-bold rounded-lg">Ver anuncio completo →</a>
       </div>
       ${esMio ? '<div class="ta-panel-dueno"><span>🙋 Es tu anuncio</span><button type="button" data-accion="editar" class="btn-editar-mio text-sm font-bold py-2 px-3 rounded-xl">✏️ Editar mi publicación</button></div>' : ""}
       ${EDITOR && !esMio ? `<div class="ta-panel-admin"><span>👑 Administrador</span>

@@ -183,6 +183,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `tienda.html/js`: en «Productos», recuadro verde `#t-como-pedir` (solo si la tienda tiene WhatsApp y algún producto disponible): 1) toca «+ Agregar», 2) abajo aparece tu pedido → «💬 Pedir por WhatsApp», 3) se abre WhatsApp con la lista; «Agregar no compra ni cobra nada». Al agregar el primer producto sale el aviso «🛒 Agregado a tu pedido…» y la barra de abajo dice «🛒 Tu pedido (aún no se ha enviado)». *Por qué:* antes no se sabía qué pasaba al tocar «+ Agregar».
 - `comercios.js`: «📡 Comercios cerca de mí» ahora hace lo mismo que el buscador: baja hasta el primer comercio (el más cercano), el contador brilla y, si vuelves arriba, la píldora morada «⬇ Ver N comercios» avisa que los resultados están abajo (`actualizarPildoraCo` cuenta también `ubicacionCo`). Caché v103.
 
+### Fase V-4b · Tarjeta de anuncio compacta + 2 columnas + horarios mejor entendidos
+- **Tarjeta ~30 % más baja, la foto igual de grande, nada se quitó** (`anuncios-comun.js` `tarjetaHTML`): «👆 Toca para ver el anuncio completo» vuelve a ser cinta sobre el borde de la foto (`.ta-cinta`); el precio anterior tachado va junto al «−%» sobre la foto; tipo, Nuevo/Usado y datos en **una fila que se desliza** (`.ta-fila`); descripción en 1 línea; botones de 34 px; Mapa como ícono 📍; «Ver anuncio completo» más delgado. Paneles del dueño y del administrador iguales.
+- **«Todos los anuncios» y el perfil del vendedor en 2 columnas en el celular** (`.rejilla-anuncios`): WhatsApp como 💬 verde, el precio anterior pasa al lado del precio, la fecha sale como «🕒 19 oct 2026». En computador, igual que antes.
+- **Horarios** (`utils.js` `tramosHorario`): ahora entiende «8:30 am 7:30 pm» (sin «a» ni guion, si las dos horas dicen am/pm), «730 am» (= 7:30) y «don» (= domingo). *Por qué:* 5 comercios reales (p. ej. «Super Maskotas la 38») no mostraban «Abierto/Cerrado» y 2 («Ara… 730 am») se leían mal. Caché v104.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

@@ -191,7 +191,7 @@ function renderizarAnuncio(a) {
   if (a.owner) pintarVendedor(a.owner);
   // El dueño (o un moderador) ve «Editar mi publicación»: abre el formulario de edición del inicio
   const puedeEditar = !!(usuarioActual && a.owner && a.owner === usuarioActual.id);
-  if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); }
+  if (puedeEditar) { $("btn-editar-mio").href = "index.html?editar=" + a.id; $("btn-editar-mio").classList.remove("hidden"); $("panel-dueno").classList.remove("hidden"); }   // fase V-3: panel del dueño
   // Fase 2AP-3: el dueño comparte su anuncio con imagen, texto y QR
   if (puedeEditar && typeof abrirCompartir === "function") {
     const b = $("btn-compartir-mio");
@@ -228,7 +228,7 @@ function renderizarAnuncio(a) {
   if (esAdultos(a) && !mayorConfirmado()) confirmarMayorDeEdad("Este anuncio es de un producto íntimo para mayores de edad.").then(ok => { if (!ok) location.href = "index.html"; });
   // Moderadores: ⭐ fijar en la Selección del día (24 h) o 🚫 sacarlo del sorteo (fase 2AD)
   if (esAdmin() && !$("sel-botones")) {   // fase 2AK: solo administrador
-    $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="flex flex-wrap gap-2 mb-2">
+    $("anuncio-badges").insertAdjacentHTML("afterend", `<div id="sel-botones" class="panel-admin flex flex-wrap gap-2 mb-2"><p class="panel-admin-tit">👑 Administrador</p>
       <button type="button" id="btn-seleccion" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900"></button>
       <button type="button" id="btn-sel-excluir" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700"></button>
       <a href="editar-inicio.html#seleccion-editor" class="text-xs text-indigo-600 underline self-center">Panel de la Selección</a>
@@ -329,7 +329,7 @@ function renderizarGuia(a) {
           ? paso(1, "Escríbele al vendedor", "Toca el botón verde de WhatsApp para preguntar si sigue disponible y el precio final." + (a.tieneTelefono ? " También puedes llamarlo con 📞." : ""), btn("whatsapp", "💬 Abrir WhatsApp"))
           : paso(1, "Llama al vendedor", "Este vendedor prefiere llamadas: toca 📞 para preguntar si sigue disponible y el precio final.", btn("llamar", "📞 Llamar"))}
         ${paso(2, "Acuerden dónde verse", "Propón un lugar público y concurrido. " + (aprox ? "El mapa muestra solo una zona aproximada; el vendedor te dirá el punto exacto." : ""), btn("llegar", "🗺️ Ver opciones para llegar"))}
-        ${paso(3, "Elige cómo llegar", "Toca el botón azul <b>«Cómo llegar»</b>: verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
+        ${paso(3, "Elige cómo llegar", "Toca el botón <b>«Cómo llegar»</b>: verás metro y buses, a pie, bicicleta, carro, Uber y más. Si el vendedor te manda la ubicación, pégala ahí y las opciones se ajustan.")}
         ${paso(4, "Revisa antes de pagar", "Mira y prueba el producto. Paga solo cuando lo tengas en la mano y no adelantes dinero. Si algo no se ve bien, usa «Reportar este anuncio».")}
       </ol>`;
   $("guia-contenido").addEventListener("click", e => {
@@ -340,7 +340,12 @@ function renderizarGuia(a) {
     if (b.dataset.guia === "llegar" && !$("btn-como-llegar").classList.contains("hidden")) $("btn-como-llegar").click();
   });
   $("guia-rapida").classList.remove("hidden");
-  try { if (localStorage.getItem("mf_guia_cerrada") === "1") $("guia-rapida").open = false; } catch (e) { /* sin almacenamiento: queda abierta */ }
+  // Fase V-3: abierta la primera vez; después llega plegada (si la persona la abre o la cierra, se respeta su elección)
+  try {
+    const eleccion = localStorage.getItem("mf_guia_cerrada");
+    $("guia-rapida").open = eleccion === "0" ? true : eleccion === "1" ? false : localStorage.getItem("mf_guia_vista") !== "1";
+    localStorage.setItem("mf_guia_vista", "1");
+  } catch (e) { /* sin almacenamiento: queda abierta */ }
   $("guia-rapida").addEventListener("toggle", () => {
     try { localStorage.setItem("mf_guia_cerrada", $("guia-rapida").open ? "0" : "1"); } catch (e) { /* no pasa nada */ }
   });

@@ -9,10 +9,17 @@
   <link rel="icon" type="image/svg+xml" href="img/merkap-logo.svg">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=98" />
-  <link rel="stylesheet" href="tw.css?v=98">
+  <link rel="stylesheet" href="styles.css?v=99" />
+  <link rel="stylesheet" href="tw.css?v=99">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+  <!-- Íconos de línea de la ficha del anuncio (fase V-3) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4M4 4h12l-2 4 2 4H4"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  </defs></svg>
 
   <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center gap-3">
@@ -49,27 +56,21 @@
         <section class="lg:col-span-2 space-y-4">
           <div>
             <div id="anuncio-badges" class="flex flex-wrap items-center gap-2 mb-2"></div>
-            <a id="btn-editar-mio" href="#" class="hidden btn-editar-mio mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl">✏️ Editar mi publicación</a>
-            <button id="btn-compartir-mio" type="button" class="hidden btn-compartir-dueno mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl">📣 Compartir mi anuncio</button>
-            <button id="btn-rebajar-mio" type="button" class="hidden mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800">📉 Rebajar precio</button>
+            <!-- Fase V-3: herramientas del dueño juntas en un panel (los mismos 3 botones de antes) -->
+            <div id="panel-dueno" class="hidden panel-dueno">
+              <p class="panel-dueno-tit">🧰 Tu anuncio: herramientas</p>
+              <div class="panel-dueno-botones">
+                <a id="btn-editar-mio" href="#" class="hidden btn-editar-mio mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl">✏️ Editar mi publicación</a>
+                <button id="btn-compartir-mio" type="button" class="hidden btn-compartir-dueno mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl">📣 Compartir mi anuncio</button>
+                <button id="btn-rebajar-mio" type="button" class="hidden mb-2 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800">📉 Rebajar precio</button>
+              </div>
+            </div>
             <h1 id="anuncio-titulo" class="text-2xl font-bold text-slate-900"></h1>
             <p id="anuncio-precio" class="text-3xl font-black text-indigo-600 mt-1"></p>
             <p id="anuncio-ubicacion" class="text-sm text-slate-500 mt-1"></p>
           </div>
 
-          <div class="space-y-2">
-            <button type="button" id="btn-whatsapp" data-contacto="whatsapp" class="hidden md:block w-full text-center bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl shadow">💬 Escribir por WhatsApp</button>
-            <button type="button" id="btn-llamar" data-contacto="llamar" style="display:none" class="btn-llamar hidden md:block w-full text-center font-bold py-3.5 rounded-xl shadow"><svg class="icono-tel" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg> Llamar al vendedor</button>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <a id="btn-como-llegar" target="_blank" rel="noopener" class="col-span-2 md:col-span-1 text-center bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl text-sm">🗺️ Cómo llegar</a>
-              <button type="button" id="btn-compartir" class="hidden md:block bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🔗 Compartir</button>
-              <button type="button" id="btn-guardar" aria-pressed="false" class="hidden md:block bg-white border border-slate-300 hover:border-rose-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🤍 Guardar</button>
-            </div>
-          </div>
-
-          <p id="ayuda-llegar" class="hidden text-sm text-blue-900 bg-blue-50 border-2 border-blue-200 rounded-xl p-3 leading-snug">
-            🗺️ <b>¿Para qué sirve «Cómo llegar»?</b> Toca ese botón azul y verás todas las formas de ir: <b>metro y buses, a pie, bicicleta, carro o Uber</b>. También te ayuda a <b>acordar un punto de encuentro seguro</b> con el vendedor.
-          </p>
+          <!-- Fase V-3: confianza primero — quién vende y el consejo de seguridad, antes de los botones -->
           <!-- Quién vende (fase 2C.5): nombre visible, miembro desde y enlace a todos sus anuncios -->
           <a id="vendedor-caja" href="#" class="hidden vendedor-caja flex items-center gap-3 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl p-3 no-underline">
             <span id="vendedor-avatar" class="vendedor-avatar" aria-hidden="true"></span>
@@ -80,25 +81,36 @@
             </span>
             <span class="text-xs font-bold text-indigo-600 whitespace-nowrap">Ver sus anuncios →</span>
           </a>
-          <p class="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-lg p-3">
-            🛡️ Consejo: reúnete en un lugar público y revisa el producto antes de pagar. Merkap no procesa pagos.
+          <p class="anuncio-seguro"><svg class="ti" aria-hidden="true"><use href="#i-shield"/></svg><span><b>Compra seguro:</b> reúnete en un lugar público y revisa el producto antes de pagar. Merkap no procesa pagos. <a href="nosotros.html#compra-seguro">Más consejos</a></span></p>
+          <div class="space-y-2">
+            <button type="button" id="btn-whatsapp" data-contacto="whatsapp" class="hidden md:block w-full text-center bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl shadow">💬 Escribir por WhatsApp</button>
+            <button type="button" id="btn-llamar" data-contacto="llamar" style="display:none" class="btn-llamar hidden md:block w-full text-center font-bold py-3.5 rounded-xl shadow"><svg class="icono-tel" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg> Llamar al vendedor</button>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <a id="btn-como-llegar" target="_blank" rel="noopener" class="col-span-2 md:col-span-1 text-center bg-white border border-indigo-200 hover:border-indigo-400 text-indigo-700 font-semibold py-2.5 rounded-xl text-sm">🗺️ Cómo llegar</a>
+              <button type="button" id="btn-compartir" class="hidden md:block bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🔗 Compartir</button>
+              <button type="button" id="btn-guardar" aria-pressed="false" class="hidden md:block bg-white border border-slate-300 hover:border-rose-400 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">🤍 Guardar</button>
+            </div>
+          </div>
+
+          <p id="ayuda-llegar" class="hidden ayuda-llegar">
+            🗺️ <b>¿Para qué sirve «Cómo llegar»?</b> Toca el botón «Cómo llegar» y verás todas las formas de ir: <b>metro y buses, a pie, bicicleta, carro o Uber</b>. También te ayuda a <b>acordar un punto de encuentro seguro</b> con el vendedor.
           </p>
           <details id="guia-rapida" class="hidden bg-indigo-50 border border-indigo-100 rounded-xl" open>
             <summary class="cursor-pointer select-none px-4 py-3 font-bold text-indigo-900 text-sm">📘 Guía rápida: cómo usar esta página</summary>
             <div id="guia-contenido" class="px-4 pb-4 text-sm text-slate-700"></div>
           </details>
-          <button type="button" id="btn-reportar" class="text-xs text-slate-400 hover:text-red-600 underline">🚩 Reportar este anuncio</button>
+          <button type="button" id="btn-reportar" class="anuncio-reportar"><svg class="ti" aria-hidden="true"><use href="#i-flag"/></svg><span>Reportar este anuncio</span></button>
         </section>
       </div>
 
       <section class="mt-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <h2 class="font-bold text-lg mb-2">📝 Descripción</h2>
+        <h2 class="anuncio-h2"><svg class="ti" aria-hidden="true"><use href="#i-text"/></svg>Descripción</h2>
         <p id="anuncio-desc" class="text-slate-700 leading-relaxed whitespace-pre-wrap"></p>
         <dl id="anuncio-detalles" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-100 text-sm"></dl>
       </section>
 
       <section id="seccion-mapa" class="mt-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <h2 class="font-bold text-lg mb-1">📍 Ubicación</h2>
+        <h2 class="anuncio-h2"><svg class="ti" aria-hidden="true"><use href="#i-pin"/></svg>Ubicación</h2>
         <p id="nota-zona" class="hidden text-sm text-slate-500 mb-3">Zona aproximada: por seguridad, el vendedor te dará el punto exacto cuando acuerden el encuentro.</p>
         <div id="map-anuncio"></div>
       </section>
@@ -177,11 +189,11 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=98"></script>
-  <script src="data.js?v=98"></script>
-  <script src="qr.js?v=98"></script>
-  <script src="piezas.js?v=98"></script>
-  <script src="compartir.js?v=98"></script>
-  <script src="anuncio.js?v=98"></script>
+  <script src="utils.js?v=99"></script>
+  <script src="data.js?v=99"></script>
+  <script src="qr.js?v=99"></script>
+  <script src="piezas.js?v=99"></script>
+  <script src="compartir.js?v=99"></script>
+  <script src="anuncio.js?v=99"></script>
 </body>
 </html>

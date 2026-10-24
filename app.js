@@ -328,7 +328,6 @@ function sincronizarBotonesComercios(nMunis, nDeptos) {
   const muni = muniComercio && selM.selectedOptions[0] ? selM.selectedOptions[0].textContent : "";
   tL.textContent = ubicacionComercios ? "Cerca de ti" : (muni || deptoComercio || "Lugar");
   tL.closest(".fb-b").classList.toggle("fb-activo", !!(muni || deptoComercio));
-  $("fb-c-lugar-uno").classList.toggle("hidden", nMunis > 1 || nDeptos > 1);
   const tO = $("fb-c-orden-txt");
   tO.textContent = ORDEN_COM_CORTO[ordenComercio] || "Abiertos primero";
   tO.closest(".fb-b").classList.toggle("fb-activo", ordenComercio !== "abiertos");
@@ -366,11 +365,11 @@ function pintarFiltrosComercios() {
   const selD = $("comercios-depto");
   const firmaD = deptos.join("|");
   if (selD.dataset.firma !== firmaD) {
-    selD.innerHTML = '<option value="">Todos los departamentos</option>' + deptos.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
+    selD.innerHTML = '<option value="">📍 Departamento</option>' + deptos.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
     selD.dataset.firma = firmaD;
   }
   selD.value = deptoComercio;
-  selD.classList.toggle("hidden", deptos.length < 2);
+  // Fase 2BA.1: departamento y ciudad siempre a la vista en «📍 Lugar», igual que en Anuncios
   // Municipios con comercios (se arma con todos los comercios del departamento elegido, para poder cambiar de municipio)
   const munis = {};
   comercios.forEach(c => { if (!deptoComercio || c.departamento === deptoComercio) munis[c.municipioId] = c.ciudad; });
@@ -379,12 +378,10 @@ function pintarFiltrosComercios() {
   const firma = ids.join(",");
   if (muniComercio && !munis[muniComercio]) muniComercio = "";
   if (sel.dataset.firma !== firma) {
-    sel.innerHTML = '<option value="">Todos los municipios</option>' + ids.map(id => `<option value="${id}">${esc(munis[id])}</option>`).join("");
+    sel.innerHTML = '<option value="">🏘️ Ciudad</option>' + ids.map(id => `<option value="${id}">${esc(munis[id])}</option>`).join("");
     sel.dataset.firma = firma;
   }
   sel.value = muniComercio;
-  sel.classList.toggle("hidden", ids.length < 2);
-  $("comercios-muni-etq").classList.toggle("hidden", ids.length < 2);
   const lineas = {
     abiertos: "🟢 Abiertos primero; entre parecidos el orden cambia cada día · toca «Cerca de mí» para ordenarlos por cercanía",
     relevantes: "⚖️ Relevantes: verificados, mejor calificados y con ficha completa primero; entre parecidos el orden cambia cada día",

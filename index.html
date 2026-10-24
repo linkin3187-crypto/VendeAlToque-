@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
   <!-- ?v=2 → "cache busting": al subir cambios, sube este número y el navegador
        descarga el archivo nuevo en vez de usar la copia vieja guardada. -->
-  <link rel="stylesheet" href="styles.css?v=106" />
-  <link rel="stylesheet" href="tw.css?v=106">
+  <link rel="stylesheet" href="styles.css?v=107" />
+  <link rel="stylesheet" href="tw.css?v=107">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased" data-nav="inicio">
   <!-- Íconos de línea de las tarjetas de comercio (fase V-2b · V-2d) -->
@@ -404,7 +404,6 @@
         <h2 class="text-xl font-bold">🏪 Comercios <span id="comercios-contador" class="text-sm font-semibold text-slate-400"></span></h2>
         <a href="comercios.html" id="link-directorio" class="text-sm text-indigo-600 font-semibold hover:underline">Ver directorio completo →</a>
       </div>
-      <p class="text-sm text-slate-500 mb-3">👆 <b>Toca un comercio</b> para ver su ficha completa, sus productos y promociones.</p>
       <!-- Fase 2BA (propuesta B): el MISMO modelo de filtros de «Anuncios y clasificados» + lo propio de comercios
            (su buscador y las categorías en botones con su número, con las reglas de aparición de siempre) -->
       <div id="fb-comercios" class="fb-caja bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-3">
@@ -418,12 +417,11 @@
         </div>
         <div id="fb-c-lugar" class="fb-hoja hidden">
           <div class="fb-hoja-tit">📍 ¿Dónde buscas? <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
-          <div class="grid grid-cols-2 gap-2">
-            <select id="comercios-depto" aria-label="Departamento de los comercios" class="filtro-sel hidden" data-fb-sigue="1"></select>
+          <div class="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2">
+            <select id="comercios-depto" aria-label="Departamento de los comercios" class="filtro-sel" data-fb-sigue="1"></select>
             <label for="comercios-muni" id="comercios-muni-etq" class="hidden sr-only">🏘️ Municipio</label>
-            <select id="comercios-muni" aria-label="Municipio" class="filtro-sel hidden col-span-2"></select>
+            <select id="comercios-muni" aria-label="Municipio o ciudad" class="filtro-sel"></select>
           </div>
-          <p id="fb-c-lugar-uno" class="hidden text-xs text-slate-500">Por ahora todos los comercios están en un solo municipio.</p>
         </div>
         <div id="fb-c-orden" class="fb-hoja hidden">
           <div class="fb-hoja-tit">↕️ Ordenar por <button type="button" class="fb-cerrar" data-fb-cerrar aria-label="Cerrar">✕</button></div>
@@ -787,16 +785,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=106"></script>
-  <script src="data.js?v=106"></script>
-  <script src="foro.js?v=106"></script>
-  <script src="carrusel.js?v=106"></script>
-  <script src="buscador.js?v=106"></script>
-  <script src="anuncios-comun.js?v=106"></script>
-  <script src="qr.js?v=106"></script>
-  <script src="piezas.js?v=106"></script>
-  <script src="compartir.js?v=106"></script>
-  <script src="app.js?v=106"></script>
-  <script src="navegacion.js?v=106"></script>
+  <script src="utils.js?v=107"></script>
+  <script src="data.js?v=107"></script>
+  <script src="foro.js?v=107"></script>
+  <script src="carrusel.js?v=107"></script>
+  <script src="buscador.js?v=107"></script>
+  <script src="anuncios-comun.js?v=107"></script>
+  <script src="qr.js?v=107"></script>
+  <script src="piezas.js?v=107"></script>
+  <script src="compartir.js?v=107"></script>
+  <script src="app.js?v=107"></script>
+  <script src="navegacion.js?v=107"></script>
 </body>
 </html>

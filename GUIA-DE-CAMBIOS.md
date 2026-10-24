@@ -128,6 +128,9 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `comercios.js`: `palabrasDirectorio` (tipos con negocios, primero los que más tienen), `ejemplosDirectorio` (un comercio real, una calle real, un tipo), `irAResultadosCo`, `conectarBuscadorCo` (Enter/🔍 cierran el teclado y muestran resultados; al bajar, la barra queda `.fija` arriba y el hueco guarda su alto; al escribir pegado vuelve al comienzo de la lista).
 - `buscador.js`: `animarLetrero(input, prefijo, {fuente, fijo})` acepta palabras propias (el inicio sigue igual). CSS `.busca-co*`, `.busca-ejemplos`. Caché v90.
 
+### Fase 2AW · Avisos del directorio más compactos
+- `comercios.html`: la explicación de los sellos pasa a `<details class="sellos-info">` («ⓘ Qué significa cada sello»); «Registrar mi negocio» y «Recomendar» pasan a dos tarjetas lado a lado (`.invita-co`, `.invita-co-t`), con los mismos enlaces. En el celular el buscador sube de ~495 px a ~370 px. Caché v91.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

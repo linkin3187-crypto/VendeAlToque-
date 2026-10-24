@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <title>Directorio de comercios | Merkap</title>
   <meta name="description" content="Directorio de comercios de tu ciudad: farmacias, panaderías, supermercados y más, con sello de verificación, horario y cómo llegar.">
-  <link rel="stylesheet" href="styles.css?v=90">
-  <link rel="stylesheet" href="tw.css?v=90">
+  <link rel="stylesheet" href="styles.css?v=91">
+  <link rel="stylesheet" href="tw.css?v=91">
 </head>
 <body class="bg-slate-50 text-slate-800" data-nav="comercios">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -20,16 +20,27 @@
 
   <main class="max-w-6xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-black text-indigo-900">🏪 Directorio de comercios</h1>
-    <p class="text-sm text-slate-500 mt-1 mb-4">Todos los comercios de Merkap. Cada uno lleva su sello honesto: <b class="text-amber-700">Ubicado</b> (dato de mapa, sin verificar), <b class="text-green-700">Verificado por teléfono</b> o <b class="text-green-700">Ubicación confirmada en persona</b>.</p>
+    <!-- Fase 2AW: la explicación de los sellos se despliega con ⓘ (ahorra espacio en el celular) -->
+    <details class="sellos-info mt-1 mb-4">
+      <summary>ⓘ Qué significa cada sello</summary>
+      <p>Todos los comercios de Merkap. Cada uno lleva su sello honesto: <b class="text-amber-700">Ubicado</b> (dato de mapa, sin verificar), <b class="text-green-700">Verificado por teléfono</b> o <b class="text-green-700">Ubicación confirmada en persona</b>.</p>
+    </details>
 
-    <a href="registrar-negocio.html" class="flex flex-wrap items-center justify-between gap-2 bg-yellow-50 border border-yellow-300 hover:border-yellow-400 rounded-2xl px-4 py-3 mb-4 no-underline">
-      <span class="text-sm text-slate-700"><b class="text-indigo-900">¿Tu negocio no aparece?</b> Regístralo gratis y abre tu vitrina.</span>
-      <span class="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-xl">➕ Registrar mi negocio</span>
-    </a>
-    <a href="recomendar.html" class="flex flex-wrap items-center justify-between gap-2 bg-pink-50 border border-pink-200 hover:border-pink-300 rounded-2xl px-4 py-3 -mt-2 mb-4 no-underline">
-      <span class="text-sm text-slate-700"><b class="text-pink-800">¿Visitaste un negocio que no está?</b> Tiendas, restaurantes, bares, puestos de comida… Recomiéndalo.</span>
-      <span class="bg-pink-600 text-white text-sm font-bold px-4 py-2 rounded-xl">🤝 Recomendar</span>
-    </a>
+    <!-- Fase 2AW: «Registrar» y «Recomendar» lado a lado, más compactos -->
+    <div class="invita-co mb-4">
+      <a href="registrar-negocio.html" class="invita-co-t">
+        <span class="invita-co-ico bg-indigo-50" aria-hidden="true">🏪</span>
+        <b>¿Tu negocio no aparece?</b>
+        <small>Regístralo gratis y abre tu vitrina</small>
+        <span class="invita-co-ir text-indigo-700">➕ Registrar →</span>
+      </a>
+      <a href="recomendar.html" class="invita-co-t">
+        <span class="invita-co-ico bg-pink-50" aria-hidden="true">🤝</span>
+        <b>¿Conoces uno que falta?</b>
+        <small>Tiendas, restaurantes, bares, puestos de comida…</small>
+        <span class="invita-co-ir text-pink-700">Recomendar →</span>
+      </a>
+    </div>
 
     <!-- FILTROS DEL DIRECTORIO (se guardan en el enlace para compartir la búsqueda) -->
     <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4">
@@ -175,10 +186,10 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=90"></script>
-  <script src="data.js?v=90"></script>
-  <script src="navegacion.js?v=90"></script>
-  <script src="buscador.js?v=90"></script>
-  <script src="comercios.js?v=90"></script>
+  <script src="utils.js?v=91"></script>
+  <script src="data.js?v=91"></script>
+  <script src="navegacion.js?v=91"></script>
+  <script src="buscador.js?v=91"></script>
+  <script src="comercios.js?v=91"></script>
 </body>
 </html>

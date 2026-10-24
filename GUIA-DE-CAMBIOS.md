@@ -157,6 +157,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `app.js` `tarjetaComercioFeed`: foto o ícono a la izquierda (`.tc-foto`), ❤️ (`[data-fav-com]`), estrellas, sello y horario en chips, la misma descripción, dirección, horario, vitrina, promo con «Promo:», «👆 Toca para ver el comercio completo →» resaltado; abajo 1 botón principal (WhatsApp, o Llamar, o Cómo llegar) + «Ver tienda» + «⋯» (`details.tc-mas`) con el resto, Calificar y Editar. Nada se quitó. `alternarCorazonComercio`, `refrescarCorazonesComercio`; el «⋯» se cierra al tocar fuera.
 - `index.html`: sprite de íconos; `favoritos.html/js`: sección «🏪 Comercios» con quitar. CSS `.tc*` (`.tc` trae su propio `position: relative`). Caché v98.
 
+### Fase V-3 · Ficha del anuncio: confianza primero (solo orden y estilo)
+- `anuncio.html`: `#panel-dueno` agrupa Editar / Compartir (morado) / Rebajar; `#vendedor-caja` y `.anuncio-seguro` (Compra seguro, con enlace a «Sobre Merkap») suben antes de los botones; «Cómo llegar» pasa a blanco con borde y su explicación `.ayuda-llegar` sigue debajo; «Reportar» como botón suave; títulos `.anuncio-h2` con ícono. Todo lo demás igual (precio rebajado, fijo/negociable, publicado hace…, fecha, leyendas, guía, descripción completa con sus datos por tipo, ubicación, similares, barra de abajo).
+- `anuncio.js`: muestra `#panel-dueno` al dueño; `#sel-botones` (administrador) con su título; la guía rápida abierta la 1.ª vez y plegada después (`mf_guia_vista`), respetando si la persona la abre o la cierra. Caché v99.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

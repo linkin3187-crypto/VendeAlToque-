@@ -93,7 +93,7 @@
   border: 3px solid #fff;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 3px 10px rgba(0,0,0,.4), 0 0 0 2px #ea580c;
+  box-shadow: 0 2px 4px rgba(0,0,0,.35), 0 0 0 2px #ea580c;   /* MAPA-1: sombra más corta (más fluido al mover el mapa) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +123,7 @@
 /* Pines de comercios: más pequeños y de otro color que los anuncios */
 .pin-comercio {
   width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-  background: #fff; border: 2px solid #0f766e; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  background: #fff; border: 2px solid #0f766e; box-shadow: 0 1px 3px rgba(0,0,0,.3);
   display: flex; align-items: center; justify-content: center;
 }
 .pin-comercio span { transform: rotate(45deg); font-size: 14px; line-height: 1; }
@@ -1500,6 +1500,15 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
   #encabezado.con-sesion .enc-chev { display: none; }
   #encabezado.con-sesion #acciones-encabezado #btn-auth { padding: 0 .3rem; }
 }
+
+/* ===== Fase MAPA-1 · Burbujas de comercios agrupados (mismo verde azulado de sus pines) ===== */
+.cl-com-caja { background: transparent !important; border: 0 !important; }
+.cl-com {
+  width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 3px solid #0f766e;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3); display: flex; align-items: center; justify-content: center; gap: 1px;
+  color: #134e4a; font-weight: 900; font-size: 13px; line-height: 1;
+}
+.cl-com span { font-size: 12px; }
 
 /* ===== Fase DR-1a · «🛍️ Mi vitrina» (Mi tienda) ===== */
 .mv-ind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

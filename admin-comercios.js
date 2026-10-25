@@ -334,7 +334,7 @@ function centroBusqueda() { const m = muniElegido(); return centroManual || (m ?
 function iniciarMapaImp() {
   if (mapaImp || typeof L === "undefined" || !$("ac-mapa")) return;
   const c = centroBusqueda();
-  mapaImp = crearMapaBase("ac-mapa", [c.lat, c.lng], 14);
+  mapaImp = crearMapaBase("ac-mapa", [c.lat, c.lng], 14, { preferCanvas: true });   // MAPA-1: miles de puntos en un solo lienzo
   capaImp = L.layerGroup().addTo(mapaImp);
   mapaImp.on("click", e => {
     if (modoDonde !== "radio" || !muniElegido()) return;

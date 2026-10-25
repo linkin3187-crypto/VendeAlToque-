@@ -40,10 +40,25 @@ function iniciarMapa() {
   // son ilegibles y lentos. Los clusters muestran "12" y al tocar se abren.
   capaMarcadores = L.markerClusterGroup({
     showCoverageOnHover: false,
-    maxClusterRadius: 45
+    maxClusterRadius: 45,
+    chunkedLoading: true            // Fase MAPA-1: agrega los pines por tandas (el mapa no se congela)
   });
   mapa.addLayer(capaMarcadores);
-  capaComercios = L.layerGroup().addTo(mapa);
+  // Fase MAPA-1: los comercios también se agrupan (antes eran cientos de pines sueltos y el mapa se ponía
+  // lento al moverlo en el celular). Burbuja blanca con borde verde azulado «🏪 N»; al acercarse se abren y
+  // desde el zoom 17 (calle) se ven todos sueltos como antes. Solo se dibuja lo que está en pantalla.
+  capaComercios = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 50,
+    disableClusteringAtZoom: 17,
+    chunkedLoading: true,
+    iconCreateFunction: grupo => {
+      const n = grupo.getChildCount();
+      const tam = n < 10 ? 36 : n < 100 ? 42 : 48;
+      return L.divIcon({ className: "cl-com-caja", html: `<div class="cl-com"><span aria-hidden="true">🏪</span><b>${n}</b></div>`, iconSize: [tam, tam] });
+    }
+  });
+  mapa.addLayer(capaComercios);
   // IMPORTANTE: ya NO pedimos el GPS al cargar. Los navegadores lo penalizan y
   // asusta al usuario. Solo se pide cuando toca "Mi ubicación" (acción explícita).
 }
@@ -436,14 +451,20 @@ function pintarComercios() {
   capaComercios.clearLayers();
   pintarMapaPlegado();
   if (!$("chk-comercios").checked) { pintarTiraMapa(); return; }
+  const nuevosCom = [];
   comercios.forEach(c => {
     if (!tieneCoords(c)) return;
     const mc = L.marker([c.lat, c.lng], { icon: iconoComercio(c.tipo), title: c.nombre, zIndexOffset: -500 })
-      .bindPopup(popupComercioHTML(c), { maxWidth: 240 }).addTo(capaComercios);
+      .bindPopup(popupComercioHTML(c), { maxWidth: 240 });
     mc.on("click", () => resaltarEnTira("c", c.id));   // fase 2AE
     marcadoresComercioPorId.set(c.id, mc);
+    nuevosCom.push(mc);
   });
-  if (reabrirCom !== null && marcadoresComercioPorId.has(reabrirCom)) marcadoresComercioPorId.get(reabrirCom).openPopup();
+  capaComercios.addLayers(nuevosCom);                  // en lote (MAPA-1)
+  if (reabrirCom !== null && marcadoresComercioPorId.has(reabrirCom)) {
+    const m = marcadoresComercioPorId.get(reabrirCom);
+    capaComercios.zoomToShowLayer(m, () => m.openPopup());
+  }
   pintarTiraMapa();
 }
 

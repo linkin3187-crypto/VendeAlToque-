@@ -1533,3 +1533,8 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 /* ===== Fase DR-1b · Cupo de vitrina (editor del administrador) ===== */
 .ed-cupo-chip { font-size: .74rem; font-weight: 800; border: 1.5px solid #c7d2fe; background: #fff; color: #3730a3; border-radius: 999px; padding: 4px 10px; }
 .ed-cupo-chip[aria-pressed="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+
+/* ===== Arreglo 25 oct · Con el mapa a pantalla completa (2AE, z-index 1200) las ventanas quedaban DETRÁS:
+   «Cómo llegar», registro rápido, calificar, avisos (toast) y el visor de fotos ahora salen encima ===== */
+body.mapa-abierto .modal-fondo, body.mapa-abierto #modal-como-llegar, body.mapa-abierto .visor-fotos { z-index: 1300 !important; }
+body.mapa-abierto [role="status"].fixed { z-index: 1310 !important; }

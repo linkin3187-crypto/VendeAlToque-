@@ -248,6 +248,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `admin-comercios.html/js`: en el editor completo → «🙋 Dueño y visibilidad», recuadro **«🛍️ Cupo de vitrina»** con productos publicados (0–500) y secciones (0–50), atajos 10·3 (gratis) · 30·6 · 100·10 · 300·20, lo que la tienda usa hoy y aviso si se baja por debajo de lo publicado (lo publicado se conserva; no podrá publicar más). Se guarda con «💾 Guardar todo». Solo lo ve el administrador (`.solo-admin`); la base ya impedía que el dueño o un moderador lo cambiaran (SQL 36/38/50).
 - `data.js`: `tieneCupoSecciones`. Sin SQL nuevo. Caché v111.
 
+### Arreglos 25 oct · Buscador del panel de comercios y «Cómo llegar» con el mapa abierto
+- **Buscador de Comercios (administrador):** antes solo encontraba el texto exacto del nombre o la dirección («farmacita» no traía «Farmacia Pasteur»). Ahora usa el mismo buscador inteligente del directorio (`buscador.js` · `comercioCoincide`): errores de escritura, plurales y categorías («droguerias» → farmacias). Primero salen los que dicen exactamente lo escrito.
+- **«Cómo llegar» desde el mapa a pantalla completa (celular):** el menú «¿Cómo quieres llegar?» se abría DETRÁS del mapa (el mapa abierto está en una capa más alta, fase 2AE), por eso parecía que no hacía nada. Ahora esa ventana, las demás ventanas (registro rápido, calificar), el visor de fotos y los avisos salen encima del mapa (`body.mapa-abierto` en `styles.css`). Caché v112.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

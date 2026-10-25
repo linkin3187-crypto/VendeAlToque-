@@ -486,7 +486,7 @@ input.buscador-con-x::-webkit-search-cancel-button { display: none; }   /* usamo
 @media (min-width: 1024px) {
   .enc-grid { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "marca busca acciones"; gap: 16px; }
 }
-.encabezado-app.encogido .enc-grid { padding: 6px 0 8px; }
+.encabezado-app.encogido .enc-grid { padding-top: 6px; padding-bottom: 8px; }
 .encabezado-app.encogido .enc-marca h1 { font-size: 1.25rem; }
 .enc-marca h1 { transition: font-size .2s ease; }
 .enc-solo-pc { display: none; }
@@ -1445,6 +1445,24 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 @media (max-width: 380px) {
   #encabezado.con-tienda .enc-nombre { display: none; }
 }
+
+/* ===== Fase V-5 C · Barra superior compacta al bajar (solo celular y tableta; nada se quita) ===== */
+/* Al bajar queda en una línea de ~56 px: logo + buscador + Publicar (mismo tamaño).
+   Entrar / Mi tienda / cuenta siguen en la barra de abajo («Yo») y reaparecen arriba al volver al inicio. */
+@media (max-width: 1023px) {
+  .encabezado-app.compacto .enc-grid {
+    grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "marca busca acciones";
+    gap: 8px; padding-top: 8px; padding-bottom: 8px; animation: enc-compacta .22s ease;
+  }
+  .encabezado-app.compacto .marca-txt, .encabezado-app.compacto .enc-marca > span { display: none; }
+  .encabezado-app.compacto .marca-ico { width: 34px; height: 34px; }
+  .encabezado-app.compacto .enc-acciones > :not(#btn-publicar-header) { display: none !important; }
+  .encabezado-app.compacto .enc-busca input { padding: .55rem 2.75rem .55rem .9rem; font-size: 16px; }
+  .encabezado-app.compacto .enc-lupa { display: none; }   /* la lupa del botón amarillo basta: más espacio para escribir */
+  .encabezado-app.compacto .enc-busca .btn-buscar { width: 34px; height: 34px; border-radius: 10px; }
+}
+@keyframes enc-compacta { from { opacity: .55; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .encabezado-app.compacto .enc-grid { animation: none; } }
 
 /* ===== Fase DR-1a · «🛍️ Mi vitrina» (Mi tienda) ===== */
 .mv-ind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

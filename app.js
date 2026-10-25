@@ -1682,8 +1682,19 @@ function iniciarEventos() {
     if (usuarioActual) alternarMenuCuenta();
   });
   // Encabezado fijo: al bajar se encoge un poco (más espacio para el contenido)
+  // Fase V-5 C: en celular, al bajar más queda en UNA línea (logo + buscador + Publicar).
+  // Entrar / Mi tienda siguen en la barra de abajo («Yo») y vuelven arriba al subir.
+  // Dos umbrales distintos (140 / 60) para que no «tiemble» cerca del límite.
   const enc = $("encabezado");
-  const alDesplazar = () => enc.classList.toggle("encogido", window.scrollY > 40);
+  let encCompacto = false;
+  const alDesplazar = () => {
+    const y = window.scrollY;
+    enc.classList.toggle("encogido", y > 40);
+    if (!encCompacto && y > 140) encCompacto = true;
+    else if (encCompacto && y < 60) encCompacto = false;
+    if (encCompacto && !enc.classList.contains("compacto")) cerrarMenuCuenta();
+    enc.classList.toggle("compacto", encCompacto);
+  };
   window.addEventListener("scroll", alDesplazar, { passive: true });
   alDesplazar();
   document.addEventListener("sesion:cambio", alCambiarSesion);          // sesión cambió en otra pestaña

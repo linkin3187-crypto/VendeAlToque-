@@ -257,6 +257,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **El día del lanzamiento:** quitar esa línea de las páginas públicas (buscar «P16» en los `.html`), cambiar la prueba «P16» y pedir la indexación en Search Console.
 - `robots.txt` no sirve en una dirección `usuario.github.io/repositorio` (Google lo busca en la raíz del dominio); con dominio propio se puede agregar. El código sigue siendo público en GitHub hasta pasar a repositorio privado (P12). Sin SQL.
 
+### Fase V-5 C · La barra de arriba se encoge a una línea al bajar (celular y tableta)
+- Inicio: al bajar más de ~140 px la barra queda en **una sola línea de ~58 px**: logo (solo el ícono) + buscador + el mismo botón amarillo «Regístrate / Publicar» (mismo tamaño, sin cambios). Al volver arriba (menos de 60 px) regresa completa. Dos umbrales distintos para que no «tiemble».
+- Mientras está compacta, «Entrar», la cuenta y «Mi tienda» se esconden arriba pero siguen en la barra de abajo («Yo» / ＋). Si el menú de la cuenta estaba abierto, se cierra. En el buscador compacto la lupa gris se quita (queda la del botón amarillo) para dejar más espacio al texto.
+- Computador (≥1024 px): sin cambios. Arreglo de paso: el «encogido» de antes quitaba el margen lateral de la barra al bajar (el logo quedaba pegado al borde); ahora solo cambia el margen de arriba y abajo.
+- `app.js` (clase `compacto`), `styles.css`. Sin SQL. Caché v113.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

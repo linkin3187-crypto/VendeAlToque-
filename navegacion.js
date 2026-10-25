@@ -16,7 +16,8 @@
     yo: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
   };
   const svg = k => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[k]}</svg>`;
-  const tab = (k, href, txt) => `<a href="${href}" class="ni-tab" data-tab="${k}"${pagina === k ? ' aria-current="page"' : ""}>${svg(k)}<span>${txt}</span></a>`;
+  // Fase V-6 A: el ícono va dentro de una «pastilla» (se pinta de morado en la página activa)
+  const tab = (k, href, txt, extra) => `<a href="${href}" class="ni-tab" data-tab="${k}"${pagina === k ? ' aria-current="page"' : ""}><span class="ni-pill">${svg(k)}${extra || ""}</span><span>${txt}</span></a>`;
 
   const nav = document.createElement("nav");
   nav.id = "nav-inferior";
@@ -26,8 +27,8 @@
     tab("inicio", "index.html", "Inicio") +
     tab("comercios", "comercios.html", "Comercios") +
     `<div class="ni-centro"><button type="button" id="ni-mas" class="ni-mas" aria-haspopup="dialog" aria-label="Publicar, recomendar o registrar">＋</button><span>Publicar</span></div>` +
-    tab("favoritos", "favoritos.html", "Favoritos") +
-    `<button type="button" id="ni-yo" class="ni-tab" data-tab="yo"${pagina === "yo" ? ' aria-current="page"' : ""}>${svg("yo")}<span id="ni-yo-txt">Entrar</span></button>`;
+    tab("favoritos", "favoritos.html", "Favoritos", '<b id="ni-fav-n" class="ni-badge hidden" aria-hidden="true"></b>') +
+    `<button type="button" id="ni-yo" class="ni-tab" data-tab="yo"${pagina === "yo" ? ' aria-current="page"' : ""}><span class="ni-pill" id="ni-yo-ico">${svg("yo")}</span><span id="ni-yo-txt">Entrar</span></button>`;
   document.body.appendChild(nav);
   document.body.classList.add("con-nav");
 
@@ -106,8 +107,45 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !hoja.classList.contains("hidden")) cerrarHoja(); });
 
   // «Entrar» o «Yo» según la sesión (también cuando cambia en otra pestaña)
-  const pintarYo = activa => { document.getElementById("ni-yo-txt").textContent = activa ? "Yo" : "Entrar"; };
-  try { sb.auth.getSession().then(({ data }) => pintarYo(!!(data && data.session))).catch(() => {}); } catch (e) { /* sin Supabase */ }
+  // Fase V-6 A: con sesión, «Yo» muestra la inicial en amarillo (como arriba) y ❤️ cuántos favoritos tienes guardados
+  let yoActiva = null, inicialSesion = "";
+  const inicial = () => {
+    const u = conSesion() ? usuarioActual : null;
+    const t = String((u && (u.nombre || u.email)) || inicialSesion || "").trim();
+    return t ? t.charAt(0).toUpperCase() : "";
+  };
+  async function contarFavoritos() {
+    const caja = document.getElementById("ni-fav-n");
+    if (!caja) return;
+    if (!yoActiva) { caja.classList.add("hidden"); return; }
+    let total = 0;
+    try {
+      const [a, c] = await Promise.all([
+        sb.from("favoritos").select("anuncio_id", { count: "exact", head: true }),
+        sb.from("favoritos_comercio").select("comercio_id", { count: "exact", head: true })
+      ]);
+      total = (a && !a.error ? a.count || 0 : 0) + (c && !c.error ? c.count || 0 : 0);
+    } catch (e) { /* sin contador: la barra sigue igual */ }
+    caja.textContent = total > 99 ? "99+" : String(total);
+    caja.classList.toggle("hidden", !(yoActiva && total > 0));
+    const fav = caja.closest(".ni-tab");
+    if (fav) fav.setAttribute("aria-label", total > 0 ? `Favoritos (${total} guardados)` : "Favoritos");
+  }
+  const pintarYo = activa => {
+    document.getElementById("ni-yo-txt").textContent = activa ? "Yo" : "Entrar";
+    const ico = document.getElementById("ni-yo-ico"), ini = activa ? inicial() : "";
+    const nuevo = ini ? `<span class="ni-av">${esc(ini)}</span>` : svg("yo");
+    if (ico.dataset.ini !== ini) { ico.innerHTML = nuevo; ico.dataset.ini = ini; }
+    if (activa !== yoActiva) { yoActiva = activa; contarFavoritos(); }
+  };
+  try {
+    sb.auth.getSession().then(({ data }) => {
+      const u = data && data.session && data.session.user;
+      if (u) inicialSesion = (u.user_metadata && u.user_metadata.nombre) || u.email || "";
+      pintarYo(!!u);
+    }).catch(() => {});
+  } catch (e) { /* sin Supabase */ }
+  document.addEventListener("favoritos:cambio", () => contarFavoritos());
   document.addEventListener("sesion:cambio", () => pintarYo(conSesion()));
   let intentos = 0;
   const vigilar = setInterval(() => { pintarYo(conSesion()); if (conSesion() || ++intentos > 20) clearInterval(vigilar); }, 500);

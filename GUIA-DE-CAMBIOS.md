@@ -263,6 +263,15 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Computador (≥1024 px): sin cambios. Arreglo de paso: el «encogido» de antes quitaba el margen lateral de la barra al bajar (el logo quedaba pegado al borde); ahora solo cambia el margen de arriba y abajo.
 - `app.js` (clase `compacto`), `styles.css`. Sin SQL. Caché v113.
 
+### Fase V-6 A · Barra de abajo «pastilla activa» (celular y tableta)
+- Mismas 5 funciones y mismos menús (Inicio · Comercios · ＋ Publicar · Favoritos · Yo). Solo estilo:
+  - la página donde estás lleva una «pastilla» morada suave detrás del ícono y el texto en negrita;
+  - con sesión, «Yo» muestra tu inicial en un círculo amarillo (igual que arriba); sin sesión sigue el muñequito y «Entrar»;
+  - ❤️ Favoritos muestra un numerito rojo con cuántos guardaste (anuncios + comercios). Se actualiza al guardar o quitar uno (`favoritos:cambio`, `data.js`). Si la consulta falla, simplemente no aparece;
+  - el ＋ amarillo tiene el mismo relieve que el botón «Publicar» de arriba.
+- Arreglo de paso en celulares de 320 px (iPhone SE viejo): «Merkap» ya no se monta sobre «Entrar» y «Publicar» ya no se sale por la derecha (letra del nombre un poco menor solo en esas pantallas; con sesión se oculta la flechita ▾).
+- `navegacion.js`, `data.js`, `styles.css`. Sin SQL. Caché v114.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

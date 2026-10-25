@@ -1,0 +1,38 @@
+# Merkap · Mantener despierta la base de datos (plan gratis de Supabase)
+# Supabase pausa los proyectos gratis cuando pasan una semana casi sin consultas.
+# Esta tarea hace UNA consulta pequeña y pública cada día (la lista de municipios),
+# igual que cualquier visitante. No usa claves secretas: lee la dirección y la llave
+# pública que ya están en data.js. Se puede borrar cuando se pase a Supabase Pro.
+name: Mantener despierta la base
+
+on:
+  schedule:
+    - cron: "17 11 * * *"     # todos los días ~6:17 a. m. de Colombia (11:17 UTC)
+  workflow_dispatch: {}       # también se puede correr a mano desde la pestaña «Actions»
+
+permissions:
+  contents: read
+
+jobs:
+  despertar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: data.js
+          sparse-checkout-cone-mode: false
+      - name: Consulta pequeña a Supabase
+        run: |
+          URL=$(grep -oP 'const SUPABASE_URL = "\K[^"]+' data.js)
+          KEY=$(grep -oP 'const SUPABASE_KEY = "\K[^"]+' data.js)
+          for intento in 1 2 3; do
+            CODIGO=$(curl -s -o /tmp/r.json -w "%{http_code}" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+              "$URL/rest/v1/municipios?select=id&limit=1")
+            echo "Intento $intento: HTTP $CODIGO"
+            if [ "$CODIGO" = "200" ]; then echo "✅ Base despierta"; exit 0; fi
+            sleep 20
+          done
+          echo "❌ Supabase no respondió bien (¿pausada?). Reactívala en el panel: Resume project."
+          exit 1

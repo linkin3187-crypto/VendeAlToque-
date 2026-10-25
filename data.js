@@ -806,6 +806,7 @@ function filaAComercio(r) {
     fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 5),
     tieneColumnaFotos: Array.isArray(r.fotos),
     logo: r.logo_url || "", tieneColumnaLogo: "logo_url" in r,   // fase V-2c (SQL 49)
+    tieneCupoSecciones: "limite_secciones" in r,   // fase DR-1b (SQL 50)
     modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
     // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)
     confirmaSi: Number(r.confirma_si) || 0, confirmaNo: Number(r.confirma_no) || 0, confirmaLugar: Number(r.confirma_lugar) || 0,

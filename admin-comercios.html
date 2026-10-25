@@ -8,8 +8,8 @@
   <meta name="robots" content="noindex">
   <title>Comercios (admin) | Merkap</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=110">
-  <link rel="stylesheet" href="tw.css?v=110">
+  <link rel="stylesheet" href="styles.css?v=111">
+  <link rel="stylesheet" href="tw.css?v=111">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -270,6 +270,25 @@
             </div>
             <p class="text-[11px] text-slate-500">Asignar o quitar el dueño se aplica al momento (no espera a «Guardar todo»).</p>
           </div>
+          <!-- Fase DR-1b: cupo de la vitrina (solo administrador) -->
+          <div id="ed-cupo" class="solo-admin bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm space-y-2">
+            <p class="font-black text-indigo-900">🛍️ Cupo de vitrina</p>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="text-xs font-bold text-slate-600">Productos publicados
+                <input type="number" id="ed-cupo-prod" min="0" max="500" inputmode="numeric" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white"></label>
+              <label class="text-xs font-bold text-slate-600">Secciones
+                <input type="number" id="ed-cupo-sec" min="0" max="50" inputmode="numeric" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm bg-white"></label>
+            </div>
+            <div class="flex flex-wrap gap-1.5" id="ed-cupo-atajos">
+              <button type="button" data-cupo="10,3" class="ed-cupo-chip">10 · 3 (gratis)</button>
+              <button type="button" data-cupo="30,6" class="ed-cupo-chip">30 · 6</button>
+              <button type="button" data-cupo="100,10" class="ed-cupo-chip">100 · 10</button>
+              <button type="button" data-cupo="300,20" class="ed-cupo-chip">300 · 20</button>
+            </div>
+            <p id="ed-cupo-uso" class="text-xs text-slate-600"></p>
+            <p id="ed-cupo-aviso" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5"></p>
+            <p class="text-[11px] text-slate-500">Se guarda con «💾 Guardar todo». Solo tú (administrador) puedes cambiarlo; el dueño no. Puede guardar hasta 3 veces el cupo de productos (los que pasan del cupo quedan apagados).</p>
+          </div>
         </section>
       </form>
       <div class="p-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
@@ -394,9 +413,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=110"></script>
-  <script src="data.js?v=110"></script>
-  <script src="iconos.js?v=110"></script>
-  <script src="admin-comercios.js?v=110"></script>
+  <script src="utils.js?v=111"></script>
+  <script src="data.js?v=111"></script>
+  <script src="iconos.js?v=111"></script>
+  <script src="admin-comercios.js?v=111"></script>
 </body>
 </html>

@@ -1529,3 +1529,7 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 .t-etq-agotado { background: #334155; color: #fff; }
 .t-etq-promo { background: #ffe4e6; color: #be123c; }
 .t-etq-pocos { background: #ffedd5; color: #9a3412; }
+
+/* ===== Fase DR-1b · Cupo de vitrina (editor del administrador) ===== */
+.ed-cupo-chip { font-size: .74rem; font-weight: 800; border: 1.5px solid #c7d2fe; background: #fff; color: #3730a3; border-radius: 999px; padding: 4px 10px; }
+.ed-cupo-chip[aria-pressed="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }

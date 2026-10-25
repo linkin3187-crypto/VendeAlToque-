@@ -272,6 +272,14 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - Arreglo de paso en celulares de 320 px (iPhone SE viejo): «Merkap» ya no se monta sobre «Entrar» y «Publicar» ya no se sale por la derecha (letra del nombre un poco menor solo en esas pantallas; con sesión se oculta la flechita ▾).
 - `navegacion.js`, `data.js`, `styles.css`. Sin SQL. Caché v114.
 
+### Fase S7 · Fotos más livianas (WebP) y carga más rápida
+- **Fotos nuevas en WebP:** todas las fotos que se suben (anuncios, comercios, productos, fachadas, recomendaciones) se guardan en WebP en vez de JPEG. Con una foto real, la de un anuncio pasó de ~20 KB a ~9 KB con la misma calidad. Si el navegador no sabe crear WebP (algunos iPhone viejos), queda en JPEG como antes. Si una foto todavía pesa demasiado, se baja la calidad sola (el bucket admite hasta 1 MB). `utils.js` (`lienzoAFoto`), y `app.js` usa ahora el mismo compresor.
+- **Fotos viejas:** se quedan como están (JPEG). No se tocan ni se borran.
+- **Logo de la barra:** `img/logo-merkap.png` pasa de 73 KB a 25 KB (128 px, que basta para pantallas nítidas: se muestra a ~40 px). Se ve igual. El grande (512 px) sigue para las piezas de marketing.
+- **Ficha del anuncio:** la foto principal se pide primero (`fetchPriority`) y las miniaturas cargan solo cuando se ven (`loading="lazy"`, con tamaño fijo para que nada «salte»). Las tarjetas ya tenían tamaño fijo y carga diferida.
+- El bucket `anuncios` ya admitía `image/webp`: **sin SQL**. Caché v115.
+- **Para después (con Supabase Pro, G0):** miniaturas automáticas de Supabase (transformación de imágenes) para que las tarjetas pidan fotos de 400 px.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

@@ -24,6 +24,8 @@ function mostrarFoto(i) {
     img.src = src;
     img.alt = `${anuncioActual.nombre} - foto ${fotoActiva + 1}`;
     img.className = "absolute inset-0 w-full h-full object-cover cursor-zoom-in";
+    img.decoding = "async";
+    if (fotoActiva === 0) img.fetchPriority = "high";   // Fase S7: la foto principal carga primero
     img.addEventListener("error", () => img.remove()); // si falla, queda el icono de fondo
     cont.appendChild(img);
   }
@@ -85,7 +87,7 @@ function renderizarGaleria(a) {
   if (a.fotos.length > 1) {
     cont.innerHTML = a.fotos.map((src, i) =>
       `<button type="button" data-foto="${i}" aria-label="Ver foto ${i + 1}" class="miniatura w-20 h-16 rounded-lg overflow-hidden">
-        <img src="${esc(urlSegura(src))}" alt="" class="w-full h-full object-cover">
+        <img src="${esc(urlSegura(src))}" alt="" loading="lazy" decoding="async" width="80" height="64" class="w-full h-full object-cover">
       </button>`).join("");
     cont.addEventListener("click", e => {
       const b = e.target.closest("[data-foto]");

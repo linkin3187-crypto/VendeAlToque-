@@ -1075,7 +1075,7 @@ async function importarComerciosDB(filas) {
   return (data || []).length;
 }
 
-// Sube una foto (data:image/jpeg;base64) a TU carpeta del bucket y devuelve la URL pública.
+// Sube una foto (data:image/webp o jpeg;base64) a TU carpeta del bucket y devuelve la URL pública.
 async function subirFotoComercio(dataUrl) {
   const [url] = await subirFotos([dataUrl]);
   return url;

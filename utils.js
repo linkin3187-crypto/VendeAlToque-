@@ -12,7 +12,7 @@
 // Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
 // código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
 // Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
-const VERSION_SITIO = 114;
+const VERSION_SITIO = 115;
 (function revisarVersion() {
   try {
     const src = (document.currentScript && document.currentScript.src) || "";
@@ -490,8 +490,19 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarComoLlegar(); });
 
 // ---------- Fotos ----------
-// Reduce la foto a 800 px de ancho (JPEG) antes de subirla: ahorra espacio y datos.
-// opciones (fase 2Z.2): { max: ancho máximo en px (800 por defecto), transparencia: true → webp/png (conserva el fondo transparente) }
+// Reduce la foto a 800 px de ancho antes de subirla: ahorra espacio y datos.
+// Fase S7: se guarda en WebP (≈30 % más liviana que JPEG con la misma calidad). Si el navegador no sabe
+// crear WebP (algunos iPhone viejos) queda en JPEG como antes. Si aún pesa mucho, baja la calidad.
+// opciones (fase 2Z.2): { max: ancho máximo en px (800 por defecto), transparencia: true → webp/png (conserva el fondo transparente),
+//                         calidad: 0–1 (0.8 por defecto) }
+const FOTO_MAX_DATAURL = 1300000;   // ~950 KB reales: el bucket admite hasta 1 MB
+function lienzoAFoto(cv, calidad = 0.8) {
+  for (const q of [calidad, 0.65, 0.5]) {
+    const w = cv.toDataURL("image/webp", q);
+    const url = w.startsWith("data:image/webp") ? w : cv.toDataURL("image/jpeg", q);
+    if (url.length <= FOTO_MAX_DATAURL || q === 0.5) return url;
+  }
+}
 function comprimir(file, opciones = {}) {
   const max = opciones.max || 800;
   return new Promise((ok, mal) => {
@@ -508,7 +519,7 @@ function comprimir(file, opciones = {}) {
         if (opciones.transparencia) {
           const w = cv.toDataURL("image/webp", 0.85);
           ok(w.startsWith("data:image/webp") ? w : cv.toDataURL("image/png"));
-        } else ok(cv.toDataURL("image/jpeg", 0.8));
+        } else ok(lienzoAFoto(cv, opciones.calidad || 0.8));
       };
       img.src = lector.result;
     };

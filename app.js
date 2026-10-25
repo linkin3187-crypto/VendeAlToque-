@@ -1361,27 +1361,11 @@ async function geocodificarFormulario(forzar) {
 }
 
 // ---------- Fotos ----------
-// Reduce la foto a máx. 800 px y la comprime a JPEG: una foto de celular de
-// 4 MB queda en ~80 KB. El bucket de Storage solo admite archivos de hasta 1 MB.
+// Reduce la foto a máx. 800 px: una foto de celular de 4 MB queda en ~50 KB.
+// Fase S7: usa el mismo compresor de utils.js (WebP; JPEG si el navegador no sabe hacer WebP).
+// El bucket de Storage solo admite archivos de hasta 1 MB.
 function comprimirImagen(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("lectura"));
-    reader.onload = e => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("imagen"));
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > 800) { h = Math.round(h * 800 / w); w = 800; }
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+  return comprimir(file, { max: 800, calidad: 0.75 });
 }
 
 async function agregarFotos(files) {

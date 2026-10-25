@@ -3,7 +3,7 @@
 // Se guarda en `recomendaciones_comercio` (supabase/17_recomendaciones.sql); un moderador lo crea o lo descarta.
 
 let gpsRc = null;      // {lat, lng, precision} si tocó «Estoy aquí»
-let fotoRc = null;     // data:image/jpeg comprimida
+let fotoRc = null;     // data:image/webp (o jpeg) comprimida
 
 const ESTADOS_RC = {
   pendiente:  { txt: "⏳ En revisión", cls: "bg-amber-100 text-amber-800" },

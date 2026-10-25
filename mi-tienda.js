@@ -291,7 +291,7 @@ async function accionHoja(e) {
   if (b.dataset.acc === "cancelar") { cerrarModal("mv-modal-prod"); return; }
   if (b.dataset.acc !== "guardar") return;
   try { if (await guardarHojaProducto(b)) await refrescarProductos(); }
-  catch (err) { console.warn(err); if (!(await ofrecerRevision(err, $("mv-form").querySelector('[data-k="nombre"]').value))) mostrarToast(mensajeError(err), "error"); }
+  catch (err) { console.warn(err); mostrarToast(mensajeError(err), "error"); }
   finally { b.disabled = false; }
 }
 

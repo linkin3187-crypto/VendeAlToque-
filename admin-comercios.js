@@ -492,6 +492,103 @@ async function buscar(soloFallidos) {
   }
 }
 
+// ---------- Fase IMP-3 · Cargar un archivo exportado de overpass turbo ----------
+// Sirve cuando los servidores de Overpass del importador no responden: la persona hace la consulta en
+// overpass-turbo.eu (ver GUIA-DE-CAMBIOS → IMP-3), exporta «raw OSM data» (.json) y lo sube aquí.
+// Pasa por el MISMO proceso que «Buscar»: tipos de Merkap, filtros, cuotas, «ya lo tienes», «parecido», vista previa.
+// También acepta GeoJSON de overpass turbo (propiedad "@id" o "id" = "node/123").
+const MAX_ARCHIVO_MB = 15;
+function elementosDeArchivo(d) {
+  if (d && Array.isArray(d.elements)) return d.elements;
+  if (d && d.type === "FeatureCollection" && Array.isArray(d.features)) {
+    return d.features.map(f => {
+      const p = f.properties || {}, g = f.geometry || {};
+      const ref = String(p["@id"] || p.id || f.id || "");
+      const m = /^(node|way|relation)\/(\d+)$/.exec(ref);
+      if (!m) return null;
+      const tags = {};
+      Object.entries(p.tags && typeof p.tags === "object" ? p.tags : p).forEach(([k, v]) => { if (!k.startsWith("@") && k !== "id" && typeof v !== "object") tags[k] = String(v); });
+      let lat = null, lon = null;
+      if (g.type === "Point") { lon = g.coordinates[0]; lat = g.coordinates[1]; }
+      else if (g.coordinates) {      // polígono o línea: el promedio de sus puntos (como «out center»)
+        const pts = JSON.stringify(g.coordinates).match(/-?\d+(\.\d+)?,-?\d+(\.\d+)?/g) || [];
+        const xy = pts.map(s => s.split(",").map(Number));
+        if (xy.length) { lon = xy.reduce((a, q) => a + q[0], 0) / xy.length; lat = xy.reduce((a, q) => a + q[1], 0) / xy.length; }
+      }
+      return { type: m[1], id: Number(m[2]), lat, lon, tags };
+    }).filter(Boolean);
+  }
+  return null;
+}
+async function cargarArchivoImp(archivo) {
+  const est = $("ac-estado");
+  if (!archivo) return;
+  if (archivo.size > MAX_ARCHIVO_MB * 1024 * 1024) { est.textContent = `⚠️ El archivo pesa más de ${MAX_ARCHIVO_MB} MB. Divide la consulta (por ejemplo, un municipio a la vez).`; return; }
+  let datos;
+  try { datos = JSON.parse(await archivo.text()); }
+  catch (e) { est.textContent = "⚠️ Ese archivo no es un JSON válido. En overpass turbo usa «Export» → «raw OSM data» (datos sin procesar)."; return; }
+  const elementos = elementosDeArchivo(datos);
+  if (!elementos) { est.textContent = "⚠️ No reconozco el archivo. En overpass turbo usa «Export» → «raw OSM data» (debe tener «elements» adentro)."; return; }
+  if (!elementos.length) { est.textContent = "⚠️ El archivo no trae ningún lugar. Revisa la consulta en overpass turbo (que diga «out center tags;» al final)."; return; }
+  const btn = $("ac-buscar"); btn.disabled = true; $("ac-archivo-btn").classList.add("opacity-60", "pointer-events-none");
+  try {
+    est.textContent = `Leyendo ${elementos.length} lugares del archivo… revisando lo que ya tienes guardado…`;
+    // Tipos: los que tengas elegidos; si no elegiste ninguno, todos los que Merkap sabe importar (con la cuota máxima)
+    const sinTipos = !tiposElegidos.size;
+    const permitidos = new Set(sinTipos ? tiposImportables().map(t => t.id) : tiposElegidos);
+    const cuota = sinTipos ? Object.fromEntries([...permitidos].map(id => [id, CUOTA_MAX])) : leerCuotas();
+    const filtros = leerFiltros();
+    const fijo = muniElegido();                 // con un municipio elegido en «Dónde», todo va a ese municipio
+    const existentes = await cargarComerciosAdmin();
+    conteos = { nuevo: 0, ya: 0, parecido: 0, sinNombre: 0, filtrados: 0, fueraCuota: 0, repetido: 0, fueraZona: 0 };
+    candidatos = []; trabajosUltimos = [];
+    const items = [];
+    elementos.forEach(el => {
+      if (!el || typeof el !== "object" || !el.type || el.id == null) return;
+      const lat = el.lat ?? (el.center && el.center.lat), lng = el.lon ?? (el.center && el.center.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const cerca = muniMasCercano(lat, lng);
+      const muni = fijo || cerca;
+      if (distanciaKm({ lat, lng }, muni) > 40) { conteos.fueraZona++; return; }   // lejos de tus municipios
+      const r = aFila(el, muni, permitidos);
+      if (!r) return;
+      if (r.sinNombre) { conteos.sinNombre++; return; }
+      const f = r.fila;
+      if ((filtros.tel && !f.telefono) || (filtros.horario && !f.horario) || (filtros.sinCadenas && r.marca && f.tipo !== "cajero" && f.tipo !== "banco")) { conteos.filtrados++; return; }
+      items.push(r);
+    });
+    if (!items.length) {
+      est.textContent = `⚠️ De ${elementos.length} lugares, ninguno sirve para importar` +
+        (conteos.sinNombre ? ` (${conteos.sinNombre} sin nombre)` : "") + (conteos.filtrados ? ` (${conteos.filtrados} por los filtros)` : "") +
+        (conteos.fueraZona ? ` (${conteos.fueraZona} lejos de tus municipios)` : "") + ". Prueba quitando filtros o eligiendo otros tipos.";
+      pintarPrevia(); return;
+    }
+    const lats = items.map(i => i.fila.lat), lngs = items.map(i => i.fila.lng);
+    const caja = { s: Math.min(...lats), n: Math.max(...lats), w: Math.min(...lngs), e: Math.max(...lngs) };
+    const centro = { lat: (caja.s + caja.n) / 2, lng: (caja.w + caja.e) / 2 };
+    const { salida, c } = clasificar(items, centro, cuota, existentes, {
+      soloNuevos: filtros.soloNuevos, usados: new Set(),
+      dentro: e => e.lat >= caja.s && e.lat <= caja.n && e.lng >= caja.w && e.lng <= caja.e
+    });
+    Object.keys(c).forEach(k => { conteos[k] += c[k]; });
+    candidatos.push(...salida);
+    const elegibles = candidatos.filter(x => x.estado !== "ya").length;
+    est.textContent = (elegibles
+      ? `✔ Archivo «${archivo.name}»: ${conteos.nuevo} nuevos para importar${conteos.parecido ? ` y ${conteos.parecido} parecidos a uno tuyo (sin marcar)` : ""}.`
+      : `El archivo «${archivo.name}» no trae comercios nuevos${conteos.ya ? `: los ${conteos.ya} que trae ya los tienes guardados` : ""}.`) +
+      (conteos.fueraCuota ? ` ${conteos.fueraCuota} ${conteos.fueraCuota === 1 ? "quedó" : "quedaron"} fuera de la cuota (súbela si los quieres).` : "") +
+      (conteos.fueraZona ? ` ${conteos.fueraZona} ${conteos.fueraZona === 1 ? "está" : "están"} lejos de tus municipios (omitido${conteos.fueraZona === 1 ? "" : "s"}).` : "") +
+      (sinTipos ? " (Sin tipos elegidos: se tomaron todos los tipos de Merkap.)" : "") +
+      (elegibles ? " Revisa la lista y el mapa, y toca «Importar»." : "");
+    pintarPrevia();
+  } catch (e) {
+    console.warn("archivo:", e);
+    est.textContent = "⚠️ " + (e.message || e);
+  } finally {
+    btn.disabled = false; $("ac-archivo-btn").classList.remove("opacity-60", "pointer-events-none");
+  }
+}
+
 function nombreMuni(id) { return (municipios.find(m => m.id === id) || {}).nombre || ""; }
 
 const ETIQUETA_ESTADO = { nuevo: "nuevo", parecido: "parecido a uno tuyo", ya: "ya lo tienes" };
@@ -1529,6 +1626,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ac-filtro-muni").innerHTML = '<option value="">Todos los municipios</option>' + opciones;
 
   $("ac-buscar").addEventListener("click", () => buscar(false));
+  $("ac-archivo").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; cargarArchivoImp(f); });
   $("ac-reintentar").addEventListener("click", () => buscar(true));
   $("ac-cancelar").addEventListener("click", cancelarBusqueda);
   $("ac-importar").addEventListener("click", guardarSeleccion);

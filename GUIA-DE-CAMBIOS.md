@@ -305,6 +305,29 @@ Mientras no se pase a Supabase Pro (al empezar el piloto, G1), dos tareas autom�
 - **Ojo:** GitHub apaga las tareas programadas de un repositorio público si pasan 60 días sin cambios. Con el ritmo de PR actual no pasa. Si pasara, se reactivan en Actions con un clic.
 - Cuando se pase a Supabase Pro (copias diarias), «Mantener despierta» se puede borrar. El respaldo semanal se puede dejar como copia extra fuera de Supabase.
 
+### Fase IMP-3 · «📂 Cargar archivo» en el importador (respaldo cuando Overpass no responde)
+- En **Comercios (administrador) → Importar**, junto a «🔎 Buscar», hay un botón nuevo **«📂 Cargar archivo»**. Sube el `.json` exportado de **overpass-turbo.eu** y pasa por **el mismo proceso** que Buscar: tipos de Merkap, filtros (teléfono, horario, sin cadenas), cuotas, «ya lo tienes» / «parecido», vista previa en el mapa y «Importar».
+- **Tipos:** si no eliges ninguno, toma **todos** los tipos que Merkap sabe importar, con la cuota máxima (200 por tipo). Si eliges algunos, solo esos, con sus cuotas.
+- **Municipio:** si en «Dónde» eliges un municipio, todo el archivo se asigna a ese municipio. Con «Todos», cada lugar va al municipio más cercano. Lo que esté a más de 40 km de tus municipios se omite y se avisa.
+- Entiende el formato **«raw OSM data»** (recomendado) y también **GeoJSON** de overpass turbo. Si el archivo no sirve, dice qué exportar. Máximo 15 MB.
+- **Consulta para pegar en overpass turbo** (cambia el municipio en la línea 2; trae solo lo que Merkap puede importar):
+
+```
+[out:json][timeout:180];
+{{geocodeArea:Itagüí, Antioquia, Colombia}}->.a;
+(
+  nwr["amenity"~"^(pharmacy|atm|fast_food|bank|restaurant|cafe|bar|pub|nightclub|ice_cream|veterinary|dentist|doctors|clinic|hospital)$"](area.a);
+  nwr["shop"~"^(bakery|supermarket|ice_cream|pastry|confectionery|convenience|general|variety_store|kiosk|butcher|seafood|greengrocer|alcohol|beverages|health_food|herbalist|clothes|shoes|boutique|tailor|hairdresser|beauty|cosmetics|hardware|doityourself|locksmith|mobile_phone|electronics|computer|stationery|copyshop|pet|optician|car_repair|tyres|car|motorcycle|motorcycle_repair|laundry|dry_cleaning|florist|gift|furniture|houseware|interior_decoration)$"](area.a);
+  nwr["tourism"~"^(hotel|hostel|guest_house)$"](area.a);
+  nwr["leisure"="fitness_centre"](area.a);
+  nwr["office"="estate_agent"](area.a);
+);
+out center tags;
+```
+
+- Pasos: pegar la consulta → **Run** → **Export** → **raw OSM data** (descargar) → en Merkap «📂 Cargar archivo» → revisar → «Importar».
+- `admin-comercios.html/js` (`cargarArchivoImp`, `elementosDeArchivo`). Sin SQL. 17 pruebas nuevas. Caché v116.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

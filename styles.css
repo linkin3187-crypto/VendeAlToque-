@@ -1464,6 +1464,43 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 @keyframes enc-compacta { from { opacity: .55; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .encabezado-app.compacto .enc-grid { animation: none; } }
 
+/* ===== Fase V-6 A · Barra de abajo «pastilla activa» (solo celular y tableta; nada se quitó) ===== */
+.ni-tab { gap: 3px; }
+.ni-pill {
+  position: relative; width: min(56px, 100%); height: 30px; border-radius: 15px;
+  display: flex; align-items: center; justify-content: center; transition: background-color .2s ease;
+}
+.ni-tab[aria-current="page"] { color: #4338ca; font-weight: 800; }
+.ni-tab[aria-current="page"] .ni-pill { background: #e0e7ff; }
+.ni-tab[aria-current="page"] svg { fill: #c7d2fe; }
+.ni-av {
+  width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: #fde047; color: #3730a3; font-weight: 900; font-size: 13px; line-height: 1; box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(30, 27, 75, .25);
+}
+.ni-badge {
+  position: absolute; top: -5px; right: 4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; background: #ef4444; color: #fff;
+  font-size: 10px; font-weight: 800; line-height: 1; border: 2px solid #fff; font-style: normal;
+}
+.ni-badge.hidden { display: none; }
+.ni-mas {
+  background: linear-gradient(135deg, #fde047, #facc15);
+  box-shadow: 0 4px 0 #ca8a04, 0 8px 18px rgba(245, 158, 11, .35);
+}
+.ni-mas:active { transform: translateY(2px); box-shadow: 0 2px 0 #ca8a04, 0 4px 10px rgba(245, 158, 11, .3); }
+@media (prefers-reduced-motion: reduce) { .ni-pill { transition: none; } }
+
+/* V-6 · arreglo celulares de 320 px (iPhone SE viejo): «Merkap» ya no se monta sobre «Entrar» ni «Publicar» se sale */
+@media (max-width: 359px) {
+  .encabezado-app .marca-txt { font-size: 1.12rem; }
+  .encabezado-app .enc-grid { column-gap: 6px; }
+  #acciones-encabezado { gap: .25rem !important; }
+  #acciones-encabezado #btn-auth { padding-left: .55rem; padding-right: .55rem; }
+  #acciones-encabezado #btn-publicar-header { padding-left: .6rem; padding-right: .6rem; }
+  #encabezado.con-sesion .enc-chev { display: none; }
+  #encabezado.con-sesion #acciones-encabezado #btn-auth { padding: 0 .3rem; }
+}
+
 /* ===== Fase DR-1a · «🛍️ Mi vitrina» (Mi tienda) ===== */
 .mv-ind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mv-ind > div { background: #f1f5f9; border-radius: 12px; padding: 7px 4px; text-align: center; }

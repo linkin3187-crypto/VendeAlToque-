@@ -445,6 +445,8 @@ async function eliminarAnuncioDB(id) {
 // FAVORITOS (corazón «Guardar»; cada persona ve solo los suyos)
 // =====================================================================
 let favoritosIds = new Set();
+// Fase V-6 A: avisa a la barra de abajo para que actualice el numerito de ❤️ Favoritos
+function avisarFavoritos() { try { document.dispatchEvent(new CustomEvent("favoritos:cambio")); } catch (e) { /* nada */ } }
 
 async function cargarFavoritos() {
   if (!usuarioActual) { favoritosIds = new Set(); return favoritosIds; }
@@ -462,11 +464,13 @@ async function alternarFavorito(anuncioId) {
     const { error } = await sb.from("favoritos").delete().eq("anuncio_id", id).eq("usuario_id", usuarioActual.id);
     if (error) throw error;
     favoritosIds.delete(id);
+    avisarFavoritos();
     return false;
   }
   const { error } = await sb.from("favoritos").insert({ anuncio_id: id });
   if (error && !/duplicate key|23505/i.test(error.message || "")) throw error;   // «ya estaba guardado» no es un error
   favoritosIds.add(id);
+  avisarFavoritos();
   return true;
 }
 
@@ -488,11 +492,13 @@ async function alternarFavoritoComercio(comercioId) {
     const { error } = await sb.from("favoritos_comercio").delete().eq("comercio_id", id).eq("usuario_id", usuarioActual.id);
     if (error) throw error;
     favoritosComercioIds.delete(id);
+    avisarFavoritos();
     return false;
   }
   const { error } = await sb.from("favoritos_comercio").insert({ comercio_id: id });
   if (error && !/duplicate key|23505/i.test(error.message || "")) throw error;
   favoritosComercioIds.add(id);
+  avisarFavoritos();
   return true;
 }
 

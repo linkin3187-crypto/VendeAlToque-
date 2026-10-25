@@ -252,6 +252,11 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Buscador de Comercios (administrador):** antes solo encontraba el texto exacto del nombre o la dirección («farmacita» no traía «Farmacia Pasteur»). Ahora usa el mismo buscador inteligente del directorio (`buscador.js` · `comercioCoincide`): errores de escritura, plurales y categorías («droguerias» → farmacias). Primero salen los que dicen exactamente lo escrito.
 - **«Cómo llegar» desde el mapa a pantalla completa (celular):** el menú «¿Cómo quieres llegar?» se abría DETRÁS del mapa (el mapa abierto está en una capa más alta, fase 2AE), por eso parecía que no hacía nada. Ahora esa ventana, las demás ventanas (registro rápido, calificar), el visor de fotos y los avisos salen encima del mapa (`body.mapa-abierto` en `styles.css`). Caché v112.
 
+### P16 · Ninguna página se indexa hasta el lanzamiento público (proteger la marca)
+- Decisión del dueño (25 oct 2026): Merkap está en producción pero no se lanza todavía. Las 15 páginas públicas que faltaban llevan ahora `<meta name="robots" content="noindex, nofollow">` con el comentario «P16: … quitar ese día» (las internas ya tenían `noindex`).
+- **El día del lanzamiento:** quitar esa línea de las páginas públicas (buscar «P16» en los `.html`), cambiar la prueba «P16» y pedir la indexación en Search Console.
+- `robots.txt` no sirve en una dirección `usuario.github.io/repositorio` (Google lo busca en la raíz del dominio); con dominio propio se puede agregar. El código sigue siendo público en GitHub hasta pasar a repositorio privado (P12). Sin SQL.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

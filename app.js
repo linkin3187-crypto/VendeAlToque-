@@ -971,7 +971,9 @@ function actualizarUIAuth() {
   $("btn-publicar-header").classList.toggle("btn-parpadeo", !usuarioActual);
   document.querySelectorAll(".car-cta[data-auth-modo]:not([data-texto-fijo])").forEach(b => { b.textContent = usuarioActual ? "Publicar gratis" : "Regístrate y publica gratis"; });
   if (usuarioActual) {
-    btn.innerHTML = '👤 <span class="enc-nombre">' + esc(usuarioActual.nombre.split(" ")[0]) + "</span> ▾";   // fase 2AT: el nombre se oculta en celulares angostos con «Mi tienda»
+    const nom = usuarioActual.nombre.trim().split(" ")[0] || "?";
+    // Fase V-5: avatar con la inicial (antes 👤) + nombre + ▾
+    btn.innerHTML = '<span class="enc-av" aria-hidden="true">' + esc(nom.charAt(0).toUpperCase()) + '</span><span class="enc-nombre">' + esc(nom) + '</span><span class="enc-chev" aria-hidden="true">▾</span>';   // fase 2AT: el nombre se oculta en celulares angostos con «Mi tienda»
     btn.title = usuarioActual.nombre;
     btn.removeAttribute("data-abrir");            // con sesión, el botón abre el menú de la cuenta
     $("menu-cuenta-nombre").textContent = usuarioActual.nombre + (usuarioActual.email ? " · " + usuarioActual.email : "");

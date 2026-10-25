@@ -236,6 +236,14 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Privacidad:** datos de facturación si un comercio contrata un plan (sin datos de tarjetas).
 - Fechas: 25 de octubre de 2026. Sin SQL ni cambios de funcionamiento.
 
+### Fase DR-1a · «🛍️ Mi vitrina»: secciones, apagar sin borrar, cantidades y la tienda por secciones (SQL 50)
+- **SQL 50** (`supabase/50_mi_vitrina.sql`): tabla `secciones_vitrina` (3 gratis por tienda; `comercios.limite_secciones` solo lo cambia el administrador); en `productos_comercio`: `seccion_id`, `publicado`, `orden`, `cantidad`, `avisar_pocos`, `agotar_en_cero`, `en_revision`. El cupo de 10 cuenta **solo publicados** (tope de guardados 30). El público solo ve publicados. Lo que parece medicamento se guarda **sin publicar** hasta que un moderador lo permita (trigger `productos_revision_sync` sobre la cola `revision_salud`); si lo permite, se publica solo si hay cupo.
+- **Mi tienda** (`mi-tienda.html/js`): «2 · Mis productos» pasa a **«🛍️ Mi vitrina»**, justo después de «🔥 Mis promociones» (que sigue igual). Indicadores (publicados · espacios libres · apagados) con barra; chips de secciones que filtran; filas compactas con interruptor **hay / agotado**, cantidad con −/＋, 🔥 si está en promo y «⋯» (editar en hoja, mover de sección, crear promoción con el producto, apagar/publicar, subir/bajar, borrar). Hoja de edición con «¿Cuántos tienes?», «¡Quedan pocos!» y «agotar en 0». «⚙️ Secciones»: crear (con emoji), renombrar, ordenar y borrar (los productos pasan a «Sin sección»). Droguerías: no se aceptan secciones por síntoma.
+- **Tienda pública** (`tienda.html/js`): fila de atajos (🔥 Promos · 🛍️ Productos · ⭐ Opiniones · 📍 Ubicación); botones de sección pegados arriba al bajar; «Todos» agrupado por sección en el orden del dueño; etiquetas en la foto (Agotado > 🔥 En promo > ¡Quedan pocos!; nunca la cantidad exacta si es mayor que 3). Nada se quitó.
+- **Sin el SQL 50** todo funciona como antes (sin secciones ni cantidades; 10 productos en total).
+- `data.js`: `cargarSecciones`, `guardarSeccion`, `borrarSeccion`, `actualizarProducto`, `ordenarProductos`, `etiquetaProducto`. Caché v110.
+- **Duplicar y Destacar no se muestran**: llegan con M-1/M-2 y los planes.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

@@ -1445,3 +1445,87 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 @media (max-width: 380px) {
   #encabezado.con-tienda .enc-nombre { display: none; }
 }
+
+/* ===== Fase DR-1a · «🛍️ Mi vitrina» (Mi tienda) ===== */
+.mv-ind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mv-ind > div { background: #f1f5f9; border-radius: 12px; padding: 7px 4px; text-align: center; }
+.mv-ind b { display: block; font-size: 1.15rem; font-weight: 900; color: #1e1b4b; line-height: 1.2; }
+.mv-ind span { font-size: .66rem; font-weight: 700; color: #64748b; }
+.mv-ind .ok b { color: #15803d; }
+.mv-barra { height: 8px; border-radius: 9px; background: #e2e8f0; overflow: hidden; margin-top: 4px; }
+.mv-barra i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4f46e5, #818cf8); transition: width .3s ease; }
+.mv-lbl { font-size: .68rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .03em; margin: 12px 0 6px; }
+.mv-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.mv-chips::-webkit-scrollbar { display: none; }
+.mv-chip { flex-shrink: 0; border: 1.5px solid #e2e8f0; border-radius: 999px; padding: 5px 11px; font-size: .78rem; font-weight: 700; color: #334155; background: #fff; white-space: nowrap; }
+.mv-chip i { font-style: normal; opacity: .6; margin-left: 2px; }
+.mv-chip[aria-pressed="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.mv-chip-add { border-style: dashed; border-color: #a5b4fc; color: #4f46e5; }
+.mv-fila { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+.mv-fila.mv-apagado .mv-ft, .mv-fila.mv-apagado .mv-info b { opacity: .55; }
+.mv-ft { position: relative; width: 52px; height: 52px; flex: none; border-radius: 12px; background: linear-gradient(135deg, #e0e7ff, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: visible; }
+.mv-ft img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.mv-ft em { position: absolute; right: -5px; bottom: -5px; font-style: normal; font-size: 13px; background: #fff; border-radius: 99px; padding: 0 2px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.mv-info { flex: 1; min-width: 0; cursor: pointer; }
+.mv-info b { display: block; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #0f172a; }
+.mv-info small { font-size: .74rem; color: #64748b; }
+.mv-est { display: inline-block; font-size: .64rem; font-weight: 800; border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.mv-est-pub { background: #dcfce7; color: #166534; } .mv-est-ago { background: #fef3c7; color: #92400e; }
+.mv-est-off { background: #e2e8f0; color: #475569; } .mv-est-rev { background: #ede9fe; color: #5b21b6; }
+.mv-est-rojo { background: #fee2e2; color: #b91c1c; } .mv-est-pocos { background: #ffedd5; color: #9a3412; }
+.mv-cant { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: .74rem; color: #334155; }
+.mv-cant button { width: 26px; height: 26px; border-radius: 50%; background: #eef2ff; color: #4338ca; font-weight: 900; }
+.mv-sw-caja { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none; width: 52px; }
+.mv-sw-caja span { font-size: .62rem; font-weight: 800; color: #64748b; }
+.mv-sw { width: 40px; height: 24px; border-radius: 99px; background: #cbd5e1; position: relative; transition: background .15s; }
+.mv-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .15s; }
+.mv-sw[aria-checked="true"] { background: #4f46e5; }
+.mv-sw[aria-checked="true"]::after { transform: translateX(16px); }
+.mv-sw:disabled { opacity: .4; }
+.mv-mas-caja { position: relative; flex: none; }
+.mv-mas { width: 34px; height: 34px; border-radius: 50%; background: #f1f5f9; font-weight: 900; color: #475569; }
+.mv-menu { position: absolute; right: 0; top: 38px; z-index: 30; width: 250px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 28px rgba(15,23,42,.16); padding: 4px; }
+.mv-menu > button, .mv-menu-fila button { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 9px; font-size: .84rem; color: #1e293b; }
+.mv-menu > button:hover, .mv-menu-fila button:hover:not(:disabled), .mv-menu-sub button:hover { background: #f1f5f9; }
+.mv-menu-fila { display: flex; } .mv-menu-fila button:disabled { opacity: .35; }
+.mv-menu-sub { padding: 6px 10px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: .78rem; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
+.mv-menu-sub span { width: 100%; font-weight: 700; }
+.mv-menu-sub button { border: 1px solid #e2e8f0; border-radius: 99px; padding: 3px 8px; font-size: .74rem; color: #334155; }
+.mv-menu-sub button[aria-current="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.mv-rojo { color: #dc2626 !important; }
+.mv-hoja { max-height: 92vh; overflow-y: auto; padding: 14px 18px 20px; }
+.mv-asa { width: 40px; height: 4px; border-radius: 9px; background: #cbd5e1; margin: 0 auto 10px; }
+@media (min-width: 640px) { .mv-asa { display: none; } }
+.mv-campo { display: block; font-size: .72rem; font-weight: 700; color: #64748b; }
+.mv-tg { display: flex; align-items: flex-start; gap: 8px; font-size: .8rem; color: #334155; }
+.mv-tg input { margin-top: 3px; }
+.mv-step { display: flex; margin-top: 2px; border: 1.5px solid #c7d2fe; border-radius: 10px; overflow: hidden; max-width: 220px; }
+.mv-step button { width: 44px; font-size: 1.2rem; font-weight: 900; color: #4f46e5; background: #eef2ff; }
+.mv-step input { flex: 1; min-width: 0; text-align: center; font-size: 1rem; font-weight: 800; padding: 7px 4px; color: #0f172a; }
+.mv-sec { display: flex; gap: 5px; align-items: center; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 5px 6px; }
+.mv-sec button { width: 32px; height: 32px; border-radius: 8px; flex: none; }
+.mv-sec button:hover:not(:disabled) { background: #f1f5f9; } .mv-sec button:disabled { opacity: .3; }
+.mv-sec-emoji { width: 40px; text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px 2px; flex: none; }
+.mv-sec-nombre { flex: 1; min-width: 0; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; font-size: .86rem; }
+.mv-sec-n { font-size: .72rem; color: #94a3b8; font-weight: 700; min-width: 16px; text-align: center; }
+.mv-sec-add { border-style: dashed; border-color: #a5b4fc; }
+.mv-sec .mv-sec-crear { width: auto; padding: 0 10px; background: #4f46e5; color: #fff; font-weight: 800; font-size: .8rem; }
+.mv-emojis { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 6px; }
+.mv-emojis button { width: 32px; height: 32px; border-radius: 8px; font-size: 18px; }
+.mv-emojis button:hover { background: #eef2ff; }
+
+/* ===== Fase DR-1a · Tienda pública: atajos, secciones y etiquetas ===== */
+.t-atajos { display: flex; gap: 6px; overflow-x: auto; margin-top: 14px; padding: 2px 0; scrollbar-width: none; }
+.t-atajos::-webkit-scrollbar { display: none; }
+.t-atajos a { flex-shrink: 0; font-size: .8rem; font-weight: 800; color: #4338ca; background: #eef2ff; border: 1px solid #e0e7ff; border-radius: 999px; padding: 6px 12px; white-space: nowrap; text-decoration: none; }
+.t-atajos a:hover { background: #e0e7ff; }
+.t-secciones { position: sticky; top: 0; z-index: 20; display: flex; gap: 6px; overflow-x: auto; margin: 12px -4px 0; padding: 8px 4px; background: rgba(248, 250, 252, .96); backdrop-filter: blur(6px); scrollbar-width: none; }
+.t-secciones::-webkit-scrollbar { display: none; }
+.t-sec { flex-shrink: 0; border: 1.5px solid #e2e8f0; border-radius: 999px; padding: 6px 12px; font-size: .8rem; font-weight: 700; color: #334155; background: #fff; white-space: nowrap; }
+.t-sec i { font-style: normal; opacity: .6; margin-left: 2px; }
+.t-sec[aria-pressed="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.t-sec-tit { font-size: .95rem; font-weight: 900; color: #1e1b4b; margin-top: 6px; }
+.t-etq { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 8px; }
+.t-etq-agotado { background: #334155; color: #fff; }
+.t-etq-promo { background: #ffe4e6; color: #be123c; }
+.t-etq-pocos { background: #ffedd5; color: #9a3412; }

@@ -7,8 +7,8 @@
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <meta name="robots" content="noindex">
   <title>Mi tienda | Merkap</title>
-  <link rel="stylesheet" href="styles.css?v=109">
-  <link rel="stylesheet" href="tw.css?v=109">
+  <link rel="stylesheet" href="styles.css?v=110">
+  <link rel="stylesheet" href="tw.css?v=110">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -108,6 +108,26 @@
         <div id="mt-promos" class="space-y-3 mt-3"></div>
       </section>
 
+      <!-- Fase DR-1a: «🛍️ Mi vitrina» (antes «2 · Mis productos») -->
+      <section id="mi-vitrina" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm scroll-mt-4">
+        <h2 class="text-lg font-black text-indigo-900 mb-2">🛍️ Mi vitrina <span id="mt-cuenta" class="text-sm font-semibold text-slate-500"></span></h2>
+        <div id="mv-ind" class="mv-ind"></div>
+        <p id="mv-cupo-txt" class="text-xs font-bold text-slate-500 mt-2"></p>
+        <div class="mv-barra" aria-hidden="true"><i id="mv-barra"></i></div>
+        <p class="text-xs text-slate-500 mt-2">Hasta <span id="mt-cupo">10</span> productos publicados gratis. Los <b>apagados</b> se guardan pero no se ven en tu tienda. Mantenlos al día: pasados 30 días sin cambios, tu tienda muestra el aviso «desactualizada».</p>
+        <p id="mt-reglas" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 my-3">No se permiten medicamentos (ni de venta libre ni con fórmula médica) ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan. <a href="politica-productos-salud.html" class="underline">Ver reglas</a></p>
+        <div id="mv-sec-caja" class="hidden">
+          <p class="mv-lbl">Mis secciones <span id="mv-sec-n"></span></p>
+          <div id="mv-chips" class="mv-chips" role="group" aria-label="Filtrar por sección"></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <button type="button" id="mt-agregar" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-50">➕ Agregar producto</button>
+          <button type="button" id="mv-gestionar-sec" class="hidden text-sm font-bold text-indigo-700 hover:underline">⚙️ Secciones</button>
+        </div>
+        <div id="mt-productos" class="mt-2"></div>
+        <p id="mt-vacio" class="hidden text-center text-sm text-slate-400 py-6">Aún no tienes productos. Toca «Agregar producto».</p>
+      </section>
+
       <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <h2 class="text-lg font-black text-indigo-900 mb-1">1 · Datos de tu negocio</h2>
         <p class="text-xs text-slate-500 mb-3">Estos datos los cambias tú cuando quieras. El <b>nombre</b> y la <b>ubicación</b> los confirma Merkap al verificarte (respaldan tu sello): para cambiarlos usa los botones de abajo.</p>
@@ -178,25 +198,37 @@
         </form>
       </section>
 
-      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-          <h2 class="text-lg font-black text-indigo-900">2 · Mis productos <span id="mt-cuenta" class="text-sm font-semibold text-slate-500"></span></h2>
-          <button type="button" id="mt-agregar" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-sm">➕ Agregar producto</button>
-        </div>
-        <p class="text-xs text-slate-500 mb-1">Hasta <span id="mt-cupo">10</span> productos gratis. Mantenlos al día: pasados 30 días sin cambios, tu tienda muestra el aviso «desactualizada».</p>
-        <p id="mt-reglas" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">No se permiten medicamentos (ni de venta libre ni con fórmula médica) ni otros productos regulados. Licores y tabaco solo para mayores de edad. Un moderador puede ocultar productos que incumplan. <a href="politica-productos-salud.html" class="underline">Ver reglas</a></p>
-        <div id="mt-productos" class="space-y-3"></div>
-        <p id="mt-vacio" class="hidden text-center text-sm text-slate-400 py-6">Aún no tienes productos. Toca «Agregar producto».</p>
-      </section>
     </div>
   </main>
 
+
+  <!-- Fase DR-1a: editar un producto (hoja que sube desde abajo en el celular) -->
+  <div id="mv-modal-prod" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="mv-prod-titulo">
+    <div class="mv-hoja bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl relative modal-enter">
+      <div class="mv-asa" aria-hidden="true"></div>
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="mv-prod-titulo" class="text-base font-black text-indigo-900 mb-3">✏️ Editar producto</h3>
+      <div id="mv-form" data-pid=""></div>
+    </div>
+  </div>
+  <!-- Fase DR-1a: secciones de la vitrina -->
+  <div id="mv-modal-sec" class="modal-fondo hidden fixed inset-0 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4 z-[100]" role="dialog" aria-modal="true" aria-labelledby="mv-sec-titulo">
+    <div class="mv-hoja bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl relative modal-enter">
+      <div class="mv-asa" aria-hidden="true"></div>
+      <button type="button" data-cerrar aria-label="Cerrar" class="absolute top-3 right-4 text-2xl text-slate-400 hover:text-slate-700">&times;</button>
+      <h3 id="mv-sec-titulo" class="text-base font-black text-indigo-900">🗂️ Mis secciones <span id="mv-sec-n2" class="text-sm text-slate-400 font-bold"></span></h3>
+      <p class="text-xs text-slate-500 mt-1 mb-3">Ordena tu vitrina como tu estantería. Los clientes las ven como botones arriba de tus productos.</p>
+      <div id="mv-sec-lista" class="space-y-2"></div>
+      <div id="mv-sec-nueva" class="mt-3"></div>
+      <p class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 mt-3">🗑️ Si borras una sección, sus productos <b>no se borran</b>: pasan a «Sin sección».</p>
+    </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=109"></script>
-  <script src="data.js?v=109"></script>
-  <script src="qr.js?v=109"></script>
-  <script src="piezas.js?v=109"></script>
-  <script src="compartir.js?v=109"></script>
-  <script src="mi-tienda.js?v=109"></script>
+  <script src="utils.js?v=110"></script>
+  <script src="data.js?v=110"></script>
+  <script src="qr.js?v=110"></script>
+  <script src="piezas.js?v=110"></script>
+  <script src="compartir.js?v=110"></script>
+  <script src="mi-tienda.js?v=110"></script>
 </body>
 </html>

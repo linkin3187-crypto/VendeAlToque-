@@ -8,8 +8,8 @@
   <title>Tienda | Merkap</title>
   <meta name="description" content="Productos y datos de contacto de un comercio en Merkap.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=109">
-  <link rel="stylesheet" href="tw.css?v=109">
+  <link rel="stylesheet" href="styles.css?v=110">
+  <link rel="stylesheet" href="tw.css?v=110">
 </head>
 <body class="bg-slate-50 text-slate-800 pb-24">
   <!-- Íconos de línea de la ficha de la tienda (fase V-2a) -->
@@ -81,6 +81,8 @@
         <button type="button" id="t-compartir-dueno" class="hidden w-full mt-2 btn-compartir-dueno font-bold py-3 rounded-xl">📣 Comparte tu tienda (imagen, texto y sticker)</button>
         <div id="t-confirmar-sitio"></div>
       </div>
+      <!-- Fase DR-1a: atajos a las partes de la tienda -->
+      <nav id="t-atajos" class="hidden t-atajos" aria-label="Ir a"></nav>
 
       <!-- Fase 2AP-4a: promociones vigentes de la tienda -->
       <section id="promos" class="hidden mt-5 scroll-mt-4">
@@ -124,6 +126,8 @@
             <label><input type="radio" name="t-modo" value="domicilio"> Domicilio</label>
           </span>
         </div>
+        <!-- Fase DR-1a: secciones de la vitrina (quedan pegadas arriba al bajar por los productos) -->
+        <div id="t-secciones" class="hidden t-secciones" role="group" aria-label="Secciones de la vitrina"></div>
         <div id="t-lista" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3"></div>
         <p id="t-sin-productos" class="hidden text-center text-sm text-slate-400 py-8">Este comercio aún no ha cargado productos. Escríbele por WhatsApp para preguntar.</p>
       </section>
@@ -250,11 +254,11 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="utils.js?v=109"></script>
-  <script src="data.js?v=109"></script>
-  <script src="qr.js?v=109"></script>
-  <script src="piezas.js?v=109"></script>
-  <script src="compartir.js?v=109"></script>
-  <script src="tienda.js?v=109"></script>
+  <script src="utils.js?v=110"></script>
+  <script src="data.js?v=110"></script>
+  <script src="qr.js?v=110"></script>
+  <script src="piezas.js?v=110"></script>
+  <script src="compartir.js?v=110"></script>
+  <script src="tienda.js?v=110"></script>
 </body>
 </html>

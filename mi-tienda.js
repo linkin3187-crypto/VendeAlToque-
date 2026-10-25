@@ -104,78 +104,257 @@ async function guardarNegocio(e) {
   } finally { btn.disabled = false; }
 }
 
-// ---------- Productos ----------
+// ---------- 🛍️ Mi vitrina (fase DR-1a · supabase/50_mi_vitrina.sql) ----------
+// Lista compacta: foto, nombre, precio, sección y estado; interruptor «hay / agotado»; «⋯» con el resto.
+// Sin el SQL 50 (secciones === null) funciona como antes: sin secciones, sin apagar y sin cantidades.
+let secciones = null;            // [{id, nombre, emoji, orden}] o null si falta el SQL 50
+let filtroSec = "todos";         // "todos" | id de sección | "sin"
+let editando = null;             // producto en la hoja de edición (null = nuevo)
+let galeriaProd = null;
+const vitrinaNueva = () => secciones !== null;
+const publicadosMios = () => productosMios.filter(p => p.publicado && !p.oculto && !p.enRevision);
+const maxGuardados = () => maxProductos() * 3;
+const EMOJIS_SECCION = ["🥤", "🧃", "☕", "🍞", "🥩", "🍎", "🥫", "🍔", "🍰", "🧴", "🧼", "🧻", "🩹", "👶", "💄", "🐾", "🛠️", "💡", "🎨", "👕", "👟", "📱", "✏️", "🌸", "🏠", "⭐"];
+// Droguerías y naturistas: las secciones no se nombran por síntoma o enfermedad (Res. 1896 de 2023, art. 26)
+const RX_SINTOMA = /\b(dolor(es)?|gripa|gripe|resfriado|fiebre|tos|alergias?|migranas?|colicos?|gastritis|diarrea|estrenimiento|acidez|infeccion(es)?|inflamacion|presion|diabetes|ansiedad|insomnio|hongos|herpes|sintomas?)\b/;
+const nombreSintoma = n => RX_SINTOMA.test(String(n || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""));
+const nombreSeccion = id => { const s = (secciones || []).find(x => x.id === id); return s ? (s.emoji ? s.emoji + " " : "") + s.nombre : ""; };
+const promosConProducto = () => new Set(promosMias.filter(promoCuenta).map(p => p.productoId).filter(Boolean));
+
+function estadoProducto(p) {
+  if (p.oculto) return ["🚫 Oculto por Merkap", "mv-est-rojo"];
+  if (p.enRevision) return ["En revisión 💊", "mv-est-rev"];
+  if (!p.publicado) return ["Apagado", "mv-est-off"];
+  if (!p.disponible) return ["Agotado", "mv-est-ago"];
+  if (p.cantidad != null && p.cantidad <= 3) return [p.cantidad === 1 ? "Queda 1" : `Quedan ${p.cantidad}`, "mv-est-pocos"];
+  return ["Publicado", "mv-est-pub"];
+}
+
 function filaProducto(p) {
-  const nuevo = !p;
-  p = p || { id: "", nombre: "", descripcion: "", precio: null, foto: "", disponible: true, oculto: false };
-  return `<article class="border border-slate-200 rounded-xl p-3 ${p.oculto ? "bg-red-50" : ""}" data-pid="${p.id}">
-    ${p.oculto ? '<p class="text-xs text-red-700 font-semibold mb-2">🚫 Un moderador ocultó este producto. Revisa las reglas o escríbenos.</p>' : ""}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <label class="text-xs font-bold text-slate-500 sm:col-span-2">Nombre
-        <input data-k="nombre" maxlength="80" value="${esc(p.nombre)}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
-      <label class="text-xs font-bold text-slate-500">Precio (COP, opcional)
-        <input data-k="precio" inputmode="numeric" value="${p.precio != null ? p.precio : ""}" placeholder="8500" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
-      <label class="text-xs font-bold text-slate-500 sm:col-span-3">Descripción (opcional)
-        <input data-k="descripcion" maxlength="200" value="${esc(p.descripcion)}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm text-slate-800"></label>
-      <div class="text-xs font-bold text-slate-500 sm:col-span-3">📷 Fotos del producto <span class="font-normal">(hasta 3; la primera es la principal)</span>
-        <div data-gal-prod class="mt-1 font-normal"></div></div>
+  const foto = urlSegura((p.fotos || [])[0] || p.foto);
+  const [est, cls] = estadoProducto(p);
+  const promo = promosConProducto().has(p.id);
+  const cant = vitrinaNueva() && p.cantidad != null
+    ? `<span class="mv-cant"><button type="button" data-acc="menos" aria-label="Uno menos">−</button><b>${p.cantidad}</b> disp.<button type="button" data-acc="mas" aria-label="Uno más">＋</button></span>` : "";
+  const sec = vitrinaNueva() && p.seccionId ? " · " + esc(nombreSeccion(p.seccionId)) : "";
+  const apagable = vitrinaNueva() && !p.oculto && !p.enRevision;
+  const lista = productosVisibles();
+  const pos = lista.findIndex(x => x.id === p.id);
+  return `<article class="mv-fila ${p.publicado && !p.oculto && !p.enRevision ? "" : "mv-apagado"}" data-pid="${p.id}">
+    <button type="button" data-acc="editar" class="mv-ft" aria-label="Editar ${esc(p.nombre)}">🛍️${foto ? `<img src="${esc(foto)}" alt="" loading="lazy">` : ""}${promo ? '<em title="Está en una promoción">🔥</em>' : ""}</button>
+    <div class="mv-info" data-acc="editar">
+      <b>${esc(p.nombre)}</b>
+      <small>${p.precio != null ? esc(formatearPrecio(p.precio)) : "Sin precio"}${sec} <span class="mv-est ${cls}">${esc(est)}</span></small>
+      ${cant}
     </div>
-    <div class="flex flex-wrap items-center gap-3 mt-2 text-sm">
-      <label class="flex items-center gap-1.5"><input type="checkbox" data-k="disponible" ${p.disponible ? "checked" : ""}> Disponible</label>
-      <button type="button" data-acc="guardar" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg text-sm disabled:opacity-60">${nuevo ? "Agregar" : "Guardar"}</button>
-      ${nuevo ? '<button type="button" data-acc="cancelar" class="text-xs text-slate-500 hover:underline">Cancelar</button>'
-              : '<button type="button" data-acc="borrar" class="text-red-600 hover:underline text-xs">Borrar</button>'}
+    <div class="mv-sw-caja">
+      <button type="button" role="switch" aria-checked="${p.disponible}" data-acc="disponible" class="mv-sw" aria-label="¿Hay disponible?" ${p.oculto ? "disabled" : ""}></button>
+      <span>${p.disponible ? "Hay" : "Agotado"}</span>
+    </div>
+    <div class="mv-mas-caja">
+      <button type="button" data-acc="menu" class="mv-mas" aria-haspopup="menu" aria-label="Más acciones">⋯</button>
+      <div class="mv-menu hidden" role="menu">
+        <button type="button" role="menuitem" data-acc="editar">✏️ Editar (precio, cantidad, fotos…)</button>
+        ${vitrinaNueva() && secciones.length ? `<div class="mv-menu-sub"><span>🗂️ Mover a:</span>${secciones.map(s => `<button type="button" data-acc="mover" data-sec="${s.id}" ${p.seccionId === s.id ? 'aria-current="true"' : ""}>${esc((s.emoji ? s.emoji + " " : "") + s.nombre)}</button>`).join("")}<button type="button" data-acc="mover" data-sec="" ${!p.seccionId ? 'aria-current="true"' : ""}>Sin sección</button></div>` : ""}
+        ${actual.activo && !p.oculto ? '<button type="button" role="menuitem" data-acc="promo">🔥 Crear promoción con este producto</button>' : ""}
+        ${apagable ? `<button type="button" role="menuitem" data-acc="publicar">${p.publicado ? "🙈 Apagar (no se ve, no se borra)" : "👁️ Publicar en mi tienda"}</button>` : ""}
+        ${vitrinaNueva() && lista.length > 1 ? `<div class="mv-menu-fila"><button type="button" data-acc="subir" ${pos <= 0 ? "disabled" : ""}>⬆️ Subir</button><button type="button" data-acc="bajar" ${pos < 0 || pos >= lista.length - 1 ? "disabled" : ""}>⬇️ Bajar</button></div>` : ""}
+        <button type="button" role="menuitem" data-acc="borrar" class="mv-rojo">🗑️ Borrar</button>
+      </div>
     </div>
   </article>`;
 }
 
-// Fase 2AA.5: cada producto tiene su gestor de fotos (hasta 3)
-const galeriasProd = new WeakMap();
-function iniciarGaleriasProductos() {
-  document.querySelectorAll("#mt-productos [data-pid]").forEach(fila => {
-    if (galeriasProd.has(fila)) return;
-    const p = productosMios.find(x => String(x.id) === fila.dataset.pid);
-    galeriasProd.set(fila, gestorFotos(fila.querySelector("[data-gal-prod]"), p ? p.fotos : [], null, 3));
-  });
+const productosVisibles = () => productosMios.filter(p => filtroSec === "todos" || (filtroSec === "sin" ? !p.seccionId : p.seccionId === filtroSec));
+
+function pintarIndicadores() {
+  const pub = publicadosMios().length, cupo = maxProductos();
+  const apagados = productosMios.filter(p => !p.publicado || p.enRevision || p.oculto).length;
+  const rev = productosMios.filter(p => p.enRevision).length;
+  $("mv-ind").innerHTML = vitrinaNueva()
+    ? `<div><b>${pub}</b><span>Publicados</span></div><div class="ok"><b>${Math.max(0, cupo - pub)}</b><span>Espacios libres</span></div><div><b>${apagados}</b><span>${rev ? `Apagados (${rev} en revisión)` : "Apagados"}</span></div>`
+    : `<div><b>${productosMios.length}</b><span>Productos</span></div><div class="ok"><b>${Math.max(0, cupo - productosMios.length)}</b><span>Espacios libres</span></div><div><b>${productosMios.filter(p => !p.disponible).length}</b><span>Agotados</span></div>`;
+  const usados = vitrinaNueva() ? pub : productosMios.length;
+  $("mv-cupo-txt").textContent = `${usados} de ${cupo} productos ${vitrinaNueva() ? "publicados" : "en tu vitrina"}`;
+  $("mv-barra").style.width = Math.min(100, Math.round(usados / cupo * 100)) + "%";
+  $("mt-cuenta").textContent = `(${usados} de ${cupo})`;
 }
+
+function pintarChips() {
+  const hay = vitrinaNueva();
+  $("mv-sec-caja").classList.toggle("hidden", !hay);
+  $("mv-gestionar-sec").classList.toggle("hidden", !hay);
+  if (!hay) return;
+  const lim = (actual && actual.limiteSecciones) || 3;
+  $("mv-sec-n").textContent = `(${secciones.length} de ${lim})`;
+  const n = f => productosMios.filter(f).length;
+  const sinSec = n(p => !p.seccionId);
+  if (filtroSec !== "todos" && filtroSec !== "sin" && !secciones.some(s => s.id === filtroSec)) filtroSec = "todos";
+  if (filtroSec === "sin" && !sinSec) filtroSec = "todos";
+  const chip = (v, txt, k) => `<button type="button" class="mv-chip" data-filtro="${v}" aria-pressed="${String(filtroSec) === String(v)}">${txt} <i>${k}</i></button>`;
+  $("mv-chips").innerHTML = chip("todos", "Todos", productosMios.length)
+    + secciones.map(s => chip(s.id, esc((s.emoji ? s.emoji + " " : "") + s.nombre), n(p => p.seccionId === s.id))).join("")
+    + (secciones.length && sinSec ? chip("sin", "Sin sección", sinSec) : "")
+    + (secciones.length < lim ? '<button type="button" class="mv-chip mv-chip-add" data-acc-sec="nueva">＋ Sección</button>' : "");
+}
+
 function pintarProductosMios() {
-  $("mt-productos").innerHTML = productosMios.map(filaProducto).join("");
-  iniciarGaleriasProductos();
+  pintarIndicadores();
+  pintarChips();
+  const lista = productosVisibles();
+  $("mt-productos").innerHTML = lista.map(filaProducto).join("")
+    || (productosMios.length ? '<p class="text-center text-sm text-slate-400 py-6">No hay productos en esta sección.</p>' : "");
   $("mt-vacio").classList.toggle("hidden", productosMios.length > 0);
-  $("mt-cuenta").textContent = `(${productosMios.length} de ${maxProductos()})`;
-  $("mt-agregar").disabled = productosMios.length >= maxProductos();
-  if ($("mt-cupo")) $("mt-cupo").textContent = maxProductos();   // fase 2AC.1: los datos sanitarios ya no frenan
+  const tope = vitrinaNueva() ? maxGuardados() : maxProductos();
+  $("mt-agregar").disabled = productosMios.length >= tope;
+  $("mt-agregar").title = productosMios.length >= tope ? `Tienes ${tope} productos guardados: borra uno para agregar otro` : "";
+  if ($("mt-cupo")) $("mt-cupo").textContent = maxProductos();
+}
+
+// ---------- Hoja de edición ----------
+function abrirHojaProducto(p) {
+  editando = p || null;
+  const v = p || { nombre: "", descripcion: "", precio: null, disponible: true, cantidad: null, avisarPocos: false, agotarEnCero: true,
+                   seccionId: filtroSec !== "todos" && filtroSec !== "sin" ? filtroSec : null, fotos: [] };
+  const inp = "mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800";
+  const secOpt = vitrinaNueva() ? `<label class="mv-campo">Sección
+      <select data-k="seccion" class="${inp} bg-white"><option value="">Sin sección</option>${secciones.map(s => `<option value="${s.id}" ${v.seccionId === s.id ? "selected" : ""}>${esc((s.emoji ? s.emoji + " " : "") + s.nombre)}</option>`).join("")}</select></label>` : "";
+  const cantidad = vitrinaNueva() ? `<div class="mv-campo">¿Cuántos tienes? <span class="font-normal">(opcional)</span>
+      <div class="mv-step"><button type="button" data-paso="-1" aria-label="Uno menos">−</button><input data-k="cantidad" inputmode="numeric" placeholder="—" value="${v.cantidad != null ? v.cantidad : ""}" aria-label="Cantidad disponible"><button type="button" data-paso="1" aria-label="Uno más">＋</button></div></div>
+    <label class="mv-tg"><input type="checkbox" data-k="avisar_pocos" ${v.avisarPocos ? "checked" : ""}> Mostrar «¡Quedan pocos!» al cliente cuando queden 3 o menos</label>
+    <label class="mv-tg"><input type="checkbox" data-k="agotar_en_cero" ${v.agotarEnCero ? "checked" : ""}> <span>Marcar <b>agotado</b> solo cuando llegue a 0</span></label>
+    <p class="text-[11px] text-slate-500 bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1.5">ℹ️ Merkap no descuenta solo: los pedidos llegan por WhatsApp. Tú cambias la cantidad cuando vendes (también con −/＋ desde la lista). El cliente nunca ve la cantidad exacta si es mayor que 3.</p>` : "";
+  $("mv-prod-titulo").textContent = p ? "✏️ Editar producto" : "➕ Agregar producto";
+  $("mv-form").dataset.pid = p ? p.id : "";
+  $("mv-form").innerHTML = `${p && p.oculto ? '<p class="text-xs text-red-700 font-semibold mb-2">🚫 Un moderador ocultó este producto. Revisa las reglas o escríbenos.</p>' : ""}
+    ${p && p.enRevision ? '<p class="text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-1.5 mb-2">💊 <b>Parece un medicamento:</b> se guardó pero no se publica (hoy no se publican medicamentos). Un moderador lo revisa. <a href="politica-productos-salud.html" class="underline">Ver reglas</a></p>' : ""}
+    <div class="space-y-2.5">
+      <label class="mv-campo">Nombre<input data-k="nombre" maxlength="80" value="${esc(v.nombre)}" class="${inp}"></label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="mv-campo">Precio (COP, opcional)<input data-k="precio" inputmode="numeric" value="${v.precio != null ? v.precio : ""}" placeholder="8500" class="${inp}"></label>
+        ${secOpt || "<span></span>"}
+      </div>
+      ${cantidad}
+      <label class="mv-campo">Descripción (opcional)<input data-k="descripcion" maxlength="200" value="${esc(v.descripcion)}" class="${inp}"></label>
+      <div class="mv-campo">📷 Fotos del producto <span class="font-normal">(hasta 3; la primera es la principal)</span><div data-gal-prod class="mt-1 font-normal"></div></div>
+      <label class="mv-tg"><input type="checkbox" data-k="disponible" ${v.disponible ? "checked" : ""}> Hay disponible (si no, sale «Agotado»)</label>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button type="button" data-acc="guardar" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm disabled:opacity-60">${p ? "Guardar" : "Agregar"}</button>
+      <button type="button" data-acc="cancelar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm">Cancelar</button>
+    </div>`;
+  galeriaProd = gestorFotos($("mv-form").querySelector("[data-gal-prod]"), v.fotos || [], null, 3);
+  abrirModal("mv-modal-prod");
+  setTimeout(() => { const n = $("mv-form").querySelector('[data-k="nombre"]'); if (n && !p) n.focus(); }, 50);
+}
+
+async function guardarHojaProducto(b) {
+  const f = $("mv-form"), v = k => f.querySelector(`[data-k="${k}"]`);
+  const pid = f.dataset.pid ? Number(f.dataset.pid) : null;
+  const nombre = v("nombre").value.trim();
+  if (nombre.length < 2) throw new Error("El nombre del producto es obligatorio");
+  const crudo = v("precio").value.trim();
+  const precio = crudo ? Number(soloDigitos(crudo)) : null;
+  if (crudo && (!Number.isFinite(precio) || precio > 99999999999)) throw new Error("El precio no es válido");
+  if (!confirmarNoMedicamento(nombre + " " + v("descripcion").value, "en las vitrinas")) return false;
+  const datos = { nombre, descripcion: v("descripcion").value, precio, disponible: v("disponible").checked };
+  if (vitrinaNueva()) {
+    const c = v("cantidad").value.trim();
+    datos.cantidad = c === "" ? null : Math.min(100000, Number(soloDigitos(c)) || 0);
+    datos.avisar_pocos = v("avisar_pocos").checked;
+    datos.agotar_en_cero = v("agotar_en_cero").checked;
+    datos.seccion_id = v("seccion").value ? Number(v("seccion").value) : null;
+    // Si marca «hay» con cantidad 0 y «agotar en 0», se borra la cantidad para que no vuelva a «agotado»
+    if (datos.disponible && datos.cantidad === 0 && datos.agotar_en_cero) datos.cantidad = null;
+    if (!pid) {
+      datos.publicado = publicadosMios().length < maxProductos();
+      datos.orden = productosMios.reduce((m, x) => Math.max(m, x.orden), 0) + 10;
+    }
+  }
+  b.disabled = true;
+  if (galeriaProd && (galeriaProd.cambiado || !pid)) datos.fotos = await galeriaProd.subir();
+  await guardarProducto(actual.id, datos, pid);
+  cerrarModal("mv-modal-prod");
+  mostrarToast(pid ? "✅ Guardado" : vitrinaNueva() && !datos.publicado
+    ? `✅ Guardado apagado: ya tienes ${maxProductos()} publicados. Apaga uno para publicar este.` : "✅ Producto agregado");
+  return true;
+}
+
+async function accionHoja(e) {
+  const b = e.target.closest("[data-acc], [data-paso]");
+  if (!b) return;
+  if (b.dataset.paso) {
+    const i = $("mv-form").querySelector('[data-k="cantidad"]');
+    const n = Math.max(0, (Number(soloDigitos(i.value)) || 0) + Number(b.dataset.paso));
+    i.value = n; return;
+  }
+  if (b.dataset.acc === "cancelar") { cerrarModal("mv-modal-prod"); return; }
+  if (b.dataset.acc !== "guardar") return;
+  try { if (await guardarHojaProducto(b)) await refrescarProductos(); }
+  catch (err) { console.warn(err); mostrarToast(mensajeError(err), "error"); }
+  finally { b.disabled = false; }
+}
+
+// ---------- Acciones de la lista ----------
+function cerrarMenus(excepto) { document.querySelectorAll("#mt-productos .mv-menu").forEach(m => { if (m !== excepto) m.classList.add("hidden"); }); }
+
+async function reordenar(p, dir) {
+  const lista = productosVisibles();
+  const q = lista[lista.findIndex(x => x.id === p.id) + dir];
+  if (!q) return;
+  // Si hay empates (productos viejos con orden 0), primero se numera todo de 10 en 10
+  if (new Set(productosMios.map(x => x.orden)).size < productosMios.length) {
+    for (let k = 0; k < productosMios.length; k++) {
+      const o = (k + 1) * 10;
+      if (productosMios[k].orden !== o) { await actualizarProducto(productosMios[k].id, { orden: o }); productosMios[k].orden = o; }
+    }
+  }
+  const op = p.orden, oq = q.orden;
+  await actualizarProducto(p.id, { orden: oq });
+  await actualizarProducto(q.id, { orden: op });
 }
 
 async function accionProducto(e) {
   const b = e.target.closest("[data-acc]");
   const fila = e.target.closest("[data-pid]");
   if (!b || !fila) return;
-  if (b.dataset.acc === "cancelar") { fila.remove(); return; }
-  const pid = fila.dataset.pid ? Number(fila.dataset.pid) : null;
+  const p = productosMios.find(x => String(x.id) === fila.dataset.pid);
+  if (!p) return;
+  const acc = b.dataset.acc;
+  if (acc === "menu") { const m = fila.querySelector(".mv-menu"); cerrarMenus(m); m.classList.toggle("hidden"); return; }
+  cerrarMenus();
+  if (acc === "editar") { abrirHojaProducto(p); return; }
+  if (acc === "promo") {
+    abrirFormPromo(null);
+    $("pr-producto").value = String(p.id); $("pr-producto").dispatchEvent(new Event("change", { bubbles: true }));
+    $("promos").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   b.disabled = true;
   try {
-    if (b.dataset.acc === "borrar") {
-      if (!confirm("¿Borrar este producto?")) { b.disabled = false; return; }
-      await eliminarProducto(pid);
+    if (acc === "borrar") {
+      if (!confirm(`¿Borrar «${p.nombre}»?`)) { b.disabled = false; return; }
+      await eliminarProducto(p.id);
       mostrarToast("🗑️ Producto borrado");
-    } else {
-      const v = k => fila.querySelector(`[data-k="${k}"]`);
-      const nombre = v("nombre").value.trim();
-      if (nombre.length < 2) throw new Error("El nombre del producto es obligatorio");
-      const crudo = v("precio").value.trim();
-      const precio = crudo ? Number(soloDigitos(crudo)) : null;
-      if (crudo && (!Number.isFinite(precio) || precio > 99999999999)) throw new Error("El precio no es válido");
-      if (!confirmarNoMedicamento(nombre + " " + v("descripcion").value, "en las vitrinas")) { b.disabled = false; return; }
-      const gal = galeriasProd.get(fila);
-      const datos = { nombre, descripcion: v("descripcion").value, precio, disponible: v("disponible").checked };
-      if (gal && (gal.cambiado || !pid)) datos.fotos = await gal.subir();
-      await guardarProducto(actual.id, datos, pid);
-      mostrarToast(pid ? "✅ Guardado" : "✅ Producto agregado");
+    } else if (acc === "disponible") {
+      const hay = !p.disponible;
+      const cambios = { disponible: hay };
+      if (hay && p.cantidad === 0 && p.agotarEnCero && vitrinaNueva()) cambios.cantidad = null;
+      await actualizarProducto(p.id, cambios);
+    } else if (acc === "menos" || acc === "mas") {
+      await actualizarProducto(p.id, { cantidad: Math.max(0, (p.cantidad || 0) + (acc === "mas" ? 1 : -1)) });
+    } else if (acc === "publicar") {
+      await actualizarProducto(p.id, { publicado: !p.publicado });
+      mostrarToast(p.publicado ? "🙈 Apagado: ya no se ve en tu tienda (no se borró)" : "👁️ Publicado en tu tienda");
+    } else if (acc === "mover") {
+      await actualizarProducto(p.id, { seccion_id: b.dataset.sec ? Number(b.dataset.sec) : null });
+      mostrarToast("🗂️ Movido a " + (b.dataset.sec ? nombreSeccion(Number(b.dataset.sec)) : "«Sin sección»"));
+    } else if (acc === "subir" || acc === "bajar") {
+      await reordenar(p, acc === "subir" ? -1 : 1);
     }
     await refrescarProductos();
   } catch (err) {
-    console.error(err);
+    console.warn(err);
     b.disabled = false;
     mostrarToast(mensajeError(err), "error");
   }
@@ -183,7 +362,71 @@ async function accionProducto(e) {
 
 async function refrescarProductos() {
   try { productosMios = await cargarProductos(actual.id); } catch (e) { mostrarToast(mensajeError(e), "error"); }
+  secciones = await cargarSecciones(actual.id);
   pintarProductosMios();
+}
+
+// ---------- Secciones ----------
+function pintarSeccionesModal() {
+  const lim = (actual && actual.limiteSecciones) || 3;
+  $("mv-sec-n2").textContent = `${secciones.length} de ${lim}`;
+  $("mv-sec-lista").innerHTML = secciones.map((s, i) => `<div class="mv-sec" data-sec="${s.id}">
+      <input data-k="emoji" value="${esc(s.emoji)}" maxlength="8" aria-label="Emoji" class="mv-sec-emoji">
+      <input data-k="nombre" value="${esc(s.nombre)}" maxlength="30" aria-label="Nombre de la sección" class="mv-sec-nombre">
+      <span class="mv-sec-n">${productosMios.filter(p => p.seccionId === s.id).length}</span>
+      <button type="button" data-acc-sec="guardar" aria-label="Guardar nombre">💾</button>
+      <button type="button" data-acc-sec="subir" aria-label="Subir" ${i === 0 ? "disabled" : ""}>⬆️</button>
+      <button type="button" data-acc-sec="bajar" aria-label="Bajar" ${i === secciones.length - 1 ? "disabled" : ""}>⬇️</button>
+      <button type="button" data-acc-sec="borrar" aria-label="Borrar sección">🗑️</button>
+    </div>`).join("") || '<p class="text-sm text-slate-500">Aún no tienes secciones.</p>';
+  $("mv-sec-nueva").innerHTML = secciones.length < lim ? `<div class="mv-sec mv-sec-add">
+      <input id="mv-sec-emoji" maxlength="8" placeholder="🥤" aria-label="Emoji" class="mv-sec-emoji">
+      <input id="mv-sec-nombre" maxlength="30" placeholder="Nueva sección (ej. «Bebidas»)" class="mv-sec-nombre">
+      <button type="button" data-acc-sec="crear" class="mv-sec-crear">＋ Crear</button>
+    </div>
+    <div class="mv-emojis">${EMOJIS_SECCION.map(x => `<button type="button" data-emoji="${x}">${x}</button>`).join("")}</div>
+    <p class="text-[11px] text-slate-500 mt-1">Ejemplos: tienda: Bebidas · Aseo · Granos; restaurante: Desayunos · Almuerzos; ferretería: Pinturas · Eléctricos.</p>`
+    : `<p class="text-xs text-slate-500">Llegaste a tus ${lim} secciones. Renombra o borra una para crear otra.</p>`;
+}
+
+function validarNombreSeccion(nombre) {
+  if (!nombre) throw new Error("Escribe el nombre de la sección");
+  if (esComercioSalud(actual) && nombreSintoma(nombre))
+    throw new Error("En droguerías las secciones no pueden llamarse por un síntoma o enfermedad (la norma no lo permite). Usa nombres como «Cuidado personal», «Bebé» o «Botiquín».");
+}
+
+async function accionSecciones(e) {
+  const em = e.target.closest("[data-emoji]");
+  if (em) { const i = $("mv-sec-emoji"); if (i) i.value = em.dataset.emoji; return; }
+  const b = e.target.closest("[data-acc-sec]");
+  if (!b) return;
+  const fila = b.closest("[data-sec]");
+  const s = fila ? secciones.find(x => x.id === Number(fila.dataset.sec)) : null;
+  b.disabled = true;
+  try {
+    if (b.dataset.accSec === "crear") {
+      const nombre = $("mv-sec-nombre").value.trim();
+      validarNombreSeccion(nombre);
+      await guardarSeccion(actual.id, { nombre, emoji: $("mv-sec-emoji").value, orden: (secciones.length + 1) * 10 });
+      mostrarToast("🗂️ Sección creada");
+    } else if (b.dataset.accSec === "guardar" && s) {
+      const nombre = fila.querySelector('[data-k="nombre"]').value.trim();
+      validarNombreSeccion(nombre);
+      await guardarSeccion(actual.id, { nombre, emoji: fila.querySelector('[data-k="emoji"]').value }, s.id);
+      mostrarToast("✅ Sección guardada");
+    } else if ((b.dataset.accSec === "subir" || b.dataset.accSec === "bajar") && s) {
+      const i = secciones.indexOf(s), j = i + (b.dataset.accSec === "subir" ? -1 : 1);
+      const l = secciones.slice(); [l[i], l[j]] = [l[j], l[i]];
+      for (let k = 0; k < l.length; k++) if (l[k].orden !== (k + 1) * 10) await guardarSeccion(actual.id, { nombre: l[k].nombre, emoji: l[k].emoji, orden: (k + 1) * 10 }, l[k].id);
+    } else if (b.dataset.accSec === "borrar" && s) {
+      const n = productosMios.filter(p => p.seccionId === s.id).length;
+      if (!confirm(`¿Borrar la sección «${s.nombre}»?${n ? `\n\nSus ${n} productos NO se borran: pasan a «Sin sección».` : ""}`)) { b.disabled = false; return; }
+      await borrarSeccion(s.id);
+      mostrarToast("🗑️ Sección borrada");
+    }
+    await refrescarProductos();
+    pintarSeccionesModal();
+  } catch (err) { console.warn(err); b.disabled = false; mostrarToast(mensajeError(err), "error"); }
 }
 
 // ---------- Datos sanitarios (fase 2AB.1) ----------
@@ -276,12 +519,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   $("mt-productos").addEventListener("click", accionProducto);
   $("mt-productos").addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.remove(); }, true);
-  $("mt-agregar").addEventListener("click", () => {
-    if ($("mt-productos").querySelector('[data-pid=""]')) return;
-    $("mt-productos").insertAdjacentHTML("afterbegin", filaProducto(null));
-    iniciarGaleriasProductos();
-    $("mt-productos").querySelector('[data-pid=""] [data-k="nombre"]').focus();
+  $("mt-agregar").addEventListener("click", () => abrirHojaProducto(null));
+  $("mv-form").addEventListener("click", accionHoja);
+  $("mv-chips").addEventListener("click", e => {
+    if (e.target.closest("[data-acc-sec]")) { pintarSeccionesModal(); abrirModal("mv-modal-sec"); setTimeout(() => $("mv-sec-nombre") && $("mv-sec-nombre").focus(), 50); return; }
+    const c = e.target.closest("[data-filtro]"); if (!c) return;
+    filtroSec = /^\d+$/.test(c.dataset.filtro) ? Number(c.dataset.filtro) : c.dataset.filtro;
+    pintarProductosMios();
   });
+  $("mv-gestionar-sec").addEventListener("click", () => { pintarSeccionesModal(); abrirModal("mv-modal-sec"); });
+  $("mv-modal-sec").addEventListener("click", accionSecciones);
+  document.addEventListener("click", e => { if (!e.target.closest(".mv-mas-caja")) cerrarMenus(); });
   await elegirComercio(misComercios[0].id);
 });
 
@@ -309,6 +557,7 @@ async function refrescarPromos() {
   promosMias = lista.filter(p => p.hasta >= fechaMas(hoyBogota(), -30)).sort((a, b) => (promoCuenta(b) - promoCuenta(a)) || b.hasta.localeCompare(a.hasta));
   numerosPromos = promosMias.length ? await cargarNumerosPromos(actual.id) : null;   // fase 2AP-4c
   pintarPromos();
+  if (productosMios.length) pintarProductosMios();   // fase DR-1a: 🔥 en los productos que están en promo
 }
 
 function pintarPromos() {

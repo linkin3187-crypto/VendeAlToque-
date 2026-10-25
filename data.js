@@ -813,7 +813,8 @@ function filaAComercio(r) {
     calif: Number(r.calif_promedio) || 0, nCalif: Number(r.calif_total) || 0,
     // Fase 2AB.2b: visto bueno sanitario (droguerías y naturistas). Sin el SQL 31, la columna no existe.
     saludRevisado: r.salud_revisado_en || null, tieneSelloSalud: "salud_revisado_en" in r,
-    limiteProductos: Number.isInteger(r.limite_productos) ? r.limite_productos : LIMITE_PRODUCTOS_GRATIS   // fase 2AG
+    limiteProductos: Number.isInteger(r.limite_productos) ? r.limite_productos : LIMITE_PRODUCTOS_GRATIS,   // fase 2AG
+    limiteSecciones: Number.isInteger(r.limite_secciones) ? r.limite_secciones : 3   // fase DR-1a (SQL 50)
   };
 }
 
@@ -1082,8 +1083,22 @@ function filaAProducto(r) {
     precio: r.precio == null ? null : Number(r.precio), foto: r.foto_url || "",
     fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 3),   // fase 2AA.5
     tieneColumnaFotos: Array.isArray(r.fotos),
-    disponible: !!r.disponible, oculto: !!r.oculto, actualizado: r.actualizado_en
+    disponible: !!r.disponible, oculto: !!r.oculto, actualizado: r.actualizado_en,
+    // Fase DR-1a (SQL 50): sección, publicado/apagado, orden y cantidad. Sin el SQL 50 todo queda como antes.
+    tieneColumnasVitrina: "publicado" in r,
+    seccionId: r.seccion_id ? Number(r.seccion_id) : null, publicado: r.publicado !== false, orden: Number(r.orden) || 0,
+    cantidad: r.cantidad == null ? null : Number(r.cantidad), avisarPocos: !!r.avisar_pocos,
+    agotarEnCero: r.agotar_en_cero !== false, enRevision: !!r.en_revision, creado: r.creado_en || ""
   };
+}
+// Orden de la vitrina: el que eligió el dueño y, a igualdad, el más antiguo primero
+const ordenarProductos = l => l.sort((a, b) => (a.orden - b.orden) || String(a.creado).localeCompare(String(b.creado)) || a.id - b.id);
+// Etiqueta que ve el cliente en la foto (una sola, en este orden): Agotado > En promo > ¡Quedan pocos!
+function etiquetaProducto(p, enPromo) {
+  if (!p.disponible) return { clase: "agotado", txt: "Agotado" };
+  if (enPromo) return { clase: "promo", txt: "🔥 En promo" };
+  if (p.avisarPocos && p.cantidad != null && p.cantidad >= 1 && p.cantidad <= 3) return { clase: "pocos", txt: p.cantidad === 1 ? "¡Queda 1!" : `¡Quedan ${p.cantidad}!` };
+  return null;
 }
 
 // Un comercio por id (el público solo ve los activos; el dueño y los moderadores ven el suyo aunque esté oculto)
@@ -1096,19 +1111,45 @@ async function cargarComercioPorId(id) {
 
 async function cargarProductos(comercioId) {
   const { data, error } = await sb.from("productos_comercio").select("*")
-    .eq("comercio_id", comercioId).order("creado_en", { ascending: true }).limit(50);
+    .eq("comercio_id", comercioId).order("creado_en", { ascending: true }).limit(200);
   if (error) throw error;
-  return (data || []).map(filaAProducto);
+  return ordenarProductos((data || []).map(filaAProducto));
+}
+
+// ---------- Secciones de la vitrina (fase DR-1a, SQL 50) ----------
+// null = aún no existe la tabla (sin el SQL 50): la vitrina funciona sin secciones.
+async function cargarSecciones(comercioId) {
+  try {
+    const { data, error } = await sb.from("secciones_vitrina").select("*").eq("comercio_id", comercioId).order("orden").order("id");
+    if (error) return null;
+    return (data || []).map(r => ({ id: Number(r.id), comercioId: Number(r.comercio_id), nombre: r.nombre, emoji: r.emoji || "", orden: Number(r.orden) || 0 }));
+  } catch (e) { return null; }
+}
+async function guardarSeccion(comercioId, d, id) {
+  const fila = { nombre: String(d.nombre || "").trim().slice(0, 30), emoji: (d.emoji || "").trim().slice(0, 8) || null };
+  if (d.orden != null) fila.orden = d.orden;
+  const q = id ? sb.from("secciones_vitrina").update(fila).eq("id", id) : sb.from("secciones_vitrina").insert(Object.assign(fila, { comercio_id: comercioId }));
+  const { error } = await q;
+  if (error) throw error;
+}
+async function borrarSeccion(id) {
+  const { error } = await sb.from("secciones_vitrina").delete().eq("id", id);
+  if (error) throw error;
+}
+// Cambios sueltos de un producto (interruptor, cantidad, sección, orden, publicar/apagar)
+async function actualizarProducto(id, cambios) {
+  const { data, error } = await sb.from("productos_comercio").update(cambios).eq("id", id).select().single();
+  if (error) throw error;
+  return filaAProducto(data);
 }
 
 // Productos de vitrina de TODOS los comercios (para el buscador). La regla RLS ya deja ver solo los
 // productos visibles de comercios activos con vitrina; aquí además se quitan los agotados.
 async function cargarProductosPublicos() {
   const { data, error } = await sb.from("productos_comercio")
-    .select("id, comercio_id, nombre, descripcion, precio, foto_url, disponible, oculto, actualizado_en")
-    .eq("disponible", true).eq("oculto", false).limit(2000);
+    .select("*").eq("disponible", true).eq("oculto", false).limit(2000);
   if (error) { console.warn("productos:", error); return []; }
-  return (data || []).map(filaAProducto);
+  return (data || []).map(filaAProducto).filter(p => p.publicado && !p.enRevision);   // fase DR-1a: solo publicados
 }
 
 // ---------- Accesos en cuadros del inicio (fase 2Z.1, supabase/20_accesos_inicio.sql) ----------
@@ -1436,6 +1477,8 @@ async function guardarProducto(comercioId, d, id) {
     nombre: d.nombre.trim(), descripcion: (d.descripcion || "").trim() || null,
     precio: d.precio == null ? null : Math.round(d.precio), disponible: d.disponible !== false
   };
+  // Fase DR-1a (SQL 50): solo se envían si la pantalla los manejó (y existen las columnas)
+  ["seccion_id", "cantidad", "avisar_pocos", "agotar_en_cero", "publicado", "orden"].forEach(k => { if (k in d) fila[k] = d[k]; });
   if (d.foto) fila.foto_url = d.foto.startsWith("data:") ? await subirFotoComercio(d.foto) : d.foto;
   if (d.quitarFoto) fila.foto_url = null;
   // Fase 2AA.5: lista de fotos (ya subidas). Con el SQL 28 se guarda la lista; sin él, solo la principal.
@@ -1596,7 +1639,8 @@ function pareceMedicamento(texto) {
 function confirmarNoMedicamento(texto, donde) {
   const p = pareceMedicamento(texto);
   if (!p) return true;
-  return confirm(`«${p}» parece un medicamento.\n\nEn Merkap no se publican medicamentos (ni de venta libre ni con fórmula médica) ${donde || ""}. Si lo publicas, un moderador lo revisa y puede ocultarlo.\n\n¿Confirmas que NO es un medicamento?`);
+  const vitrina = /vitrina/.test(donde || "");
+  return confirm(`«${p}» parece un medicamento.\n\nEn Merkap no se publican medicamentos (ni de venta libre ni con fórmula médica) ${donde || ""}. ${vitrina ? "Si lo guardas, queda SIN PUBLICAR hasta que un moderador lo revise." : "Si lo publicas, un moderador lo revisa y puede ocultarlo."}\n\n¿Confirmas que NO es un medicamento?`);
 }
 
 // Formulario reutilizable (registro, Mi tienda y el editor del administrador). pre = prefijo de los id.

@@ -1276,7 +1276,8 @@ async function pintarCupoEditor() {
     if (!edC || edC.id !== id) return;
     const ps = p.data || [];
     usoVitrina = { publicados: ps.filter(x => x.publicado !== false && !x.oculto && !x.en_revision).length, guardados: ps.length, secciones: (s.data || []).length };
-    $("ed-cupo-uso").textContent = `Hoy usa: ${usoVitrina.publicados} publicados · ${usoVitrina.guardados} guardados · ${usoVitrina.secciones} secciones.`;
+    const pl = (n, uno, varios) => n + " " + (n === 1 ? uno : varios);
+    $("ed-cupo-uso").textContent = `Hoy usa: ${pl(usoVitrina.publicados, "publicado", "publicados")} · ${pl(usoVitrina.guardados, "guardado", "guardados")} · ${pl(usoVitrina.secciones, "sección", "secciones")}.`;
   } catch (e) { usoVitrina = null; $("ed-cupo-uso").textContent = ""; }
   avisoCupoEditor();
 }

@@ -280,6 +280,31 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - El bucket `anuncios` ya admitía `image/webp`: **sin SQL**. Caché v115.
 - **Para después (con Supabase Pro, G0):** miniaturas automáticas de Supabase (transformación de imágenes) para que las tarjetas pidan fotos de 400 px.
 
+### Cuidar el plan gratis de Supabase: base despierta + respaldo semanal cifrado
+Mientras no se pase a Supabase Pro (al empezar el piloto, G1), dos tareas automáticas de GitHub Actions (pestaña **Actions** del repositorio, gratis):
+
+**1. «Mantener despierta la base»** (`.github/workflows/mantener-despierta.yml`)
+- Todos los días (~6:17 a. m.) hace una consulta pequeña y pública (un municipio), como cualquier visitante. Así Supabase no pausa el proyecto por falta de uso.
+- No necesita claves: lee la dirección y la llave pública de `data.js`.
+- Si falla 3 veces, la tarea sale en rojo y GitHub te manda un correo. Eso puede significar que Supabase está pausado: panel de Supabase → **Resume project** (o pídele a Claude que lo reactive).
+
+**2. «Respaldo semanal»** (`.github/workflows/respaldo-semanal.yml`)
+- Cada domingo (~3:41 a. m.) saca una copia completa, la **cifra** y la guarda 90 días en **Actions → Respaldo semanal → (la ejecución) → Artifacts**. Así siempre hay ~12 copias.
+- La copia incluye:
+  - toda la base `public`: tablas, datos, funciones, triggers y reglas de seguridad;
+  - los usuarios (`auth.users` y `auth.identities`);
+  - la lista de fotos de Storage. Las fotos en sí siguen en Storage: pesan poco y se agregan al respaldo más adelante.
+- El repositorio es público, pero el archivo va cifrado con AES-256: **sin tu clave nadie lo puede abrir**.
+- **Configurar una sola vez** (GitHub → Settings → Secrets and variables → Actions → *New repository secret*):
+  - `SUPABASE_DB_URL`: en Supabase → botón **Connect** → **Session pooler** → copiar la cadena y poner la contraseña de la base donde dice `[YOUR-PASSWORD]`.
+  - `RESPALDO_CLAVE`: una frase larga inventada por ti. **Guárdala en un lugar seguro**: si se pierde, los respaldos no se pueden abrir.
+  - Luego: Actions → «Respaldo semanal» → **Run workflow** para probar ya. Debe salir en verde con un archivo `merkap-AAAA-MM-DD.tar.gz.gpg`.
+- **Cómo restaurar** (solo en una emergencia; Claude acompaña):
+  1. Descargar el archivo y abrirlo: `gpg -d merkap-FECHA.tar.gz.gpg > m.tar.gz && tar xzf m.tar.gz`, con la clave.
+  2. En el proyecto de Supabase nuevo o vacío, cargar **primero** `respaldo/auth_usuarios.sql` y **después** `respaldo/public.sql` (en ese orden, para que los perfiles encuentren a sus usuarios). Probado en local: 49/49 tablas y 122/122 reglas de seguridad, sin errores.
+- **Ojo:** GitHub apaga las tareas programadas de un repositorio público si pasan 60 días sin cambios. Con el ritmo de PR actual no pasa. Si pasara, se reactivan en Actions con un clic.
+- Cuando se pase a Supabase Pro (copias diarias), «Mantener despierta» se puede borrar. El respaldo semanal se puede dejar como copia extra fuera de Supabase.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

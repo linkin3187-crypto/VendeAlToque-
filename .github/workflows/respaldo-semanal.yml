@@ -1,0 +1,68 @@
+# Merkap · Respaldo semanal de la base de datos (cifrado)
+# Cada domingo saca una copia completa de la base (estructura + datos de «public» y los
+# usuarios de «auth») con pg_dump, la CIFRA con una clave que solo conoce el dueño y la
+# guarda 90 días como «artifact» en la pestaña Actions. Sin la clave el archivo no se puede leer.
+#
+# Necesita 2 secretos del repositorio (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     → cadena «Session pooler» de Supabase (Connect → Session pooler), con la contraseña de la base
+#   RESPALDO_CLAVE      → una frase larga inventada por el dueño (guárdala en un lugar seguro: sin ella no se recupera)
+# Cómo restaurar: ver GUIA-DE-CAMBIOS.md → «Cuidar el plan gratis».
+name: Respaldo semanal
+
+on:
+  schedule:
+    - cron: "41 8 * * 0"      # domingos ~3:41 a. m. de Colombia (08:41 UTC)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Revisar que existan los secretos
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$CLAVE" ]; then
+            echo "❌ Faltan los secretos SUPABASE_DB_URL y/o RESPALDO_CLAVE (ver instrucciones arriba del archivo)."
+            exit 1
+          fi
+      - name: Instalar pg_dump 17 (misma versión que Supabase)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Sacar la copia y cifrarla
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          set -euo pipefail
+          FECHA=$(date -u +%Y-%m-%d)
+          mkdir -p respaldo
+          PGDUMP=/usr/lib/postgresql/17/bin/pg_dump
+          # 1) Todo «public»: tablas, funciones, triggers, políticas y datos
+          $PGDUMP "$DB" --schema=public --no-owner --no-privileges --quote-all-identifiers -f respaldo/public.sql
+          # 2) Usuarios (solo datos) para poder reconstruir cuentas
+          $PGDUMP "$DB" --data-only --table=auth.users --table=auth.identities --no-owner --quote-all-identifiers -f respaldo/auth_usuarios.sql
+          # 3) Lista de fotos (las fotos siguen en Storage; esto dice cuáles hay)
+          $PGDUMP "$DB" --data-only --table=storage.objects --no-owner --quote-all-identifiers -f respaldo/storage_lista.sql
+          ls -la respaldo
+          tar czf "merkap-$FECHA.tar.gz" respaldo
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$CLAVE" \
+              --symmetric --cipher-algo AES256 -o "merkap-$FECHA.tar.gz.gpg" "merkap-$FECHA.tar.gz"
+          rm -rf respaldo "merkap-$FECHA.tar.gz"
+          echo "ARCHIVO=merkap-$FECHA.tar.gz.gpg" >> "$GITHUB_ENV"
+          ls -la merkap-*.gpg
+      - name: Guardar el respaldo cifrado (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ env.ARCHIVO }}
+          retention-days: 90
+          if-no-files-found: error

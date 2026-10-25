@@ -6,6 +6,9 @@ let tienda = null;
 let productos = [];
 const carrito = new Map();   // productoId → cantidad
 let modoPedido = "";
+let seccionesT = [];             // fase DR-1a: secciones de la vitrina
+let secT = "todos";              // sección elegida por el cliente
+let promoProd = new Set();       // productos que están en una promo vigente
 
 const peso = n => "$" + Number(n).toLocaleString("es-CO");
 
@@ -27,7 +30,7 @@ function tarjetaProducto(p) {
       <span class="text-3xl">🛍️</span>
       ${foto ? `<img src="${esc(foto)}" alt="${esc(p.nombre)}" loading="lazy" data-ver-prod="${p.id}" class="absolute inset-0 w-full h-full object-cover cursor-zoom-in">` : ""}
       ${(p.fotos || []).length > 1 ? `<span class="absolute bottom-2 right-2 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">📷 ${p.fotos.length}</span>` : ""}
-      ${p.disponible ? "" : '<span class="absolute top-2 left-2 bg-slate-700 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">Agotado</span>'}
+      ${(e => e ? `<span class="t-etq t-etq-${e.clase}">${esc(e.txt)}</span>` : "")(etiquetaProducto(p, promoProd.has(p.id)))}
     </div>
     <div class="p-3 flex-1 flex flex-col">
       <p class="text-sm font-semibold line-clamp-2">${esc(p.nombre)}</p>
@@ -40,8 +43,24 @@ function tarjetaProducto(p) {
   </article>`;
 }
 
+// Fase DR-1a: grupos por sección (en el orden del dueño); «Otros» = sin sección
+function gruposProductos() {
+  const conSec = seccionesT.filter(s => productos.some(p => p.seccionId === s.id));
+  if (!conSec.length) return null;
+  const g = conSec.map(s => ({ id: String(s.id), titulo: (s.emoji ? s.emoji + " " : "") + s.nombre, lista: productos.filter(p => p.seccionId === s.id) }));
+  const otros = productos.filter(p => !p.seccionId || !conSec.some(s => s.id === p.seccionId));
+  if (otros.length) g.push({ id: "otros", titulo: "Otros", lista: otros });
+  return g;
+}
 function pintarProductos() {
-  $("t-lista").innerHTML = productos.map(tarjetaProducto).join("");
+  const grupos = gruposProductos();
+  $("t-secciones").classList.toggle("hidden", !grupos);
+  if (grupos && secT !== "todos" && !grupos.some(g => g.id === secT)) secT = "todos";
+  if (grupos) $("t-secciones").innerHTML = `<button type="button" class="t-sec" data-sec="todos" aria-pressed="${secT === "todos"}">Todos</button>`
+    + grupos.map(g => `<button type="button" class="t-sec" data-sec="${g.id}" aria-pressed="${secT === g.id}">${esc(g.titulo)} <i>${g.lista.length}</i></button>`).join("");
+  $("t-lista").innerHTML = !grupos ? productos.map(tarjetaProducto).join("")
+    : grupos.filter(g => secT === "todos" || g.id === secT)
+        .map(g => `<h3 class="t-sec-tit col-span-2 sm:col-span-3">${esc(g.titulo)}</h3>` + g.lista.map(tarjetaProducto).join("")).join("");
   $("t-sin-productos").classList.toggle("hidden", productos.length > 0);
   pintarBarra();
   resaltarProductoBuscado();
@@ -52,7 +71,8 @@ let productoResaltado = false;
 function resaltarProductoBuscado() {
   const pid = new URLSearchParams(location.search).get("p");
   if (productoResaltado || !pid) return;
-  const el = document.querySelector(`#t-lista [data-prod="${CSS.escape(pid)}"]`);
+  let el = document.querySelector(`#t-lista [data-prod="${CSS.escape(pid)}"]`);
+  if (!el && secT !== "todos") { secT = "todos"; pintarProductos(); return; }
   if (!el) return;
   productoResaltado = true;
   el.classList.add("prod-resaltado");
@@ -333,8 +353,18 @@ function mostrarBurbujaReclamar(c) {
 }
 
 // Fase 2AP-4a: 🔥 promociones vigentes (las da la base de datos: solo vigentes y de tiendas activas)
+// Fase DR-1a: atajos a Promos · Productos · Opiniones · Ubicación (solo las partes que se ven)
+function pintarAtajos() {
+  const partes = [["promos", "🔥 Promos"], ["productos", "🛍️ Productos"], ["opiniones", "⭐ Opiniones"], ["t-mapa-caja", "📍 Ubicación"]]
+    .filter(([id]) => $(id) && !$(id).classList.contains("hidden"));
+  $("t-atajos").innerHTML = partes.map(([id, t]) => `<a href="#${id}">${t}</a>`).join("");
+  $("t-atajos").classList.toggle("hidden", partes.length < 2);
+}
+
 async function pintarPromosTienda(c) {
   const lista = (await cargarPromosVigentes(c.id)).filter(promoVigente);
+  promoProd = new Set(lista.map(p => p.productoId).filter(Boolean));   // fase DR-1a: «🔥 En promo» en la foto
+  if (promoProd.size) pintarProductos();
   const gestiona = !!usuarioActual && (c.ownerId === usuarioActual.id || esAdmin());
   $("t-promos-gestionar").href = esAdmin() && c.ownerId !== (usuarioActual || {}).id ? "mi-tienda.html?id=" + c.id + "#promos" : "mi-tienda.html#promos";
   $("t-promos-gestionar").classList.toggle("hidden", !gestiona);
@@ -385,12 +415,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   let c = null, ps = [];
   try {
     c = Number.isFinite(id) ? await cargarComercioPorId(id) : null;
-    if (c) ps = await cargarProductos(c.id);
+    // Fase DR-1a: el cliente (y el dueño en esta página) ve solo lo publicado
+    if (c) ps = (await cargarProductos(c.id)).filter(p => p.publicado && !p.enRevision && !p.oculto);
+    if (c) seccionesT = (await cargarSecciones(c.id)) || [];
   } catch (err) { console.error(err); }
   $("t-cargando").classList.add("hidden");
   if (!c) { $("t-error").classList.remove("hidden"); return; }
   renderizarTienda(c, ps);
-  pintarPromosTienda(c);   // fase 2AP-4a
+  pintarPromosTienda(c).then(pintarAtajos);   // fase 2AP-4a
+  pintarAtajos();
+  $("t-secciones").addEventListener("click", e => {
+    const b = e.target.closest("[data-sec]"); if (!b) return;
+    secT = b.dataset.sec; pintarProductos();
+    const caja = $("t-secciones");
+    if (caja.getBoundingClientRect().top < 0 || caja.getBoundingClientRect().top > innerHeight * .6) $("productos").scrollIntoView({ block: "start" });
+  });
   iniciarOpiniones();
   $("t-lista").addEventListener("click", e => {   // fase 2AA.4: foto del producto en grande
     const im = e.target.closest("[data-ver-prod]");

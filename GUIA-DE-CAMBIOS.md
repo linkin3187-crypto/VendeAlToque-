@@ -230,6 +230,12 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Política de salud** (`politica-productos-salud.html`): datos sanitarios voluntarios y «declarados» (Merkap no los comprueba aún); reglas futuras de venta libre: la droguería vende y despacha, enlace a la Secretaría de Salud (art. 24) y sin categorías por síntoma (art. 26); con fórmula, tampoco en carruseles de ofertas.
 - Fecha de las tres: 24 de octubre de 2026. **Pendiente:** revisión del abogado (P6).
 
+### Fase LEGAL-vitrinas · La vitrina como estantería digital y los planes futuros en los textos legales
+- **Términos:** §1 «hoy todo es gratis; más adelante algunos servicios para comercios podrán tener plan pago, nunca comisión por venta»; **4C** la vitrina es la estantería digital del comercio (él controla productos, existencias y precios; Merkap no es inventario), 10 gratis, **guardar ≠ publicar**, el cupo cuenta solo publicados y **si el cupo baja nada se borra**; **4F nueva** planes para comercios: se paga capacidad y herramientas, un plan no autoriza lo prohibido, condiciones antes de contratar, un toque no es una venta, nada se cobra antes de funcionar; **4B** cada producto de droguería se clasifica por tipo.
+- **Política de salud 3A nueva:** la estantería de la droguería con tabla por tipo de producto (hoy / cuando se habilite), validar ≠ publicar, condición de venta tomada del INVIMA y lo que no se hará por ahora.
+- **Privacidad:** datos de facturación si un comercio contrata un plan (sin datos de tarjetas).
+- Fechas: 25 de octubre de 2026. Sin SQL ni cambios de funcionamiento.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

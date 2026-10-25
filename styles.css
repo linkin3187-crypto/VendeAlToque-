@@ -1378,3 +1378,13 @@ button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; 
 /* En Comercios la caja de filtros va dentro de la tarjeta de la sección: sin doble borde */
 #fb-comercios.fb-caja { border: 0; box-shadow: none; padding: 0; }
 @media (min-width: 640px) { .fb-b { padding: 0 12px; font-size: .8rem; } }
+
+/* ===== Importador 2.0 (admin-comercios · fase IMP-2) ===== */
+.ac-paso{border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;background:#fff}
+.ac-paso-t{font-size:13px;font-weight:900;color:#1e1b4b;margin-bottom:6px}
+.ac-chip{font-size:12px;font-weight:700;border:1.5px solid #e2e8f0;border-radius:999px;padding:4px 10px;background:#fff;color:#334155;line-height:1.3}
+.ac-chip:hover{border-color:#a5b4fc}
+.ac-chip[aria-pressed="true"]{background:#4f46e5;border-color:#4f46e5;color:#fff}
+.ac-mini{font-size:12px;font-weight:800;border-radius:10px;padding:5px 10px;background:#eef2ff;color:#3730a3}
+.ac-mini:hover{background:#e0e7ff}
+#ac-conteos>span{background:#eef2ff;border-radius:8px;padding:3px 8px}

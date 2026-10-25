@@ -8,8 +8,8 @@
   <meta name="robots" content="noindex">
   <title>Comercios (admin) | Merkap</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=107">
-  <link rel="stylesheet" href="tw.css?v=107">
+  <link rel="stylesheet" href="styles.css?v=108">
+  <link rel="stylesheet" href="tw.css?v=108">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -33,30 +33,86 @@
 
     <div id="ac-panel" class="hidden space-y-8">
 
-      <!-- 1. IMPORTAR -->
-      <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-        <h2 class="text-lg font-black text-indigo-900 mb-1">1 · Importar comercios desde OpenStreetMap (Overpass)</h2>
-        <p class="text-sm text-slate-500 mb-4">Busca los comercios más cercanos al centro de cada municipio. Primero ves una vista previa y tú eliges cuáles guardar; todo entra como <b>sin verificar</b>. Los que ya existen no se duplican.</p>
-        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-3" id="ac-cuotas"></div>
-        <div class="flex flex-wrap items-center gap-3 mb-3">
-          <label class="text-xs font-bold text-slate-500">Radio desde el centro
-            <select id="ac-radio" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal">
-              <option value="800">800 m</option><option value="1200" selected>1.200 m</option><option value="2000">2.000 m</option>
-            </select></label>
-          <label class="text-xs font-bold text-slate-500">Municipio
-            <select id="ac-muni" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal"></select></label>
-          <button type="button" id="ac-buscar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-60">🔎 Buscar en Overpass</button>
-          <button type="button" id="ac-cancelar" class="hidden bg-white border border-slate-300 text-slate-700 font-semibold px-3 py-2 rounded-xl text-sm">Cancelar</button>
-        </div>
-        <p id="ac-estado" class="text-sm text-slate-500" role="status"></p>
-        <ul id="ac-progreso" class="mt-2 flex flex-wrap gap-1.5 text-xs"></ul>
-        <button type="button" id="ac-reintentar" class="hidden mt-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">↻ Reintentar los que fallaron</button>
-        <div id="ac-previa" class="mt-3 hidden">
-          <div class="flex flex-wrap items-center gap-3 mb-2">
-            <button type="button" id="ac-importar" class="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-60">⬇ Guardar seleccionados</button>
-            <span id="ac-resumen" class="text-sm text-slate-600"></span>
+      <!-- 1. IMPORTAR (importador 2.0 · fase IMP-2) -->
+      <section class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm" id="ac-importador">
+        <h2 class="text-lg font-black text-indigo-900 mb-1">1 · Importar comercios desde OpenStreetMap</h2>
+        <p class="text-sm text-slate-500 mb-4">Elige dónde, qué tipos y cuántos. Primero ves la lista y el mapa, y tú decides cuáles guardar: todo entra como <b>«Ubicado»</b> (sin verificar). Lo que ya tienes no se duplica.</p>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="space-y-3 min-w-0">
+            <div class="ac-paso">
+              <h3 class="ac-paso-t">1 · ¿Dónde buscar?</h3>
+              <div class="flex flex-wrap gap-1.5" role="group" aria-label="Dónde buscar">
+                <button type="button" class="ac-chip" data-donde="radio" aria-pressed="true">📍 Municipio + radio</button>
+                <button type="button" class="ac-chip" data-donde="zona" aria-pressed="false">🗺️ Zona del mapa</button>
+                <button type="button" class="ac-chip" data-donde="todo" aria-pressed="false">🏙️ Todo el municipio</button>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <label class="text-xs font-bold text-slate-500" id="ac-muni-caja">Municipio
+                  <select id="ac-muni" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal"></select></label>
+                <label class="text-xs font-bold text-slate-500" id="ac-fila-radio">Radio
+                  <select id="ac-radio" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal">
+                    <option value="500">500 m</option><option value="800">800 m</option><option value="1200" selected>1,2 km</option>
+                    <option value="2000">2 km</option><option value="3000">3 km</option><option value="5000">5 km</option>
+                  </select></label>
+              </div>
+              <p id="ac-donde-ayuda" class="text-xs text-slate-500 mt-2"></p>
+            </div>
+            <div class="ac-paso">
+              <h3 class="ac-paso-t">2 · ¿Qué tipos? <span class="font-bold text-slate-400" id="ac-tipos-n"></span></h3>
+              <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
+                <button type="button" id="ac-tipos-basicos" class="ac-mini">Los 6 básicos</button>
+                <button type="button" id="ac-tipos-todos" class="ac-mini">Todos</button>
+                <button type="button" id="ac-tipos-ninguno" class="ac-mini">Ninguno</button>
+              </div>
+              <div id="ac-tipos" class="flex flex-wrap gap-1.5 lg:max-h-44 lg:overflow-auto"></div>
+            </div>
+            <div class="ac-paso">
+              <h3 class="ac-paso-t">3 · ¿Cuántos y cuáles?</h3>
+              <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Cuántos por tipo">
+                <button type="button" class="ac-chip" data-preset="pocos">Pocos (5)</button>
+                <button type="button" class="ac-chip" data-preset="normal">Normal (15)</button>
+                <button type="button" class="ac-chip" data-preset="muchos">Muchos (50)</button>
+                <span class="text-xs text-slate-500">por tipo</span>
+              </div>
+              <details class="mt-2">
+                <summary class="text-xs font-bold text-indigo-700 cursor-pointer">✏️ Cambiar la cuota de cada tipo</summary>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2" id="ac-cuotas"></div>
+              </details>
+              <div class="grid sm:grid-cols-2 gap-x-3 gap-y-1 mt-2 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" id="ac-solo-nuevos" checked> La cuota cuenta solo los nuevos</label>
+                <label class="flex items-center gap-2"><input type="checkbox" id="ac-f-tel"> Solo con teléfono</label>
+                <label class="flex items-center gap-2"><input type="checkbox" id="ac-f-horario"> Solo con horario</label>
+                <label class="flex items-center gap-2"><input type="checkbox" id="ac-f-cadenas"> Sin cadenas grandes</label>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Siempre se omiten los que no tienen nombre en el mapa (menos los cajeros).</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" id="ac-buscar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-60">🔎 Buscar</button>
+              <button type="button" id="ac-cancelar" class="hidden bg-white border border-slate-300 text-slate-700 font-semibold px-3 py-2 rounded-xl text-sm">Cancelar</button>
+              <button type="button" id="ac-probar" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold px-3 py-2 rounded-xl text-sm disabled:opacity-60">🩺 Probar servidores</button>
+              <label class="text-xs font-bold text-slate-500">Servidor
+                <select id="ac-servidor" class="ml-1 border border-slate-300 rounded-lg p-1.5 bg-white font-normal max-w-[11rem]"></select></label>
+            </div>
+            <ul id="ac-servidores" class="hidden space-y-1 text-xs"></ul>
+            <p id="ac-estado" class="text-sm text-slate-500" role="status"></p>
+            <ul id="ac-progreso" class="flex flex-wrap gap-1.5 text-xs"></ul>
+            <button type="button" id="ac-reintentar" class="hidden bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">↻ Reintentar los que fallaron</button>
           </div>
-          <div id="ac-previa-lista" class="max-h-96 overflow-auto border border-slate-200 rounded-xl divide-y divide-slate-100 text-sm"></div>
+          <div class="min-w-0">
+            <div id="ac-mapa" class="h-64 lg:h-80 rounded-xl border-2 border-dashed border-indigo-300 bg-slate-100 z-0"></div>
+            <p class="text-[11px] text-slate-500 mt-1">🟠 nuevo · ⚪ parecido a uno tuyo · 🟢 ya lo tienes · Mapa © OpenStreetMap</p>
+            <div id="ac-previa" class="mt-3 hidden">
+              <div id="ac-conteos" class="flex flex-wrap gap-1.5 text-xs font-bold text-indigo-800 mb-2"></div>
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <button type="button" id="ac-todos" class="ac-mini">☑ Todos los nuevos</button>
+                <button type="button" id="ac-ninguno" class="ac-mini">☐ Ninguno</button>
+                <button type="button" id="ac-csv" class="ac-mini">⬇ CSV para visitas</button>
+                <span id="ac-resumen" class="text-sm text-slate-600"></span>
+              </div>
+              <div id="ac-previa-lista" class="max-h-96 overflow-auto border border-slate-200 rounded-xl divide-y divide-slate-100 text-sm"></div>
+              <button type="button" id="ac-importar" class="mt-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-60">💾 Importar</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -338,9 +394,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=107"></script>
-  <script src="data.js?v=107"></script>
-  <script src="iconos.js?v=107"></script>
-  <script src="admin-comercios.js?v=107"></script>
+  <script src="utils.js?v=108"></script>
+  <script src="data.js?v=108"></script>
+  <script src="iconos.js?v=108"></script>
+  <script src="admin-comercios.js?v=108"></script>
 </body>
 </html>

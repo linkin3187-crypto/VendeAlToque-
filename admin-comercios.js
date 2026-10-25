@@ -1252,6 +1252,44 @@ function pintarDuenoEditor() {
   $("ed-dueno-estado").textContent = edC.ownerId ? "asignado" : "sin asignar";
   $("ed-dueno-quitar").classList.toggle("hidden", !edC.ownerId);
   $("ed-dueno-correo").value = "";
+  pintarCupoEditor();
+}
+
+// ---------- Fase DR-1b · Cupo de vitrina (solo administrador; columnas del SQL 36 y 50) ----------
+let usoVitrina = null;   // { publicados, guardados, secciones } del comercio abierto
+async function pintarCupoEditor() {
+  const caja = $("ed-cupo");
+  if (!caja) return;
+  const visible = esAdmin() && edC.tieneCupoSecciones;
+  caja.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  $("ed-cupo-prod").value = edC.limiteProductos;
+  $("ed-cupo-sec").value = edC.limiteSecciones;
+  $("ed-cupo-uso").textContent = "Contando lo que usa hoy…";
+  avisoCupoEditor();
+  const id = edC.id;
+  try {
+    const [p, s] = await Promise.all([
+      sb.from("productos_comercio").select("id, publicado, oculto, en_revision").eq("comercio_id", id),
+      sb.from("secciones_vitrina").select("id").eq("comercio_id", id)
+    ]);
+    if (!edC || edC.id !== id) return;
+    const ps = p.data || [];
+    usoVitrina = { publicados: ps.filter(x => x.publicado !== false && !x.oculto && !x.en_revision).length, guardados: ps.length, secciones: (s.data || []).length };
+    const pl = (n, uno, varios) => n + " " + (n === 1 ? uno : varios);
+    $("ed-cupo-uso").textContent = `Hoy usa: ${pl(usoVitrina.publicados, "publicado", "publicados")} · ${pl(usoVitrina.guardados, "guardado", "guardados")} · ${pl(usoVitrina.secciones, "sección", "secciones")}.`;
+  } catch (e) { usoVitrina = null; $("ed-cupo-uso").textContent = ""; }
+  avisoCupoEditor();
+}
+function avisoCupoEditor() {
+  const a = $("ed-cupo-aviso"); if (!a) return;
+  const prod = Number($("ed-cupo-prod").value), sec = Number($("ed-cupo-sec").value);
+  const avisos = [];
+  if (usoVitrina && prod < usoVitrina.publicados) avisos.push(`Tiene ${usoVitrina.publicados} productos publicados: siguen publicados, pero no podrá publicar más hasta bajar de ${prod}.`);
+  if (usoVitrina && sec < usoVitrina.secciones) avisos.push(`Tiene ${usoVitrina.secciones} secciones: las conserva, pero no podrá crear más.`);
+  a.textContent = avisos.join(" ");
+  a.classList.toggle("hidden", !avisos.length);
+  document.querySelectorAll("#ed-cupo-atajos [data-cupo]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.cupo === `${prod},${sec}`)));
 }
 function cerrarEditor() {
   if (edSucio && !confirm("Tienes cambios sin guardar en este comercio. ¿Cerrar sin guardar?")) return;
@@ -1279,6 +1317,13 @@ async function guardarEditor() {
   const modo = $("ed-modo").value;
   if (modo !== "local" || edC.modoAtencion !== "local") cambios.modo_atencion = modo;
   if (edCoords) { cambios.lat = +edCoords.lat.toFixed(6); cambios.lng = +edCoords.lng.toFixed(6); }
+  // Fase DR-1b: cupo de vitrina (solo el administrador; solo si cambió)
+  if (esAdmin() && edC.tieneCupoSecciones && $("ed-cupo-prod")) {
+    const prod = parseInt($("ed-cupo-prod").value, 10), sec = parseInt($("ed-cupo-sec").value, 10);
+    if (!(prod >= 0 && prod <= 500) || !(sec >= 0 && sec <= 50)) { tabEditor("dueno"); mostrarToast("El cupo va de 0 a 500 productos y de 0 a 50 secciones", "error"); return; }
+    if (prod !== edC.limiteProductos) cambios.limite_productos = prod;
+    if (sec !== edC.limiteSecciones) cambios.limite_secciones = sec;
+  }
   const b = $("ed-guardar"); b.disabled = true; b.textContent = "Guardando…";
   try {
     if (edGaleria && edGaleria.cambiado) {
@@ -1339,6 +1384,12 @@ function conectarEditor() {
   // lo de esta pestaña se guarda aparte: no cuenta como «cambios sin guardar» del comercio
   ["input", "change"].forEach(ev => document.querySelector('#modal-editor [data-ed-panel="salud"]').addEventListener(ev, e => e.stopPropagation()));
   $("ed-dueno-asignar").addEventListener("click", () => duenoEditor(false));
+  $("ed-cupo-atajos").addEventListener("click", e => {
+    const b = e.target.closest("[data-cupo]"); if (!b) return;
+    const [p, s] = b.dataset.cupo.split(",");
+    $("ed-cupo-prod").value = p; $("ed-cupo-sec").value = s; marcarEditorSucio(); avisoCupoEditor();
+  });
+  ["ed-cupo-prod", "ed-cupo-sec"].forEach(id => $(id).addEventListener("input", avisoCupoEditor));
   $("ed-dueno-quitar").addEventListener("click", () => duenoEditor(true));
   // Escape: si el editor está arriba y tiene cambios, pregunta antes de cerrar
   document.addEventListener("keydown", e => {

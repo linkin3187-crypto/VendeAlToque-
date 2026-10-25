@@ -244,6 +244,10 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - `data.js`: `cargarSecciones`, `guardarSeccion`, `borrarSeccion`, `actualizarProducto`, `ordenarProductos`, `etiquetaProducto`. Caché v110.
 - **Duplicar y Destacar no se muestran**: llegan con M-1/M-2 y los planes.
 
+### Fase DR-1b · «🛍️ Cupo de vitrina» en el editor (solo administrador)
+- `admin-comercios.html/js`: en el editor completo → «🙋 Dueño y visibilidad», recuadro **«🛍️ Cupo de vitrina»** con productos publicados (0–500) y secciones (0–50), atajos 10·3 (gratis) · 30·6 · 100·10 · 300·20, lo que la tienda usa hoy y aviso si se baja por debajo de lo publicado (lo publicado se conserva; no podrá publicar más). Se guarda con «💾 Guardar todo». Solo lo ve el administrador (`.solo-admin`); la base ya impedía que el dueño o un moderador lo cambiaran (SQL 36/38/50).
+- `data.js`: `tieneCupoSecciones`. Sin SQL nuevo. Caché v111.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

@@ -223,6 +223,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **El parpadeo** del botón amarillo pasa a un **halo suave** que se expande cada 2,4 s (mismo nombre `mf-parpadeo`; se apaga con «reducir movimiento»).
 - Celulares angostos: con tienda, el nombre se acorta (≤440 px) o se oculta (≤380 px) para que todo quepa en una fila. Caché v109.
 
+### Fase LEGAL-24oct · Términos, Privacidad y Política de salud al día
+- **Por qué:** desde el 20 de octubre se agregaron funciones que los textos legales no explicaban (o explicaban distinto). Solo cambian textos; nada del funcionamiento.
+- **Términos** (`terminos.html`): §1 con los 3 sellos; §3 contacto protegido (WhatsApp o teléfono), precio fijo/negociable, rebajas honestas (15 días, el sistema guarda el precio anterior), Selección del día y piezas para compartir; **4C** vitrina de 10, «Agregar no compra ni cobra», promociones (2 activas, 15 días, Ley 1480 art. 33), logos y fotos propios; **4D** opiniones reales, el dueño responde, «¿Existe aquí?» nunca da ni quita sellos; **4E** cómo se ordena (filtros mandan, rotación diaria) y que hoy nadie paga por subir (lo pagado llevará «Patrocinado» o «Destacado»); 4A y 4B: datos sanitarios **voluntarios** (2AC.1); §8 incluye vitrinas, logos y opiniones.
+- **Privacidad** (`privacidad.html`): entrar con Google, perfil público de vendedor, contacto entregado solo a cuentas (60/día), dirección privada de quien atiende en casa, registrar/recomendar negocios, opiniones públicas, confirmaciones sin guardar ubicación, favoritos de comercios, lista privada de vetados, Nominatim y Google como encargados.
+- **Política de salud** (`politica-productos-salud.html`): datos sanitarios voluntarios y «declarados» (Merkap no los comprueba aún); reglas futuras de venta libre: la droguería vende y despacha, enlace a la Secretaría de Salud (art. 24) y sin categorías por síntoma (art. 26); con fórmula, tampoco en carruseles de ofertas.
+- Fecha de las tres: 24 de octubre de 2026. **Pendiente:** revisión del abogado (P6).
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

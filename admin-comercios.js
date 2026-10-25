@@ -3,65 +3,165 @@
 // llamar a Overpass, pero tu navegador sí. La seguridad no depende de esta página: la base
 // de datos solo deja escribir en `comercios` a cuentas con rol moderador/admin.
 
-const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
-const CUOTA_DEFECTO = { farmacia: 2, cajero: 2, comida_rapida: 2, panaderia: 2, supermercado: 1, banco: 1 };
-let candidatos = [];      // vista previa: [{fila, marcado}]
+// =====================================================================
+// IMPORTADOR 2.0 (fase IMP-2)
+// · Servidores: se pregunta a UNO a la vez (es la regla de los servidores públicos de Overpass desde
+//   abril de 2026: nada de consultas en paralelo). Si uno pide pausa (429/406) se respeta 30 s y se pasa
+//   al siguiente. El último que respondió bien se usa primero la próxima vez.
+// · Dónde: municipio + radio (centro movible en el mapa), la zona visible del mapa o todo el municipio.
+// · Qué: todas las categorías que tienen equivalente en OpenStreetMap (OSM_POR_TIPO).
+// · Cuántos: cuota por tipo; por defecto cuenta solo los NUEVOS (antes contaba también los guardados
+//   y por eso ya no salía nada en municipios con 1–2 comercios por tipo).
+// =====================================================================
+const SERVIDORES = [
+  { url: "https://overpass-api.de/api/interpreter", nombre: "overpass-api.de (principal)" },
+  { url: "https://overpass.private.coffee/api/interpreter", nombre: "overpass.private.coffee" },
+  { url: "https://maps.mail.ru/osm/tools/overpass/api/interpreter", nombre: "maps.mail.ru (VK Maps)" }
+];
+const OVERPASS = SERVIDORES.map(s => s.url);
+let TIEMPO_MAX_MS = 30000;            // tope por servidor (luego se pasa al siguiente)
+const PAUSA_MS = 30000;               // 429/406: el servidor pide esperar
+const pausaHasta = {};                // url → hora hasta la que no se le pregunta
+let servidorBueno = (() => { try { return localStorage.getItem("mf_ac_srv") || ""; } catch (e) { return ""; } })();
+let vivos = 0, vivosMax = 0;          // peticiones en vuelo (las pruebas verifican que nunca haya 2)
+
+// Etiquetas de OpenStreetMap de cada categoría de Merkap
+const OSM_POR_TIPO = {
+  farmacia: { amenity: ["pharmacy"] }, cajero: { amenity: ["atm"] }, comida_rapida: { amenity: ["fast_food"] },
+  panaderia: { shop: ["bakery"] }, supermercado: { shop: ["supermarket"] }, banco: { amenity: ["bank"] },
+  restaurante: { amenity: ["restaurant"] }, cafeteria: { amenity: ["cafe"] }, bar: { amenity: ["bar", "pub", "nightclub"] },
+  heladeria: { amenity: ["ice_cream"], shop: ["ice_cream"] }, pasteleria: { shop: ["pastry", "confectionery"] },
+  minimercado: { shop: ["convenience"] }, tienda: { shop: ["general", "variety_store", "kiosk"] },
+  carniceria: { shop: ["butcher", "seafood"] }, fruver: { shop: ["greengrocer"] }, licorera: { shop: ["alcohol", "beverages"] },
+  naturista: { shop: ["health_food", "herbalist"] }, ropa: { shop: ["clothes", "shoes", "boutique"] }, sastreria: { shop: ["tailor"] },
+  belleza: { shop: ["hairdresser", "beauty", "cosmetics"] }, ferreteria: { shop: ["hardware", "doityourself"] },
+  cerrajeria: { shop: ["locksmith"] }, tecnologia: { shop: ["mobile_phone", "electronics", "computer"] },
+  papeleria: { shop: ["stationery", "copyshop"] }, veterinaria: { amenity: ["veterinary"], shop: ["pet"] },
+  optica: { shop: ["optician"] }, salud: { amenity: ["dentist", "doctors", "clinic"] },
+  clinicas_y_hospitales: { amenity: ["hospital"] }, taller: { shop: ["car_repair", "tyres"] }, concesionario: { shop: ["car"] },
+  motos: { shop: ["motorcycle", "motorcycle_repair"] }, lavanderia: { shop: ["laundry", "dry_cleaning"] },
+  gimnasio: { leisure: ["fitness_centre"] }, floristeria: { shop: ["florist", "gift"] },
+  hospedaje: { tourism: ["hotel", "hostel", "guest_house"] }, inmobiliaria: { office: ["estate_agent"] },
+  hogar: { shop: ["furniture", "houseware", "interior_decoration"] }
+};
+const TIPO_POR_TAG = {};
+Object.entries(OSM_POR_TIPO).forEach(([tipo, m]) => Object.entries(m).forEach(([k, vs]) => vs.forEach(v => { TIPO_POR_TAG[k + "=" + v] = tipo; })));
+const CLAVES_OSM = ["amenity", "shop", "tourism", "leisure", "office"];
+const TIPOS_BASICOS = ["farmacia", "cajero", "comida_rapida", "panaderia", "supermercado", "banco"];
+const PRESETS = { pocos: 5, normal: 15, muchos: 50 };
+const CUOTA_MAX = 200;
+
+// Categorías que se pueden importar = las de la base de datos que tienen etiqueta en OSM
+const tiposImportables = () => TIPOS_COMERCIO.filter(t => OSM_POR_TIPO[t.id] && t.activo !== false);
+
+let candidatos = [];      // vista previa: [{fila, marcado, estado: "nuevo"|"parecido"|"ya", web, parecidoA}]
 let listaAdmin = [];
-
+let conteos = null;       // lo que pasó en la última búsqueda
 const dormir = ms => new Promise(r => setTimeout(r, ms));
-
-// ---------- Overpass ----------
-// Consulta ligera por municipio: solo nodos y áreas (sin relaciones) y máximo 400 elementos.
-function consultaOverpass(m, radio) {
-  const a = `(around:${radio},${m.lat},${m.lng})`;
-  const am = '["amenity"~"^(pharmacy|atm|fast_food|bank)$"]', sh = '["shop"~"^(bakery|supermarket)$"]';
-  return `[out:json][timeout:20][maxsize:8000000];(node${a}${am};way${a}${am};node${a}${sh};way${a}${sh};);out center tags qt 400;`;
-}
-
 let cancelar = false;
 const controles = new Set();          // peticiones en vuelo (para poder abortarlas al cancelar)
-const ESCALONADO_MS = 6000;           // si el servidor 1 no responde en 6 s, se lanza también el 2, y luego el 3
-const TIEMPO_MAX_MS = 25000;          // tope por petición
 
-// "Peticiones con relevo": lanza el servidor 1; si tarda o falla, suma el 2 y el 3 sin cancelar el anterior.
-// Gana el primero que responda bien y se abortan los demás. Con servidores públicos saturados es lo que más ayuda.
-function pedirOverpass(consulta) {
-  return new Promise((ok, mal) => {
-    let siguiente = 0, vivos = 0, terminado = false, temporizador = null;
-    const mios = [], errores = [];
-    const fin = (fn, valor) => {
-      if (terminado) return;
-      terminado = true; clearTimeout(temporizador);
-      mios.forEach(c => { c.abort(); controles.delete(c); });
-      fn(valor);
-    };
-    const programar = () => {
-      clearTimeout(temporizador);
-      if (!terminado && siguiente < OVERPASS.length) temporizador = setTimeout(() => { if (lanzar()) programar(); }, ESCALONADO_MS);
-    };
-    const lanzar = () => {
-      if (terminado || cancelar || siguiente >= OVERPASS.length) return false;
-      const url = OVERPASS[siguiente++];
-      const ctl = new AbortController(); mios.push(ctl); controles.add(ctl); vivos++;
-      const t = setTimeout(() => ctl.abort(), TIEMPO_MAX_MS);
-      fetch(url, { method: "POST", body: "data=" + encodeURIComponent(consulta), signal: ctl.signal,
-        headers: { "Content-Type": "application/x-www-form-urlencoded" } })
-        .then(r => { if (!r.ok) throw new Error("respondió " + r.status); return r.json(); })
-        .then(d => { if (!d || !Array.isArray(d.elements)) throw new Error("respuesta vacía"); fin(ok, d); })
-        .catch(e => {
-          errores.push(new URL(url).hostname + ": " + (e.name === "AbortError" ? (cancelar ? "cancelado" : "tardó demasiado") : (e.message || "sin conexión")));
-        })
-        .finally(() => {
-          clearTimeout(t); vivos--;
-          if (terminado) return;
-          if (cancelar) { if (vivos === 0) fin(mal, new Error("Cancelado")); return; }
-          if (lanzar()) programar();                                // falló uno: sube el siguiente ya
-          else if (vivos === 0) fin(mal, new Error("Ningún servidor respondió (" + errores.join("; ") + ")"));
-        });
-      return true;
-    };
-    lanzar(); programar();
+// ---------- Preferencias del importador (solo en este navegador) ----------
+let prefImp = (() => { try { return JSON.parse(localStorage.getItem("mf_ac_imp") || "null") || {}; } catch (e) { return {}; } })();
+const guardarPrefImp = () => { try { localStorage.setItem("mf_ac_imp", JSON.stringify(prefImp)); } catch (e) { /* nada */ } };
+let tiposElegidos = new Set();
+let modoDonde = "radio";              // "radio" | "zona" | "todo"
+let centroManual = null;              // centro tocado en el mapa (solo con un municipio elegido)
+
+// ---------- Consulta ----------
+// zona = { filtro: "(around:…)" | "(s,w,n,e)" | "(area.m)", antes: "" | "area[…]->.m;" }
+function consultaOverpass(zona, tipos, limite) {
+  const porClave = {};
+  tipos.forEach(id => Object.entries(OSM_POR_TIPO[id] || {}).forEach(([k, vs]) => {
+    porClave[k] = porClave[k] || new Set(); vs.forEach(v => porClave[k].add(v));
+  }));
+  const partes = [];
+  Object.entries(porClave).forEach(([k, s]) => {
+    const f = `["${k}"~"^(${[...s].join("|")})$"]`;
+    partes.push(`node${zona.filtro}${f};`, `way${zona.filtro}${f};`);
   });
+  return `[out:json][timeout:25][maxsize:33554432];${zona.antes || ""}(${partes.join("")});out center tags qt ${limite};`;
+}
+const zonaRadio = (c, radio) => ({ filtro: `(around:${radio},${c.lat},${c.lng})` });
+const zonaCaja = b => ({ filtro: `(${b.s.toFixed(5)},${b.w.toFixed(5)},${b.n.toFixed(5)},${b.e.toFixed(5)})` });
+// Colombia en OpenStreetMap: municipio = admin_level 6 (algunos quedaron en 8). Lo que caiga a más de
+// 40 km del centro se descarta (por si hay otro municipio con el mismo nombre en otro departamento).
+const zonaMunicipio = m => ({ antes: `area["name"="${m.nombre.replace(/"/g, "")}"]["boundary"="administrative"]["admin_level"~"^(6|8)$"]->.m;`, filtro: "(area.m)" });
+
+// ---------- Servidores: uno a la vez ----------
+const hostDe = url => new URL(url).hostname;
+const nombreServidor = url => (SERVIDORES.find(s => s.url === url) || { nombre: hostDe(url) }).nombre;
+
+function errorServidor(msg, pausa) { const e = new Error(msg); e.pausa = !!pausa; return e; }
+
+async function pedirUno(url, consulta, tope) {
+  const ctl = new AbortController(); controles.add(ctl);
+  vivos++; vivosMax = Math.max(vivosMax, vivos);
+  const t = setTimeout(() => ctl.abort(), tope);
+  try {
+    let r;
+    try {
+      r = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(consulta), signal: ctl.signal,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, referrerPolicy: "strict-origin-when-cross-origin" });
+    } catch (e) {
+      if (e.name === "AbortError") throw errorServidor(cancelar ? "cancelado" : `tardó más de ${Math.round(tope / 1000)} s`);
+      throw errorServidor("sin conexión o el navegador lo bloqueó");
+    }
+    if (r.status === 429) throw errorServidor("pidió una pausa (429: demasiadas consultas)", true);
+    if (r.status === 406) throw errorServidor("rechazó la consulta (406: saturado o te limitó)", true);
+    if (r.status === 504) throw errorServidor("está saturado (504)");
+    if (!r.ok) throw errorServidor("respondió " + r.status);
+    let d;
+    try { d = await r.json(); } catch (e) { throw errorServidor(e.name === "AbortError" ? `tardó más de ${Math.round(tope / 1000)} s` : "respuesta no válida"); }
+    if (!d || !Array.isArray(d.elements)) throw errorServidor("respuesta vacía");
+    if (d.remark && /runtime error|timed out|out of memory/i.test(d.remark) && !d.elements.length)
+      throw errorServidor("la consulta fue muy grande (baja el radio o los tipos)");
+    return d;
+  } finally { clearTimeout(t); controles.delete(ctl); vivos--; }
+}
+
+async function esperarCancelable(ms, aviso) {
+  const fin = Date.now() + ms;
+  while (!cancelar && Date.now() < fin) {
+    if (aviso) aviso(Math.ceil((fin - Date.now()) / 1000));
+    await dormir(Math.min(250, Math.max(0, fin - Date.now())));
+  }
+}
+
+function ordenServidores() {
+  const sel = $("ac-servidor") ? $("ac-servidor").value : "auto";
+  if (sel && sel !== "auto") return [sel];
+  return OVERPASS.slice().sort((a, b) => (b === servidorBueno) - (a === servidorBueno));
+}
+
+// Pregunta a un servidor; si falla, al siguiente. Si todos fallaron y alguno pidió pausa, espera y reintenta una vez.
+async function pedirOverpass(consulta, aviso) {
+  const errores = [];
+  let orden = ordenServidores();
+  for (let vuelta = 0; vuelta < 2 && !cancelar; vuelta++) {
+    for (const url of orden) {
+      if (cancelar) break;
+      const espera = (pausaHasta[url] || 0) - Date.now();
+      if (espera > 0) {
+        if (vuelta === 0) { errores.push(hostDe(url) + ": en pausa"); continue; }
+        await esperarCancelable(espera, s => aviso && aviso(`⏸️ ${nombreServidor(url)} pidió una pausa: reintento en ${s} s…`));
+        if (cancelar) break;
+      }
+      try {
+        if (aviso) aviso(`Preguntando a ${nombreServidor(url)}…`);
+        const d = await pedirUno(url, consulta, TIEMPO_MAX_MS);
+        servidorBueno = url; try { localStorage.setItem("mf_ac_srv", url); } catch (e) { /* nada */ }
+        return d;
+      } catch (e) {
+        if (cancelar) break;
+        errores.push(hostDe(url) + ": " + e.message);
+        if (e.pausa) pausaHasta[url] = Date.now() + PAUSA_MS;
+      }
+    }
+    orden = orden.filter(u => (pausaHasta[u] || 0) > Date.now());   // 2ª vuelta: solo los que pidieron pausa
+    if (!orden.length) break;
+  }
+  throw new Error(cancelar ? "Cancelado" : "Ningún servidor respondió (" + errores.join("; ") + ")");
 }
 
 function cancelarBusqueda() {
@@ -70,66 +170,216 @@ function cancelarBusqueda() {
   $("ac-estado").textContent = "Cancelando…";
 }
 
-function tipoDeTags(t) {
-  if (t.amenity === "pharmacy") return "farmacia";
-  if (t.amenity === "atm") return "cajero";
-  if (t.amenity === "fast_food") return "comida_rapida";
-  if (t.shop === "bakery") return "panaderia";
-  if (t.shop === "supermarket") return "supermercado";
-  if (t.amenity === "bank") return "banco";
+// 🩺 Probar servidores: una consulta mínima a cada uno, de a uno
+async function probarServidores() {
+  const b = $("ac-probar"); b.disabled = true;
+  const m = municipios[0] || { lat: 6.2442, lng: -75.5812 };
+  const consulta = `[out:json][timeout:10];node(around:300,${m.lat},${m.lng})["amenity"];out 1;`;
+  const res = {};
+  const pintar = () => {
+    $("ac-servidores").innerHTML = SERVIDORES.map(s => {
+      const r = res[s.url];
+      const txt = !r ? '<span class="text-slate-400">⏳ en espera</span>'
+        : r.prueba ? '<span class="text-slate-500">🔎 probando…</span>'
+        : r.ok ? `<span class="text-green-700 font-bold">✔ ${(r.ms / 1000).toFixed(1).replace(".", ",")} s</span>`
+        : `<span class="${r.pausa ? "text-amber-700" : "text-red-700"} font-bold">${r.pausa ? "⚠️" : "✖"} ${esc(r.error)}</span>`;
+      return `<li class="flex justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50" data-srv="${esc(hostDe(s.url))}"><span>${esc(s.nombre)}${s.url === servidorBueno ? " ⭐" : ""}</span>${txt}</li>`;
+    }).join("");
+  };
+  $("ac-servidores").classList.remove("hidden");
+  cancelar = false;
+  try {
+    for (const s of SERVIDORES) {
+      res[s.url] = { prueba: true }; pintar();
+      const t0 = Date.now();
+      try { await pedirUno(s.url, consulta, 15000); res[s.url] = { ok: true, ms: Date.now() - t0 }; }
+      catch (e) { res[s.url] = { error: e.message, pausa: e.pausa }; if (e.pausa) pausaHasta[s.url] = Date.now() + PAUSA_MS; }
+      pintar();
+    }
+    const buenos = SERVIDORES.filter(s => res[s.url].ok).sort((a, z) => res[a.url].ms - res[z.url].ms);
+    if (buenos.length) { servidorBueno = buenos[0].url; try { localStorage.setItem("mf_ac_srv", servidorBueno); } catch (e) { /* nada */ } pintar(); }
+    $("ac-estado").textContent = buenos.length ? `✔ ${buenos.length} de ${SERVIDORES.length} servidores responden. Se usará primero el más rápido (⭐).`
+      : "⚠️ Ningún servidor responde ahora. Espera unos minutos y vuelve a probar.";
+  } finally { b.disabled = false; }
+}
+
+// ---------- De OSM a fila de Merkap ----------
+function tipoDeTags(t, permitidos) {
+  for (const k of CLAVES_OSM) {
+    if (!t[k]) continue;
+    const tipo = TIPO_POR_TAG[k + "=" + t[k]];
+    if (tipo && (!permitidos || permitidos.has(tipo))) return tipo;
+  }
   return null;
 }
 
-function aFila(el, muni) {
+// Devuelve { fila, web, marca } · { sinNombre: true } · null (no es de los tipos pedidos)
+function aFila(el, muni, permitidos) {
   const t = el.tags || {};
-  const tipo = tipoDeTags(t);
+  const tipo = tipoDeTags(t, permitidos);
   if (!tipo) return null;
   const lat = el.lat ?? (el.center && el.center.lat), lng = el.lon ?? (el.center && el.center.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   let nombre = (t.name || t.brand || t.operator || "").trim();
   if (!nombre && tipo === "cajero") nombre = "Cajero automático";
-  if (nombre.length < 2) return null;                       // sin nombre no sirve en un directorio
+  if (nombre.length < 2) return { sinNombre: true };          // sin nombre no sirve en un directorio
+  const m = typeof muni === "function" ? muni(lat, lng) : muni;
   const dir = [t["addr:street"], t["addr:housenumber"]].filter(Boolean).join(" ").trim();
   return {
-    osm_id: el.type + "/" + el.id,
-    nombre: nombre.slice(0, 100),
-    tipo, municipio_id: muni.id,
-    direccion: dir ? dir.slice(0, 160) : null,
-    telefono: (t.phone || t["contact:phone"] || "").slice(0, 40) || null,
-    horario: (t.opening_hours || "").slice(0, 120) || null,
-    lat: +lat.toFixed(6), lng: +lng.toFixed(6),
-    verificado: false, activo: true, fuente: "OpenStreetMap"
+    fila: {
+      osm_id: el.type + "/" + el.id,
+      nombre: nombre.slice(0, 100),
+      tipo, municipio_id: m.id,
+      direccion: dir ? dir.slice(0, 160) : null,
+      telefono: (t.phone || t["contact:phone"] || t.mobile || t["contact:mobile"] || "").slice(0, 40) || null,
+      horario: (t.opening_hours || "").slice(0, 120) || null,
+      lat: +lat.toFixed(6), lng: +lng.toFixed(6),
+      verificado: false, activo: true, fuente: "OpenStreetMap"
+    },
+    web: (t.website || t["contact:website"] || t.url || "").slice(0, 200),
+    marca: !!(t.brand || t["brand:wikidata"])
   };
 }
 
-// Elige los más cercanos al centro, sin repetir y sin pasarse de la cuota.
-// `existentes` = lo que ya está guardado en ese municipio: sus osm_id se omiten (aunque estén ocultos)
-// y lo que ya hay VISIBLE cuenta dentro de la cuota (así volver a importar no agrega más de lo pedido).
-function elegir(filas, muni, cuota, existentes) {
-  const centro = { lat: muni.lat, lng: muni.lng };
-  const ids = new Set(existentes.map(e => e.osmId).filter(Boolean));
-  const porTipo = {}, omitidos = { yaGuardado: 0, parecido: 0 };
-  existentes.filter(e => e.activo).forEach(e => { (porTipo[e.tipo] = porTipo[e.tipo] || []).push(e); });
-  const nuevos = [];
-  filas.sort((a, b) => distanciaKm(centro, a) - distanciaKm(centro, b)).forEach(f => {
-    if (ids.has(f.osm_id)) { omitidos.yaGuardado++; return; }
-    const grupo = porTipo[f.tipo] = porTipo[f.tipo] || [];
-    // misma marca y mismo tipo a menos de 60 m de uno guardado o ya elegido = es el mismo lugar
-    const todos = existentes.filter(e => e.tipo === f.tipo).concat(grupo, nuevos.filter(n => n.tipo === f.tipo));
-    if (todos.some(g => normalizar(g.nombre) === normalizar(f.nombre) && distanciaKm(g, f) < 0.06)) { omitidos.parecido++; return; }
-    if (grupo.length >= (cuota[f.tipo] || 0)) return;
-    grupo.push(f); nuevos.push(f);
+// Clasifica lo encontrado (más cercanos al centro primero):
+// · «ya»: ese mismo punto de OSM ya está guardado (aunque esté oculto) → se muestra sin marcar y no se puede elegir
+// · «parecido»: mismo tipo y mismo nombre a menos de 60 m de uno guardado → se muestra SIN marcar (tú decides)
+// · «nuevo»: entra marcado mientras no se pase la cuota del tipo
+// Con «la cuota cuenta solo los nuevos» apagado, los guardados VISIBLES dentro de la zona también cuentan.
+function clasificar(items, centro, cuota, existentes, opc) {
+  const ids = new Map(existentes.filter(e => e.osmId).map(e => [e.osmId, e]));
+  const usados = opc.usados || new Set();
+  const cuenta = {}, salida = [], c = { nuevo: 0, ya: 0, parecido: 0, fueraCuota: 0, repetido: 0 };
+  if (!opc.soloNuevos) existentes.filter(e => e.activo && opc.dentro(e)).forEach(e => { cuenta[e.tipo] = (cuenta[e.tipo] || 0) + 1; });
+  const elegidos = [];
+  items.sort((a, b) => distanciaKm(centro, a.fila) - distanciaKm(centro, b.fila)).forEach(it => {
+    const f = it.fila;
+    if (usados.has(f.osm_id)) return;                       // ya está en esta vista previa (radios que se tocan)
+    if (ids.has(f.osm_id)) { c.ya++; usados.add(f.osm_id); elegidos.push(f); salida.push({ ...it, estado: "ya", marcado: false }); return; }
+    const mismo = g => g.tipo === f.tipo && normalizar(g.nombre) === normalizar(f.nombre) && distanciaKm(g, f) < 0.06;
+    if (elegidos.some(mismo)) { c.repetido++; return; }    // dos puntos de OSM para el mismo local (o uno ya guardado al lado)
+    const par = existentes.find(mismo);
+    if (par) { c.parecido++; usados.add(f.osm_id); elegidos.push(f); salida.push({ ...it, estado: "parecido", marcado: false, parecidoA: par.nombre }); return; }
+    if ((cuenta[f.tipo] || 0) >= (cuota[f.tipo] || 0)) { c.fueraCuota++; return; }
+    cuenta[f.tipo] = (cuenta[f.tipo] || 0) + 1;
+    c.nuevo++; usados.add(f.osm_id); elegidos.push(f); salida.push({ ...it, estado: "nuevo", marcado: true });
   });
-  return { nuevos, omitidos };
+  return { salida, c };
 }
 
 function leerCuotas() {
   const c = {};
-  TIPOS_IMPORTABLES.forEach(t => { c[t.id] = Math.max(0, Math.min(10, parseInt($("cuota-" + t.id).value, 10) || 0)); });
+  tiposImportables().forEach(t => {
+    const inp = $("cuota-" + t.id);
+    c[t.id] = tiposElegidos.has(t.id) && inp ? Math.max(0, Math.min(CUOTA_MAX, parseInt(inp.value, 10) || 0)) : 0;
+  });
   return c;
 }
 
-const estadoMuni = {};   // id municipio → "pend" | "buscando" | "ok" | "fallo"
+// ---------- Interfaz: tipos, cuotas, dónde ----------
+function pintarTiposImp() {
+  const lista = tiposImportables();
+  $("ac-tipos").innerHTML = lista.map(t => `<button type="button" data-tipo-imp="${esc(t.id)}" aria-pressed="${tiposElegidos.has(t.id)}"
+      class="ac-chip">${t.icono} ${esc(t.nombre)}</button>`).join("");
+  const cuotas = prefImp.cuotas || {};
+  const base = PRESETS[prefImp.preset || "normal"] || 15;
+  // Las cuotas que ya se escribieron no se pierden al repintar
+  const actuales = {};
+  document.querySelectorAll("#ac-cuotas input[id^='cuota-']").forEach(i => { actuales[i.id.slice(6)] = i.value; });
+  $("ac-cuotas").innerHTML = lista.map(t => `<label class="text-xs font-bold text-slate-500 ${tiposElegidos.has(t.id) ? "" : "hidden"}" data-cuota-de="${esc(t.id)}">${t.icono} ${esc(t.nombre)}
+    <input type="number" id="cuota-${esc(t.id)}" min="0" max="${CUOTA_MAX}" value="${esc(String(actuales[t.id] ?? cuotas[t.id] ?? base))}" class="mt-0.5 w-full border border-slate-300 p-1.5 rounded-lg font-normal text-sm"></label>`).join("");
+  $("ac-tipos-n").textContent = `${tiposElegidos.size} de ${lista.length}`;
+  pintarPresets();
+}
+
+function pintarPresets() {
+  document.querySelectorAll("[data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === prefImp.preset)));
+}
+
+function aplicarPreset(p) {
+  prefImp.preset = p; prefImp.cuotas = {};
+  document.querySelectorAll("#ac-cuotas input[id^='cuota-']").forEach(i => { i.value = PRESETS[p]; });
+  guardarPrefImp(); pintarPresets();
+}
+
+function elegirTipo(id, valor) {
+  if (valor === undefined ? tiposElegidos.has(id) : !valor) tiposElegidos.delete(id); else tiposElegidos.add(id);
+  prefImp.tipos = [...tiposElegidos]; guardarPrefImp();
+  document.querySelectorAll(`[data-tipo-imp="${CSS.escape(id)}"]`).forEach(b => b.setAttribute("aria-pressed", String(tiposElegidos.has(id))));
+  const l = document.querySelector(`[data-cuota-de="${CSS.escape(id)}"]`); if (l) l.classList.toggle("hidden", !tiposElegidos.has(id));
+  $("ac-tipos-n").textContent = `${tiposElegidos.size} de ${tiposImportables().length}`;
+}
+
+function muniElegido() { const v = $("ac-muni").value; return v === "todos" ? null : municipios.find(m => String(m.id) === v) || null; }
+
+function pintarDonde() {
+  document.querySelectorAll("[data-donde]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.donde === modoDonde)));
+  const m = muniElegido();
+  $("ac-fila-radio").classList.toggle("hidden", modoDonde !== "radio");
+  $("ac-muni-caja").classList.toggle("hidden", modoDonde === "zona");
+  const ayuda = {
+    radio: m ? (centroManual ? "📍 Centro movido: busca alrededor del punto que tocaste. " : "📍 Busca alrededor del centro del municipio. <b>Toca el mapa</b> para mover el centro (por ejemplo a un barrio). ")
+             : "📍 Con «Todos» busca alrededor del centro de cada municipio, uno por uno.",
+    zona: "🗺️ Busca en lo que se ve en el mapa. Acércate o aléjate y arrástralo hasta la zona que quieres (máx. unos 12 km de lado). Cada comercio queda en el municipio más cercano.",
+    todo: "🏙️ Busca en todo el límite del municipio según OpenStreetMap. Es la consulta más pesada: en ciudades grandes (Medellín) puede tardar o fallar; ahí usa «Zona del mapa»."
+  }[modoDonde];
+  $("ac-donde-ayuda").innerHTML = ayuda + (modoDonde === "radio" && m && centroManual ? ' <button type="button" id="ac-centro-reset" class="text-indigo-600 font-bold underline">Volver al centro</button>' : "");
+  pintarZonaMapa();
+}
+
+// ---------- Mapa del importador ----------
+let mapaImp = null, circuloImp = null, capaImp = null;
+function centroBusqueda() { const m = muniElegido(); return centroManual || (m ? { lat: m.lat, lng: m.lng } : (municipios[0] ? { lat: municipios[0].lat, lng: municipios[0].lng } : { lat: 6.2442, lng: -75.5812 })); }
+
+function iniciarMapaImp() {
+  if (mapaImp || typeof L === "undefined" || !$("ac-mapa")) return;
+  const c = centroBusqueda();
+  mapaImp = crearMapaBase("ac-mapa", [c.lat, c.lng], 14);
+  capaImp = L.layerGroup().addTo(mapaImp);
+  mapaImp.on("click", e => {
+    if (modoDonde !== "radio" || !muniElegido()) return;
+    centroManual = { lat: +e.latlng.lat.toFixed(5), lng: +e.latlng.lng.toFixed(5) };
+    pintarDonde();
+  });
+}
+
+function pintarZonaMapa() {
+  if (!mapaImp) return;
+  if (circuloImp) { mapaImp.removeLayer(circuloImp); circuloImp = null; }
+  const radio = parseInt($("ac-radio").value, 10);
+  if (modoDonde === "radio" && muniElegido()) {
+    const c = centroBusqueda();
+    circuloImp = L.circle([c.lat, c.lng], { radius: radio, color: "#4f46e5", weight: 2, fillOpacity: 0.06, dashArray: "6 6" });
+    mapaImp.addLayer(circuloImp);
+  }
+}
+
+function moverMapaAMuni() {
+  const m = muniElegido();
+  if (mapaImp && m) mapaImp.setView([m.lat, m.lng], modoDonde === "todo" ? 13 : 14);
+}
+
+function cajaMapa() {
+  const b = mapaImp && mapaImp.getBounds ? mapaImp.getBounds() : null;
+  if (!b || !b.getSouth) return null;
+  return { s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() };
+}
+
+const COLOR_PIN = { nuevo: "#f97316", parecido: "#94a3b8", ya: "#16a34a" };
+function pintarPinesImp() {
+  if (!capaImp) return;
+  capaImp.clearLayers();
+  candidatos.forEach(c => {
+    const f = c.fila;
+    L.circleMarker([f.lat, f.lng], { radius: c.marcado ? 7 : 5, color: "#fff", weight: 2, fillColor: COLOR_PIN[c.estado], fillOpacity: 1 })
+      .bindPopup(`<b>${esc(iconosComercio[f.tipo] || "🏪")} ${esc(f.nombre)}</b><br>${esc(ETIQUETA_ESTADO[c.estado])}${f.direccion ? "<br>" + esc(f.direccion) : ""}`)
+      .addTo(capaImp);
+  });
+}
+
+// ---------- Buscar ----------
+const estadoMuni = {};   // id del trabajo → "pend" | "buscando" | "ok" | "fallo"
+let trabajosUltimos = [];
 
 function pintarProgreso(lista) {
   const icono = { pend: "⏳", buscando: "🔎", ok: "✔", fallo: "✖" };
@@ -137,51 +387,102 @@ function pintarProgreso(lista) {
     `<li class="px-2 py-1 rounded-full border ${estadoMuni[m.id] === "fallo" ? "bg-red-50 border-red-200 text-red-700" : estadoMuni[m.id] === "ok" ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-50 border-slate-200 text-slate-600"}">${icono[estadoMuni[m.id]] || "⏳"} ${esc(m.nombre)}</li>`).join("");
 }
 
+function muniMasCercano(lat, lng) {
+  let mejor = municipios[0], d = Infinity;
+  municipios.forEach(m => { const x = distanciaKm({ lat, lng }, m); if (x < d) { d = x; mejor = m; } });
+  return mejor;
+}
+
+// Arma la lista de búsquedas según «Dónde»
+function armarTrabajos() {
+  const radio = parseInt($("ac-radio").value, 10);
+  const m = muniElegido();
+  if (modoDonde === "zona") {
+    const b = cajaMapa();
+    if (!b) throw new Error("El mapa aún no está listo");
+    const lado = Math.max(distanciaKm({ lat: b.s, lng: b.w }, { lat: b.s, lng: b.e }), distanciaKm({ lat: b.s, lng: b.w }, { lat: b.n, lng: b.w }));
+    if (lado > 12.5) throw new Error(`La zona del mapa es muy grande (${Math.round(lado)} km de lado). Acércate un poco más (máx. unos 12 km).`);
+    const centro = { lat: (b.s + b.n) / 2, lng: (b.w + b.e) / 2 };
+    return [{ id: "zona", nombre: "Zona del mapa", zona: zonaCaja(b), muni: muniMasCercano, centro, limite: 2000,
+              dentro: e => e.lat >= b.s && e.lat <= b.n && e.lng >= b.w && e.lng <= b.e, muniId: null }];
+  }
+  const lista = m ? [m] : municipios.slice();
+  return lista.map(x => {
+    if (modoDonde === "todo") return { id: x.id, nombre: x.nombre, zona: zonaMunicipio(x), muni: x, centro: { lat: x.lat, lng: x.lng }, limite: 3000,
+      lejos: 40, dentro: e => e.municipioId === x.id, muniId: x.id };
+    const c = m && centroManual ? centroManual : { lat: x.lat, lng: x.lng };
+    return { id: x.id, nombre: x.nombre, zona: zonaRadio(c, radio), muni: x, centro: c, limite: 1500,
+      dentro: e => distanciaKm(c, e) <= radio / 1000, muniId: x.id };
+  });
+}
+
+function leerFiltros() {
+  return { tel: $("ac-f-tel").checked, horario: $("ac-f-horario").checked, sinCadenas: $("ac-f-cadenas").checked, soloNuevos: $("ac-solo-nuevos").checked };
+}
+
 async function buscar(soloFallidos) {
   const btn = $("ac-buscar");
+  if (!tiposElegidos.size) { $("ac-estado").textContent = "⚠️ Elige al menos un tipo de comercio."; return; }
+  let lista;
+  try { lista = soloFallidos === true ? trabajosUltimos.filter(t => estadoMuni[t.id] === "fallo") : armarTrabajos(); }
+  catch (e) { $("ac-estado").textContent = "⚠️ " + e.message; return; }
+  if (soloFallidos !== true) { candidatos = []; trabajosUltimos = lista; conteos = { nuevo: 0, ya: 0, parecido: 0, sinNombre: 0, filtrados: 0, fueraCuota: 0, repetido: 0 }; }
+  conteos = conteos || { nuevo: 0, ya: 0, parecido: 0, sinNombre: 0, filtrados: 0, fueraCuota: 0, repetido: 0 };
   btn.disabled = true; cancelar = false;
   $("ac-cancelar").classList.remove("hidden");
   $("ac-reintentar").classList.add("hidden");
-  const cuota = leerCuotas();
-  const radio = parseInt($("ac-radio").value, 10);
-  const sel = $("ac-muni").value;
-  let lista = municipios.filter(m => sel === "todos" || String(m.id) === sel);
-  if (soloFallidos === true) lista = lista.filter(m => estadoMuni[m.id] === "fallo");
-  else candidatos = [];
+  const cuota = leerCuotas(), filtros = leerFiltros(), permitidos = new Set(tiposElegidos);
+  const tipos = [...tiposElegidos];
   lista.forEach(m => { estadoMuni[m.id] = "pend"; });
-  const inicio = Date.now(), totales = { yaGuardado: 0, parecido: 0 };
-  let existentes;
+  const inicio = Date.now();
   try {
     pintarProgreso(lista);
     $("ac-estado").textContent = "Revisando lo que ya tienes guardado…";
-    existentes = await cargarComerciosAdmin();
+    const existentes = await cargarComerciosAdmin();
+    const usados = new Set(candidatos.map(c => c.fila.osm_id));
     for (let i = 0; i < lista.length && !cancelar; i++) {
-      const m = lista[i];
-      estadoMuni[m.id] = "buscando"; pintarProgreso(lista);
-      const tick = setInterval(() => { $("ac-estado").textContent = `Buscando en ${m.nombre} (${i + 1}/${lista.length})… ${Math.round((Date.now() - inicio) / 1000)} s`; }, 500);
+      const tr = lista[i];
+      estadoMuni[tr.id] = "buscando"; pintarProgreso(lista);
+      let detalle = "";
+      const tick = setInterval(() => { $("ac-estado").textContent = `Buscando en ${tr.nombre} (${i + 1}/${lista.length})… ${Math.round((Date.now() - inicio) / 1000)} s · ${detalle}`; }, 500);
       try {
-        const datos = await pedirOverpass(consultaOverpass(m, radio));
-        const filas = (datos.elements || []).map(el => aFila(el, m)).filter(Boolean);
-        const ya = existentes.filter(e => e.municipioId === m.id)
-          .concat(candidatos.filter(c => c.fila.municipio_id === m.id).map(c => ({ ...c.fila, osmId: c.fila.osm_id, activo: true })));
-        const { nuevos, omitidos } = elegir(filas, m, cuota, ya);
-        totales.yaGuardado += omitidos.yaGuardado; totales.parecido += omitidos.parecido;
-        nuevos.forEach(f => candidatos.push({ fila: f, marcado: true }));
-        estadoMuni[m.id] = "ok";
+        const datos = await pedirOverpass(consultaOverpass(tr.zona, tipos, tr.limite), t => { detalle = t; });
+        const items = [];
+        (datos.elements || []).forEach(el => {
+          const r = aFila(el, tr.muni, permitidos);
+          if (!r) return;
+          if (r.sinNombre) { conteos.sinNombre++; return; }
+          if (tr.lejos && distanciaKm(tr.centro, r.fila) > tr.lejos) return;
+          const f = r.fila;
+          if ((filtros.tel && !f.telefono) || (filtros.horario && !f.horario) || (filtros.sinCadenas && r.marca && f.tipo !== "cajero" && f.tipo !== "banco")) { conteos.filtrados++; return; }
+          items.push(r);
+        });
+        const { salida, c } = clasificar(items, tr.centro, cuota, existentes, { soloNuevos: filtros.soloNuevos, dentro: tr.dentro, usados });
+        Object.keys(c).forEach(k => { conteos[k] += c[k]; });
+        candidatos.push(...salida);
+        estadoMuni[tr.id] = "ok";
         pintarPrevia();
       } catch (e) {
-        console.warn(m.nombre, e.message);
-        estadoMuni[m.id] = cancelar ? "pend" : "fallo";
+        console.warn(tr.nombre, e.message);
+        estadoMuni[tr.id] = cancelar ? "pend" : "fallo";
+        tr.error = e.message;
       } finally { clearInterval(tick); }
       pintarProgreso(lista);
-      if (i < lista.length - 1 && !cancelar) await dormir(800);
+      if (i < lista.length - 1 && !cancelar) await dormir(1000);   // respiro entre consultas (reglas de Overpass)
     }
     const fallaron = lista.filter(m => estadoMuni[m.id] === "fallo");
     let msg = cancelar ? "Búsqueda cancelada. " : "";
-    if (totales.yaGuardado || totales.parecido) msg += `Se omitieron ${totales.yaGuardado + totales.parecido} que ya estaban guardados o eran el mismo lugar. `;
-    if (fallaron.length) { msg += `⚠️ No respondieron: ${fallaron.map(m => m.nombre).join(", ")}.`; $("ac-reintentar").classList.remove("hidden"); }
-    else if (!cancelar && !candidatos.length) msg += "No hay comercios nuevos para esos filtros (o ya tienes la cuota completa). Prueba subiendo la cuota o el radio.";
-    $("ac-estado").textContent = msg;
+    const elegibles = candidatos.filter(c => c.estado !== "ya").length;
+    if (!cancelar && !fallaron.length && !elegibles)
+      msg += conteos.ya ? `No hay comercios nuevos: los ${conteos.ya} que encontró ya los tienes guardados. Prueba otra zona, más radio o más tipos.`
+        : "No hay comercios nuevos para esos filtros. Prueba con más radio, más tipos o quitando filtros.";
+    else if (!cancelar && elegibles) msg += `✔ Listo: ${conteos.nuevo} nuevos para importar${conteos.parecido ? ` y ${conteos.parecido} parecidos a uno tuyo (sin marcar)` : ""}. Revisa la lista y el mapa.`;
+    if (fallaron.length) {
+      msg += ` ⚠️ No respondieron: ${fallaron.map(m => m.nombre).join(", ")}. (${fallaron[0].error || ""}) Toca «Reintentar» o «🩺 Probar servidores».`;
+      $("ac-reintentar").classList.remove("hidden");
+    }
+    $("ac-estado").textContent = msg.trim();
+    pintarPrevia();
   } catch (e) {
     console.error(e);
     $("ac-estado").textContent = "⚠️ " + (e.message || e);
@@ -193,39 +494,118 @@ async function buscar(soloFallidos) {
 
 function nombreMuni(id) { return (municipios.find(m => m.id === id) || {}).nombre || ""; }
 
+const ETIQUETA_ESTADO = { nuevo: "nuevo", parecido: "parecido a uno tuyo", ya: "ya lo tienes" };
+const CHIP_ESTADO = { nuevo: "bg-green-100 text-green-800", parecido: "bg-amber-100 text-amber-800", ya: "bg-slate-200 text-slate-600" };
+
 function pintarPrevia() {
   $("ac-previa").classList.toggle("hidden", !candidatos.length);
+  const k = conteos || {};
+  $("ac-conteos").innerHTML = [
+    `<span title="Entran marcados">🟠 ${k.nuevo || 0} nuevos</span>`,
+    `<span title="Ya están en Merkap: no se pueden volver a importar">🟢 ${k.ya || 0} ya los tienes</span>`,
+    `<span title="Mismo nombre y tipo a menos de 60 m de uno tuyo: entran sin marcar">⚪ ${k.parecido || 0} parecidos</span>`,
+    `<span title="En OpenStreetMap no tienen nombre">${k.sinNombre || 0} sin nombre (omitidos)</span>`,
+    k.filtrados ? `<span title="No cumplen los filtros (teléfono, horario, cadenas)">${k.filtrados} por filtros</span>` : "",
+    k.fueraCuota ? `<span title="Sobran por la cuota: sube la cuota para verlos">${k.fueraCuota} fuera de la cuota</span>` : ""
+  ].join("");
   $("ac-previa-lista").innerHTML = candidatos.map((c, i) => {
-    const f = c.fila;
-    return `<label class="flex items-start gap-2 p-2.5 hover:bg-slate-50 cursor-pointer">
-      <input type="checkbox" data-i="${i}" ${c.marcado ? "checked" : ""} class="mt-1">
-      <span class="min-w-0"><b>${esc(iconosComercio[f.tipo])} ${esc(f.nombre)}</b>
-        <span class="text-slate-500"> · ${esc(nombreMuni(f.municipio_id))}${f.direccion ? " · " + esc(f.direccion) : ""}${f.telefono ? " · 📞 " + esc(f.telefono) : ""}</span></span>
+    const f = c.fila, ya = c.estado === "ya";
+    const extra = [nombreMuni(f.municipio_id), f.direccion, f.telefono ? "📞 " + f.telefono : "", f.horario ? "🕒 " + f.horario : "", c.web ? "🌐 " + c.web.replace(/^https?:\/\/(www\.)?/, "") : "",
+      c.parecidoA ? `a menos de 60 m de «${c.parecidoA}» guardado` : ""].filter(Boolean).map(esc).join(" · ");
+    return `<label class="flex items-start gap-2 p-2.5 ${ya ? "opacity-60" : "hover:bg-slate-50 cursor-pointer"}" data-estado-imp="${c.estado}">
+      <input type="checkbox" data-i="${i}" ${c.marcado ? "checked" : ""} ${ya ? "disabled" : ""} class="mt-1">
+      <span class="min-w-0 flex-1"><b>${esc(iconosComercio[f.tipo] || "🏪")} ${esc(f.nombre)}</b>
+        <span class="ml-1 text-[11px] font-bold rounded-full px-1.5 py-0.5 ${CHIP_ESTADO[c.estado]}">${ETIQUETA_ESTADO[c.estado]}</span>
+        <span class="block text-slate-500 text-xs break-words">${extra}</span></span>
     </label>`;
   }).join("");
   actualizarResumen();
+  pintarPinesImp();
 }
 
 function actualizarResumen() {
   const n = candidatos.filter(c => c.marcado).length;
-  $("ac-resumen").textContent = `${n} de ${candidatos.length} seleccionados`;
+  const elegibles = candidatos.filter(c => c.estado !== "ya").length;
+  $("ac-resumen").textContent = `${n} de ${elegibles} seleccionados`;
+  $("ac-importar").textContent = `💾 Importar ${n} como «Ubicado»`;
+  $("ac-importar").disabled = !n;
+  $("ac-csv").textContent = `⬇ CSV para visitas (${n || candidatos.length})`;
+}
+
+function marcarTodos(valor) {
+  candidatos.forEach(c => { if (c.estado !== "ya") c.marcado = valor && c.estado === "nuevo" ? true : valor ? c.marcado : false; });
+  pintarPrevia();
+}
+
+// CSV para visitar los comercios (Excel en español: separado por «;» y con BOM para las tildes)
+function descargarCSV() {
+  const lista = candidatos.some(c => c.marcado) ? candidatos.filter(c => c.marcado) : candidatos;
+  if (!lista.length) return;
+  const cab = ["Nombre", "Categoría", "Municipio", "Dirección", "Teléfono", "Horario", "Sitio web", "Estado", "Latitud", "Longitud", "Google Maps", "OpenStreetMap"];
+  const celda = v => { const s = String(v ?? ""); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const filas = lista.map(c => {
+    const f = c.fila, tipo = TIPOS_COMERCIO.find(t => t.id === f.tipo);
+    return [f.nombre, tipo ? tipo.nombre : f.tipo, nombreMuni(f.municipio_id), f.direccion, f.telefono, f.horario, c.web, ETIQUETA_ESTADO[c.estado],
+      f.lat, f.lng, urlMapa(f), "https://www.openstreetmap.org/" + f.osm_id].map(celda).join(";");
+  });
+  const csv = "﻿" + [cab.join(";")].concat(filas).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const zona = muniElegido() && modoDonde !== "zona" ? normalizar(muniElegido().nombre).replace(/\s+/g, "-") : "zona";
+  a.download = `comercios-osm-${zona}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
 async function guardarSeleccion() {
-  const filas = candidatos.filter(c => c.marcado).map(c => c.fila);
+  const elegidos = candidatos.filter(c => c.marcado);
+  const filas = elegidos.map(c => c.fila);
   if (!filas.length) { mostrarToast("No hay comercios seleccionados", "error"); return; }
   const btn = $("ac-importar");
   btn.disabled = true;
   try {
     const nuevos = await importarComerciosDB(filas);
-    mostrarToast(`✅ ${nuevos} comercios nuevos guardados (${filas.length - nuevos} ya existían)`);
-    candidatos = [];
+    mostrarToast(`✅ ${nuevos} comercios guardados como «Ubicado» (${filas.length - nuevos} ya existían)`);
+    elegidos.forEach(c => { c.estado = "ya"; c.marcado = false; });   // quedan en verde en el mapa
+    if (conteos) { conteos.ya += elegidos.length; conteos.nuevo = candidatos.filter(c => c.estado === "nuevo").length; conteos.parecido = candidatos.filter(c => c.estado === "parecido").length; }
     pintarPrevia();
     await refrescarLista();
   } catch (e) {
     console.error(e);
     mostrarToast(mensajeError(e), "error");
-  } finally { btn.disabled = false; }
+  } finally { actualizarResumen(); }
+}
+
+function conectarImportador() {
+  const lista = tiposImportables().map(t => t.id);
+  const guardados = Array.isArray(prefImp.tipos) ? prefImp.tipos.filter(id => lista.includes(id)) : null;
+  tiposElegidos = new Set(guardados && guardados.length ? guardados : TIPOS_BASICOS.filter(id => lista.includes(id)));
+  if (!PRESETS[prefImp.preset]) prefImp.preset = "normal";
+  pintarTiposImp();
+  $("ac-servidor").innerHTML = '<option value="auto">Automático (uno a la vez)</option>' + SERVIDORES.map(s => `<option value="${esc(s.url)}">${esc(s.nombre)}</option>`).join("");
+  $("ac-tipos").addEventListener("click", e => { const b = e.target.closest("[data-tipo-imp]"); if (b) elegirTipo(b.dataset.tipoImp); });
+  $("ac-tipos-todos").addEventListener("click", () => { tiposImportables().forEach(t => elegirTipo(t.id, true)); });
+  $("ac-tipos-ninguno").addEventListener("click", () => { [...tiposElegidos].forEach(id => elegirTipo(id, false)); });
+  $("ac-tipos-basicos").addEventListener("click", () => { const l = tiposImportables().map(t => t.id); l.forEach(id => elegirTipo(id, TIPOS_BASICOS.includes(id))); });
+  document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => aplicarPreset(b.dataset.preset)));
+  $("ac-cuotas").addEventListener("input", e => {
+    const id = (e.target.id || "").replace(/^cuota-/, ""); if (!id) return;
+    prefImp.cuotas = prefImp.cuotas || {}; prefImp.cuotas[id] = e.target.value; prefImp.preset = ""; guardarPrefImp(); pintarPresets();
+  });
+  document.querySelectorAll("[data-donde]").forEach(b => b.addEventListener("click", () => {
+    modoDonde = b.dataset.donde;
+    if (modoDonde === "zona" && mapaImp) mapaImp.setView(mapaImp.getCenter(), 15);
+    pintarDonde(); if (modoDonde !== "zona") moverMapaAMuni();
+  }));
+  $("ac-muni").addEventListener("change", () => { centroManual = null; pintarDonde(); moverMapaAMuni(); });
+  $("ac-radio").addEventListener("change", pintarZonaMapa);
+  $("ac-donde-ayuda").addEventListener("click", e => { if (e.target.id === "ac-centro-reset") { centroManual = null; pintarDonde(); moverMapaAMuni(); } });
+  $("ac-probar").addEventListener("click", probarServidores);
+  $("ac-todos").addEventListener("click", () => marcarTodos(true));
+  $("ac-ninguno").addEventListener("click", () => marcarTodos(false));
+  $("ac-csv").addEventListener("click", descargarCSV);
+  iniciarMapaImp();
+  pintarDonde();
 }
 
 // ---------- Editor / verificación ----------
@@ -1084,10 +1464,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!esModerador()) { $("ac-sin-permiso").classList.remove("hidden"); return; }
   $("ac-panel").classList.remove("hidden");
 
-  $("ac-cuotas").innerHTML = TIPOS_IMPORTABLES.map(t => `<label class="text-xs font-bold text-slate-500">${t.icono} ${esc(t.nombre)}
-    <input type="number" id="cuota-${t.id}" min="0" max="10" value="${CUOTA_DEFECTO[t.id]}" class="mt-0.5 w-full border border-slate-300 p-2 rounded-lg font-normal text-sm"></label>`).join("");
   const opciones = municipios.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join("");
-  $("ac-muni").innerHTML = '<option value="todos">Todos (10)</option>' + opciones;
+  $("ac-muni").innerHTML = `<option value="todos">Todos (${municipios.length})</option>` + opciones;
+  await cargarCategoriasComercio();
+  conectarImportador();
   $("ac-filtro-muni").innerHTML = '<option value="">Todos los municipios</option>' + opciones;
 
   $("ac-buscar").addEventListener("click", () => buscar(false));
@@ -1098,7 +1478,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const i = e.target.dataset.i;
     if (i === undefined) return;
     candidatos[Number(i)].marcado = e.target.checked;
-    actualizarResumen();
+    actualizarResumen(); pintarPinesImp();
   });
   $("ac-lista").addEventListener("click", accionEditor);
   $("ub-buscar").addEventListener("click", buscarDireccionUb);

@@ -206,6 +206,16 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - En «📍 Lugar» de Comercios ahora siempre salen **Departamento y Ciudad**, igual que en Anuncios (antes el departamento se escondía cuando había uno solo). En celulares angostos van uno debajo del otro para que no se corte el texto.
 - Se quitó la frase «👆 Toca un comercio para ver su ficha completa…» de arriba de la sección: cada tarjeta ya lo dice con «👆 Toca para ver el comercio completo →» (pedido del dueño). Caché v107.
 
+### Fase IMP-2 · Importador de comercios 2.0 (OpenStreetMap)
+- **Por qué no salía nada:** (1) la cuota contaba también los comercios ya guardados, y Medellín, Envigado, Bello y Caldas ya tenían 1–2 por tipo → cuota llena; (2) solo 6 tipos y máx. 2 km; (3) desde abril de 2026 los servidores públicos de Overpass prohíben consultas en paralelo (las nuestras iban en relevo paralelo) y `overpass.kumi.systems` ya no existe.
+- **Servidores, uno a la vez** (`admin-comercios.js` `SERVIDORES`, `pedirOverpass`, `pedirUno`): overpass-api.de → overpass.private.coffee → maps.mail.ru (VK Maps). Si uno responde 429/406 se le da una pausa de 30 s (`pausaHasta`) y se pasa al siguiente; el que respondió bien se usa primero la próxima vez (`servidorBueno`, guardado en el navegador). Selector «Servidor» para forzar uno. Errores en palabras («está saturado (504)», «tardó más de 30 s»…).
+- **🩺 Probar servidores** (`probarServidores`): una consulta mínima a cada uno, de a uno; muestra el tiempo o el error y marca ⭐ el más rápido.
+- **Dónde:** 📍 Municipio + radio (500 m a 5 km; tocar el mapa mueve el centro, «Volver al centro»), 🗺️ Zona del mapa (lo visible, máx. ~12 km de lado; cada comercio queda en el municipio más cercano) y 🏙️ Todo el municipio (límite administrativo de OSM por nombre; se descarta lo que esté a más de 40 km por si hay otro municipio con el mismo nombre).
+- **Qué:** `OSM_POR_TIPO` traduce ~37 categorías de Merkap a etiquetas de OSM (restaurante, cafetería, ferretería, veterinaria, óptica, taller, gimnasio, hospedaje…). Solo aparecen las categorías que existen en tu tabla de categorías. Botones «Los 6 básicos · Todos · Ninguno».
+- **Cuántos:** Pocos 5 / Normal 15 / Muchos 50 por tipo, o ✏️ por tipo (máx. 200). **«La cuota cuenta solo los nuevos»** activada por defecto. Filtros: solo con teléfono, solo con horario, sin cadenas grandes (las que tienen `brand` en OSM; no aplica a cajeros y bancos). Se recuerda la elección en el navegador.
+- **Resultados:** mapa con pines (🟠 nuevo, ⚪ parecido, 🟢 ya lo tienes), conteos, estado en cada fila: «ya lo tienes» no se puede marcar; «parecido a uno tuyo» (mismo nombre y tipo a <60 m) entra sin marcar y dice a cuál se parece. Se ve el sitio web. «☑ Todos los nuevos · ☐ Ninguno», **«⬇ CSV para visitas»** (Excel en español, con Google Maps y OSM) y **«💾 Importar N como «Ubicado»»**.
+- **Sin SQL:** la fila que se guarda es la misma de antes (`importarComerciosDB`, sin duplicar por `osm_id`). El sitio web va solo al CSV (la tabla no tiene columna web). Caché v108.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

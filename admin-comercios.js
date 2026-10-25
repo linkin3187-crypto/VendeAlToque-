@@ -694,8 +694,15 @@ function pintarLista() {
   $("ac-solo-uno").classList.toggle("hidden", soloId === null);
   const m = $("ac-filtro-muni").value, v = $("ac-filtro-ver").value, q = normalizar($("ac-buscar-nombre").value.trim());
   // Base: estado + municipio + texto. Los contadores de origen se calculan sobre esta base.
-  const base = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasaEstado(c, v)
-    && (!q || normalizar(c.nombre + " " + c.direccion).includes(q)));
+  // Arreglo 25 oct: el buscador entiende errores de escritura, plurales y categorías («farmacita» → farmacias),
+  // con el mismo buscador inteligente del directorio (buscador.js). Los resultados salen por relevancia.
+  let base = listaAdmin.filter(c => (!m || String(c.municipioId) === m) && pasaEstado(c, v));
+  if (q) {
+    const exactos = base.filter(c => normalizar(c.nombre + " " + c.direccion).includes(q));
+    const texto = $("ac-buscar-nombre").value.trim();
+    const inteligentes = typeof comercioCoincide === "function" ? base.filter(c => !exactos.includes(c) && comercioCoincide(c, texto)) : [];
+    base = exactos.concat(inteligentes);   // primero los que dicen exactamente lo escrito
+  }
   const cuenta = { todos: base.length, osm: 0, equipo: 0, dueno: 0, reclamado: 0, comunidad: 0 };
   base.forEach(c => { cuenta[origenComercio(c)]++; });
   $("ac-origenes").innerHTML = [["todos", "Todos"]].concat(Object.entries(ORIGENES).map(([k, o]) => [k, o.icono + " " + o.corto]))

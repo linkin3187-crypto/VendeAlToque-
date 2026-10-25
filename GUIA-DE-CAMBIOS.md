@@ -328,6 +328,18 @@ out center tags;
 - Pasos: pegar la consulta → **Run** → **Export** → **raw OSM data** (descargar) → en Merkap «📂 Cargar archivo» → revisar → «Importar».
 - `admin-comercios.html/js` (`cargarArchivoImp`, `elementosDeArchivo`). Sin SQL. 17 pruebas nuevas. Caché v116.
 
+### Fase MAPA-1 · Mapa más fluido (nada se quitó)
+- **Comercios agrupados en el mapa del inicio:** antes cada comercio era un pin suelto y, con cientos, el celular redibujaba todos al arrastrar. Ahora se agrupan en burbujas blancas con borde verde azulado «🏪 N», como ya pasaba con los anuncios. Al acercarse se abren, y **desde el zoom 17 (calle) se ven todos sueltos como antes**. Al tocar un pin sigue saliendo su ventanita y su tarjeta en la tira de abajo.
+- **Pines por tandas** (`chunkedLoading`) en anuncios y comercios: el mapa no se congela al abrir con muchos.
+- **Sombras de los pines más cortas:** misma forma, color y emoji, pero más livianos de dibujar.
+- **Mapa del importador en un solo lienzo** (`preferCanvas`): miles de puntos de la vista previa sin trabarse.
+- **Medido** con Leaflet real, 1.000 comercios y un celular simulado 4 veces más lento:
+  - pines dibujados en pantalla: de 1.000 a 53;
+  - fluidez al arrastrar: de 30–44 a **62 cuadros por segundo**;
+  - el peor cuadro: de 117–167 ms a 17 ms.
+- **Para el lanzamiento (G0):** el fondo del mapa viene de los servidores gratuitos de OpenStreetMap, que piden a los sitios con mucho tráfico usar otro proveedor (CARTO, MapTiler, Stadia…). Se cambia junto con el dominio.
+- `app.js`, `admin-comercios.js`, `styles.css`. Sin SQL. Caché v117.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

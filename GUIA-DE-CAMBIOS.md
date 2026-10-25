@@ -216,6 +216,13 @@ Pensada para aprender: cada cambio dice **qué**, **por qué** y **dónde** verl
 - **Resultados:** mapa con pines (🟠 nuevo, ⚪ parecido, 🟢 ya lo tienes), conteos, estado en cada fila: «ya lo tienes» no se puede marcar; «parecido a uno tuyo» (mismo nombre y tipo a <60 m) entra sin marcar y dice a cuál se parece. Se ve el sitio web. «☑ Todos los nuevos · ☐ Ninguno», **«⬇ CSV para visitas»** (Excel en español, con Google Maps y OSM) y **«💾 Importar N como «Ubicado»»**.
 - **Sin SQL:** la fila que se guarda es la misma de antes (`importarComerciosDB`, sin duplicar por `osm_id`). El sitio web va solo al CSV (la tabla no tiene columna web). Caché v108.
 
+### Fase V-5 · Barra superior «índigo pulido» (propuesta A)
+- **Solo estilo, nada se quitó:** siguen el logo (con su entrada, saludo y logos de temporada), Mi tienda, la cuenta, Favoritos y Registrar negocio (computador), «+ Publicar» / «Regístrate gratis» del mismo tamaño y el buscador con su letrero.
+- **Todas las páginas** (`styles.css`, `body > header.bg-indigo-600`): degradado índigo oscuro → claro, línea fina abajo y botones de «cristal» con borde y 40 px de alto.
+- **Inicio** (`index.html`, `app.js` `actualizarUIAuth`): 🏪 y ❤️ pasan a íconos de línea SVG (`.enc-svg`; se ven iguales en todos los celulares) con punto verde en Mi tienda; 👤 pasa a **avatar amarillo con la inicial** (`.enc-av`) + nombre + ▾; «Entrar» con borde; botón amarillo con relieve (`.enc-cta`); lupa a la izquierda del buscador (`.enc-lupa`).
+- **El parpadeo** del botón amarillo pasa a un **halo suave** que se expande cada 2,4 s (mismo nombre `mf-parpadeo`; se apaga con «reducir movimiento»).
+- Celulares angostos: con tienda, el nombre se acorta (≤440 px) o se oculta (≤380 px) para que todo quepa en una fila. Caché v109.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

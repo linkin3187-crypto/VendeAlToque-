@@ -131,11 +131,13 @@
 .co-chip[aria-selected="true"] { background: #4f46e5; border-color: #4f46e5; color: #fff; }
 
 /* Botón amarillo «Publicar gratis»: parpadeo suave (brillo + aro) que se detiene al pasar el mouse */
+/* Fase V-5: «halo» suave que se expande (antes parpadeaba con brillo cada 1,4 s). Mismo nombre para no tocar el JS. */
 @keyframes mf-parpadeo {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, .75); filter: brightness(1); }
-  50%      { box-shadow: 0 0 0 9px rgba(250, 204, 21, 0); filter: brightness(1.15); }
+  0%   { box-shadow: 0 0 0 0 rgba(250, 204, 21, .6); }
+  70%  { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
 }
-.btn-parpadeo { animation: mf-parpadeo 1.4s ease-in-out infinite; }
+.btn-parpadeo { animation: mf-parpadeo 2.4s ease-out infinite; }
 .btn-parpadeo:hover, .btn-parpadeo:focus-visible { animation: none; }
 @media (prefers-reduced-motion: reduce) { .btn-parpadeo { animation: none; } }
 
@@ -1000,8 +1002,6 @@ html.abriendo-campana::before { content: "Abriendo Merkap…"; position: fixed; 
 .ma-nota { font-size: .75rem; color: #64748b; flex: 1 1 160px; }
 /* Fase 2AT: con «🏪 Mi tienda» arriba, en celular angosto todo cabe en una fila */
 @media (max-width: 440px) {
-  #encabezado.con-tienda #btn-mi-tienda-enc { padding: .5rem .55rem; }
-  #encabezado.con-tienda #btn-auth { max-width: 5rem; padding-left: .55rem; padding-right: .55rem; }
   #encabezado.con-tienda #btn-publicar-header { padding-left: .55rem; padding-right: .55rem; }
   #encabezado.con-tienda .enc-acciones { gap: .25rem !important; }
 }
@@ -1388,3 +1388,60 @@ button.tc-menu-op { width: 100%; background: none; border: 0; text-align: left; 
 .ac-mini{font-size:12px;font-weight:800;border-radius:10px;padding:5px 10px;background:#eef2ff;color:#3730a3}
 .ac-mini:hover{background:#e0e7ff}
 #ac-conteos>span{background:#eef2ff;border-radius:8px;padding:3px 8px}
+
+/* ===== Fase V-5 · Barra superior «índigo pulido» (solo estilo: nada se quitó) ===== */
+/* Todas las páginas: el mismo morado con profundidad y una línea fina que separa la barra del contenido */
+body > header.bg-indigo-600 {
+  background-image: linear-gradient(135deg, #3730a3 0%, #4f46e5 58%, #6366f1 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 6px 18px rgba(30, 27, 75, .22);
+}
+/* Botones de la barra en «cristal»: misma altura y mismo estilo */
+body > header.bg-indigo-600 a.bg-white\/20, body > header.bg-indigo-600 button.bg-white\/20 {
+  border: 1px solid rgba(255, 255, 255, .24); background-color: rgba(255, 255, 255, .14); min-height: 40px;
+  display: inline-flex; align-items: center; gap: .35rem;
+}
+body > header.bg-indigo-600 a.bg-white\/20.hidden, body > header.bg-indigo-600 button.bg-white\/20.hidden { display: none; }
+body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 button.bg-white\/20:hover { background-color: rgba(255, 255, 255, .24); }
+
+/* Inicio: íconos de línea, avatar con inicial y botón amarillo con relieve */
+.enc-btn {
+  box-sizing: border-box; height: 40px; min-width: 40px; border-radius: 999px; padding: 0 .8rem; gap: .4rem; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: .875rem; white-space: nowrap; text-decoration: none;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .24);
+  transition: background-color .15s ease, transform .1s ease; position: relative; -webkit-tap-highlight-color: transparent;
+}
+.enc-btn:not(.hidden) { display: inline-flex; align-items: center; justify-content: center; }
+.enc-btn:hover { background: rgba(255, 255, 255, .24); }
+.enc-btn:active { transform: scale(.96); }
+.enc-btn:focus-visible { outline: 3px solid #fde047; outline-offset: 2px; }
+.enc-svg { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.enc-btn-tienda { padding: 0 .65rem; }
+.enc-punto { position: absolute; top: 2px; left: 26px; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid #4f46e5; }
+/* Cuenta: visitante = «Entrar» con borde; con sesión = avatar amarillo con la inicial + nombre + ▾ */
+#encabezado:not(.con-sesion) .enc-cuenta { background: transparent; border: 1.5px solid rgba(255, 255, 255, .55); }
+#encabezado.con-sesion #acciones-encabezado #btn-auth { padding: 0 .6rem 0 .25rem; gap: .35rem; }
+.enc-av {
+  width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  background: #fde047; color: #3730a3; font-weight: 900; font-size: .9rem; line-height: 1;
+}
+.enc-nombre { overflow: hidden; text-overflow: ellipsis; max-width: 7rem; }
+.enc-chev { font-size: .7rem; opacity: .85; }
+.enc-cta { box-sizing: border-box; height: 40px; box-shadow: 0 3px 0 #ca8a04 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+.enc-cta:active { transform: translateY(2px); box-shadow: 0 1px 0 #ca8a04 !important; }
+/* Buscador: lupa a la izquierda y sombra */
+.enc-busca input { box-shadow: 0 6px 18px rgba(30, 27, 75, .25); }
+.enc-lupa {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; z-index: 1; pointer-events: none;
+  fill: none; stroke: #94a3b8; stroke-width: 2.6; stroke-linecap: round;
+}
+/* Celulares angostos: todo en una fila sin montarse (igual que antes, con las medidas nuevas) */
+@media (max-width: 440px) {
+  #encabezado.con-tienda #btn-mi-tienda-enc { padding: 0; width: 38px; min-width: 38px; height: 38px; }
+  #encabezado.con-tienda #acciones-encabezado #btn-auth { padding: 0 .45rem 0 .2rem; }
+  #encabezado.con-tienda .enc-nombre { max-width: 3.4rem; }
+  #encabezado.con-tienda .marca-txt { font-size: 1.2rem; }
+}
+@media (max-width: 380px) {
+  #encabezado.con-tienda .enc-nombre { display: none; }
+}

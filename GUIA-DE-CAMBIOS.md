@@ -340,6 +340,35 @@ out center tags;
 - **Para el lanzamiento (G0):** el fondo del mapa viene de los servidores gratuitos de OpenStreetMap, que piden a los sitios con mucho tráfico usar otro proveedor (CARTO, MapTiler, Stadia…). Se cambia junto con el dominio.
 - `app.js`, `admin-comercios.js`, `styles.css`. Sin SQL. Caché v117.
 
+### Fase RED-1 · Redes sociales y página web de cada comercio (SQL 51)
+- **SQL 51** (`supabase/51_redes_comercio.sql`, correr ANTES de fusionar):
+  - columnas `facebook`, `instagram` y `tiktok`, que guardan solo el usuario, limpio;
+  - columna `sitio_web` (http/https, máx. 200);
+  - **la base revisa el formato**, no solo la página;
+  - el dueño puede cambiarlas, igual que su WhatsApp y su horario.
+  - Probado en local: valores buenos se guardan; `javascript:`, enlaces de otro sitio y caracteres raros se rechazan; el dueño sigue sin poder cambiar el nombre; otro usuario no toca redes ajenas; el administrador puede borrar una red falsa; las redes son públicas.
+- **Tienda (opción A):** debajo de WhatsApp, Llamar, Cómo llegar y Compartir aparece **«Síguenos»** con chips del color de cada red:
+  - 📘 Facebook;
+  - 📸 @usuario;
+  - 🎵 @usuario;
+  - 🌐 dominio de la web.
+
+  Si solo hay web, el título dice «En internet». Merkap arma el enlace a partir del usuario guardado (nunca un enlace libre); se abre en otra pestaña o en la app de la red con `rel="noopener nofollow ugc"`. Sin redes, la tienda se ve igual que antes.
+- **Mi tienda → Datos:** recuadro «📱 Redes sociales y página web (opcional)» con 4 campos.
+  - Acepta el enlace completo o solo el @usuario.
+  - Quita los rastreadores (`?igsh=`, `utm_…`, `fbclid`…).
+  - Mientras se escribe muestra «✅ Se verá: …» o el aviso (enlace de otra red, de una publicación o de un video).
+  - Con un enlace malo no guarda nada.
+  - Borrar el campo quita la red.
+- **Administración:**
+  - los mismos 4 campos en el editor → pestaña «Contacto», para ponerlos tú o borrar uno falso;
+  - filtro nuevo en el estado: «📱 Con redes o web» / «Sin redes ni web»;
+  - el importador también guarda la web y las redes que trae OpenStreetMap, limpias (lo inválido se descarta).
+- **Términos 4C:** las redes deben ser del propio negocio; lo que el comercio publique allá es responsabilidad suya (incluida la publicidad de medicamentos, 4B); Merkap puede quitar un enlace falso o engañoso.
+- **Sin el SQL 51:** el recuadro no aparece y todo lo demás guarda igual.
+- **Pendiente para la fase de Métricas:** contar los clics a cada red («12 personas fueron a tu Instagram»).
+- `data.js` (`normalizarRed`, `urlRedComercio`, `vigilarCampoRed`…), `tienda.html/js`, `mi-tienda.html/js`, `admin-comercios.html/js`, `styles.css`, `terminos.html`. 23 pruebas nuevas. Caché v118.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

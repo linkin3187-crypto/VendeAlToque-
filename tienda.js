@@ -144,6 +144,7 @@ function renderizarTienda(c, ps) {
   }
   const tel = String(c.telefono || "").replace(/[^\d+]/g, "");
   if (tel) { $("t-llamar").href = "tel:" + tel; $("t-llamar").classList.remove("hidden"); }
+  pintarRedesTienda(c);
   const ll = $("t-llegar");
   ll.href = urlGoogleMaps(c.lat, c.lng);
   Object.assign(ll.dataset, { comoLlegar: "", lat: c.lat, lng: c.lng, nombre: c.nombre, ciudad: c.ciudad || "" });
@@ -703,4 +704,24 @@ async function iniciarOpiniones() {
 // Fase 2AQ.3: aviso que muestra solo una línea; el botón ⓘ despliega el detalle (ahorra espacio en el celular)
 function avisoPlegable(resumen, detalle) {
   return `<details class="aviso-plegable"><summary aria-label="Ver qué significa"><span>${resumen}</span><span class="ico-info" aria-hidden="true"></span></summary><div class="aviso-detalle">${detalle}</div></details>`;
+}
+
+// ---------- Fase RED-1 · «Síguenos»: redes sociales y página web (SQL 51) ----------
+// Chips con el color de cada red y el @usuario. Merkap arma el enlace a partir del usuario guardado
+// (nunca un enlace libre). Se abren en otra pestaña o en la app de la red; Merkap queda abierta.
+function pintarRedesTienda(c) {
+  const chips = TIPOS_RED.map(tipo => {
+    const valor = valorRed(c, tipo), url = urlRedComercio(tipo, valor);
+    if (!url) return "";
+    const R = REDES_COMERCIO[tipo];
+    const texto = tipo === "web" ? (normalizarRed("web", valor).mostrar || "Página web") : tipo === "facebook" ? "Facebook" : "@" + valor;
+    const nombre = tipo === "web" ? "Página web" : R.nombre;
+    return `<a class="t-red t-red-${tipo}" href="${esc(url)}" target="_blank" rel="noopener nofollow ugc" data-red="${tipo}"
+      aria-label="${esc(nombre + " de " + c.nombre + " (se abre en otra pestaña)")}"><span aria-hidden="true">${tipo === "web" ? "🌐" : R.emoji}</span>${esc(texto)}</a>`;
+  }).filter(Boolean);
+  $("t-redes").classList.toggle("hidden", !chips.length);
+  if (!chips.length) return;
+  const soloWeb = !["facebook", "instagram", "tiktok"].some(t => urlRedComercio(t, c[t]));
+  $("t-redes-tit").textContent = soloWeb ? "En internet" : "Síguenos";
+  $("t-redes-lista").innerHTML = chips.join("");
 }

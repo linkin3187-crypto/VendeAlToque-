@@ -1510,6 +1510,27 @@ body > header.bg-indigo-600 a.bg-white\/20:hover, body > header.bg-indigo-600 bu
 }
 .cl-com span { font-size: 12px; }
 
+/* ===== Fase RED-1 · Redes sociales y página web del comercio ===== */
+.t-redes { margin-top: 12px; }
+.t-redes-tit { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.t-redes-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+.t-red {
+  --c: #4338ca; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 36px; padding: 6px 12px;
+  border-radius: 999px; background: #fff; border: 1.5px solid var(--c); color: var(--c); font-size: 13px; font-weight: 800;
+  text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: background-color .15s ease;
+}
+.t-red:hover, .t-red:focus-visible { background: color-mix(in srgb, var(--c) 8%, #fff); }
+.t-red:focus-visible { outline: 3px solid #818cf8; outline-offset: 2px; }
+.t-red-facebook { --c: #1877f2; }
+.t-red-instagram { --c: #c13584; }
+.t-red-tiktok { --c: #111827; }
+.t-red-web { --c: #0f766e; }
+/* Campos de redes en Mi tienda y en el editor de administración */
+.campo-red-mal { border-color: #f87171 !important; background: #fef2f2; }
+.campo-red-estado { display: block; font-size: 11.5px; font-weight: 600; margin-top: 3px; min-height: 0; }
+.campo-red-estado.ok { color: #15803d; }
+.campo-red-estado.mal { color: #b91c1c; }
+
 /* ===== Fase DR-1a · «🛍️ Mi vitrina» (Mi tienda) ===== */
 .mv-ind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mv-ind > div { background: #f1f5f9; border-radius: 12px; padding: 7px 4px; text-align: center; }

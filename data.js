@@ -794,6 +794,135 @@ const MODOS_ATENCION = {
 };
 const esUbicacionAprox = c => c && (c.modoAtencion === "casa" || c.modoAtencion === "domicilio");
 
+// =====================================================================
+// REDES SOCIALES Y PÁGINA WEB DEL COMERCIO (fase RED-1 · supabase/51_redes_comercio.sql)
+// Se guarda solo el nombre de usuario limpio y Merkap arma el enlace: así nadie cuela un enlace a otro
+// sitio. La base revisa los mismos formatos (no solo la página).
+// =====================================================================
+const REDES_COMERCIO = {
+  facebook: { nombre: "Facebook", emoji: "📘", ejemplo: "facebook.com/tunegocio", host: /(^|\.)(facebook\.com|fb\.com|fb\.me)$/i,
+              rx: /^([A-Za-z0-9.\-]{2,80}|profile\.php\?id=\d{5,20})$/, url: v => "https://www.facebook.com/" + v },
+  instagram: { nombre: "Instagram", emoji: "📸", ejemplo: "instagram.com/tunegocio", host: /(^|\.)(instagram\.com|instagr\.am)$/i,
+               rx: /^[A-Za-z0-9._]{1,30}$/, url: v => "https://www.instagram.com/" + v + "/" },
+  tiktok: { nombre: "TikTok", emoji: "🎵", ejemplo: "tiktok.com/@tunegocio", host: /(^|\.)tiktok\.com$/i,
+            rx: /^[A-Za-z0-9._]{2,24}$/, url: v => "https://www.tiktok.com/@" + v }
+};
+const RX_SITIO_WEB = /^https?:\/\/[A-Za-z0-9.\-]+\.[A-Za-z]{2,}(:\d{1,5})?([/?#][^\s"'<>`]*)?$/;
+const RASTREADORES = /^(utm_\w+|fbclid|gclid|igsh|igshid|si|mibextid|ref|ref_src|_r|_t|is_from_webapp|sender_device)$/i;
+const RUTAS_NO_PERFIL = {
+  facebook: ["share", "sharer", "sharer.php", "watch", "groups", "events", "photo", "photo.php", "story.php", "reel", "permalink.php", "login", "home.php", "marketplace", "hashtag"],
+  instagram: ["p", "reel", "reels", "stories", "explore", "tv", "accounts", "direct", "s"],
+  tiktok: ["t", "video", "tag", "music", "discover", "foryou", "live"]
+};
+const aUrl = t => { try { return new URL(/^[a-z][a-z0-9+.-]*:/i.test(t) ? t : "https://" + t); } catch (e) { return null; } };
+// Devuelve { valor, error, mostrar }. valor = lo que se guarda (null = vacío); error = texto para la persona.
+function normalizarRed(tipo, texto) {
+  const t = String(texto || "").trim();
+  if (!t) return { valor: null, error: null, mostrar: "" };
+  if (tipo === "web") {
+    const u = aUrl(t.replace(/\s+/g, ""));
+    if (!u || !/^https?:$/.test(u.protocol) || !u.hostname.includes(".")) return { valor: null, error: "Ese enlace no parece una página web. Ej: www.tunegocio.com" };
+    const red = Object.keys(REDES_COMERCIO).find(k => REDES_COMERCIO[k].host.test(u.hostname));
+    if (red) return { valor: null, error: `Ese es un enlace de ${REDES_COMERCIO[red].nombre}: pégalo en su casilla, aquí va tu página web.` };
+    [...u.searchParams.keys()].filter(k => RASTREADORES.test(k)).forEach(k => u.searchParams.delete(k));
+    u.hash = u.hash && u.hash.length > 1 ? u.hash : "";
+    let v = u.href;
+    if (u.pathname === "/" && !u.search && !u.hash) v = v.replace(/\/$/, "");
+    if (v.length > 200 || !RX_SITIO_WEB.test(v)) return { valor: null, error: "Ese enlace es muy largo o tiene caracteres raros. Pega solo la dirección de tu página." };
+    return { valor: v, error: null, mostrar: u.hostname.replace(/^www\./, "") };
+  }
+  const R = REDES_COMERCIO[tipo];
+  if (!R) return { valor: null, error: "Red desconocida" };
+  let v = "";
+  const pareceEnlace = /[/:]/.test(t) || /\.(com|me|am)\b/i.test(t);
+  if (t.startsWith("@") && !t.includes("/")) v = t.slice(1);
+  else if (pareceEnlace) {
+    const u = aUrl(t);
+    if (!u || !R.host.test(u.hostname)) {
+      const otra = u && Object.keys(REDES_COMERCIO).find(k => REDES_COMERCIO[k].host.test(u.hostname));
+      return { valor: null, error: otra ? `Ese enlace es de ${REDES_COMERCIO[otra].nombre}, no de ${R.nombre}. Pégalo en su casilla.`
+        : `Ese enlace no es de ${R.nombre}. Pega tu perfil (${R.ejemplo}) o solo @usuario.` };
+    }
+    const partes = u.pathname.split("/").filter(Boolean);
+    const p0 = (partes[0] || "").toLowerCase();
+    if (tipo === "facebook" && p0 === "profile.php" && /^\d{5,20}$/.test(u.searchParams.get("id") || "")) v = "profile.php?id=" + u.searchParams.get("id");
+    else if (tipo === "facebook" && (p0 === "pages" || p0 === "people") && /^\d{5,20}$/.test(partes[2] || "")) v = "profile.php?id=" + partes[2];
+    else if (tipo === "facebook" && p0 === "pg" && partes[1]) v = partes[1];
+    else if (tipo === "tiktok") {
+      if (!(partes[0] || "").startsWith("@")) return { valor: null, error: `Pega el enlace de tu perfil de TikTok (${R.ejemplo}), no el de un video.` };
+      v = partes[0].slice(1);
+    } else {
+      if (RUTAS_NO_PERFIL[tipo].includes(p0)) return { valor: null, error: `Ese es el enlace de una publicación. Pega el de tu perfil (${R.ejemplo}) o solo @usuario.` };
+      v = partes[0] || "";
+    }
+  } else v = t;
+  v = v.replace(/^@/, "");
+  try { v = decodeURIComponent(v); } catch (e) { /* se queda igual */ }
+  if (tipo !== "facebook") v = v.toLowerCase();
+  if (!v) return { valor: null, error: `Falta el usuario. Pega tu perfil (${R.ejemplo}) o solo @usuario.` };
+  if (!R.rx.test(v)) return { valor: null, error: `«${v.slice(0, 40)}» no es un usuario válido de ${R.nombre} (solo letras, números, punto y guion bajo).` };
+  return { valor: v, error: null, mostrar: tipo === "facebook" ? "Facebook" : "@" + v };
+}
+// Enlace público (solo con valores ya validados; si algo no cuadra, no hay enlace)
+function urlRedComercio(tipo, valor) {
+  if (!valor) return "";
+  if (tipo === "web") return RX_SITIO_WEB.test(valor) ? valor : "";
+  const R = REDES_COMERCIO[tipo];
+  return R && R.rx.test(valor) ? R.url(valor) : "";
+}
+const TIPOS_RED = ["facebook", "instagram", "tiktok", "web"];
+const valorRed = (c, tipo) => tipo === "web" ? c.sitioWeb : c[tipo];
+const tieneRedes = c => TIPOS_RED.some(t => urlRedComercio(t, valorRed(c, t)));
+// Campo de un formulario: revisa mientras se escribe y muestra «✅ Se verá: …» o el aviso.
+function vigilarCampoRed(input, tipo, estadoEl) {
+  const pintar = () => {
+    const r = normalizarRed(tipo, input.value);
+    input.classList.toggle("campo-red-mal", !!r.error);
+    input.setAttribute("aria-invalid", r.error ? "true" : "false");
+    if (!estadoEl) return r;
+    estadoEl.className = "campo-red-estado " + (r.error ? "mal" : r.valor ? "ok" : "");
+    estadoEl.textContent = r.error ? "⚠️ " + r.error : r.valor ? "✅ Se verá: " + r.mostrar : "";
+    return r;
+  };
+  input.addEventListener("input", pintar);
+  input.addEventListener("blur", () => { const r = pintar(); if (r.valor && tipo !== "web") input.value = tipo === "facebook" ? r.valor : "@" + r.valor; });
+  return pintar;
+}
+// Lee los 4 campos de un formulario. Devuelve { cambios, error, campo }.
+function leerCamposRedes(ids) {
+  const cambios = {};
+  for (const tipo of TIPOS_RED) {
+    const el = document.getElementById(ids[tipo]);
+    if (!el) continue;
+    const r = normalizarRed(tipo, el.value);
+    if (r.error) return { cambios: null, error: (tipo === "web" ? "Página web" : REDES_COMERCIO[tipo].nombre) + ": " + r.error, campo: el };
+    cambios[tipo === "web" ? "sitio_web" : tipo] = r.valor;
+  }
+  return { cambios, error: null };
+}
+const textoCampoRed = (tipo, valor) => !valor ? "" : tipo === "web" || tipo === "facebook" ? valor : "@" + valor;
+// Los mismos 4 campos en Mi tienda («mt») y en el editor de administración («ed»)
+const IDS_REDES = Object.fromEntries(["mt", "ed"].map(p => [p, { facebook: p + "-fb", instagram: p + "-ig", tiktok: p + "-tt", web: p + "-web" }]));
+const pintoresRedes = {};
+function conectarCamposRedes(pre) {
+  pintoresRedes[pre] = {};
+  TIPOS_RED.forEach(tipo => {
+    const el = document.getElementById(IDS_REDES[pre][tipo]);
+    if (el) pintoresRedes[pre][tipo] = vigilarCampoRed(el, tipo, document.getElementById(IDS_REDES[pre][tipo] + "-estado"));
+  });
+}
+function pintarCamposRedes(pre, c) {
+  const caja = document.getElementById(pre + "-redes");
+  if (caja) caja.classList.toggle("hidden", !c.tieneColumnasRedes && !tieneRedes(c));   // sin el SQL 51 no se muestran
+  TIPOS_RED.forEach(tipo => {
+    const el = document.getElementById(IDS_REDES[pre][tipo]);
+    if (!el) return;
+    el.value = textoCampoRed(tipo, valorRed(c, tipo));
+    const p = pintoresRedes[pre] && pintoresRedes[pre][tipo];
+    if (p) p(); else { const e = document.getElementById(el.id + "-estado"); if (e) e.textContent = ""; }
+  });
+}
+
 function filaAComercio(r) {
   const m = municipios.find(x => x.id === r.municipio_id) || {};
   return {
@@ -812,6 +941,9 @@ function filaAComercio(r) {
     fotos: (Array.isArray(r.fotos) && r.fotos.length ? r.fotos : (r.foto_url ? [r.foto_url] : [])).filter(Boolean).slice(0, 5),
     tieneColumnaFotos: Array.isArray(r.fotos),
     logo: r.logo_url || "", tieneColumnaLogo: "logo_url" in r,   // fase V-2c (SQL 49)
+    // Fase RED-1 (SQL 51): redes (solo el usuario, limpio) y página web. Sin el SQL 51 quedan vacías.
+    facebook: r.facebook || "", instagram: r.instagram || "", tiktok: r.tiktok || "", sitioWeb: r.sitio_web || "",
+    tieneColumnasRedes: "sitio_web" in r,
     tieneCupoSecciones: "limite_secciones" in r,   // fase DR-1b (SQL 50)
     modoAtencion: MODOS_ATENCION[r.modo_atencion] ? r.modo_atencion : "local",   // fase 2Z.8
     // Fase 2Z.10: lo que dice la comunidad (los votos nunca dan el sello: eso lo hace un moderador)

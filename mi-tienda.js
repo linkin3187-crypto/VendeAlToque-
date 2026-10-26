@@ -55,6 +55,7 @@ function pintarDatos() {
   $("mt-tel").value = actual.telefono;
   $("mt-hor").value = actual.horario;
   revisarHorario();
+  pintarCamposRedes("mt", actual);   // fase RED-1
   document.querySelectorAll('input[name="mt-modo"]').forEach(r => { r.checked = r.value === (actual.modoAtencion || "local"); });
   $("mt-modo-aviso").classList.add("hidden");
   $("mt-recoge").checked = actual.recoge;
@@ -89,6 +90,11 @@ async function guardarNegocio(e) {
       const urls = await galeria.subir();
       if (actual.tieneColumnaFotos) cambios.fotos = urls; else cambios.foto_url = urls[0] || null;
     }
+    // Fase RED-1 (SQL 51): redes y página web (solo si el SQL 51 ya está; si no, avisa solo si escribió algo)
+    const redes = leerCamposRedes(IDS_REDES.mt);
+    if (redes.error) { mostrarToast(redes.error, "error"); redes.campo.focus(); return; }
+    if (actual.tieneColumnasRedes) Object.assign(cambios, redes.cambios);
+    else if (Object.values(redes.cambios).some(Boolean)) throw new Error("Para guardar tus redes falta ejecutar supabase/51_redes_comercio.sql");
     if (logoGestor && logoGestor.cambiado) {   // fase V-2c (SQL 49)
       if (!actual.tieneColumnaLogo) throw new Error("Para guardar el logo falta ejecutar supabase/49_logo_comercio.sql");
       cambios.logo_url = (await logoGestor.subir())[0] || null;
@@ -511,6 +517,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("mt-selector-caja").classList.remove("hidden");
   }
   $("form-negocio").addEventListener("submit", guardarNegocio);
+  conectarCamposRedes("mt");   // fase RED-1
   $("mt-hor").addEventListener("input", revisarHorario);
   $("form-salud").addEventListener("submit", guardarSalud);
   $("mt-modo").addEventListener("change", () => {

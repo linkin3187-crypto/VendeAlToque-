@@ -8,8 +8,8 @@
   <meta name="robots" content="noindex">
   <title>Comercios (admin) | Merkap</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=117">
-  <link rel="stylesheet" href="tw.css?v=117">
+  <link rel="stylesheet" href="styles.css?v=118">
+  <link rel="stylesheet" href="tw.css?v=118">
 </head>
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-indigo-600 text-white shadow-lg">
@@ -134,7 +134,7 @@
         <div class="grid sm:grid-cols-3 gap-2 mb-3 text-sm">
           <input type="search" id="ac-buscar-nombre" placeholder="🔎 Buscar por nombre, dirección o tipo (ej. farmacia)" class="border border-slate-300 rounded-lg p-2 bg-white sm:col-span-1">
           <select id="ac-filtro-ver" class="border border-slate-300 rounded-lg p-2 bg-white" aria-label="Estado">
-            <option value="no" selected>⏳ Por verificar</option><option value="tel">✔ Verificados por teléfono</option><option value="persona">✔ Ubicación confirmada en persona</option><option value="vencida">⚠ Verificación vencida (+12 meses)</option><option value="oculto">🙈 Ocultos</option><option value="">Todos los estados</option>
+            <option value="no" selected>⏳ Por verificar</option><option value="tel">✔ Verificados por teléfono</option><option value="persona">✔ Ubicación confirmada en persona</option><option value="vencida">⚠ Verificación vencida (+12 meses)</option><option value="oculto">🙈 Ocultos</option><option value="redes">📱 Con redes o web</option><option value="sinredes">Sin redes ni web</option><option value="">Todos los estados</option>
           </select>
           <select id="ac-filtro-muni" class="border border-slate-300 rounded-lg p-2 bg-white" aria-label="Municipio"></select>
         </div>
@@ -217,6 +217,25 @@
             <label class="block text-xs font-bold text-slate-500">📞 Teléfono (celular o fijo)
               <input id="ed-tel" maxlength="40" placeholder="604 123 4567" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800"></label>
           </div>
+          <!-- Fase RED-1: redes sociales y página web (SQL 51) -->
+          <fieldset id="ed-redes" class="space-y-2">
+            <legend class="text-xs font-bold text-slate-500 mb-1">📱 Redes sociales y página web <span class="font-normal">(opcional)</span></legend>
+            <p class="text-[11px] text-slate-500 -mt-1">Enlace del perfil o solo @usuario. Borra una red si es falsa.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="block text-xs font-bold text-slate-500">📘 Facebook
+              <input id="ed-fb" maxlength="220" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="facebook.com/tunegocio" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+              <span id="ed-fb-estado" class="campo-red-estado" aria-live="polite"></span></label>
+            <label class="block text-xs font-bold text-slate-500">📸 Instagram
+              <input id="ed-ig" maxlength="220" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@tunegocio" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+              <span id="ed-ig-estado" class="campo-red-estado" aria-live="polite"></span></label>
+            <label class="block text-xs font-bold text-slate-500">🎵 TikTok
+              <input id="ed-tt" maxlength="220" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@tunegocio" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+              <span id="ed-tt-estado" class="campo-red-estado" aria-live="polite"></span></label>
+            <label class="block text-xs font-bold text-slate-500">🌐 Página web
+              <input id="ed-web" maxlength="220" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="www.tunegocio.com" class="mt-0.5 w-full border border-slate-300 p-2.5 rounded-lg font-normal text-sm text-slate-800">
+              <span id="ed-web-estado" class="campo-red-estado" aria-live="polite"></span></label>
+            </div>
+          </fieldset>
           <fieldset class="text-sm space-y-2">
             <legend class="text-xs font-bold text-slate-500 mb-1">¿Cómo entrega?</legend>
             <label class="flex items-center gap-2"><input type="checkbox" id="ed-recoge"> Se recoge en el local</label>
@@ -415,10 +434,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="utils.js?v=117"></script>
-  <script src="data.js?v=117"></script>
-  <script src="buscador.js?v=117"></script>
-  <script src="iconos.js?v=117"></script>
-  <script src="admin-comercios.js?v=117"></script>
+  <script src="utils.js?v=118"></script>
+  <script src="data.js?v=118"></script>
+  <script src="buscador.js?v=118"></script>
+  <script src="iconos.js?v=118"></script>
+  <script src="admin-comercios.js?v=118"></script>
 </body>
 </html>

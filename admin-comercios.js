@@ -237,6 +237,13 @@ function aFila(el, muni, permitidos) {
       verificado: false, activo: true, fuente: "OpenStreetMap"
     },
     web: (t.website || t["contact:website"] || t.url || "").slice(0, 200),
+    // Fase RED-1: redes y web de OpenStreetMap, ya limpias (lo que no sea válido se descarta)
+    redes: Object.fromEntries([
+      ["sitio_web", normalizarRed("web", t.website || t["contact:website"] || t.url || "").valor],
+      ["facebook", normalizarRed("facebook", t["contact:facebook"] || t.facebook || "").valor],
+      ["instagram", normalizarRed("instagram", t["contact:instagram"] || t.instagram || "").valor],
+      ["tiktok", normalizarRed("tiktok", t["contact:tiktok"] || t.tiktok || "").valor]
+    ].filter(([, v]) => v)),
     marca: !!(t.brand || t["brand:wikidata"])
   };
 }
@@ -656,7 +663,9 @@ function descargarCSV() {
 
 async function guardarSeleccion() {
   const elegidos = candidatos.filter(c => c.marcado);
-  const filas = elegidos.map(c => c.fila);
+  // Fase RED-1: con el SQL 51 se guardan también las redes y la web que traía OpenStreetMap
+  const conRedes = listaAdmin.some(c => c.tieneColumnasRedes);
+  const filas = elegidos.map(c => conRedes && c.redes ? { ...c.fila, ...c.redes } : c.fila);
   if (!filas.length) { mostrarToast("No hay comercios seleccionados", "error"); return; }
   const btn = $("ac-importar");
   btn.disabled = true;
@@ -784,6 +793,8 @@ function pasaEstado(c, v) {
   if (v === "persona") return c.nivel === 3;
   if (v === "vencida") return selloVencido(c);
   if (v === "oculto") return !c.activo;
+  if (v === "redes") return tieneRedes(c);          // fase RED-1
+  if (v === "sinredes") return !tieneRedes(c);
   return true;
 }
 
@@ -1306,6 +1317,7 @@ function abrirEditor(id) {
   $("ed-hor").value = c.horario || "";
   $("ed-wa").value = (c.whatsapp || "").replace(/^57/, "");
   $("ed-tel").value = c.telefono || "";
+  pintarCamposRedes("ed", c);   // fase RED-1
   $("ed-recoge").checked = !!c.recoge; $("ed-dom").checked = !!c.domicilio; $("ed-dom-info").value = c.domicilioInfo || "";
   $("ed-muni").innerHTML = municipios.slice().sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
     .map(m => `<option value="${m.id}" ${m.id === c.municipioId ? "selected" : ""}>${esc(m.nombre)} (${esc(m.departamento)})</option>`).join("");
@@ -1420,6 +1432,11 @@ async function guardarEditor() {
   };
   const modo = $("ed-modo").value;
   if (modo !== "local" || edC.modoAtencion !== "local") cambios.modo_atencion = modo;
+  // Fase RED-1 (SQL 51): redes y página web
+  const redes = leerCamposRedes(IDS_REDES.ed);
+  if (redes.error) { tabEditor("contacto"); mostrarToast(redes.error, "error"); redes.campo.focus(); return; }
+  if (edC.tieneColumnasRedes) Object.assign(cambios, redes.cambios);
+  else if (Object.values(redes.cambios).some(Boolean)) { tabEditor("contacto"); mostrarToast("Para guardar redes falta ejecutar supabase/51_redes_comercio.sql", "error"); return; }
   if (edCoords) { cambios.lat = +edCoords.lat.toFixed(6); cambios.lng = +edCoords.lng.toFixed(6); }
   // Fase DR-1b: cupo de vitrina (solo el administrador; solo si cambió)
   if (esAdmin() && edC.tieneCupoSecciones && $("ed-cupo-prod")) {
@@ -1626,6 +1643,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("ac-filtro-muni").innerHTML = '<option value="">Todos los municipios</option>' + opciones;
 
   $("ac-buscar").addEventListener("click", () => buscar(false));
+  conectarCamposRedes("ed");   // fase RED-1
   $("ac-archivo").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; cargarArchivoImp(f); });
   $("ac-reintentar").addEventListener("click", () => buscar(true));
   $("ac-cancelar").addEventListener("click", cancelarBusqueda);

@@ -1,0 +1,27 @@
+# Merkap · Fase CF-1 · Encabezados que Cloudflare Pages agrega a cada respuesta.
+# (GitHub Pages no permitía esto.) Se copia a _sitio/_headers con herramientas/publicar.sh.
+
+# Seguridad para todas las páginas
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+# Código y estilos: todas las páginas los piden con «?v=NNN» (VERSION_SITIO), así que se pueden
+# guardar 1 año en el celular. Cuando cambian, cambia el número y el navegador baja el nuevo.
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# Imágenes propias (logo, íconos): 7 días (no llevan número de versión)
+/img/*
+  Cache-Control: public, max-age=604800
+
+# Mientras exista P16 (no indexar): también en el encabezado, para que ni el PDF ni nada se indexe.
+# QUITAR el día del lanzamiento junto con las metas «noindex» de las páginas.
+/*
+  X-Robots-Tag: noindex, nofollow

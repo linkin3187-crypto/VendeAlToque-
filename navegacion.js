@@ -85,7 +85,7 @@
       return;
     }
     try {
-      const aqui = location.pathname.split("/").pop() || "index.html";
+      const aqui = nombrePaginaActual();   // CF-1: igual con «tienda.html» (GitHub) o «tienda» (Cloudflare)
       if (/^[a-z-]+\.html$/.test(aqui) && aqui !== "index.html") sessionStorage.setItem("mf_volver", aqui);
     } catch (e) { /* sin almacenamiento */ }
     location.href = "index.html#login";

@@ -12,7 +12,7 @@
 // Si el celular guardó una página VIEJA (pide utils.js?v=73) pero el servidor ya entrega el
 // código NUEVO (74), se mezclan versiones y la página puede quedarse «Cargando…».
 // Aquí se detecta y se recarga UNA vez la página pidiendo la versión nueva.
-const VERSION_SITIO = 118;
+const VERSION_SITIO = 119;
 (function revisarVersion() {
   try {
     const src = (document.currentScript && document.currentScript.src) || "";
@@ -488,6 +488,15 @@ document.addEventListener("click", e => {
   });
 }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarComoLlegar(); });
+
+// ---------- Fase CF-1 · Nombre de la página actual ----------
+// GitHub Pages muestra «tienda.html», pero Cloudflare Pages acorta la dirección a «tienda» (sin .html).
+// Esto devuelve siempre «tienda.html» («index.html» en la raíz), sea cual sea el servidor.
+function nombrePaginaActual() {
+  const p = decodeURIComponent(location.pathname.split("/").pop() || "");
+  if (!p) return "index.html";
+  return /\.html$/.test(p) ? p : p + ".html";
+}
 
 // ---------- Fotos ----------
 // Reduce la foto a 800 px de ancho antes de subirla: ahorra espacio y datos.

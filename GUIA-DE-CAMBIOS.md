@@ -369,6 +369,19 @@ out center tags;
 - **Pendiente para la fase de Métricas:** contar los clics a cada red («12 personas fueron a tu Instagram»).
 - `data.js` (`normalizarRed`, `urlRedComercio`, `vigilarCampoRed`…), `tienda.html/js`, `mi-tienda.html/js`, `admin-comercios.html/js`, `styles.css`, `terminos.html`. 23 pruebas nuevas. Caché v118.
 
+### Fase CF-1 · Listo para Cloudflare Pages (merkap.com.co)
+- **`herramientas/publicar.sh`:** arma la carpeta `_sitio/` con **solo** lo que el navegador necesita (páginas, código, estilos, `img/` y `docs/`). **No** publica `supabase/` (SQL), `herramientas/`, `.github/`, los `.md` ni las pruebas; si algo privado se colara, el comando falla y Cloudflare no publica.
+  - En Cloudflare: **Build command** `bash herramientas/publicar.sh` · **Build output directory** `_sitio`.
+  - `_sitio/` está en `.gitignore`.
+- **`herramientas/cloudflare/_headers`** (se copia a `_sitio/_headers`):
+  - seguridad en todas las páginas: `nosniff`, `Referrer-Policy`, `X-Frame-Options`, HSTS, `Permissions-Policy` (ubicación sí; cámara, micrófono y pagos no);
+  - `.js` y `.css` guardados 1 año en el celular (todas las páginas los piden con `?v=`, y una prueba lo vigila);
+  - `img/` 7 días;
+  - `X-Robots-Tag: noindex` mientras exista P16 (**quitarlo el día del lanzamiento**, junto con las metas de las páginas).
+- **Direcciones sin «.html»:** Cloudflare acorta `tienda.html?id=1` a `tienda?id=1`. Nueva función `nombrePaginaActual()` (`utils.js`) que siempre devuelve `tienda.html`. Se usa en `navegacion.js` y `data.js`, para que después de «Entrar» la persona vuelva a la página donde estaba. Todo lo demás ya funcionaba con las dos formas.
+- **`herramientas/redireccion-github/`** (para la Fase B): `index.html` y `404.html` del repositorio público que queda con el nombre viejo `VendeAlToque-`. Mandan cualquier enlace viejo de `github.io` a la **misma página** en `https://merkap.com.co`, con su `?id=`, `?ref=`, etc. Probado: inicio, tienda con `id`, anuncio con `ref`.
+- Sin SQL. 7 pruebas nuevas. Caché v119.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.

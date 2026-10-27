@@ -3045,7 +3045,7 @@ function preguntarLoEncontraste() {
     if (!usuarioActual) {
       mostrarToast("Crea tu cuenta gratis (1 minuto) para ayudar a tus vecinos");
       if (document.getElementById("modal-auth") && typeof abrirModal === "function") { abrirModal("modal-auth"); return; }
-      try { sessionStorage.setItem("mf_volver", location.pathname.split("/").pop() + location.search); } catch (er) { /* nada */ }
+      try { sessionStorage.setItem("mf_volver", nombrePaginaActual() + location.search); } catch (er) { /* nada */ }   // CF-1
       setTimeout(() => { location.href = "index.html#login"; }, 1100);
       return;
     }

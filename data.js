@@ -1964,7 +1964,7 @@ async function crearNegocioPendiente(d) {
   if (d.modo && d.modo !== "local") fila.modo_atencion = d.modo;   // «local» es el valor por defecto
   if (d.datosSanitarios) fila.datos_sanitarios = d.datosSanitarios;   // fase 2AB.1 (SQL 29)
   const { error } = await sb.from("negocios_pendientes").insert(fila);
-  if (error && /datos_sanitarios/.test(error.message || "")) throw new Error("El registro de droguerías y tiendas naturistas se activa en unos días. Escríbenos a mercafree7@gmail.com y te registramos.");
+  if (error && /datos_sanitarios/.test(error.message || "")) throw new Error("El registro de droguerías y tiendas naturistas se activa en unos días. Escríbenos a comercios@merkap.com.co y te registramos.");
   if (error && /modo_atencion/.test(error.message || "")) throw new Error("Para registrar un negocio que atiende desde casa o solo a domicilio falta un ajuste del sistema. Elige «Local abierto» o inténtalo más tarde.");
   if (error) throw error;
 }

@@ -382,6 +382,16 @@ out center tags;
 - **`herramientas/redireccion-github/`** (para la Fase B): `index.html` y `404.html` del repositorio público que queda con el nombre viejo `VendeAlToque-`. Mandan cualquier enlace viejo de `github.io` a la **misma página** en `https://merkap.com.co`, con su `?id=`, `?ref=`, etc. Probado: inicio, tienda con `id`, anuncio con `ref`.
 - Sin SQL. 7 pruebas nuevas. Caché v119.
 
+### P2 · Correos de la marca @merkap.com.co (Cloudflare Email Routing → Gmail)
+- El dueño creó en Cloudflare (Email Routing, gratis) 4 direcciones que llegan a su Gmail: `hola@`, `soporte@`, `comercios@` y `privacidad@merkap.com.co`. «Catch-all» apagado (menos spam). Solo **recibir**; responder con la marca necesita Workspace o Zoho (G0, si hace falta).
+- Se quitó `mercafree7@gmail.com` de todas partes:
+  - **Nosotros → Contacto:** `hola@` + lista por tema (`soporte@` cuenta y errores · `comercios@` negocios · `privacidad@` datos personales). «Algo más» pasa a `soporte@`.
+  - **Privacidad:** `privacidad@` (canal para los derechos de la Ley 1581).
+  - **Términos:** `hola@` · `soporte@`.
+  - **Política de salud:** `comercios@`.
+  - **Aviso de registro de droguerías** (`data.js`): `comercios@`.
+- Fecha de Términos, Privacidad y Política de salud: 27 oct 2026. Sin SQL. Caché v120.
+
 ## 7. Lo que NO se cambió y por qué
 
 - **Tailwind por CDN:** se mantiene para que sigas subiendo archivos desde el navegador de GitHub sin herramientas. Pasar a Vite + Tailwind compilado tiene sentido junto con la Fase 2/3, cuando haya `npm` y un proceso de despliegue.
